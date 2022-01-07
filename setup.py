@@ -7,4 +7,5 @@ author='Ion Gabriel Ion',
 author_email='ion.ion.gabriel@gmail.com',
 license='MIT',
 packages=['torchtt'],
+install_requires=['numpy','torch'],
 zip_safe=False) 

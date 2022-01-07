@@ -1,7 +1,5 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-Created on Wed Aug  5 09:36:55 2020
+Basic class for TT decomposition.
 
 @author: ion
 """
@@ -9,11 +7,11 @@ Created on Wed Aug  5 09:36:55 2020
 import torch as tn
 import torch.nn.functional as tnf
 from torchtt.decomposition import mat_to_tt, to_tt, lr_orthogonal, round_tt, rl_orthogonal, QR
-import torchtt.division
+from  torchtt.division import amen_divide
 import numpy as np
 import math 
-import torchtt.dmrg
-import torchtt.aux_ops
+from torchtt.dmrg import dmrg_matvec
+from torchtt.aux_ops import apply_mask, dense_matvec
 from torchtt.errors import *
 
 class TT():
@@ -597,7 +595,7 @@ class TT():
         if self.is_ttm and tn.is_tensor(other):
             if self.N != list(other.shape)[-len(self.N):]:
                 raise Exception("Dimension mismatch.")
-            result = torchtt.aux_ops.dense_matvec(self.cores,other) 
+            result = dense_matvec(self.cores,other) 
             return result
 
         elif self.is_ttm and other.is_ttm == False:
@@ -669,7 +667,7 @@ class TT():
         if not self.is_ttm or other.is_ttm:
             raise Exception('First operand should be a TT matrix and second a TT vector.')
             
-        return torchtt.dmrg.dmrg_matvec(self, other, eps = eps, verb = verb, nswp = nswp)
+        return dmrg_matvec(self, other, eps = eps, verb = verb, nswp = nswp)
 
     def apply_mask(self,indices):
         """
@@ -686,7 +684,7 @@ class TT():
         Returns:
             (torch.tensor): the values of the tensor
         """
-        result = torchtt.aux_ops.apply_mask(self.cores,self.R,indices)
+        result = apply_mask(self.cores,self.R,indices)
         return result
 
     def __truediv__(self,other):
@@ -719,7 +717,7 @@ class TT():
                 raise Exception('Operands should be either TT or TTM.')
             if self.N != other.N or (self.is_ttm and self.M != other.M):
                 raise ShapeMismatch("Both operands should have the same shape.")
-            result = TT(torchtt.division.amen_divide(other,self,50,None,1e-12,500,verbose=False))       
+            result = TT(amen_divide(other,self,50,None,1e-12,500,verbose=False))       
         else:
             raise Exception('Operand not permitted. A TT-object can be divided only with scalars.')
             
@@ -740,8 +738,10 @@ class TT():
         if isinstance(other,int) or isinstance(other,float) or ( tn.is_tensor(other) and other.numel==1):
             o = ones(self.N,dtype=self.cores[0].dtype,device = self.cores[0].device)
             o.cores[0] *= other
-            cores_new = torchtt.division.amen_divide(self,o,50,None,1e-12,500,verbose=False)
-            
+            cores_new = amen_divide(self,o,50,None,1e-12,500,verbose=False)
+        else:
+            raise Exception("The first operand must be int, float or 1d torch.tensor")   
+         
         return TT(cores_new)
 
     
@@ -1278,7 +1278,7 @@ def eye(shape, dtype=tn.float64):
     
     return TT(cores)
     
-def zeros(shape, dtype=tn.float64):
+def zeros(shape, dtype=tn.float64, device = None):
     """
     Creates a zero TT-tensor/TT-matrix. 
     The shape is either [N_1,...N_d] for a TT-tensor or [(M_1,N_1),...,(M_d,N_d)] for a TT-matrix, where M_k are the left modex and N_k are the right modes.
@@ -1305,11 +1305,11 @@ def zeros(shape, dtype=tn.float64):
         d = len(shape)
         if isinstance(shape[0],tuple):
             # we create a TT-matrix
-            cores = [tn.zeros([1,shape[i][0],shape[i][1],1],dtype=dtype) for i in range(d)]            
+            cores = [tn.zeros([1,shape[i][0],shape[i][1],1],dtype=dtype, device = device) for i in range(d)]            
             
         else:
             # we create a TT-tensor
-            cores = [tn.zeros([1,shape[i],1],dtype=dtype) for i in range(d)]
+            cores = [tn.zeros([1,shape[i],1],dtype=dtype, device = device) for i in range(d)]
             
     else:
         raise Exception('Invalid shape.')
@@ -1431,7 +1431,20 @@ def random(N, R, dtype = tn.float64, device = None):
     return T
 
 def randn(N, R, var = 1.0, dtype = tn.float64, device = None):
+    """
+    A torchtt.TT tensor of shape N = [N1 x ... x Nd] and rank R is returned. 
+    The entries of the fuill tensor are alomst normal distributed with the variance var.
+    
+    Args:
+        N (list[int]): the shape.
+        R (list[int]): the rank.
+        var (float, optional): the variance. Defaults to 1.0.
+        dtype (torch.dtype, optional): [description]. Defaults to tn.float64.
+        device (torch.device, optional): [description]. Defaults to None.
 
+    Returns:
+        torchtt.TT: the result.
+    """
     d = len(N)
     v1 = var / np.prod(R)
     v = v1**(1/d)
@@ -1561,21 +1574,17 @@ def reshape(tens, shape, eps = 1e-12, rmax = 1000):
         
         
 def meshgrid(vectors):
-    '''
-    Creates a meshgrid in TT format given a list o vectors.
-    Similar to tensorflow.meshgrid or numpy.meshgrid
+    """
+    Creates a meshgrid of torchtt.TT objects. Similar to numpy.meshgrid or torch.meshgrid.
+    The input is a list of d torch.tensor vectors of sizes N_1, ... ,N_d
+    The result is a list of torchtt.TT instances of shapes N1 x ... x Nd.
+    
+    Args:
+        vectors (list[torch.tensor]): the vectors (1d tensors).
 
-    Parameters
-    ----------
-    vectors : list of 1d torch tensors.
-        the list of vectors for the meshgrid.
-
-    Returns
-    -------
-    Xs : list of TT objects
-        the resulting meshgrid.
-
-    '''
+    Returns:
+        list[torchtt.TT]: the resulting meshgrid.
+    """
     
     Xs = []
     dtype = vectors[0].dtype
@@ -1585,35 +1594,30 @@ def meshgrid(vectors):
         Xs.append(TT(lst))
     return Xs
     
-
 def dot(a,b,axis=None):
-    '''
+    """
     Computes the dot product between 2 tensors in TT format.
     If both a and b have identical mode sizes the result is the dot product.
     If a and b have inequal mode sizes, the function perform index contraction. 
     The number of dimensions of a must be greater or equal as b.
     The modes of the tensor a along which the index contraction with b is performed are given in axis.
 
-    Parameters
-    ----------
-    a : TT instance
-        The first trensor.
-    b : TT instance
-        The second tensor.
-    axis : list of int, optional
-        the mode indices for index contraction. The default is None.
+    Args:
+        a (torchtt.TT): the first tensor.
+        b (torchtt.TT): the second tensor.
+        axis (list[int], optional): the mode indices for index contraction. Defaults to None.
 
-    Raises
-    ------
-    Exception
-        Errors if the inputs are invalid.
+    Raises:
+        Exception: [description]
+        Exception: [description]
+        Exception: [description]
+        Exception: [description]
+        Exception: [description]
 
-    Returns
-    -------
-    result : float ot TT object
-        the result.
-
-    '''
+    Returns:
+        float or torchtt.TT: the result. If no axis index is provided the result is a scalar otherwise a torchtt.TT object.
+    """
+    
     if not isinstance(a, TT) or not isinstance(b, TT):
         raise Exception('Both operands should be TT instances.')
     

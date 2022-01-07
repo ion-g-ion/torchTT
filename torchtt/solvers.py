@@ -8,7 +8,7 @@ Created on Thu Nov 25 10:12:57 2021
 
 import torch as tn
 import numpy as np
-from torchtt import TT, random, ones
+import torchtt
 import datetime
 from torchtt.decomposition import QR, SVD
 from torchtt.iterative_solvers import BiCGSTAB_reset, gmres_restart
@@ -87,9 +87,47 @@ class LinearOp():
         return tn.reshape(w,[-1,1])
 
 def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = 'res', local_iterations = 40, resets = 2, verbose = True, preconditioner = None):
+    """
+    Solve a multilinear system A x = b in the TT format.
     
+    This method implements the algorithm from: Sergey V Dolgov, Dmitry V Savostyanov, Alternating minimal energy methods for linear systems in higher dimensions.
+
+    Example:
+    import torchtt
+    A = torchtt.random([(4,4),(5,5),(6,6)],[1,2,3,1]) # create random matrix
+    x = torchtt.random([4,5,6],[1,2,3,1]) # invent a random solution
+    b = A @ x # compute the rhs
+    xx = torchtt.solvers.amen_solve(A,b) # solve
+    print((xx-x).norm()/x.norm()) # error
+    
+    
+    Args:
+        A (torchtt.TT): the system matrix in TT.
+        b (torchtt.TT): the right hand side in TT.
+        nswp (int, optional): number of sweeps. Defaults to 22.
+        x0 (torchtt.TT, optional): initial guess. In None is provided the initial guess is a ones tensor. Defaults to None.
+        eps (float, optional): relative residual. Defaults to 1e-10.
+        rmax (int, optional): maximum rank. Defaults to 100.
+        max_full (int, optional): the maximum size of the core until direct solver is used for the local subproblem. Defaults to 500.
+        kickrank (int, optional): [description]. Defaults to 4.
+        kick2 (int, optional): [description]. Defaults to 0.
+        trunc_norm (str, optional): [description]. Defaults to 'res'.
+        local_iterations (int, optional): number of GMRES iterations for the local subproblems. Defaults to 40.
+        resets (int, optional): number of resets in the GMRES. Defaults to 2.
+        verbose (bool, optional): choose whether to display or not additional information during the runtime. Defaults to True.
+        preconditioner (string, optional): Choose the preconditioner for the local system. Possible values are 'c' No preconditioner is used if None is provided. Defaults to None.
+
+    Raises:
+        Exception: [description]
+        Exception: [description]
+        Exception: [description]
+        Exception: [description]
+
+    Returns:
+        [type]: [description]
+    """
     # perform checks of the input data
-    if not (isinstance(A,TT) and isinstance(b,TT)):
+    if not (isinstance(A,torchtt.TT) and isinstance(b,torchtt.TT)):
         raise Exception('A and b must be TT instances.')
     if not ( A.is_ttm and not b.is_ttm ) :
         raise Exception('A must be TT-matrix and b must be vector.')
@@ -106,7 +144,7 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 50
     damp = 2
 
     if x0 == None:
-        x = ones(b.N, dtype = dtype, device = device)
+        x = torchtt.ones(b.N, dtype = dtype, device = device)
     else:
         x = x0
     
@@ -121,7 +159,7 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 50
 
     # z cores
     rz = [1]+(d-1)*[kickrank+kick2]+[1]
-    z_tt = random(N,rz,dtype,device = device)
+    z_tt = torchtt.random(N,rz,dtype,device = device)
     z_cores = z_tt.cores
 
     norms = np.zeros(d)
@@ -417,7 +455,7 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 50
     for k in range(d):
         x_cores[k] = x_cores[k] * normx
 
-    x = TT(x_cores)
+    x = torchtt.TT(x_cores)
 
     return x
 

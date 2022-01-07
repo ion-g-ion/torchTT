@@ -8,7 +8,7 @@ Created on Sat Sep 25 20:20:47 2021
 
 import torch as tn
 from torchtt.decomposition import mat_to_tt, to_tt, lr_orthogonal, round_tt, rl_orthogonal
-from torchtt import TT
+from . import TT
 
 
 def delta2cores(tt_cores, R, Sds, is_ttm = False, ortho = None):
@@ -111,7 +111,7 @@ def riemannian_gradient(x,func):
     # print([tf.einsum('ijk,ijl->kl',l_cores[i],Sds[i]).numpy() for i in range(d-1)])
     # delta to TT
     grad_cores = delta2cores(x.cores, R, Sds, is_ttm,ortho = [l_cores,r_cores])
-    return TT(grad_cores)
+    return torchtt.TT(grad_cores)
         
 def riemannian_projection(Xspace,z):
     '''
@@ -181,4 +181,4 @@ def riemannian_projection(Xspace,z):
     # convert Sds to TT
     grad_cores = delta2cores(Xspace.cores, R, Sds, Xspace.is_ttm,ortho = [l_cores,r_cores])
 
-    return TT(grad_cores)
+    return torchtt.TT(grad_cores)

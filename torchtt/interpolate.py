@@ -1,6 +1,6 @@
 import torch as tn
 import numpy as np
-from torchtt import TT, random, ones
+import torchtt 
 import datetime
 from torchtt.decomposition import QR, SVD, rank_chop, lr_orthogonal
 from torchtt.iterative_solvers import BiCGSTAB_reset, gmres_restart
@@ -61,7 +61,7 @@ def function_interpolate(function, x, eps = 1e-9, start_tens = None, nswp = 20, 
     #random init of the tensor
     if start_tens == None:
         rank_init = 2
-        cores = random(N,rank_init, dtype, device).cores
+        cores = torchtt.random(N,rank_init, dtype, device).cores
         rank = [1]+[rank_init]*(d-1)+[1]
     else:
         rank = start_tens.R.copy()
@@ -317,7 +317,7 @@ def function_interpolate(function, x, eps = 1e-9, start_tens = None, nswp = 20, 
         print('number of function calls ',n_eval)
         print()
         
-    return TT(cores)
+    return torchtt.TT(cores)
 
 def dmrg_cross(function, N, eps = 1e-9, nswp = 10, x_start = None, kick = 2, dtype = tn.float64, device = None, eval_vect = True, verbose = False):
     
@@ -329,7 +329,7 @@ def dmrg_cross(function, N, eps = 1e-9, nswp = 10, x_start = None, kick = 2, dty
     #random init of the tensor
     if x_start == None:
         rank_init = 2
-        cores = random(N,rank_init, dtype, device).cores
+        cores = torchtt.random(N,rank_init, dtype, device).cores
         rank = [1]+[rank_init]*(d-1)+[1]
     else:
         rank = x_start.R.copy()
@@ -563,4 +563,4 @@ def dmrg_cross(function, N, eps = 1e-9, nswp = 10, x_start = None, kick = 2, dty
         print('number of function calls ',n_eval)
         print()
         
-    return TT(cores)
+    return torchtt.TT(cores)

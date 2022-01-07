@@ -1,5 +1,5 @@
 #%% Imports
-import tnt
+import torchtt as tntt
 import torch as tn
 import datetime
 
@@ -23,16 +23,16 @@ def f(x,A,y):
     z = A @ y + A @ y # operatio that grows the rank
     z = z.round(1e-12) # rank rounding (contains QR and SVD decomposition)
     z += z+x # some other operation
-    return tnt.dot(x,z) # contract the tensor
+    return tntt.dot(x,z) # contract the tensor
 
 
 #%% Without CUDA
 
 # generate 3 random TT instances
 
-x = tnt.random([200,300,400,500],[1,8,8,8,1])
-y = tnt.random([200,300,400,500],[1,8,8,8,1])
-A = tnt.random([(200,200),(300,300),(400,400),(500,500)],[1,8,8,8,1])
+x = tntt.random([200,300,400,500],[1,8,8,8,1])
+y = tntt.random([200,300,400,500],[1,8,8,8,1])
+A = tntt.random([(200,200),(300,300),(400,400),(500,500)],[1,8,8,8,1])
 
 # call the function once 
 f(x,A,y)
@@ -64,8 +64,8 @@ print('Speedup:           ',tme_cpu.total_seconds()/tme_gpu.total_seconds())
 #%% New test
 N = [2, 2, 2, 3, 5, 2, 2, 2, 3, 5, 2, 2, 2, 3, 3, 7, 2, 5, 2, 5, 2, 5, 2, 5, 2, 5, 2, 5, 2, 5, 2, 5]
 R = [1,2,4,8,9,9,10,11,11,12,12,15,18,23,40,42,50,54,54,51,55,61,45,52,36,42,26,32,18,22,12,10,1]
-x = tnt.random(N,R)
-y = tnt.random(N,R)
+x = tntt.random(N,R)
+y = tntt.random(N,R)
 
 def g(x,y):
     """
