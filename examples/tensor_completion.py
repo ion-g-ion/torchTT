@@ -1,7 +1,5 @@
 #%% Imports
-import tnt
-import tnt.grad
-import tnt.manifold
+import torchtt as tntt
 import torch as tn
 import numpy as np
 import datetime
@@ -9,7 +7,7 @@ import datetime
 #%% Preparation
 # create a random tensor 
 N = 20
-target = tnt.random([N]*4,[1,4,5,3,1])
+target = tntt.random([N]*4,[1,4,5,3,1])
 
 M = 10000 # number of observations 
 indices = tn.randint(0,N,(M,4))
@@ -24,13 +22,13 @@ loss = lambda x: (x.apply_mask(indices)-obs).norm()**2
 #%% Manifold learning
 print('Riemannian gradient descent\n')
 # starting point
-x = tnt.random([N]*4,[1,5,5,5,1])
+x = tntt.random([N]*4,[1,5,5,5,1])
 
 tme = datetime.datetime.now()
 # iterations
 for i in range(25):
     # manifold gradient 
-    gr = tnt.manifold.riemannian_gradient(x,loss)
+    gr = tntt.manifold.riemannian_gradient(x,loss)
 
     step_size = 1.0
     R = x.R

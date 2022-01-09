@@ -46,11 +46,6 @@ class TestLinalg(unittest.TestCase):
     def test_sub(self):
         '''
         Test the subtraction operator. 
-
-        Returns
-        -------
-        None.
-
         '''
         N = [10,8,6,9,12]
        
@@ -133,42 +128,10 @@ class TestLinalg(unittest.TestCase):
         self.assertLess(err_rel(y,yr),1e-14,'Dense matvec error 2.')
 
 
-    def test_dmrg_matvec(self):
-        """
-        Test the fast matrix vector product using DMRG iterations.
 
-        Returns
-        -------
-        None.
-
-        """
-        n = 32
-        A = tntt.random([(n,n)]*8,[1]+7*[3]+[1])
-        A = A + A 
-        
-        x = tntt.random([n]*8,[1]+7*[5]+[1])
-        x = x + x
-        x = x + x
- 
-        # conventional method 
-        y = (A @ x).round(1e-12)
-
-        # dmrg matvec
-        yf = A.fast_matvec(x)
-
-        rel_error = (y-yf).norm().numpy()/y.norm().numpy()
-        
-        self.assertLess(rel_error,1e-12,"DMRG matrix vector problem.")
-        
-        
     def test_dot(self):
         '''
         Test the dot product between TT tensors.
-
-        Returns 
-        -------
-        None.
-
         '''
 
         a = tntt.random([4,5,6,7,8,9],[1,2,10,16,20,7,1])
@@ -192,11 +155,6 @@ class TestLinalg(unittest.TestCase):
     def test_combination(self):
         '''
         Test sequence of linear algebra operations.
-
-        Returns
-        -------
-        None.
-
         '''
       
         x = tntt.random([4,7,13,14,19],[1,2,10,13,10,1])
@@ -214,11 +172,6 @@ class TestLinalg(unittest.TestCase):
     def test_slicing(self):
         '''
         Test the slicing operator.
-
-        Returns
-        -------
-        None.
-
         '''
       
         # print('Testing: Slicing of a tensor.')
@@ -252,11 +205,6 @@ class TestLinalg(unittest.TestCase):
     def test_qtt(self):
         '''
         Test case for the QTT functions.
-
-        Returns
-        -------
-        None.
-
         '''
         N = [16,8,64,128]
         R = [1,2,10,12,1]
@@ -277,11 +225,6 @@ class TestLinalg(unittest.TestCase):
     def test_reshape(self):
         '''
         Test the reshape function.
-
-        Returns
-        -------
-        None.
-
         '''
       
         T = tntt.ones([3,2])

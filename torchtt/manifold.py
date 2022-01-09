@@ -111,7 +111,7 @@ def riemannian_gradient(x,func):
     # print([tf.einsum('ijk,ijl->kl',l_cores[i],Sds[i]).numpy() for i in range(d-1)])
     # delta to TT
     grad_cores = delta2cores(x.cores, R, Sds, is_ttm,ortho = [l_cores,r_cores])
-    return torchtt.TT(grad_cores)
+    return TT(grad_cores)
         
 def riemannian_projection(Xspace,z):
     '''
@@ -181,4 +181,4 @@ def riemannian_projection(Xspace,z):
     # convert Sds to TT
     grad_cores = delta2cores(Xspace.cores, R, Sds, Xspace.is_ttm,ortho = [l_cores,r_cores])
 
-    return torchtt.TT(grad_cores)
+    return TT(grad_cores)

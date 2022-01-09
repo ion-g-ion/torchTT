@@ -265,7 +265,7 @@ class TT():
             output += 'R = ' + str(self.R) + '\n'
             output += 'Device: '+str(self.cores[0].device)+', dtype: '+str(self.cores[0].dtype)+'\n'
             entries = sum([tn.numel(c)  for c in self.cores])
-            output += '#entries ' + str(entries) +' compression ' + str(entries/np.prod(self.M)/np.prod(self.N)) +  '\n'
+            output += '#entries ' + str(entries) +' compression ' + str(entries/np.prod(np.array(self.N,dtype=np.float64)*np.array(self.M,dtype=np.float64))) +  '\n'
         else:
             output = 'TT'
             output += ' with sizes and ranks:\n'
@@ -273,7 +273,7 @@ class TT():
             output += 'R = ' + str(self.R) + '\n\n'
             output += 'Device: '+str(self.cores[0].device)+', dtype: '+str(self.cores[0].dtype)+'\n'
             entries = sum([tn.numel(c) for c in self.cores])
-            output += '#entries ' + str(entries) +' compression '  + str(entries/np.prod(self.N)) + '\n'
+            output += '#entries ' + str(entries) +' compression '  + str(entries/np.prod(np.array(self.N,dtype=np.float64))) + '\n'
         
         return output
     
@@ -735,7 +735,7 @@ class TT():
         Returns:
             torchtt.TT: the result.
         """
-        if isinstance(other,int) or isinstance(other,float) or ( tn.is_tensor(other) and other.numel==1):
+        if isinstance(other,int) or isinstance(other,float) or ( tn.is_tensor(other) and other.numel()==1):
             o = ones(self.N,dtype=self.cores[0].dtype,device = self.cores[0].device)
             o.cores[0] *= other
             cores_new = amen_divide(self,o,50,None,1e-12,500,verbose=False)

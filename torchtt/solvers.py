@@ -1,9 +1,7 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-Created on Thu Nov 25 10:12:57 2021
+System solvers in the TT format.
 
-@author: yonnss
+@author: ion
 """
 
 import torch as tn
@@ -88,7 +86,7 @@ class LinearOp():
 
 def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = 'res', local_iterations = 40, resets = 2, verbose = True, preconditioner = None):
     """
-    Solve a multilinear system A x = b in the TT format.
+    Solve a multilinear system A x = b in the Tensor Train format.
     
     This method implements the algorithm from: Sergey V Dolgov, Dmitry V Savostyanov, Alternating minimal energy methods for linear systems in higher dimensions.
 
