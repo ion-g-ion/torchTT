@@ -45,7 +45,7 @@ def maxvol(M):
         idx[idx_max[1]]=idx_max[0]
     return idx
 
-def function_interpolate(function, x, eps = 1e-9, start_tens = None, nswp = 20, kick = 2, dtype = tn.float64, verbose = True):
+def function_interpolate(function, x, eps = 1e-9, start_tens = None, nswp = 20, kick = 2, dtype = tn.float64, verbose = False):
     
     
     if isinstance(x,list) or isinstance(x,tuple):

@@ -94,10 +94,16 @@ class TT():
                 self.is_ttm = False
             elif isinstance(shape,list) and isinstance(shape[0],tuple):
                 # if the size contains tuples, we have a TT-matrix.
-                self.M = [s[0] for s in shape]
-                self.N = [s[1] for s in shape]
-                self.cores, self.R = mat_to_tt(source, self.M, self.N, eps, rmax)
-                self.is_ttm = True
+                if len(shape) > 1:
+                    self.M = [s[0] for s in shape]
+                    self.N = [s[1] for s in shape]
+                    self.cores, self.R = mat_to_tt(source, self.M, self.N, eps, rmax)
+                    self.is_ttm = True
+                else:
+                    self.M = [shape[0][0]]
+                    self.N = [shape[0][1]]
+                    self.cores, self.R = [tn.reshape(source,[1,shape[0][0],shape[0][1],1])], [1,1]
+                    self.is_ttm = True
             else:
                 # TT-decomposition with prescribed size
                 # perform reshape first
@@ -1077,6 +1083,28 @@ class TT():
         
         return result
     
+    def __rpow__(self,other):
+        """
+        Implements the tensor Kronecker product using the POWER operator.
+        Example: C = A ** B
+        (see kron function for details)
+        
+        Parameters
+        ----------
+        other : TT-object
+            The second operand.
+
+        Returns
+        -------
+        result : TT-object
+            The resulting object.
+
+        """
+        
+        result = kron(self,other)
+        
+        return result
+    
     def __neg__(self):
         '''
         Negates a tensor: -x
@@ -1250,7 +1278,34 @@ class TT():
                 raise Exception('Mode sizes do not match')
         return TT(cores_new)
     
-   
+    def mprod(self, factor_matrices, mode):
+        """
+        n-mode product.
+
+        Args:
+            factor_matrices (torch.tensor or list[torch.tensor]): either a single matrix is directly provided or a list of matrices for product along multiple modes.
+            mode (int or list[int]): the mode for the product. If factor_matrices is a torch.tensor then mode is an integer and the multiplication will be performed along a single mode.
+                                     If factor_matrices is a list, the mode has to be list[int] of equal size.
+
+        Raises:
+            Exception: Invalid arguments.
+
+        Returns:
+            torchtt.TT: the result
+        """
+    
+        if isinstance(factor_matrices,list) and isinstance(mode, list):
+            cores_new = [c.clone() for c in self.cores]
+            for i in range(len(factor_matrices)):
+                cores_new[mode[i]] =  tn.einsum('imjk,jl->imlk',cores_new[mode[i]],factor_matrices[i]) if self.is_ttm else tn.einsum('ijk,jl->ilk',cores_new[mode[i]],factor_matrices[i]) 
+        elif isinstance(factor_matrices, tn.tensor) and isinstance(mode, int):
+            cores_new = [c.clone() for c in self.cores]
+            cores_new[mode] =  tn.einsum('imjk,jl->imlk',cores_new[mode],factor_matrices) if self.is_ttm else tn.einsum('ijk,jl->ilk',cores_new[mode],factor_matrices) 
+        else:
+            raise Exception('Invalid arguments')
+        
+        return TT(cores_new)        
+        
     
 def eye(shape, dtype=tn.float64):
     """
@@ -1316,7 +1371,22 @@ def zeros(shape, dtype=tn.float64, device = None):
     
     return TT(cores)
     
+
+def emptyTT():
     
+    tens = TT(None)
+    tens.is_ttm = False
+    tens.N = []
+    tens.R = []
+    return tens
+    
+def emptyTTM():
+    
+    tens = TT(None)
+    tens.is_ttm = True
+    tens.N = []
+    tens.R = []
+    return tens
   
 def kron(first, second):
     """
@@ -1342,15 +1412,24 @@ def kron(first, second):
         The result.
 
     """
+   
+    if first == None and isinstance(second,TT):
+        cores_new = [c.clone() for c in second.cores]
+        result = TT(cores_new)
+    elif second == None and isinstance(first,TT): 
+        cores_new = [c.clone() for c in first.cores]
+        result = TT(cores_new)
+    elif isinstance(first,TT) and isinstance(second,TT):
+        if first.is_ttm != second.is_ttm:
+            raise Exception('Incompatible data types (make sure both are either TT-matrices or TT-tensors).')
     
-    if first.is_ttm != second.is_ttm:
-        raise Exception('Incompatible data types (make sure both are either TT-matrices or TT-tensors).')
-    
-    # concatenate the result
-    cores_new = [c.clone() for c in first.cores] + [c.clone() for c in second.cores]
-    result = TT(cores_new)
-    
+        # concatenate the result
+        cores_new = [c.clone() for c in first.cores] + [c.clone() for c in second.cores]
+        result = TT(cores_new)
+    else:
+        raise Exception('Invalid arguments')
     return result
+
 
 
 def ones(shape, dtype=tn.float64, device = None):
@@ -1658,3 +1737,24 @@ def dot(a,b,axis=None):
         
         result = (a*TT(cores_new)).sum(axis)
     return result
+
+def elemtwise_divide(x, y, eps = 1e-12, starting_tensor = None, nswp = 50, kick = 4):
+    """
+    Perform the elemntwise division of two tensors in the TT format using the AMEN method.
+    Use this method if different AMEN arguments are needed.
+    This method does not check the inputs.
+    
+    Args:
+        x ([type]): [description]
+        y ([type]): [description]
+        eps ([type], optional): [description]. Defaults to 1e-12.
+        starting_tensor ([type], optional): [description]. Defaults to None.
+        nswp (int, optional): [description]. Defaults to 50.
+        kick (int, optional): [description]. Defaults to 4.
+
+    Returns:
+        torchtt.TT: the result
+    """
+
+    cores_new = amen_divide(y,x,nswp,starting_tensor,eps,rmax = 1000, kickrank = kick, verbose=False)
+    return TT(cores_new)
