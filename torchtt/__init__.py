@@ -1,4 +1,4 @@
-from .torchtt import TT, eye, zeros, kron, ones, random, randn, reshape, meshgrid , dot 
+from .torchtt import TT, eye, zeros, kron, ones, random, randn, reshape, meshgrid , dot, elementwise_divide 
 from .solvers import amen_solve
 from .grad import grad, watch, unwatch
 from .manifold import riemannian_gradient, riemannian_projection

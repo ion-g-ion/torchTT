@@ -8,7 +8,7 @@ import torch as tn
 import numpy as np
 import torchtt
 import datetime
-from torchtt.decomposition import QR, SVD
+from torchtt.decomposition import QR, SVD, lr_orthogonal, rl_orthogonal
 from torchtt.iterative_solvers import BiCGSTAB_reset, gmres_restart
 import opt_einsum as oe
 
@@ -159,7 +159,8 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 50
     rz = [1]+(d-1)*[kickrank+kick2]+[1]
     z_tt = torchtt.random(N,rz,dtype,device = device)
     z_cores = z_tt.cores
-
+    z_cores, rz = rl_orthogonal(z_cores, rz, False)
+    
     norms = np.zeros(d)
     Phiz = [tn.ones((1,1,1), dtype = dtype, device = device)] + [None] * (d-1) + [tn.ones((1,1,1), dtype = dtype, device = device)] # size is rzk x Rk x rxk
     Phiz_b = [tn.ones((1,1), dtype = dtype, device = device)] + [None] * (d-1) + [tn.ones((1,1), dtype = dtype, device = device)]   # size is rzk x rzbk

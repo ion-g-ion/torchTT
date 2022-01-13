@@ -46,7 +46,23 @@ def maxvol(M):
     return idx
 
 def function_interpolate(function, x, eps = 1e-9, start_tens = None, nswp = 20, kick = 2, dtype = tn.float64, verbose = False):
+    """
     
+
+    Args:
+        function ([type]): [description]
+        x ([type]): [description]
+        eps ([type], optional): [description]. Defaults to 1e-9.
+        start_tens ([type], optional): [description]. Defaults to None.
+        nswp (int, optional): [description]. Defaults to 20.
+        kick (int, optional): [description]. Defaults to 2.
+        dtype ([type], optional): [description]. Defaults to tn.float64.
+        verbose (bool, optional): [description]. Defaults to False.
+
+    Returns:
+        [type]: [description]
+    """
+     
     
     if isinstance(x,list) or isinstance(x,tuple):
         eval_mv = True
@@ -320,7 +336,24 @@ def function_interpolate(function, x, eps = 1e-9, start_tens = None, nswp = 20, 
     return torchtt.TT(cores)
 
 def dmrg_cross(function, N, eps = 1e-9, nswp = 10, x_start = None, kick = 2, dtype = tn.float64, device = None, eval_vect = True, verbose = False):
+    """
     
+
+    Args:
+        function (function handle): [description]
+        N ([type]): [description]
+        eps ([type], optional): [description]. Defaults to 1e-9.
+        nswp (int, optional): [description]. Defaults to 10.
+        x_start ([type], optional): [description]. Defaults to None.
+        kick (int, optional): [description]. Defaults to 2.
+        dtype ([type], optional): [description]. Defaults to tn.float64.
+        device ([type], optional): [description]. Defaults to None.
+        eval_vect (bool, optional): [description]. Defaults to True.
+        verbose (bool, optional): [description]. Defaults to False.
+
+    Returns:
+        [type]: [description]
+    """
     # store the computed values
     computed_vals = dict()
     

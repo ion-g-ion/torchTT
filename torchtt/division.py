@@ -1,7 +1,7 @@
 import torch as tn
 import numpy as np
 import datetime
-from torchtt.decomposition import QR, SVD
+from torchtt.decomposition import QR, SVD, rl_orthogonal, lr_orthogonal
 from torchtt.iterative_solvers import BiCGSTAB_reset, gmres_restart
 import opt_einsum as oe
 
@@ -99,7 +99,8 @@ def amen_divide(a, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 5
     # z cores
     rz = [1]+(d-1)*[kickrank+kick2]+[1]
     z_cores = [ tn.randn([rz[k],N[k],rz[k+1]], dtype = dtype, device = device) for k in range(d)]
-
+    z_cores, rz = rl_orthogonal(z_cores, rz, False)
+    
     norms = np.zeros(d)
     Phiz = [tn.ones((1,1,1), dtype = dtype, device = device)] + [None] * (d-1) + [tn.ones((1,1,1), dtype = dtype, device = device)] # size is rzk x Rk x rxk
     Phiz_b = [tn.ones((1,1), dtype = dtype, device = device)] + [None] * (d-1) + [tn.ones((1,1), dtype = dtype, device = device)]   # size is rzk x rzbk

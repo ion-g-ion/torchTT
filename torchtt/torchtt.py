@@ -1297,10 +1297,10 @@ class TT():
         if isinstance(factor_matrices,list) and isinstance(mode, list):
             cores_new = [c.clone() for c in self.cores]
             for i in range(len(factor_matrices)):
-                cores_new[mode[i]] =  tn.einsum('imjk,jl->imlk',cores_new[mode[i]],factor_matrices[i]) if self.is_ttm else tn.einsum('ijk,jl->ilk',cores_new[mode[i]],factor_matrices[i]) 
+                cores_new[mode[i]] =  tn.einsum('imjk,lj->imlk',cores_new[mode[i]],factor_matrices[i]) if self.is_ttm else tn.einsum('ijk,lj->ilk',cores_new[mode[i]],factor_matrices[i]) 
         elif isinstance(factor_matrices, tn.tensor) and isinstance(mode, int):
             cores_new = [c.clone() for c in self.cores]
-            cores_new[mode] =  tn.einsum('imjk,jl->imlk',cores_new[mode],factor_matrices) if self.is_ttm else tn.einsum('ijk,jl->ilk',cores_new[mode],factor_matrices) 
+            cores_new[mode] =  tn.einsum('imjk,lj->imlk',cores_new[mode],factor_matrices) if self.is_ttm else tn.einsum('ijk,lj->ilk',cores_new[mode],factor_matrices) 
         else:
             raise Exception('Invalid arguments')
         
@@ -1649,7 +1649,7 @@ def reshape(tens, shape, eps = 1e-12, rmax = 1000):
                 core = tn.einsum('ijk,klm->ijlm',core,tens.cores[idx])
                 core = tn.reshape(core,[core.shape[0],-1,core.shape[-1]])
                 
-    return TT(cores_new)
+    return TT(cores_new).round(eps)
         
         
 def meshgrid(vectors):
@@ -1738,7 +1738,7 @@ def dot(a,b,axis=None):
         result = (a*TT(cores_new)).sum(axis)
     return result
 
-def elemtwise_divide(x, y, eps = 1e-12, starting_tensor = None, nswp = 50, kick = 4):
+def elementwise_divide(x, y, eps = 1e-12, starting_tensor = None, nswp = 50, kick = 4):
     """
     Perform the elemntwise division of two tensors in the TT format using the AMEN method.
     Use this method if different AMEN arguments are needed.
