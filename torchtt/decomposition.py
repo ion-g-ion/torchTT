@@ -190,6 +190,9 @@ def round_tt(tt_cores,R,eps,Rmax,is_ttm=False):
 
     """
     d = len(tt_cores)
+    if d == 1:
+        tt_cores = [tt_cores[0].clone()]
+        return tt_cores, R
     tt_cores, R = lr_orthogonal(tt_cores, R, is_ttm)
     core_now = tt_cores[-1]
     eps = eps / np.sqrt(d-1) 

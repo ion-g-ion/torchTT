@@ -115,27 +115,27 @@ def gmres( LinOp, b, x0, N, max_iterations, threshold):
         # print()
         # print('time 1',tme)
         
-        # tme = datetime.datetime.now()
+        tme = datetime.datetime.now()
         for i in range(k+1):
             H[i,k] = tn.dot(q.squeeze(),Q[:,i])
             q = q - tn.reshape(H[i,k]*Q[:,i],[-1,1])
         h = tn.linalg.norm(q)
-        # tme = datetime.datetime.now() - tme
-        # print('time 2',tme)
+        tme = datetime.datetime.now() - tme
+        #print('time 2',tme)
         
-        # tme = datetime.datetime.now()
+        tme = datetime.datetime.now()
         q = q / h
         H[k+1,k] = h
         Q[:,k+1] = q[:,0]
-        # tme2 = datetime.datetime.now()
+        tme2 = datetime.datetime.now()
         h, c, s = apply_givens_rotation(H[:(k+2),k]+0,cs,sn,k+1)
-        # tme2 = datetime.datetime.now() - tme2
+        tme2 = datetime.datetime.now() - tme2
         H[:(k+2),k] = h
         cs[k] = c
         sn[k] = s
        
-        # tme = datetime.datetime.now() - tme
-        # print('time 3',tme,' time 32', tme2)
+        tme = datetime.datetime.now() - tme
+        #print('time 3',tme,' time 32', tme2)
         
         beta[k+1] = -sn[k]*beta[k]
         beta[k] = cs[k]*beta[k]

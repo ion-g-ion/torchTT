@@ -1,7 +1,5 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-Created on Sat Sep 25 20:20:47 2021
+Manifold gradient module.
 
 @author: ion
 """

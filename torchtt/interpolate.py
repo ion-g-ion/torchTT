@@ -8,6 +8,15 @@ import opt_einsum as oe
 
 
 def LU(M):
+    """
+    Perform an LU decomposition and returns L, U and a permutation vector P. 
+
+    Args:
+        M (torch.tensor): [description]
+
+    Returns:
+        tuple[torch.tensor,torch.tensor,torch.tensor]: L, U, P
+    """
     LU,P = tn.lu(M)
     P,L,U = tn.lu_unpack(LU,P) # P transpose or not transpose?
     P = P@tn.reshape(tn.arange(P.shape[1],dtype=P.dtype,device=P.device),[-1,1])
@@ -22,7 +31,16 @@ def max_matrix(M):
     return values, indices
 
 def maxvol(M):
-    
+    """
+    Maxvol
+
+    Args:
+        M (torch.tensor): input matrix.
+
+    Returns:
+        torch.tensor: indices of tha maxvol submatrix.
+    """
+     
     if M.shape[1] >= M.shape[0]:
         # more cols than row -> return all the row indices 
         idx = tn.tensor(range(M.shape[0]),dtype = tn.int64)
@@ -277,8 +295,9 @@ def function_interpolate(function, x, eps = 1e-9, start_tens = None, nswp = 20, 
             VK = tn.randn((kick,V.shape[1]) , dtype=dtype, device = device)
             V, Rtemp = QR( tn.cat( (V,VK) , 0).t() )
             radd = V.shape[1] - rnew
-            if radd>0: U =  tn.cat( (U,tn.zeros((U.shape[0],radd), dtype = dtype, device = device)) , 1 ) 
-            U = U @ Rtemp.T
+            if radd>0:
+                U =  tn.cat( (U,tn.zeros((U.shape[0],radd), dtype = dtype, device = device)) , 1 ) 
+                U = U @ Rtemp.T
             V = V.t()
             
             # print('kkt new',tn.linalg.norm(supercore-U@V))
@@ -540,8 +559,9 @@ def dmrg_cross(function, N, eps = 1e-9, nswp = 10, x_start = None, kick = 2, dty
             VK = tn.randn((kick,V.shape[1]) , dtype=dtype, device = device)
             V, Rtemp = QR( tn.cat( (V,VK) , 0).t() )
             radd = V.shape[1] - rnew
-            if radd>0: U =  tn.cat( (U,tn.zeros((U.shape[0],radd), dtype = dtype, device = device)) , 1 ) 
-            U = U @ Rtemp.T
+            if radd>0:
+                U =  tn.cat( (U,tn.zeros((U.shape[0],radd), dtype = dtype, device = device)) , 1 ) 
+                U = U @ Rtemp.T
             V = V.t()
             
             # print('kkt new',tn.linalg.norm(supercore-U@V))

@@ -69,9 +69,11 @@ class LinearOp():
             # tme = datetime.datetime.now()
             # #w = tn.einsum('lsr,smnS,LSR,rnR->lmL',self.Phi_left,self.coreA,self.Phi_right,x)
             # w = tn.einsum('rnR,lsr->nRls',x,self.Phi_left)
+
             w = tn.tensordot(x,self.Phi_left,([0],[2])) # shape rnR,lsr->nRls
             w = tn.tensordot(w,self.coreA,([0,3],[2,0])) # nRls,smnS->RlmS
             w = tn.tensordot(w,self.Phi_right,([0,3],[2,1])) # RlmS,LSR->lmL 
+            
             # tme = datetime.datetime.now() - tme
             # # print('time 2 ',tme)
         elif self.prec == 'c':
@@ -84,7 +86,7 @@ class LinearOp():
             raise Exception('Preconditioner '+str(self.prec)+' not defined.')
         return tn.reshape(w,[-1,1])
 
-def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = 'res', local_iterations = 40, resets = 2, verbose = True, preconditioner = None):
+def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = 'res', local_iterations = 40, resets = 2, verbose = False, preconditioner = None):
     """
     Solve a multilinear system A x = b in the Tensor Train format.
     

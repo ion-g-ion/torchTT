@@ -30,9 +30,14 @@ pip install .
 ```
 ### Using conda
 
-TODO 
+
 
 ## Content
+
+
+## Tests 
+
+
 
 ## Examples
 Following example scripts ( as well as ipy notebooks) are provided as part of the documentation:

@@ -16,7 +16,7 @@ from torchtt.errors import *
 
 class TT():
     
-    def __init__(self, source, shape=None, eps=1e-10, rmax=1000):
+    def __init__(self, source, shape=None, eps=1e-10, rmax=2048):
         """
         Constructor of the TT class. Can convert full tensor in the TT-format (from torch.tensor or numpy.array).
         In the case of tensor operators of size M1 x ... Md x N1 x ... x Nd, the shape must be specified as a list of tuples [(M1,N1),...,(Md,Nd)].
@@ -37,7 +37,7 @@ class TT():
         """
        
         
-        if source == None:
+        if source is None:
             # empty TT
             self.cores = None
             self.M = None
@@ -112,7 +112,7 @@ class TT():
                 self.is_ttm = False
             self.shape = [ (m,n) for m,n in zip(self.M,self.N) ] if self.is_ttm else [n for n in self.N]     
 
-        elif isinstance(source, np.array):
+        elif isinstance(source, np.ndarray):
             source = tn.tensor(source) 
                     
             if shape == None:
@@ -208,15 +208,13 @@ class TT():
 
         return t
         
-    def full(self):
+    def full(self):       
         """
-        Compute the full tensor from a TT-decomposition.
+        Return the full tensor.
+        In case of a TTM, the result has the shape M1 x M2 x ... x Md x N1 x N2 x ... x Nd.
 
-        Returns
-        -------
-        tfull : torch tensor
-            The full tensor or tt-matrix. For the TT-matrix the size is (M1 x ... x Md) x (N1 x ... x Nd).
-
+        Returns:
+            torch.tensor: the full tensor.
         """
         if self.is_ttm:
             # the case of tt-matrix
@@ -241,16 +239,14 @@ class TT():
     
     def numpy(self):
         """
-        Computes the full tensor and returns it as numpy array.
+        Return the full tensor as a numpy.array.
+        In case of a TTM, the result has the shape M1 x M2 x ... x Md x N1 x N2 x ... x Nd.
+        If it is involved in an AD graph, an error will occur.
         
-
-        Returns
-        -------
-        tfull : numpy ndarray
-            The full tensor.
-
+        Returns:
+            numpy.array: the full tensor in numpy.
         """
-        return self.full().numpy()
+        return self.full().cpu().numpy()
     
     def __repr__(self):
         """
@@ -306,15 +302,6 @@ class TT():
         """
         
         return self.__add__(other)
-
-    def size(self):
-        """
-        Returns the number of entries stored for the TT-decomposition.
-
-        Returns:
-            int: the number of entries.
-        """
-        return sum([tn.numel(c)  for c in self.cores])
 
     def __add__(self,other):
         """
@@ -752,7 +739,7 @@ class TT():
 
     
     
-    def T(self):
+    def t(self):
         
         if not self.is_ttm:
             raise Exception('Has to TT-operator.')
@@ -1533,7 +1520,7 @@ def randn(N, R, var = 1.0, dtype = tn.float64, device = None):
 
     return TT(cores)
 
-def reshape(tens, shape, eps = 1e-12, rmax = 1000):
+def reshape(tens, shape, eps = 1e-16, rmax = 1024):
     '''
     Reshapes a tensor in the TT-format. similat to tensorflow.reshape()
 
@@ -1758,3 +1745,30 @@ def elementwise_divide(x, y, eps = 1e-12, starting_tensor = None, nswp = 50, kic
 
     cores_new = amen_divide(y,x,nswp,starting_tensor,eps,rmax = 1000, kickrank = kick, verbose=False)
     return TT(cores_new)
+
+def rank1TT(vectors):
+    """
+    Compute the rank 1 TT from a list of vectors.
+
+    Args:
+        vectors (list[torch.tensor]): the list of vectors.
+
+    Returns:
+        torchtt.TT: the resulting TT object.
+    """
+    
+    return TT([tn.reshape(vectors[i],[1,-1,1]) for i in range(len(vectors))])
+
+ 
+def numel(tensor):
+    """
+    Return the number of entries needed to store the TT cores for the given tensor.
+
+    Args:
+        tensor (torchtt.TT): the TT representation of the tensor.
+
+    Returns:
+        int: number of floats stored for the TT decomposition.
+    """
+    
+    return sum([tn.numel(tensor.cores[i]) for i in range(len(tensor.N))])
