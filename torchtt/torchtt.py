@@ -39,11 +39,11 @@ class TT():
         
         if source is None:
             # empty TT
-            self.cores = None
-            self.M = None
-            self.N = None
-            self.R = None
-            self.is_ttm = None
+            self.cores = []
+            self.M = []
+            self.N = []
+            self.R = [1,1]
+            self.is_ttm = False
             
         elif isinstance(source, list):
             # tt cores were passed directly
@@ -1444,13 +1444,16 @@ def ones(shape, dtype=tn.float64, device = None):
     """
     if isinstance(shape,list):
         d = len(shape)
-        if isinstance(shape[0],tuple):
-            # we create a TT-matrix
-            cores = [tn.ones([1,shape[i][0],shape[i][1],1],dtype=dtype,device=device) for i in range(d)]            
-            
+        if d==0:
+            return TT(None)
         else:
-            # we create a TT-tensor
-            cores = [tn.ones([1,shape[i],1],dtype=dtype,device=device) for i in range(d)]
+            if isinstance(shape[0],tuple):
+                # we create a TT-matrix
+                cores = [tn.ones([1,shape[i][0],shape[i][1],1],dtype=dtype,device=device) for i in range(d)]            
+                
+            else:
+                # we create a TT-tensor
+                cores = [tn.ones([1,shape[i],1],dtype=dtype,device=device) for i in range(d)]
             
     else:
         raise Exception('Invalid shape.')

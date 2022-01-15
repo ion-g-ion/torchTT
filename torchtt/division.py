@@ -29,7 +29,7 @@ class LinearOp():
         self.coreA = coreA
         self.shape = shape
         self.prec = prec
-       
+        self.contraction = oe.contract_expression('lsr,smS,LSR,rmR->lmL', Phi_left.shape, coreA.shape, Phi_right.shape, shape)
         if prec == 'c':
             Jl = oe.contract('sd,smnS->dmnS',tn.diagonal(Phi_left,0,0,2),coreA)
             Jr = tn.diagonal(Phi_right,0,0,2)
@@ -46,7 +46,7 @@ class LinearOp():
         if self.prec == None or not apply_prec:
             x = tn.reshape(x,self.shape)
             # tme = datetime.datetime.now()
-            w = oe.contract('lsr,smS,LSR,rmR->lmL',self.Phi_left,self.coreA,self.Phi_right,x)
+            # w = oe.contract('lsr,smS,LSR,rmR->lmL',self.Phi_left,self.coreA,self.Phi_right,x)
             # # path = oe.contract_path('lsr,smnS,LSR,rnR->lmL',self.Phi_left,self.coreA,self.Phi_right,x,optimize = 'optimal')
             # # print(path[1])
             # tme = datetime.datetime.now() - tme
@@ -58,11 +58,12 @@ class LinearOp():
             # w = tn.tensordot(w,self.coreA,([0,3],[2,0])) # nRls,smnS->RlmS
             # w = tn.tensordot(w,self.Phi_right,([0,3],[2,1])) # RlmS,LSR->lmL 
             # tme = datetime.datetime.now() - tme
+            w = self.contraction(self.Phi_left,self.coreA,self.Phi_right,x)
             # # print('time 2 ',tme)
         elif self.prec == 'c':
             x = tn.reshape(x,self.shape)
             x = self.apply_prec(x)
-            w = oe.contract('lsr,smnS,LSR,rnR->lmL',self.Phi_left,self.coreA,self.Phi_right,x)
+            w = self.contraction(self.Phi_left,self.coreA,self.Phi_right,x)
             
             
         else:
@@ -271,12 +272,12 @@ def amen_divide(a, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 5
                     r = 0
                     for r in range(u.shape[1]-1,0,-1):
                         solution = u[:,:r] @ tn.diag(s[:r]) @ v[:r,:] # solution has the same size
-                        res = tn.linalg.norm(tn.reshape(local_product(Phis[k+1],Phis[k],a.cores[k],tn.reshape(solution,[rx[k],N[k],rx[k+1]]),solution_now.shape),[-1,1]) - rhs)/norm_rhs
+                        # res = tn.linalg.norm(tn.reshape(local_product(Phis[k+1],Phis[k],a.cores[k],tn.reshape(solution,[rx[k],N[k],rx[k+1]]),solution_now.shape),[-1,1]) - rhs)/norm_rhs
                         if use_full:
                             res = tn.linalg.norm(B@tn.reshape(solution,[-1,1])-rhs)/norm_rhs
                         else:
-                            res = tn.linalg.norm(tn.reshape(local_product(Phis[k+1],Phis[k],a.cores[k],tn.reshape(solution,[rx[k],N[k],rx[k+1]]),solution_now.shape),[-1,1]) - rhs)/norm_rhs
-                        
+                            # res = tn.linalg.norm(tn.reshape(local_product(Phis[k+1],Phis[k],a.cores[k],tn.reshape(solution,[rx[k],N[k],rx[k+1]]),solution_now.shape),[-1,1]) - rhs)/norm_rhs
+                            res = tn.linalg.norm(Op.matvec(solution)-rhs)/norm_rhs
                         if res > max(real_tol*damp,res_new):
                             break
                     r += 1
