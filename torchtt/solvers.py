@@ -44,13 +44,21 @@ class LinearOp():
         self.coreA = coreA
         self.shape = shape
         self.prec = prec
-        self.contraction = oe.contract_expression('lsr,smnS,LSR,rnR->lmL', Phi_left.shape, coreA.shape, Phi_right.shape, shape)
+        #tme = datetime.datetime.now()
+        #self.contraction = oe.contract_expression('lsr,smnS,LSR,rnR->lmL', Phi_left.shape, coreA.shape, Phi_right.shape, shape)
+        #tme = datetime.datetime.now() - tme 
+        #print('contr   ',tme)
+        
+        # tme = datetime.datetime.now()
         if prec == 'c':
-            Jl = oe.contract('sd,smnS->dmnS',tn.diagonal(Phi_left,0,0,2),coreA)
+            # Jl = oe.contract('sd,smnS->dmnS',tn.diagonal(Phi_left,0,0,2),coreA)
+            Jl = tn.einsum('sd,smnS->dmnS',tn.diagonal(Phi_left,0,0,2),coreA)
             Jr = tn.diagonal(Phi_right,0,0,2)
-            J = oe.contract('dmnS,SD->dDmn',Jl,Jr)
+            # J = oe.contract('dmnS,SD->dDmn',Jl,Jr)
+            J = tn.einsum('dmnS,SD->dDmn',Jl,Jr)
             self.J = tn.linalg.inv(J)
-            
+        # tme = datetime.datetime.now() - tme 
+        # print('contr   ',tme)
     def apply_prec(self,x):
         
         if self.prec == 'c':
@@ -70,17 +78,35 @@ class LinearOp():
             # #w = tn.einsum('lsr,smnS,LSR,rnR->lmL',self.Phi_left,self.coreA,self.Phi_right,x)
             # w = tn.einsum('rnR,lsr->nRls',x,self.Phi_left)
 
-            # w = tn.tensordot(x,self.Phi_left,([0],[2])) # shape rnR,lsr->nRls
-            # w = tn.tensordot(w,self.coreA,([0,3],[2,0])) # nRls,smnS->RlmS
-            # w = tn.tensordot(w,self.Phi_right,([0,3],[2,1])) # RlmS,LSR->lmL 
+            w = tn.tensordot(x,self.Phi_left,([0],[2])) # shape rnR,lsr->nRls
+            w = tn.tensordot(w,self.coreA,([0,3],[2,0])) # nRls,smnS->RlmS
+            w = tn.tensordot(w,self.Phi_right,([0,3],[2,1])) # RlmS,LSR->lmL 
             
-            w = self.contraction(self.Phi_left,self.coreA,self.Phi_right,x)
+            # w = self.contraction(self.Phi_left,self.coreA,self.Phi_right,x)
             # tme = datetime.datetime.now() - tme
             # # print('time 2 ',tme)
         elif self.prec == 'c':
+            # tme = datetime.datetime.now()
             x = tn.reshape(x,self.shape)
+            # tme = datetime.datetime.now() - tme 
+            # print('reshape  ',tme)
+            
+            # tme = datetime.datetime.now()
             x = self.apply_prec(x)
-            w = self.contraction(self.Phi_left,self.coreA,self.Phi_right,x)
+            # tme = datetime.datetime.now() - tme 
+            # print('prec     ',tme)
+            
+            # tme = datetime.datetime.now()
+            # w = self.contraction(self.Phi_left,self.coreA,self.Phi_right,x)
+            # tme = datetime.datetime.now() - tme 
+            # print('mv       ',tme)
+            
+            # tme = datetime.datetime.now()
+            w = tn.tensordot(x,self.Phi_left,([0],[2])) # shape rnR,lsr->nRls
+            w = tn.tensordot(w,self.coreA,([0,3],[2,0])) # nRls,smnS->RlmS
+            w = tn.tensordot(w,self.Phi_right,([0,3],[2,1])) # RlmS,LSR->lmL 
+            # tme = datetime.datetime.now() - tme 
+            # print('mv2      ',tme)
             
             
         else:

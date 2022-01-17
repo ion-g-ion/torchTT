@@ -149,8 +149,27 @@ class TestLinalg(unittest.TestCase):
         
 
     def test_kron(self):
+        '''
+        Test the Kronecker product.
+        ''' 
+        a = tntt.random([5,7,9],[1,2,7,1])
+        b = tntt.random([4,5,9],[1,2,2,1])
+        
+        c = a**b
+        self.assertLess(err_rel(c.full(),tn.einsum('abc,def->abcdef',a.full(),b.full())), 1e-12, 'Kronecker product error: 2 tensors.')
+
+        A = tntt.random([(2,3),(4,5)],[1,2,1])
+        B = tntt.random([(3,3),(4,2)],[1,3,1])
+        
+        C = A**B
+        self.assertLess(err_rel(C.full(),tn.einsum('abcd,mnop->abmncdop',A.full(),B.full())), 1e-12, 'Kronecker product error: 2 tensor operators.')
+        
+        c = a**None
+        self.assertLess(err_rel(a.full(),c.full()),1e-14,'Kronecker product error: tensor and None.')
+        
+        c = a**tntt.ones([])
+        self.assertLess(err_rel(a.full(),c.full()),1e-14,'Kronecker product error: tensor and None.')
       
-        self.assertTrue(True)
       
     def test_combination(self):
         '''

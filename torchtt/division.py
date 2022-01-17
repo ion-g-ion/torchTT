@@ -29,7 +29,7 @@ class LinearOp():
         self.coreA = coreA
         self.shape = shape
         self.prec = prec
-        self.contraction = oe.contract_expression('lsr,smS,LSR,rmR->lmL', Phi_left.shape, coreA.shape, Phi_right.shape, shape)
+        # self.contraction = oe.contract_expression('lsr,smS,LSR,rmR->lmL', Phi_left.shape, coreA.shape, Phi_right.shape, shape)
         if prec == 'c':
             Jl = oe.contract('sd,smnS->dmnS',tn.diagonal(Phi_left,0,0,2),coreA)
             Jr = tn.diagonal(Phi_right,0,0,2)
@@ -47,24 +47,22 @@ class LinearOp():
             x = tn.reshape(x,self.shape)
             # tme = datetime.datetime.now()
             # w = oe.contract('lsr,smS,LSR,rmR->lmL',self.Phi_left,self.coreA,self.Phi_right,x)
-            # # path = oe.contract_path('lsr,smnS,LSR,rnR->lmL',self.Phi_left,self.coreA,self.Phi_right,x,optimize = 'optimal')
-            # # print(path[1])
-            # tme = datetime.datetime.now() - tme
-            # print('time 1 ',tme)
-            # tme = datetime.datetime.now()
-            # #w = tn.einsum('lsr,smnS,LSR,rnR->lmL',self.Phi_left,self.coreA,self.Phi_right,x)
-            # w = tn.einsum('rnR,lsr->nRls',x,self.Phi_left)
-            # w = tn.tensordot(x,self.Phi_left,([0],[2])) # shape rnR,lsr->nRls
-            # w = tn.tensordot(w,self.coreA,([0,3],[2,0])) # nRls,smnS->RlmS
-            # w = tn.tensordot(w,self.Phi_right,([0,3],[2,1])) # RlmS,LSR->lmL 
-            # tme = datetime.datetime.now() - tme
-            w = self.contraction(self.Phi_left,self.coreA,self.Phi_right,x)
-            # # print('time 2 ',tme)
+            
+            w1 = tn.tensordot(self.coreA,self.Phi_left,([0],[1])) # smS,lsr->mSlr
+            w2 = tn.tensordot(x,self.Phi_right,([2],[2])) # rmR,LSR->rmLS
+            w = tn.einsum('rmLS,mSlr->lmL',w2,w1) # rmLS,mSlr->lmL 
+            
+            
+            # w = self.contraction(self.Phi_left,self.coreA,self.Phi_right,x)
+            
         elif self.prec == 'c':
             x = tn.reshape(x,self.shape)
             x = self.apply_prec(x)
-            w = self.contraction(self.Phi_left,self.coreA,self.Phi_right,x)
-            
+            # w = self.contraction(self.Phi_left,self.coreA,self.Phi_right,x)
+            w1 = tn.tensordot(self.coreA,self.Phi_left,([0],[1])) # smS,lsr->mSlr
+            w2 = tn.tensordot(x,self.Phi_right,([2],[2])) # rmR,LSR->rmLS
+            w = tn.einsum('rmLS,mSlr->lmL',w2,w1) # rmLS,mSlr->lmL 
+            # w = oe.contract('lsr,smS,LSR,rmR->lmL',self.Phi_left,self.coreA,self.Phi_right,x)
             
         else:
             raise Exception('Preconditioner '+str(self.prec)+' not defined.')

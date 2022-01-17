@@ -1728,7 +1728,7 @@ def dot(a,b,axis=None):
         result = (a*TT(cores_new)).sum(axis)
     return result
 
-def elementwise_divide(x, y, eps = 1e-12, starting_tensor = None, nswp = 50, kick = 4):
+def elementwise_divide(x, y, eps = 1e-12, starting_tensor = None, nswp = 50, kick = 4, verbose = False):
     """
     Perform the elemntwise division of two tensors in the TT format using the AMEN method.
     Use this method if different AMEN arguments are needed.
@@ -1741,12 +1741,13 @@ def elementwise_divide(x, y, eps = 1e-12, starting_tensor = None, nswp = 50, kic
         starting_tensor ([type], optional): [description]. Defaults to None.
         nswp (int, optional): [description]. Defaults to 50.
         kick (int, optional): [description]. Defaults to 4.
+        verbose (bool, optional): display debug info. Defaults to False.
 
     Returns:
         torchtt.TT: the result
     """
 
-    cores_new = amen_divide(y,x,nswp,starting_tensor,eps,rmax = 1000, kickrank = kick, verbose=False)
+    cores_new = amen_divide(y,x,nswp,starting_tensor,eps,rmax = 1000, kickrank = kick, verbose=verbose)
     return TT(cores_new)
 
 def rank1TT(vectors):

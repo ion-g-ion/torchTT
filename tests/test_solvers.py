@@ -18,9 +18,13 @@ class TestSolvers(unittest.TestCase):
         A = torchtt.random([(4,4),(5,5),(6,6)],[1,2,3,1]) 
         x = torchtt.random([4,5,6],[1,2,3,1]) 
         b = A @ x 
-        xx = torchtt.solvers.amen_solve(A,b,verbose = False, eps=1e-10, preconditioner='c') 
+        xx = torchtt.solvers.amen_solve(A,b,verbose = False, eps=1e-10, preconditioner=None) 
         err = (A@xx-b).norm()/b.norm() # error residual
         self.assertLess(err.numpy(),5*1e-10,"AMEN solve failed.")
+
+        xx = torchtt.solvers.amen_solve(A,b,verbose = False, eps=1e-10, preconditioner='c') 
+        err = (A@xx-b).norm()/b.norm() # error residual
+        self.assertLess(err.numpy(),5*1e-10,"AMEN solve failed (c preconditioner).")
 
 if __name__ == '__main__':
     unittest.main()
