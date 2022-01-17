@@ -44,6 +44,7 @@ Following example scripts ( as well as ipy notebooks) are provided as part of th
 
  * [basic_tutorial.py](examples/basic_tutorial.py) / [basic_tutorial.ipynp](examples/basic_tutorial.ipynb)
  * [basic_linalg.py](examples/basic_linalg.py) / [basic_linalg.ipynp](examples/basic_linalg.ipynb)
+ * [fast_tt_operations.py](examples/fast_tt_operations.py) / [fast_tt_operations.ipynb](examples/fast_tt_operations.ipynb)
  * [automatic_differentiation.py](examples/automatic_differentiation.py) / [automatic_differentiation.ipynp](examples/automatic_differentiation.ipynb)
  * [cross_interpolation.py](examples/cross_interpolation.py) / [cross_interpolation.ipynb](examples/cross_interpolation.ipynb)
  * [system_solvers.py](examples/system_solvers.py) / [system_solvers.ipynb](examples/system_solvers.ipynb)
