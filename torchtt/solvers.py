@@ -11,6 +11,7 @@ import datetime
 from torchtt.decomposition import QR, SVD, lr_orthogonal, rl_orthogonal
 from torchtt.iterative_solvers import BiCGSTAB_reset, gmres_restart
 import opt_einsum as oe
+from .errors import *
 
 def local_product(Phi_right, Phi_left, coreA, core, shape):
     """
@@ -145,23 +146,23 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 50
         preconditioner (string, optional): Choose the preconditioner for the local system. Possible values are 'c' No preconditioner is used if None is provided. Defaults to None.
 
     Raises:
-        Exception: [description]
-        Exception: [description]
-        Exception: [description]
-        Exception: [description]
+        InvalidArguments: A and b must be TT instances.
+        IncompatibleTypes: A must be TT-matrix and b must be vector.
+        ShapeMismatch: A is not quadratic.
+        ShapeMismatch: Dimension mismatch.
 
     Returns:
         [type]: [description]
     """
     # perform checks of the input data
     if not (isinstance(A,torchtt.TT) and isinstance(b,torchtt.TT)):
-        raise Exception('A and b must be TT instances.')
+        raise InvalidArguments('A and b must be TT instances.')
     if not ( A.is_ttm and not b.is_ttm ) :
-        raise Exception('A must be TT-matrix and b must be vector.')
+        raise IncompatibleTypes('A must be TT-matrix and b must be vector.')
     if A.M != A.N:
-        raise Exception('A is not quadratic.')
+        raise ShapeMismatch('A is not quadratic.')
     if A.N != b.N:
-        raise Exception('Dimension mismatch.')
+        raise ShapeMismatch('Dimension mismatch.')
 
     if verbose: time_total = datetime.datetime.now()
     

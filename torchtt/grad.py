@@ -17,6 +17,12 @@ def watch(tens, core_indices = None):
 
 
 def unwatch(tens):
+    """
+    Cancel the autograd graph recording.
+
+    Args:
+        tens (torchtt.TT): the tensor.
+    """
     for i in range(len(tens.cores)):
         tens.cores[i].requires_grad_(False)
 
@@ -31,7 +37,7 @@ def grad(val, tens, core_indices = None):
         core_indices (list[int], optional): The list of cores to construct the gradient. If None is provided, all the cores are watched. Defaults to None.
 
     Returns:
-        [type]: [description]
+        list[torch.tensor]: the list of cores representing the derivative of the expression w.r.t the tensor.
     """
     val.backward()
     if core_indices == None:
