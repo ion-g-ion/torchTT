@@ -1,3 +1,8 @@
+"""
+Additional operations.
+
+@author: ion
+"""
 import torch as tn
 
 def apply_mask(cores, R, indices):

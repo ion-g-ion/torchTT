@@ -9,8 +9,9 @@ It also has linear solvers in TT and cross approximation as well as automatic di
 """
 
 from .torchtt import TT, eye, zeros, kron, ones, random, randn, reshape, meshgrid , dot, elementwise_divide, numel, rank1TT 
-from .solvers import amen_solve
-from .grad import grad, watch, unwatch
-from .manifold import riemannian_gradient, riemannian_projection
-from .interpolate import function_interpolate, dmrg_cross
+from . import solvers
+from . import grad
+# from .grad import grad, watch, unwatch
+from . import manifold
+from . import interpolate
 # from .errors import *

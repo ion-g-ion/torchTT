@@ -1,14 +1,14 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-Created on Thu Oct 21 16:55:54 2021
+DMRG implementation for fast matvec product.
+Inspired by TT-Toolbox from MATLAB.
 
-@author: yonnss
+@author: ion
 """
 import torchtt
 import torch as tn
 from torchtt.decomposition import rank_chop, QR, SVD
 import datetime
+import opt_einsum as oe
 
 def dmrg_matvec(A,x,y0 = None,nswp = 20, eps = 1e-12, rmax = 1024, kickrank = 4, verb = False):
 
@@ -47,9 +47,20 @@ def dmrg_matvec(A,x,y0 = None,nswp = 20, eps = 1e-12, rmax = 1024, kickrank = 4,
             y_cores[k-1] = tn.reshape(core_next,[-1,N[k-1],rnew])
             
             # update Phi
-            Phi = tn.einsum('ijk,mnk->ijmn',Phis[k+1],x.cores[k]) # shape  rk x rAk x rxk-a x Nk
-            Phi = tn.einsum('ijkl,mlnk->ijmn',A.cores[k],Phi) # shape  rAk-a x Nk x rk x rxk-1
-            Phi = tn.einsum('ijkl,mjk->mil',Phi,y_cores[k]) # shape  rk-1 x rAk-1 x rxk-1
+            #tme = datetime.datetime.now()
+            # Phi = tn.einsum('ijk,mnk->ijmn',Phis[k+1],x.cores[k]) # shape  rk x rAk x rxk-a x Nk
+            Phi = tn.tensordot(Phis[k+1],x.cores[k],([2],[2]))
+            # Phi = tn.einsum('ijkl,mlnk->ijmn',A.cores[k],Phi) # shape  rAk-a x Nk x rk x rxk-1
+            Phi = tn.tensordot(A.cores[k],Phi,([2,3],[3,1]))
+            # Phi = tn.einsum('ijkl,mjk->mil',Phi,y_cores[k]) # shape  rk-1 x rAk-1 x rxk-1
+            Phi = tn.tensordot(y_cores[k],Phi,([1,2],[1,2]))
+            # tme = datetime.datetime.now()- tme
+            # print('t1',tme)
+            # tme = datetime.datetime.now()
+            # Phi2 = oe.contract('YSR,rnR,smnS,ymY->ysr',Phis[k+1], x.cores[k], A.cores[k], y_cores[k])
+            # tme = datetime.datetime.now()- tme
+            # print('t2',tme)
+            # print(tn.linalg.norm(Phi-Phi2)/tn.linalg.norm(Phi))
             Phis[k] = Phi
         # TME = datetime.datetime.now()-TME    
         # print('first ',TME.total_seconds())
@@ -111,7 +122,7 @@ def dmrg_matvec(A,x,y0 = None,nswp = 20, eps = 1e-12, rmax = 1024, kickrank = 4,
                   # kick-rank
                   W1, Rmat = QR(tn.cat((W1,tn.randn((W1.shape[0],kickrank),dtype=W1.dtype,device=A.cores[0].device)),axis=1))
                   W2 = tn.cat((W2,tn.zeros((W2.shape[0],kickrank),dtype=W2.dtype, device = W2.device)),axis=1)
-                  W2 = tn.einsum('ij,kj->ki',W2,Rmat)
+                  W2 = W2 @ Rmat.T
                   r_new = W1.shape[1]
               else:
                   W2 = W2.t()       

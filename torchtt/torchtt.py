@@ -197,7 +197,6 @@ class TT():
         Returns:
             bool: Is the torchtt.TT on GPU or not.
         """
-
         return all([c.is_cuda for c in self.core])
 
     
@@ -218,7 +217,25 @@ class TT():
         t.cores = [ c.to(device=device,dtype=dtype) for c in self.cores]
 
         return t
+
+    def detach(self):
+        """
+        Detaches the TT tensor. Similar to torch.tensor.detach().
+
+        Returns:
+            torchtt.TT: the detached tensor.
+        """
+        return TT([c.detach() for c in self.cores])
         
+    def clone(self):
+        """
+        Clones the torchtt.TT instance. Similat to torch.tensor.clone().
+
+        Returns:
+            torchtt.TT: the cloned TT object.
+        """
+        return TT([c.clone() for c in self.cores]) 
+
     def full(self):       
         """
         Return the full tensor.
@@ -888,8 +905,8 @@ class TT():
             self.M = []
             self.R = [1]
             for i in range(len(cores_new)):
-                self.N.append(cores_new[i].shape[1])
-                self.M.append(cores_new[i].shape[2])
+                self.N.append(cores_new[i].shape[2])
+                self.M.append(cores_new[i].shape[1])
                 self.R.append(cores_new[i].shape[3])
             self.cores = cores_new
         else:

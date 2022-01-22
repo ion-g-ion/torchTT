@@ -1,3 +1,8 @@
+"""
+Elementwise division using AMEN
+
+@author: ion
+"""
 import torch as tn
 import numpy as np
 import datetime

@@ -1,3 +1,8 @@
+"""
+Implements the cross approximation methods.
+
+@author: ion
+"""
 import torch as tn
 import numpy as np
 import torchtt 
@@ -201,8 +206,9 @@ def function_interpolate(function, x, eps = 1e-9, start_tens = None, nswp = 20, 
             UK = tn.randn((U.shape[0],kick), dtype = dtype, device = device)
             U, Rtemp = QR( tn.cat( (U,UK) , 1) )
             radd = U.shape[1] - rnew
-            if radd>0: V =  tn.cat( (V,tn.zeros((radd,V.shape[1]), dtype = dtype, device = device)) , 0 )
-            V = Rtemp @ V
+            if radd>0: 
+                V =  tn.cat( (V,tn.zeros((radd,V.shape[1]), dtype = dtype, device = device)) , 0 )
+                V = Rtemp @ V
             
             # print('kkt new',tn.linalg.norm(supercore-U@V))
             # compute err (dx)
@@ -291,14 +297,17 @@ def function_interpolate(function, x, eps = 1e-9, start_tens = None, nswp = 20, 
             # print('kkt new',tn.linalg.norm(supercore-U@tn.diag(S)@V))
             
             #kick the rank
+            # print('u before', U.shape)
             U = U @ tn.diag(S)
             VK = tn.randn((kick,V.shape[1]) , dtype=dtype, device = device)
+            # print('V enrich', V.shape)
             V, Rtemp = QR( tn.cat( (V,VK) , 0).t() )
-            radd = V.shape[1] - rnew
+            radd = Rtemp.shape[1] - rnew
+            # print('V after QR',V.shape,Rtemp.shape,radd)
             if radd>0:
                 U =  tn.cat( (U,tn.zeros((U.shape[0],radd), dtype = dtype, device = device)) , 1 ) 
                 U = U @ Rtemp.T
-            V = V.t()
+                V = V.t()
             
             # print('kkt new',tn.linalg.norm(supercore-U@V))
             # compute err (dx)
@@ -562,7 +571,7 @@ def dmrg_cross(function, N, eps = 1e-9, nswp = 10, x_start = None, kick = 2, dty
             if radd>0:
                 U =  tn.cat( (U,tn.zeros((U.shape[0],radd), dtype = dtype, device = device)) , 1 ) 
                 U = U @ Rtemp.T
-            V = V.t()
+                V = V.t()
             
             # print('kkt new',tn.linalg.norm(supercore-U@V))
             # compute err (dx)

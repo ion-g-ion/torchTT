@@ -1,7 +1,5 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-Created on Wed Aug  5 16:16:53 2020
+Basic decomposition and orthogonalization.
 
 @author: ion
 """

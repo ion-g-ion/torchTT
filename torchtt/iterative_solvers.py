@@ -1,9 +1,7 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-Created on Mon May  3 10:50:29 2021
+Contains iteratiove solvers like GMRES and BiCGSTAB
 
-@author: yonnss
+@author: ion
 """
 
 import torch as tn
@@ -13,8 +11,7 @@ import numpy as np
 
 def BiCGSTAB_reset(Op,rhs,x0,eps=1e-6,nmax=40):
     """
-    
-    
+    BiCGSTAB solver.
     """ 
     # initial residual
     r = rhs - Op.matvec(x0)

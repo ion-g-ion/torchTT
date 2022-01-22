@@ -1,5 +1,11 @@
-import torch as tn
+"""
+Adds AD functionality to torchtt.
 
+@author: ion
+"""
+
+import torch as tn
+import torchtt 
 def watch(tens, core_indices = None):
     """
     Watch the TT-cores of a given tensor.
