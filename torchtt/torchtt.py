@@ -16,39 +16,47 @@ from torchtt.errors import *
 
 class TT():
     
-    def __init__(self, source, shape=None, eps=1e-10, rmax=2048):
+    def __init__(self, source, shape=None, eps=1e-10, rmax=10000):
         """
         Constructor of the TT class. Can convert full tensor in the TT-format (from `torch.tensor` or `numpy.array`).
         In the case of tensor operators of full shape `M1 x ... Md x N1 x ... x Nd`, the shape must be specified as a list of tuples `[(M1,N1),...,(Md,Nd)]`.
         A TT-object can also be computed from cores if the list of cores is passed as argument.
         If None is provided, an empty tensor is created.
         
-        \(\\mathsf{x}=\\sum\\limits_{r_1...r_{d-1}=1}^{R_1,...,R_{d-1}} \\mathsf{x}^{(1)}_{1i_1r_1}\\cdots\\mathsf{x}^{(d)}_{r_{d-1}i_d1}\)
-   
+        The TT decomposition of a tensor is
+        
+        \(\\mathsf{x}=\\sum\\limits_{r_1...r_{d-1}=1}^{R_1,...,R_{d-1}} \\mathsf{x}^{(1)}_{1i_1r_1}\\cdots\\mathsf{x}^{(d)}_{r_{d-1}i_d1}\),
+        
+        where \(\\{\\mathsf{x}^{(k)}\\}_{k=1}^d\) are the TT cores and \(\mathbf{R}=(1,R_1,...,R_{d-1},1)\) is the TT rank.
+        Using the constructor, a TT decomposition of a tensor can be computed. The TT cores are stored as a list in `torchtt.TT.cores`.   
+        This class implements basic operators such as `+,-,*,/,@,**` (add, subtract, elementwise multiplication, elementwise division, matrix vector product and Kronecker product) between TT instances.
+
+        Examples:
+            ```
+            import torchtt
+            import torch
+            x = torch.reshape(torch.arange(0,128,dtype = torch.float64),[8,4,4])
+            xtt = torchtt.TT(x)
+            ytt = torchtt.TT(torch.squeeze(x),[8,4,4])
+            # create a TT matrix
+            A = torch.reshape(torch.arange(0,20160,dtype = torch.float64),[3,5,7,4,6,8])
+            Att = torchtt.TT(A,[(3,4),(5,6),(7,8)])
+            print(Att)        
+            ```
+            
         Args:
             source (torch.tensor ot list[torch.tensor] or numpy.array or None): the input tensor in full format or the cores. If a torch.tensor or numpy array is provided
             shape (list[int] or list[tuple[int]], optional): the shape (if it differs from the one provided). For the TT-matrix case is mandatory. Defaults to None.
             eps (float, optional): tolerance of the TT approximation. Defaults to 1e-10.
-            rmax (int or list[int], optional): maximum rank (either a list of integer or an integer). Defaults to 1000.
+            rmax (int or list[int], optional): maximum rank (either a list of integer or an integer). Defaults to 10000.
 
         Raises:
             RankMismatch: Ranks of the given cores do not match (chace the spaes of the cores).
             InvalidArguments: Invalid input: TT-cores have to be either 4d or 3d.
             InvalidArguments: Check the ranks and the mode size.
             NotImplementedError: Function only implemented for torch tensors, numpy arrays, list of cores as torch tensors and None
-        
-        Examples:
-            import torchtt
-            import torch
-            x = torch.reshape(torch.arange(0,128,dtype = torch.float64),[8,4,4])
-            xtt = torchtt.TT(x)
-            ytt = torchtt.TT(torch.squeeze(x),[8,4,4])
-            A = torch.reshape(torch.arange(0,20160,dtype = torch.float64),[3,5,7,4,6,8])
-            Att = torchtt.TT(A,[(3,4),(5,6),(7,8)])
-            print(Att)        
-        
+   
         """
-       
         
         if source is None:
             # empty TT
@@ -1314,21 +1322,6 @@ def zeros(shape, dtype=tn.float64, device = None):
     return TT(cores)
     
 
-def emptyTT():
-    
-    tens = TT(None)
-    tens.is_ttm = False
-    tens.N = []
-    tens.R = []
-    return tens
-    
-def emptyTTM():
-    
-    tens = TT(None)
-    tens.is_ttm = True
-    tens.N = []
-    tens.R = []
-    return tens
   
 def kron(first, second):
     """

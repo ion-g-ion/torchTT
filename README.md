@@ -1,8 +1,8 @@
 # torchTT
-Tensor-Train decomposition in pytorch
+Tensor-Train decomposition in `pytorch`
 
-Tensor-Train decomposition package written only in Python on top of pytorch. Supports GPU acceleration and automatic differentiation.
-It also contains routines for solving linear systems in the TT format and performing adaptive cross approximation  (the AMEN solver is inspired form the [MATLAB TT-Toolbox](https://github.com/oseledets/TT-Toolbox)).
+Tensor-Train decomposition package written only in Python on top of `pytorch`. Supports GPU acceleration and automatic differentiation.
+It also contains routines for solving linear systems in the TT format and performing adaptive cross approximation  (the AMEN solver/cross interpolation is inspired form the [MATLAB TT-Toolbox](https://github.com/oseledets/TT-Toolbox)).
 
 
 ## Installation
@@ -10,9 +10,10 @@ It also contains routines for solving linear systems in the TT format and perfor
 ### Requirements
 Following requirements are needed:
 
+- `python>=3.6`
 - `torch>=1.7.0`
 - `numpy>=1.18`
-- `opt_einsum`
+- [`opt_einsum`](https://pypi.org/project/opt-einsum/)
 
 The GPU (if available) version of pytorch is recommended to be installed. Read the [official installation guide](https://pytorch.org/get-started/locally/) for further info.
 
@@ -37,7 +38,8 @@ pip install .
 
 ## Components
 
-The main modules/submodules are briefly desctibed in the following table.
+The main modules/submodules that can be accessed after importing `torchtt` are briefly desctibed in the following table.
+Detailed descriptio can be found [here](https://htmlpreview.github.io/?https://github.com/ion-g-ion/torchTT/blob/main/docs/torchtt/index.html).
 
 | Component | Description |
 | --- | --- |
@@ -57,8 +59,9 @@ python -m unittest discover tests/
 ```
 
 
-## Examples
-Following example scripts (as well as python notebooks) are provided as part of the documentation:
+## Documentation and examples
+The documentation ca be gound [here](https://htmlpreview.github.io/?https://github.com/ion-g-ion/torchTT/blob/main/docs/torchtt/index.html).
+Following example scripts (as well as python notebooks) are also provied provided as part of the documentation:
 
  * [basic_tutorial.py](examples/basic_tutorial.py) / [basic_tutorial.ipynp](examples/basic_tutorial.ipynb): This contains a basic tutorial on decomposing full tensors in the TT format as well as performing rank rounding, slicing. 
  * [basic_linalg.py](examples/basic_linalg.py) / [basic_linalg.ipynp](examples/basic_linalg.ipynb): This tutorial presents all the algebra operations that can be performed in the TT format.

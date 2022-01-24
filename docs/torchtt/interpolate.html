@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
 <title>torchtt.interpolate API documentation</title>
-<meta name="description" content="Implements the cross approximation methods." />
+<meta name="description" content="Implements the cross approximation methods (DMRG)." />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
 <link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
@@ -23,13 +23,13 @@
 <h1 class="title">Module <code>torchtt.interpolate</code></h1>
 </header>
 <section id="section-intro">
-<p>Implements the cross approximation methods.</p>
+<p>Implements the cross approximation methods (DMRG).</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">&#34;&#34;&#34;
-Implements the cross approximation methods.
+Implements the cross approximation methods (DMRG).
 
 &#34;&#34;&#34;
 import torch as tn
@@ -99,20 +99,45 @@ def _maxvol(M):
 
 def function_interpolate(function, x, eps = 1e-9, start_tens = None, nswp = 20, kick = 2, dtype = tn.float64, verbose = False):
     &#34;&#34;&#34;
+    Appication of a nonlinear function on a tensor in the TT format (using DMRG). Two cases are distinguished:
     
-
+    * Univariate interpoaltion:
+    
+    Let \(f:\\mathbb{R}\\rightarrow\\mathbb{R}\) be a function and \(\\mathsf{x}\\in\\mathbb{R}^{N_1\\times\\cdots\\times N_d}\) be a tensor with a known TT approximation.
+    The goal is to determine the TT approximation of \(\\mathsf{y}_{i_1...i_d}=f(\\mathsf{x}_{i_1...i_d})\) within a prescribed relative accuracy `eps`. 
+    
+    * Multivariate interpolation
+    
+    Let \(f:\\mathbb{R}\\rightarrow\\mathbb{R}\) be a function and \(\\mathsf{x}^{(1)},...,\\mathsf{x}^{(d)}\\in\\mathbb{R}^{N_1\\times\\cdots\\times N_d}\) be tensors with a known TT approximation. The goal is to determine the TT approximation of \(\\mathsf{y}_{i_1...i_d}=f(\\mathsf{x}_{i_1...i_d}^{(1)},...,\\mathsf{x}^{(d)})_{i_1...i_d}\) within a prescribed relative accuracy `eps`.
+    
+    
+    Example:
+    
+        * Univariate interpolation:
+        ```
+        func = lambda t: torch.log(t)
+        y = tntt.interpolate.function_interpolate(func, x, 1e-9) # the tensor x is chosen such that y has an afforbable low rank structure
+        ```
+        * Multivariate interpolation:
+        ```
+        xs = tntt.meshgrid([tn.arange(0,n,dtype=torch.float64) for n in N])
+        func = lambda x: 1/(2+tn.sum(I+x,1).to(dtype=torch.float64))
+        z = tntt.interpolate.function_interpolate(func, xs)
+        ```
+    
     Args:
-        function ([type]): [description]
-        x ([type]): [description]
-        eps ([type], optional): [description]. Defaults to 1e-9.
-        start_tens ([type], optional): [description]. Defaults to None.
-        nswp (int, optional): [description]. Defaults to 20.
-        kick (int, optional): [description]. Defaults to 2.
-        dtype ([type], optional): [description]. Defaults to tn.float64.
-        verbose (bool, optional): [description]. Defaults to False.
+        function (function): function handle. If the argument `x` is a `torchtt.TT` instance, the the function handle has to be appliable elementwise on torch tensors.
+                             If a list is passed as `x`, the function handle takes as argument a $M\times d$ torch.tensor and every of the $M$ lines corresponds to an evaluation of the function \(f\) at a certain tensor entry. The function handle returns a torch tensor of length M.
+        x (torchtt.TT or list[torchtt.TT]): the argument/arguments of the function.
+        eps (float, optional): the relative accuracy. Defaults to 1e-9.
+        start_tens (torchtt.TT, optional): initial approximation of the output tensor (None coresponds to random initialization). Defaults to None.
+        nswp (int, optional): number of iterations. Defaults to 20.
+        kick (int, optional): enrichment rank. Defaults to 2.
+        dtype (torch.dtype, optional): the dtype of the result. Defaults to tn.float64.
+        verbose (bool, optional): display debug information to the console. Defaults to False.
 
     Returns:
-        [type]: [description]
+        torchtt.tt: the result.
     &#34;&#34;&#34;
      
     
@@ -394,22 +419,31 @@ def function_interpolate(function, x, eps = 1e-9, start_tens = None, nswp = 20, 
 
 def dmrg_cross(function, N, eps = 1e-9, nswp = 10, x_start = None, kick = 2, dtype = tn.float64, device = None, eval_vect = True, verbose = False):
     &#34;&#34;&#34;
-    
+    Approximate a tensor in the TT format given that the individual entries are given using a function.
+    The function is given as a function handle taking as arguments a matrix of integer indices.
 
+    Example:
+        ```
+        func = lambda I: 1/(2+I[:,0]+I[:,1]+I[:,2]+I[:,3]).to(dtype=torch.float64)
+        N = [20]*4
+        x = torchtt.interpolate.dmrg_cross(func, N, eps = 1e-7)
+        ```
+    
     Args:
-        function (function handle): [description]
-        N ([type]): [description]
-        eps ([type], optional): [description]. Defaults to 1e-9.
-        nswp (int, optional): [description]. Defaults to 10.
-        x_start ([type], optional): [description]. Defaults to None.
-        kick (int, optional): [description]. Defaults to 2.
-        dtype ([type], optional): [description]. Defaults to tn.float64.
-        device ([type], optional): [description]. Defaults to None.
-        eval_vect (bool, optional): [description]. Defaults to True.
-        verbose (bool, optional): [description]. Defaults to False.
+        function (function handle): function handle.
+        N (list[int]): the shape of the tensor.
+        eps (float, optional): the relative accuracy. Defaults to 1e-9.
+        nswp (int, optional): number of iterations. Defaults to 20.
+        x_start (torchtt.TT, optional): initial approximation of the output tensor (None coresponds to random initialization). Defaults to None.
+        kick (int, optional): enrichment rank. Defaults to 2.
+        dtype (torch.dtype, optional): the dtype of the result. Defaults to tn.float64.
+        device (torch.device, optional): the device where the approximation will be stored. Defaults to None.
+        eval_vect (bool, optional): not yet implemented. Defaults to True.
+        verbose (bool, optional): display debug information to the console. Defaults to False.
 
     Returns:
-        [type]: [description]
+        torchtt.TT: the result.
+    
     &#34;&#34;&#34;
     # store the computed values
     computed_vals = dict()
@@ -668,33 +702,40 @@ def dmrg_cross(function, N, eps = 1e-9, nswp = 10, x_start = None, kick = 2, dty
 <span>def <span class="ident">dmrg_cross</span></span>(<span>function, N, eps=1e-09, nswp=10, x_start=None, kick=2, dtype=torch.float64, device=None, eval_vect=True, verbose=False)</span>
 </code></dt>
 <dd>
-<div class="desc"><h2 id="args">Args</h2>
+<div class="desc"><p>Approximate a tensor in the TT format given that the individual entries are given using a function.
+The function is given as a function handle taking as arguments a matrix of integer indices.</p>
+<h2 id="example">Example</h2>
+<pre><code>func = lambda I: 1/(2+I[:,0]+I[:,1]+I[:,2]+I[:,3]).to(dtype=torch.float64)
+N = [20]*4
+x = torchtt.interpolate.dmrg_cross(func, N, eps = 1e-7)
+</code></pre>
+<h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>function</code></strong> :&ensp;<code>function handle</code></dt>
-<dd>[description]</dd>
-<dt><strong><code>N</code></strong> :&ensp;<code>[type]</code></dt>
-<dd>[description]</dd>
-<dt><strong><code>eps</code></strong> :&ensp;<code>[type]</code>, optional</dt>
-<dd>[description]. Defaults to 1e-9.</dd>
+<dd>function handle.</dd>
+<dt><strong><code>N</code></strong> :&ensp;<code>list[int]</code></dt>
+<dd>the shape of the tensor.</dd>
+<dt><strong><code>eps</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>the relative accuracy. Defaults to 1e-9.</dd>
 <dt><strong><code>nswp</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>[description]. Defaults to 10.</dd>
-<dt><strong><code>x_start</code></strong> :&ensp;<code>[type]</code>, optional</dt>
-<dd>[description]. Defaults to None.</dd>
+<dd>number of iterations. Defaults to 20.</dd>
+<dt><strong><code>x_start</code></strong> :&ensp;<code>torchtt.TT</code>, optional</dt>
+<dd>initial approximation of the output tensor (None coresponds to random initialization). Defaults to None.</dd>
 <dt><strong><code>kick</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>[description]. Defaults to 2.</dd>
-<dt><strong><code>dtype</code></strong> :&ensp;<code>[type]</code>, optional</dt>
-<dd>[description]. Defaults to tn.float64.</dd>
-<dt><strong><code>device</code></strong> :&ensp;<code>[type]</code>, optional</dt>
-<dd>[description]. Defaults to None.</dd>
+<dd>enrichment rank. Defaults to 2.</dd>
+<dt><strong><code>dtype</code></strong> :&ensp;<code>torch.dtype</code>, optional</dt>
+<dd>the dtype of the result. Defaults to tn.float64.</dd>
+<dt><strong><code>device</code></strong> :&ensp;<code>torch.device</code>, optional</dt>
+<dd>the device where the approximation will be stored. Defaults to None.</dd>
 <dt><strong><code>eval_vect</code></strong> :&ensp;<code>bool</code>, optional</dt>
-<dd>[description]. Defaults to True.</dd>
+<dd>not yet implemented. Defaults to True.</dd>
 <dt><strong><code>verbose</code></strong> :&ensp;<code>bool</code>, optional</dt>
-<dd>[description]. Defaults to False.</dd>
+<dd>display debug information to the console. Defaults to False.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>[type]</code></dt>
-<dd>[description]</dd>
+<dt><code>torchtt.TT</code></dt>
+<dd>the result.</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -702,22 +743,31 @@ def dmrg_cross(function, N, eps = 1e-9, nswp = 10, x_start = None, kick = 2, dty
 </summary>
 <pre><code class="python">def dmrg_cross(function, N, eps = 1e-9, nswp = 10, x_start = None, kick = 2, dtype = tn.float64, device = None, eval_vect = True, verbose = False):
     &#34;&#34;&#34;
-    
+    Approximate a tensor in the TT format given that the individual entries are given using a function.
+    The function is given as a function handle taking as arguments a matrix of integer indices.
 
+    Example:
+        ```
+        func = lambda I: 1/(2+I[:,0]+I[:,1]+I[:,2]+I[:,3]).to(dtype=torch.float64)
+        N = [20]*4
+        x = torchtt.interpolate.dmrg_cross(func, N, eps = 1e-7)
+        ```
+    
     Args:
-        function (function handle): [description]
-        N ([type]): [description]
-        eps ([type], optional): [description]. Defaults to 1e-9.
-        nswp (int, optional): [description]. Defaults to 10.
-        x_start ([type], optional): [description]. Defaults to None.
-        kick (int, optional): [description]. Defaults to 2.
-        dtype ([type], optional): [description]. Defaults to tn.float64.
-        device ([type], optional): [description]. Defaults to None.
-        eval_vect (bool, optional): [description]. Defaults to True.
-        verbose (bool, optional): [description]. Defaults to False.
+        function (function handle): function handle.
+        N (list[int]): the shape of the tensor.
+        eps (float, optional): the relative accuracy. Defaults to 1e-9.
+        nswp (int, optional): number of iterations. Defaults to 20.
+        x_start (torchtt.TT, optional): initial approximation of the output tensor (None coresponds to random initialization). Defaults to None.
+        kick (int, optional): enrichment rank. Defaults to 2.
+        dtype (torch.dtype, optional): the dtype of the result. Defaults to tn.float64.
+        device (torch.device, optional): the device where the approximation will be stored. Defaults to None.
+        eval_vect (bool, optional): not yet implemented. Defaults to True.
+        verbose (bool, optional): display debug information to the console. Defaults to False.
 
     Returns:
-        [type]: [description]
+        torchtt.TT: the result.
+    
     &#34;&#34;&#34;
     # store the computed values
     computed_vals = dict()
@@ -969,29 +1019,55 @@ def dmrg_cross(function, N, eps = 1e-9, nswp = 10, x_start = None, kick = 2, dty
 <span>def <span class="ident">function_interpolate</span></span>(<span>function, x, eps=1e-09, start_tens=None, nswp=20, kick=2, dtype=torch.float64, verbose=False)</span>
 </code></dt>
 <dd>
-<div class="desc"><h2 id="args">Args</h2>
+<div class="desc"><p>Appication of a nonlinear function on a tensor in the TT format (using DMRG). Two cases are distinguished:</p>
+<ul>
+<li>Univariate interpoaltion:</li>
+</ul>
+<p>Let <span><span class="MathJax_Preview">f:\mathbb{R}\rightarrow\mathbb{R}</span><script type="math/tex">f:\mathbb{R}\rightarrow\mathbb{R}</script></span> be a function and <span><span class="MathJax_Preview">\mathsf{x}\in\mathbb{R}^{N_1\times\cdots\times N_d}</span><script type="math/tex">\mathsf{x}\in\mathbb{R}^{N_1\times\cdots\times N_d}</script></span> be a tensor with a known TT approximation.
+The goal is to determine the TT approximation of <span><span class="MathJax_Preview">\mathsf{y}_{i_1...i_d}=f(\mathsf{x}_{i_1...i_d})</span><script type="math/tex">\mathsf{y}_{i_1...i_d}=f(\mathsf{x}_{i_1...i_d})</script></span> within a prescribed relative accuracy <code>eps</code>. </p>
+<ul>
+<li>Multivariate interpolation</li>
+</ul>
+<p>Let <span><span class="MathJax_Preview">f:\mathbb{R}\rightarrow\mathbb{R}</span><script type="math/tex">f:\mathbb{R}\rightarrow\mathbb{R}</script></span> be a function and <span><span class="MathJax_Preview">\mathsf{x}^{(1)},...,\mathsf{x}^{(d)}\in\mathbb{R}^{N_1\times\cdots\times N_d}</span><script type="math/tex">\mathsf{x}^{(1)},...,\mathsf{x}^{(d)}\in\mathbb{R}^{N_1\times\cdots\times N_d}</script></span> be tensors with a known TT approximation. The goal is to determine the TT approximation of <span><span class="MathJax_Preview">\mathsf{y}_{i_1...i_d}=f(\mathsf{x}_{i_1...i_d}^{(1)},...,\mathsf{x}^{(d)})_{i_1...i_d}</span><script type="math/tex">\mathsf{y}_{i_1...i_d}=f(\mathsf{x}_{i_1...i_d}^{(1)},...,\mathsf{x}^{(d)})_{i_1...i_d}</script></span> within a prescribed relative accuracy <code>eps</code>.</p>
+<h2 id="example">Example</h2>
+<ul>
+<li>Univariate interpolation:</li>
+</ul>
+<pre><code>func = lambda t: torch.log(t)
+y = tntt.interpolate.function_interpolate(func, x, 1e-9) # the tensor x is chosen such that y has an afforbable low rank structure
+</code></pre>
+<ul>
+<li>Multivariate interpolation:</li>
+</ul>
+<pre><code>xs = tntt.meshgrid([tn.arange(0,n,dtype=torch.float64) for n in N])
+func = lambda x: 1/(2+tn.sum(I+x,1).to(dtype=torch.float64))
+z = tntt.interpolate.function_interpolate(func, xs)
+</code></pre>
+<h2 id="args">Args</h2>
 <dl>
-<dt><strong><code>function</code></strong> :&ensp;<code>[type]</code></dt>
-<dd>[description]</dd>
-<dt><strong><code>x</code></strong> :&ensp;<code>[type]</code></dt>
-<dd>[description]</dd>
-<dt><strong><code>eps</code></strong> :&ensp;<code>[type]</code>, optional</dt>
-<dd>[description]. Defaults to 1e-9.</dd>
-<dt><strong><code>start_tens</code></strong> :&ensp;<code>[type]</code>, optional</dt>
-<dd>[description]. Defaults to None.</dd>
+<dt><strong><code>function</code></strong> :&ensp;<code>function</code></dt>
+<dd>function handle. If the argument <code>x</code> is a <code>torchtt.TT</code> instance, the the function handle has to be appliable elementwise on torch tensors.
+If a list is passed as <code>x</code>, the function handle takes as argument a $M
+imes d$ torch.tensor and every of the $M$ lines corresponds to an evaluation of the function <span><span class="MathJax_Preview">f</span><script type="math/tex">f</script></span> at a certain tensor entry. The function handle returns a torch tensor of length M.</dd>
+<dt><strong><code>x</code></strong> :&ensp;<code>torchtt.TT</code> or <code>list[torchtt.TT]</code></dt>
+<dd>the argument/arguments of the function.</dd>
+<dt><strong><code>eps</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>the relative accuracy. Defaults to 1e-9.</dd>
+<dt><strong><code>start_tens</code></strong> :&ensp;<code>torchtt.TT</code>, optional</dt>
+<dd>initial approximation of the output tensor (None coresponds to random initialization). Defaults to None.</dd>
 <dt><strong><code>nswp</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>[description]. Defaults to 20.</dd>
+<dd>number of iterations. Defaults to 20.</dd>
 <dt><strong><code>kick</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>[description]. Defaults to 2.</dd>
-<dt><strong><code>dtype</code></strong> :&ensp;<code>[type]</code>, optional</dt>
-<dd>[description]. Defaults to tn.float64.</dd>
+<dd>enrichment rank. Defaults to 2.</dd>
+<dt><strong><code>dtype</code></strong> :&ensp;<code>torch.dtype</code>, optional</dt>
+<dd>the dtype of the result. Defaults to tn.float64.</dd>
 <dt><strong><code>verbose</code></strong> :&ensp;<code>bool</code>, optional</dt>
-<dd>[description]. Defaults to False.</dd>
+<dd>display debug information to the console. Defaults to False.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>[type]</code></dt>
-<dd>[description]</dd>
+<dt><code>torchtt.tt</code></dt>
+<dd>the result.</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -999,20 +1075,45 @@ def dmrg_cross(function, N, eps = 1e-9, nswp = 10, x_start = None, kick = 2, dty
 </summary>
 <pre><code class="python">def function_interpolate(function, x, eps = 1e-9, start_tens = None, nswp = 20, kick = 2, dtype = tn.float64, verbose = False):
     &#34;&#34;&#34;
+    Appication of a nonlinear function on a tensor in the TT format (using DMRG). Two cases are distinguished:
     
-
+    * Univariate interpoaltion:
+    
+    Let \(f:\\mathbb{R}\\rightarrow\\mathbb{R}\) be a function and \(\\mathsf{x}\\in\\mathbb{R}^{N_1\\times\\cdots\\times N_d}\) be a tensor with a known TT approximation.
+    The goal is to determine the TT approximation of \(\\mathsf{y}_{i_1...i_d}=f(\\mathsf{x}_{i_1...i_d})\) within a prescribed relative accuracy `eps`. 
+    
+    * Multivariate interpolation
+    
+    Let \(f:\\mathbb{R}\\rightarrow\\mathbb{R}\) be a function and \(\\mathsf{x}^{(1)},...,\\mathsf{x}^{(d)}\\in\\mathbb{R}^{N_1\\times\\cdots\\times N_d}\) be tensors with a known TT approximation. The goal is to determine the TT approximation of \(\\mathsf{y}_{i_1...i_d}=f(\\mathsf{x}_{i_1...i_d}^{(1)},...,\\mathsf{x}^{(d)})_{i_1...i_d}\) within a prescribed relative accuracy `eps`.
+    
+    
+    Example:
+    
+        * Univariate interpolation:
+        ```
+        func = lambda t: torch.log(t)
+        y = tntt.interpolate.function_interpolate(func, x, 1e-9) # the tensor x is chosen such that y has an afforbable low rank structure
+        ```
+        * Multivariate interpolation:
+        ```
+        xs = tntt.meshgrid([tn.arange(0,n,dtype=torch.float64) for n in N])
+        func = lambda x: 1/(2+tn.sum(I+x,1).to(dtype=torch.float64))
+        z = tntt.interpolate.function_interpolate(func, xs)
+        ```
+    
     Args:
-        function ([type]): [description]
-        x ([type]): [description]
-        eps ([type], optional): [description]. Defaults to 1e-9.
-        start_tens ([type], optional): [description]. Defaults to None.
-        nswp (int, optional): [description]. Defaults to 20.
-        kick (int, optional): [description]. Defaults to 2.
-        dtype ([type], optional): [description]. Defaults to tn.float64.
-        verbose (bool, optional): [description]. Defaults to False.
+        function (function): function handle. If the argument `x` is a `torchtt.TT` instance, the the function handle has to be appliable elementwise on torch tensors.
+                             If a list is passed as `x`, the function handle takes as argument a $M\times d$ torch.tensor and every of the $M$ lines corresponds to an evaluation of the function \(f\) at a certain tensor entry. The function handle returns a torch tensor of length M.
+        x (torchtt.TT or list[torchtt.TT]): the argument/arguments of the function.
+        eps (float, optional): the relative accuracy. Defaults to 1e-9.
+        start_tens (torchtt.TT, optional): initial approximation of the output tensor (None coresponds to random initialization). Defaults to None.
+        nswp (int, optional): number of iterations. Defaults to 20.
+        kick (int, optional): enrichment rank. Defaults to 2.
+        dtype (torch.dtype, optional): the dtype of the result. Defaults to tn.float64.
+        verbose (bool, optional): display debug information to the console. Defaults to False.
 
     Returns:
-        [type]: [description]
+        torchtt.tt: the result.
     &#34;&#34;&#34;
      
     

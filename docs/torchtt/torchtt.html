@@ -55,8 +55,27 @@ class TT():
         A TT-object can also be computed from cores if the list of cores is passed as argument.
         If None is provided, an empty tensor is created.
         
-        \(\\mathsf{x}=\\sum\\limits_{r_1...r_{d-1}=1}^{R_1,...,R_{d-1}} \\mathsf{x}^{(1)}_{1i_1r_1}\\cdots\\mathsf{x}^{(d)}_{r_{d-1}i_d1}\)
-   
+        The TT decomposition of a tensor is
+        
+        \(\\mathsf{x}=\\sum\\limits_{r_1...r_{d-1}=1}^{R_1,...,R_{d-1}} \\mathsf{x}^{(1)}_{1i_1r_1}\\cdots\\mathsf{x}^{(d)}_{r_{d-1}i_d1}\),
+        
+        where \(\\{\\mathsf{x}^{(k)}\\}_{k=1}^d\) are the TT cores and \(\mathbf{R}=(1,R_1,...,R_{d-1},1)\) is the TT rank.
+        Using the constructor, a TT decomposition of a tensor can be computed. The TT cores are stored as a list in `torchtt.TT.cores`.   
+        This class implements basic operators such as `+,-,*,/,@,**` (add, subtract, elementwise multiplication, elementwise division, matrix vector product and Kronecker product) between TT instances.
+
+        Examples:
+            ```
+            import torchtt
+            import torch
+            x = torch.reshape(torch.arange(0,128,dtype = torch.float64),[8,4,4])
+            xtt = torchtt.TT(x)
+            ytt = torchtt.TT(torch.squeeze(x),[8,4,4])
+            # create a TT matrix
+            A = torch.reshape(torch.arange(0,20160,dtype = torch.float64),[3,5,7,4,6,8])
+            Att = torchtt.TT(A,[(3,4),(5,6),(7,8)])
+            print(Att)        
+            ```
+            
         Args:
             source (torch.tensor ot list[torch.tensor] or numpy.array or None): the input tensor in full format or the cores. If a torch.tensor or numpy array is provided
             shape (list[int] or list[tuple[int]], optional): the shape (if it differs from the one provided). For the TT-matrix case is mandatory. Defaults to None.
@@ -68,19 +87,8 @@ class TT():
             InvalidArguments: Invalid input: TT-cores have to be either 4d or 3d.
             InvalidArguments: Check the ranks and the mode size.
             NotImplementedError: Function only implemented for torch tensors, numpy arrays, list of cores as torch tensors and None
-        
-        Examples:
-            import torchtt
-            import torch
-            x = torch.reshape(torch.arange(0,128,dtype = torch.float64),[8,4,4])
-            xtt = torchtt.TT(x)
-            ytt = torchtt.TT(torch.squeeze(x),[8,4,4])
-            A = torch.reshape(torch.arange(0,20160,dtype = torch.float64),[3,5,7,4,6,8])
-            Att = torchtt.TT(A,[(3,4),(5,6),(7,8)])
-            print(Att)        
-        
+   
         &#34;&#34;&#34;
-       
         
         if source is None:
             # empty TT
@@ -1346,21 +1354,6 @@ def zeros(shape, dtype=tn.float64, device = None):
     return TT(cores)
     
 
-def emptyTT():
-    
-    tens = TT(None)
-    tens.is_ttm = False
-    tens.N = []
-    tens.R = []
-    return tens
-    
-def emptyTTM():
-    
-    tens = TT(None)
-    tens.is_ttm = True
-    tens.N = []
-    tens.R = []
-    return tens
   
 def kron(first, second):
     &#34;&#34;&#34;
@@ -1989,42 +1982,6 @@ This method does not check the validity of the inputs.</p>
     return TT(cores_new)</code></pre>
 </details>
 </dd>
-<dt id="torchtt.torchtt.emptyTT"><code class="name flex">
-<span>def <span class="ident">emptyTT</span></span>(<span>)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def emptyTT():
-    
-    tens = TT(None)
-    tens.is_ttm = False
-    tens.N = []
-    tens.R = []
-    return tens</code></pre>
-</details>
-</dd>
-<dt id="torchtt.torchtt.emptyTTM"><code class="name flex">
-<span>def <span class="ident">emptyTTM</span></span>(<span>)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def emptyTTM():
-    
-    tens = TT(None)
-    tens.is_ttm = True
-    tens.N = []
-    tens.R = []
-    return tens</code></pre>
-</details>
-</dd>
 <dt id="torchtt.torchtt.eye"><code class="name flex">
 <span>def <span class="ident">eye</span></span>(<span>shape, dtype=torch.float64, device=None)</span>
 </code></dt>
@@ -2646,7 +2603,22 @@ the shape can be a list of ints or a list of tuples of ints. The second case cre
 In the case of tensor operators of full shape <code>M1 x &hellip; Md x N1 x &hellip; x Nd</code>, the shape must be specified as a list of tuples <code>[(M1,N1),&hellip;,(Md,Nd)]</code>.
 A TT-object can also be computed from cores if the list of cores is passed as argument.
 If None is provided, an empty tensor is created.</p>
-<p><span><span class="MathJax_Preview">\mathsf{x}=\sum\limits_{r_1...r_{d-1}=1}^{R_1,...,R_{d-1}} \mathsf{x}^{(1)}_{1i_1r_1}\cdots\mathsf{x}^{(d)}_{r_{d-1}i_d1}</span><script type="math/tex">\mathsf{x}=\sum\limits_{r_1...r_{d-1}=1}^{R_1,...,R_{d-1}} \mathsf{x}^{(1)}_{1i_1r_1}\cdots\mathsf{x}^{(d)}_{r_{d-1}i_d1}</script></span></p>
+<p>The TT decomposition of a tensor is</p>
+<p><span><span class="MathJax_Preview">\mathsf{x}=\sum\limits_{r_1...r_{d-1}=1}^{R_1,...,R_{d-1}} \mathsf{x}^{(1)}_{1i_1r_1}\cdots\mathsf{x}^{(d)}_{r_{d-1}i_d1}</span><script type="math/tex">\mathsf{x}=\sum\limits_{r_1...r_{d-1}=1}^{R_1,...,R_{d-1}} \mathsf{x}^{(1)}_{1i_1r_1}\cdots\mathsf{x}^{(d)}_{r_{d-1}i_d1}</script></span>,</p>
+<p>where <span><span class="MathJax_Preview">\{\mathsf{x}^{(k)}\}_{k=1}^d</span><script type="math/tex">\{\mathsf{x}^{(k)}\}_{k=1}^d</script></span> are the TT cores and <span><span class="MathJax_Preview">\mathbf{R}=(1,R_1,...,R_{d-1},1)</span><script type="math/tex">\mathbf{R}=(1,R_1,...,R_{d-1},1)</script></span> is the TT rank.
+Using the constructor, a TT decomposition of a tensor can be computed. The TT cores are stored as a list in <code>torchtt.TT.cores</code>. <br>
+This class implements basic operators such as <code>+,-,*,/,@,**</code> (add, subtract, elementwise multiplication, elementwise division, matrix vector product and Kronecker product) between TT instances.</p>
+<h2 id="examples">Examples</h2>
+<pre><code>import torchtt
+import torch
+x = torch.reshape(torch.arange(0,128,dtype = torch.float64),[8,4,4])
+xtt = torchtt.TT(x)
+ytt = torchtt.TT(torch.squeeze(x),[8,4,4])
+# create a TT matrix
+A = torch.reshape(torch.arange(0,20160,dtype = torch.float64),[3,5,7,4,6,8])
+Att = torchtt.TT(A,[(3,4),(5,6),(7,8)])
+print(Att)        
+</code></pre>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>source</code></strong> :&ensp;<code>torch.tensor ot list[torch.tensor]</code> or <code>numpy.array</code> or <code>None</code></dt>
@@ -2668,16 +2640,7 @@ If None is provided, an empty tensor is created.</p>
 <dd>Check the ranks and the mode size.</dd>
 <dt><code>NotImplementedError</code></dt>
 <dd>Function only implemented for torch tensors, numpy arrays, list of cores as torch tensors and None</dd>
-</dl>
-<h2 id="examples">Examples</h2>
-<p>import torchtt
-import torch
-x = torch.reshape(torch.arange(0,128,dtype = torch.float64),[8,4,4])
-xtt = torchtt.TT(x)
-ytt = torchtt.TT(torch.squeeze(x),[8,4,4])
-A = torch.reshape(torch.arange(0,20160,dtype = torch.float64),[3,5,7,4,6,8])
-Att = torchtt.TT(A,[(3,4),(5,6),(7,8)])
-print(Att)</p></div>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2691,8 +2654,27 @@ print(Att)</p></div>
         A TT-object can also be computed from cores if the list of cores is passed as argument.
         If None is provided, an empty tensor is created.
         
-        \(\\mathsf{x}=\\sum\\limits_{r_1...r_{d-1}=1}^{R_1,...,R_{d-1}} \\mathsf{x}^{(1)}_{1i_1r_1}\\cdots\\mathsf{x}^{(d)}_{r_{d-1}i_d1}\)
-   
+        The TT decomposition of a tensor is
+        
+        \(\\mathsf{x}=\\sum\\limits_{r_1...r_{d-1}=1}^{R_1,...,R_{d-1}} \\mathsf{x}^{(1)}_{1i_1r_1}\\cdots\\mathsf{x}^{(d)}_{r_{d-1}i_d1}\),
+        
+        where \(\\{\\mathsf{x}^{(k)}\\}_{k=1}^d\) are the TT cores and \(\mathbf{R}=(1,R_1,...,R_{d-1},1)\) is the TT rank.
+        Using the constructor, a TT decomposition of a tensor can be computed. The TT cores are stored as a list in `torchtt.TT.cores`.   
+        This class implements basic operators such as `+,-,*,/,@,**` (add, subtract, elementwise multiplication, elementwise division, matrix vector product and Kronecker product) between TT instances.
+
+        Examples:
+            ```
+            import torchtt
+            import torch
+            x = torch.reshape(torch.arange(0,128,dtype = torch.float64),[8,4,4])
+            xtt = torchtt.TT(x)
+            ytt = torchtt.TT(torch.squeeze(x),[8,4,4])
+            # create a TT matrix
+            A = torch.reshape(torch.arange(0,20160,dtype = torch.float64),[3,5,7,4,6,8])
+            Att = torchtt.TT(A,[(3,4),(5,6),(7,8)])
+            print(Att)        
+            ```
+            
         Args:
             source (torch.tensor ot list[torch.tensor] or numpy.array or None): the input tensor in full format or the cores. If a torch.tensor or numpy array is provided
             shape (list[int] or list[tuple[int]], optional): the shape (if it differs from the one provided). For the TT-matrix case is mandatory. Defaults to None.
@@ -2704,19 +2686,8 @@ print(Att)</p></div>
             InvalidArguments: Invalid input: TT-cores have to be either 4d or 3d.
             InvalidArguments: Check the ranks and the mode size.
             NotImplementedError: Function only implemented for torch tensors, numpy arrays, list of cores as torch tensors and None
-        
-        Examples:
-            import torchtt
-            import torch
-            x = torch.reshape(torch.arange(0,128,dtype = torch.float64),[8,4,4])
-            xtt = torchtt.TT(x)
-            ytt = torchtt.TT(torch.squeeze(x),[8,4,4])
-            A = torch.reshape(torch.arange(0,20160,dtype = torch.float64),[3,5,7,4,6,8])
-            Att = torchtt.TT(A,[(3,4),(5,6),(7,8)])
-            print(Att)        
-        
+   
         &#34;&#34;&#34;
-       
         
         if source is None:
             # empty TT
@@ -4881,8 +4852,6 @@ N1 x &hellip; x Nd x 1 x &hellip; x 1.</p>
 <li><code><a title="torchtt.torchtt.bilinear_form" href="#torchtt.torchtt.bilinear_form">bilinear_form</a></code></li>
 <li><code><a title="torchtt.torchtt.dot" href="#torchtt.torchtt.dot">dot</a></code></li>
 <li><code><a title="torchtt.torchtt.elementwise_divide" href="#torchtt.torchtt.elementwise_divide">elementwise_divide</a></code></li>
-<li><code><a title="torchtt.torchtt.emptyTT" href="#torchtt.torchtt.emptyTT">emptyTT</a></code></li>
-<li><code><a title="torchtt.torchtt.emptyTTM" href="#torchtt.torchtt.emptyTTM">emptyTTM</a></code></li>
 <li><code><a title="torchtt.torchtt.eye" href="#torchtt.torchtt.eye">eye</a></code></li>
 <li><code><a title="torchtt.torchtt.kron" href="#torchtt.torchtt.kron">kron</a></code></li>
 <li><code><a title="torchtt.torchtt.meshgrid" href="#torchtt.torchtt.meshgrid">meshgrid</a></code></li>

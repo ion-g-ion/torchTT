@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
 <title>torchtt API documentation</title>
-<meta name="description" content="TorchTT …" />
+<meta name="description" content="Provides Tensor-Train (TT) decomposition using `pytorch` as backend …" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
 <link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
@@ -23,22 +23,22 @@
 <h1 class="title">Package <code>torchtt</code></h1>
 </header>
 <section id="section-intro">
-<h1 id="torchtt">TorchTT</h1>
-<p>Provides Tensor-Train (TT) decomposition using pytorch as backend.</p>
-<p>Contains routines for computing the TT decomposition and all the basisc linar algebra in the TT format
-<br>
+<p>Provides Tensor-Train (TT) decomposition using <code>pytorch</code> as backend.</p>
+<p>Contains routines for computing the TT decomposition and all the basisc linar algebra in the TT format. Additionally, GPU support can be used thanks to the <code>pytorch</code> backend. <br>
 It also has linear solvers in TT and cross approximation as well as automatic differentiation.</p>
+<p>Example scripts (and ipy notebooks) can be found in the <a href="https://github.com/ion-g-ion/torchTT/tree/main/examples">examples/</a> folder.</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">r&#34;&#34;&#34;
-# TorchTT
 
-Provides Tensor-Train (TT) decomposition using pytorch as backend.
+Provides Tensor-Train (TT) decomposition using `pytorch` as backend.
 
-Contains routines for computing the TT decomposition and all the basisc linar algebra in the TT format     
+Contains routines for computing the TT decomposition and all the basisc linar algebra in the TT format. Additionally, GPU support can be used thanks to the `pytorch` backend.   
 It also has linear solvers in TT and cross approximation as well as automatic differentiation.
+
+Example scripts (and ipy notebooks) can be found in the [examples/](https://github.com/ion-g-ion/torchTT/tree/main/examples) folder.
 &#34;&#34;&#34;
 
 from .torchtt import TT, eye, zeros, kron, ones, random, randn, reshape, meshgrid , dot, elementwise_divide, numel, rank1TT, bilinear_form 
@@ -63,11 +63,11 @@ from . import interpolate
 </dd>
 <dt><code class="name"><a title="torchtt.interpolate" href="interpolate.html">torchtt.interpolate</a></code></dt>
 <dd>
-<div class="desc"><p>Implements the cross approximation methods.</p></div>
+<div class="desc"><p>Implements the cross approximation methods (DMRG).</p></div>
 </dd>
 <dt><code class="name"><a title="torchtt.manifold" href="manifold.html">torchtt.manifold</a></code></dt>
 <dd>
-<div class="desc"><p>Manifold gradient module …</p></div>
+<div class="desc"><p>Manifold gradient module.</p></div>
 </dd>
 <dt><code class="name"><a title="torchtt.nn" href="nn.html">torchtt.nn</a></code></dt>
 <dd>
@@ -94,9 +94,7 @@ It contains the base TT class as well as additional functions.</p></div>
 <nav id="sidebar">
 <h1>Index</h1>
 <div class="toc">
-<ul>
-<li><a href="#torchtt">TorchTT</a></li>
-</ul>
+<ul></ul>
 </div>
 <ul id="index">
 <li><h3><a href="#header-submodules">Sub-modules</a></h3>

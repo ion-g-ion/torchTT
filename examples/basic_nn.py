@@ -1,5 +1,4 @@
-import tnt
-import tnt.nn
+import torchtt as tntt
 import torch as tn
 import torch.nn as nn
 import datetime
@@ -79,9 +78,9 @@ class CNNModel(nn.Module):
 class BasicTT(nn.Module):
     def __init__(self):
         super().__init__()
-        self.ttl1 = tnt.nn.LinearLayerTT([4,8,8,4,8,8], [4,4,4,4,4,4], [1,3,3,3,3,3,1])
-        self.ttl2 = tnt.nn.LinearLayerTT([4,4,4,4,4,4], [2,2,4,2,2,4], [1,2,2,2,2,2,1])
-        self.ttl3 = tnt.nn.LinearLayerTT([2,2,4,2,2,4], [2,2,2,2,2,2], [1,2,2,2,2,2,1])
+        self.ttl1 = tntt.nn.LinearLayerTT([4,8,8,4,8,8], [4,4,4,4,4,4], [1,3,3,3,3,3,1])
+        self.ttl2 = tntt.nn.LinearLayerTT([4,4,4,4,4,4], [2,2,4,2,2,4], [1,2,2,2,2,2,1])
+        self.ttl3 = tntt.nn.LinearLayerTT([2,2,4,2,2,4], [2,2,2,2,2,2], [1,2,2,2,2,2,1])
         self.linear = nn.Linear(64, 10, dtype = tn.float32)
 
     def forward(self, x):
@@ -97,9 +96,9 @@ class BasicTT(nn.Module):
 class BasicTT2(nn.Module):
     def __init__(self):
         super().__init__()
-        self.ttl1 = tnt.nn.LinearLayerTT([16,16,16,16], [8,8,8,8], [1,3,3,3,1])
-        self.ttl2 = tnt.nn.LinearLayerTT([8,8,8,8], [4,4,4,4], [1,2,2,2,1])
-        self.ttl3 = tnt.nn.LinearLayerTT([4,4,4,4], [2,4,2,4], [1,2,2,2,1])
+        self.ttl1 = tntt.nn.LinearLayerTT([16,16,16,16], [8,8,8,8], [1,3,3,3,1])
+        self.ttl2 = tntt.nn.LinearLayerTT([8,8,8,8], [4,4,4,4], [1,2,2,2,1])
+        self.ttl3 = tntt.nn.LinearLayerTT([4,4,4,4], [2,4,2,4], [1,2,2,2,1])
         self.linear = nn.Linear(64, 10, dtype = tn.float32)
 
     def forward(self, x):
