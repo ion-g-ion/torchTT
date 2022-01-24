@@ -44,7 +44,7 @@ tme = datetime.datetime.now() - tme
 print('')
 print('Time elapsed',tme)
 print('Number of observations %d, tensor shape %s, percentage of entries observed %6.4f'%(M,str(x.N),100*M/np.prod(x.N)))
-print('Number of unknowns %d, number of observations %d, DoF/observations %.6f'%(x.size(),M,x.size()/M))
+print('Number of unknowns %d, number of observations %d, DoF/observations %.6f'%(tntt.numel(x),M,tntt.numel(x)/M))
 
 print('Rank after rounding',x.round(1e-6))
 

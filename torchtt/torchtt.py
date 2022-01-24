@@ -1,28 +1,30 @@
 """
 Basic class for TT decomposition.
+It contains the base TT class as well as additional functions.
 
-@author: ion
 """
 
 import torch as tn
 import torch.nn.functional as tnf
-from torchtt.decomposition import mat_to_tt, to_tt, lr_orthogonal, round_tt, rl_orthogonal, QR
-from  torchtt.division import amen_divide
+from torchtt._decomposition import mat_to_tt, to_tt, lr_orthogonal, round_tt, rl_orthogonal, QR
+from  torchtt._division import amen_divide
 import numpy as np
 import math 
-from torchtt.dmrg import dmrg_matvec
-from torchtt.aux_ops import apply_mask, dense_matvec
+from torchtt._dmrg import dmrg_matvec
+from torchtt._aux_ops import apply_mask, dense_matvec, bilinear_form_aux
 from torchtt.errors import *
 
 class TT():
     
     def __init__(self, source, shape=None, eps=1e-10, rmax=2048):
         """
-        Constructor of the TT class. Can convert full tensor in the TT-format (from torch.tensor or numpy.array).
-        In the case of tensor operators of full shape M1 x ... Md x N1 x ... x Nd, the shape must be specified as a list of tuples [(M1,N1),...,(Md,Nd)].
+        Constructor of the TT class. Can convert full tensor in the TT-format (from `torch.tensor` or `numpy.array`).
+        In the case of tensor operators of full shape `M1 x ... Md x N1 x ... x Nd`, the shape must be specified as a list of tuples `[(M1,N1),...,(Md,Nd)]`.
         A TT-object can also be computed from cores if the list of cores is passed as argument.
         If None is provided, an empty tensor is created.
         
+        \(\\mathsf{x}=\\sum\\limits_{r_1...r_{d-1}=1}^{R_1,...,R_{d-1}} \\mathsf{x}^{(1)}_{1i_1r_1}\\cdots\\mathsf{x}^{(d)}_{r_{d-1}i_d1}\)
+   
         Args:
             source (torch.tensor ot list[torch.tensor] or numpy.array or None): the input tensor in full format or the cores. If a torch.tensor or numpy array is provided
             shape (list[int] or list[tuple[int]], optional): the shape (if it differs from the one provided). For the TT-matrix case is mandatory. Defaults to None.
@@ -1653,6 +1655,32 @@ def dot(a,b,axis=None):
         
         result = (a*TT(cores_new)).sum(axis)
     return result
+
+def bilinear_form(x,A,y):
+    """
+    Computes the bilinear form x^T A y for TT tensors:
+
+    Args:
+        x (torchtt.TT): the tensors.
+        A (torchtt.TT): the tensors (must be TT matrix).
+        y (torchtt.TT): the tensors.
+
+    Raises:
+        InvalidArguments: Inputs must be torchtt.TT instances.
+        IncompatibleTypes: x and y must be TT tensors and A must be TT matrix.
+        ShapeMismatch: Check the shapes. Required is x.N == A.M and y.N == A.N.
+
+    Returns:
+        torch.tensor: the result of the bilienar form as tensor with 1 element.
+    """
+    if not isinstance(x,TT) or not isinstance(A,TT) or not isinstance(y,TT):
+        raise InvalidArguments("Inputs must be torchtt.TT instances.")
+    if x.is_ttm or y.is_ttm or A.is_ttm==False:
+        raise IncompatibleTypes("x and y must be TT tensors and A must be TT matrix.")
+    if x.N != A.M or y.N != A.N:
+        raise ShapeMismatch("Check the shapes. Required is x.N == A.M and y.N == A.N.")
+    d = len(x.N)
+    return bilinear_form_aux(x.cores,A.cores,y.cores,d)
 
 def elementwise_divide(x, y, eps = 1e-12, starting_tensor = None, nswp = 50, kick = 4, verbose = False):
     """

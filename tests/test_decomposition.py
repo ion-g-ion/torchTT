@@ -124,7 +124,7 @@ class TestDecomposition(unittest.TestCase):
         T = tntt.random([3,4,5,3,8,7,10,3,5,6],[1,20,12,34,3,50,100,12,2,80,1])
         T_ref = T.full()
         
-        cores, R = tntt.decomposition.lr_orthogonal(T.cores, T.R, T.is_ttm)
+        cores, R = tntt._decomposition.lr_orthogonal(T.cores, T.R, T.is_ttm)
         Tfull = tntt.TT(cores).full()
         
         self.assertTrue(err_rel(Tfull,T_ref)<1e-12,'Left to right ortho error too high.')
@@ -135,7 +135,7 @@ class TestDecomposition(unittest.TestCase):
             self.assertTrue(np.linalg.norm(L.T @ L - np.eye(L.shape[1])) < 1e-12 or i==len(cores)-1,'Cores are not left orthogonal after LR orthogonalization.')
                 
         
-        cores, R = tntt.decomposition.rl_orthogonal(T.cores, T.R, T.is_ttm)
+        cores, R = tntt._decomposition.rl_orthogonal(T.cores, T.R, T.is_ttm)
         Tfull = tntt.TT(cores).full()
         
         self.assertTrue(err_rel(Tfull,T_ref)<1e-12,'Right to left ortho error too high.')

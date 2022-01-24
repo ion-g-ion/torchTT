@@ -54,3 +54,24 @@ def dense_matvec(cores, other):
 
     return result
 
+def bilinear_form_aux(x_cores, A_cores, y_cores, d):
+    """
+    Computes the bilinear form xT A y given the TT cores.
+
+    Args:
+        x_cores (list[torch.tensor]): the TT cores.
+        A_cores (list[torch.tensor]): the TT cores.
+        y_cores (list[torch.tensor]): the TT cores.
+        d (int): number of modes.
+
+    Returns:
+        torch.tensor: the result as 1 element torch.tensor.
+    """
+    result = tn.ones((1,1,1), dtype = A_cores[0].dtype, device = A_cores[0].device)
+    
+    for i in range(d):
+        result = tn.einsum('lsr,lmL->srmL',result,x_cores[i]) 
+        result = tn.einsum('srmL,smnS->LSrn',result,A_cores[i]) 
+        result = tn.einsum('LSrn,rnR->LSR',result,y_cores[i]) 
+        
+    return tn.squeeze(result)

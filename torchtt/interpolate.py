@@ -1,18 +1,17 @@
 """
 Implements the cross approximation methods.
 
-@author: ion
 """
 import torch as tn
 import numpy as np
 import torchtt 
 import datetime
-from torchtt.decomposition import QR, SVD, rank_chop, lr_orthogonal
-from torchtt.iterative_solvers import BiCGSTAB_reset, gmres_restart
+from torchtt._decomposition import QR, SVD, rank_chop, lr_orthogonal
+from torchtt._iterative_solvers import BiCGSTAB_reset, gmres_restart
 import opt_einsum as oe
 
 
-def LU(M):
+def _LU(M):
     """
     Perform an LU decomposition and returns L, U and a permutation vector P. 
 
@@ -29,13 +28,13 @@ def LU(M):
     
     return L, U, tn.squeeze(P).to(tn.int64)
  
-def max_matrix(M):
+def _max_matrix(M):
     
     values, indices = M.flatten().topk(1)
     indices = [np.unravel_index(i, M.shape) for i in indices]
     return values, indices
 
-def maxvol(M):
+def _maxvol(M):
     """
     Maxvol
 
@@ -51,7 +50,7 @@ def maxvol(M):
         idx = tn.tensor(range(M.shape[0]),dtype = tn.int64)
         return idx
     else:
-        L, U, P = LU(M)
+        L, U, P = _LU(M)
         idx = P[:M.shape[1]]
     
     Msub = M[idx,:]
@@ -59,7 +58,7 @@ def maxvol(M):
     Mat = tn.linalg.solve(Msub.T,M.T).t()
    
     for i in range(100): 
-        val_max, idx_max = max_matrix(tn.abs(Mat)) 
+        val_max, idx_max = _max_matrix(tn.abs(Mat)) 
         idx_max = idx_max[0]
         if val_max<=1+5e-2:
             idx = tn.sort(idx)[0]
@@ -124,7 +123,7 @@ def function_interpolate(function, x, eps = 1e-9, start_tens = None, nswp = 20, 
         core, Rmat = QR(tmp)
 
         rnew = min(N[k]*rank[k+1], rank[k]) 
-        Jk = maxvol(core)
+        Jk = _maxvol(core)
         # print(Jk)
         tmp = np.unravel_index(Jk[:rnew],(rank[k+1],N[k]))
         #if k==d-1:
@@ -233,7 +232,7 @@ def function_interpolate(function, x, eps = 1e-9, start_tens = None, nswp = 20, 
            
             # split cores  
             Qmat, Rmat = QR(U)
-            idx = maxvol(Qmat) 
+            idx = _maxvol(Qmat) 
             Sub = Qmat[idx,:]
             core = tn.linalg.solve(Sub.T,Qmat.T).t()
             core_next = Sub@Rmat@V
@@ -331,7 +330,7 @@ def function_interpolate(function, x, eps = 1e-9, start_tens = None, nswp = 20, 
                        
             # split cores  
             Qmat, Rmat = QR(V.T)
-            idx = maxvol(Qmat) 
+            idx = _maxvol(Qmat) 
             Sub = Qmat[idx,:]
             core_next = tn.linalg.solve(Sub.T,Qmat.T)
             core =U@(Sub@Rmat).t()
@@ -414,7 +413,7 @@ def dmrg_cross(function, N, eps = 1e-9, nswp = 10, x_start = None, kick = 2, dty
         core, Rmat = QR(tmp)
 
         rnew = min(N[k]*rank[k+1], rank[k]) 
-        Jk = maxvol(core)
+        Jk = _maxvol(core)
         # print(Jk)
         tmp = np.unravel_index(Jk[:rnew],(rank[k+1],N[k]))
         #if k==d-1:
@@ -512,7 +511,7 @@ def dmrg_cross(function, N, eps = 1e-9, nswp = 10, x_start = None, kick = 2, dty
            
             # split cores  
             Qmat, Rmat = QR(U)
-            idx = maxvol(Qmat) 
+            idx = _maxvol(Qmat) 
             Sub = Qmat[idx,:]
             core = tn.linalg.solve(Sub.T,Qmat.T).t()
             core_next = Sub@Rmat@V
@@ -595,7 +594,7 @@ def dmrg_cross(function, N, eps = 1e-9, nswp = 10, x_start = None, kick = 2, dty
                        
             # split cores  
             Qmat, Rmat = QR(V.T)
-            idx = maxvol(Qmat) 
+            idx = _maxvol(Qmat) 
             Sub = Qmat[idx,:]
             core_next = tn.linalg.solve(Sub.T,Qmat.T)
             core =U@(Sub@Rmat).t()

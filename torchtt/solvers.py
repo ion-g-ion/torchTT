@@ -1,19 +1,18 @@
 """
 System solvers in the TT format.
 
-@author: ion
 """
 
 import torch as tn
 import numpy as np
 import torchtt
 import datetime
-from torchtt.decomposition import QR, SVD, lr_orthogonal, rl_orthogonal
-from torchtt.iterative_solvers import BiCGSTAB_reset, gmres_restart
+from torchtt._decomposition import QR, SVD, lr_orthogonal, rl_orthogonal
+from torchtt._iterative_solvers import BiCGSTAB_reset, gmres_restart
 import opt_einsum as oe
 from .errors import *
 
-def local_product(Phi_right, Phi_left, coreA, core, shape):
+def _local_product(Phi_right, Phi_left, coreA, core, shape):
     """
     Compute local matvec product
 
@@ -38,7 +37,7 @@ def local_product(Phi_right, Phi_left, coreA, core, shape):
     # product = tn.reshape(w,[-1])
     return w
 
-class LinearOp():
+class _LinearOp():
     def __init__(self,Phi_left,Phi_right,coreA,shape,prec):
         self.Phi_left = Phi_left
         self.Phi_right = Phi_right
@@ -116,18 +115,19 @@ class LinearOp():
 
 def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = 'res', local_iterations = 40, resets = 2, verbose = False, preconditioner = None):
     """
-    Solve a multilinear system A x = b in the Tensor Train format.
+    Solve a multilinear system \(\\mathsf{Ax} = \\mathsf{b}\) in the Tensor Train format.
     
-    This method implements the algorithm from: Sergey V Dolgov, Dmitry V Savostyanov, Alternating minimal energy methods for linear systems in higher dimensions.
+    This method implements the algorithm from [Sergey V Dolgov, Dmitry V Savostyanov, Alternating minimal energy methods for linear systems in higher dimensions](https://epubs.siam.org/doi/abs/10.1137/140953289).
 
     Example:
-    import torchtt
-    A = torchtt.random([(4,4),(5,5),(6,6)],[1,2,3,1]) # create random matrix
-    x = torchtt.random([4,5,6],[1,2,3,1]) # invent a random solution
-    b = A @ x # compute the rhs
-    xx = torchtt.solvers.amen_solve(A,b) # solve
-    print((xx-x).norm()/x.norm()) # error
-    
+        ```
+        import torchtt
+        A = torchtt.random([(4,4),(5,5),(6,6)],[1,2,3,1]) # create random matrix
+        x = torchtt.random([4,5,6],[1,2,3,1]) # invent a random solution
+        b = A @ x # compute the rhs
+        xx = torchtt.solvers.amen_solve(A,b) # solve
+        print((xx-x).norm()/x.norm()) # error
+        ```
     
     Args:
         A (torchtt.TT): the system matrix in TT.
@@ -143,7 +143,7 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 50
         local_iterations (int, optional): number of GMRES iterations for the local subproblems. Defaults to 40.
         resets (int, optional): number of resets in the GMRES. Defaults to 2.
         verbose (bool, optional): choose whether to display or not additional information during the runtime. Defaults to True.
-        preconditioner (string, optional): Choose the preconditioner for the local system. Possible values are 'c' No preconditioner is used if None is provided. Defaults to None.
+        preconditioner (string, optional): Choose the preconditioner for the local system. Possible values are None, 'c' (central Jacobi preconditioner). No preconditioner is used if None is provided. Defaults to None.
 
     Raises:
         InvalidArguments: A and b must be TT instances.
@@ -152,7 +152,7 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 50
         ShapeMismatch: Dimension mismatch.
 
     Returns:
-        [type]: [description]
+        torchtt.TT: the approximation of the solution in TT format.
     """
     # perform checks of the input data
     if not (isinstance(A,torchtt.TT) and isinstance(b,torchtt.TT)):
@@ -221,7 +221,7 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 50
             # update the z part (ALS) update
             if not last:
                 if swp > 0:
-                    czA = local_product(Phiz[k+1],Phiz[k],A.cores[k],x_cores[k],x_cores[k].shape) # shape rzp x N x rz
+                    czA = _local_product(Phiz[k+1],Phiz[k],A.cores[k],x_cores[k],x_cores[k].shape) # shape rzp x N x rz
                     czy = tn.einsum('br,bnB,BR->rnR',Phiz_b[k],b.cores[k],Phiz_b[k+1]) # shape is rzp x N x rz
                     cz_new = czy*nrmsc - czA
                     _,_,vz = SVD(tn.reshape(cz_new,[cz_new.shape[0],-1]))
@@ -257,8 +257,8 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 50
             
             # update phis (einsum)
             # print(x_cores[k].shape,A.cores[k].shape,x_cores[k].shape)
-            Phis[k] = compute_phi_bck_A(Phis[k+1],x_cores[k],A.cores[k],x_cores[k])
-            Phis_b[k] = compute_phi_bck_rhs(Phis_b[k+1],b.cores[k],x_cores[k])
+            Phis[k] = _compute_phi_bck_A(Phis[k+1],x_cores[k],A.cores[k],x_cores[k])
+            Phis_b[k] = _compute_phi_bck_rhs(Phis_b[k+1],b.cores[k],x_cores[k])
             
             # ... and norms 
             norm = tn.linalg.norm(Phis[k])
@@ -275,8 +275,8 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 50
 
             # compute phis_z
             if not last:
-                Phiz[k] = compute_phi_bck_A(Phiz[k+1], z_cores[k], A.cores[k], x_cores[k]) / normA[k-1]
-                Phiz_b[k] = compute_phi_bck_rhs(Phiz_b[k+1], b.cores[k], z_cores[k]) / normb[k-1]
+                Phiz[k] = _compute_phi_bck_A(Phiz[k+1], z_cores[k], A.cores[k], x_cores[k]) / normA[k-1]
+                Phiz_b[k] = _compute_phi_bck_rhs(Phiz_b[k+1], b.cores[k], z_cores[k]) / normb[k-1]
 
 
         # start loop
@@ -316,7 +316,7 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 50
                     print('\t\tChoosing iterative solver (local size %d)....'%(rx[k]*N[k]*rx[k+1])) 
                     time_local = datetime.datetime.now()
                 shape_now = [rx[k],N[k],rx[k+1]]
-                Op = LinearOp(Phis[k],Phis[k+1],A.cores[k],shape_now, preconditioner)
+                Op = _LinearOp(Phis[k],Phis[k+1],A.cores[k],shape_now, preconditioner)
                 
                 # solution_now, flag, nit, res_new = BiCGSTAB_reset(Op, rhs,previous_solution[:], eps_local, local_iterations) 
                 eps_local = real_tol * norm_rhs
@@ -384,7 +384,7 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 50
             v = v.t()
 
             if not last:
-                czA = local_product(Phiz[k+1], Phiz[k], A.cores[k], tn.reshape(u@v.t(),[rx[k],N[k],rx[k+1]]), [rx[k],N[k],rx[k+1]]) # shape rzp x N x rz
+                czA = _local_product(Phiz[k+1], Phiz[k], A.cores[k], tn.reshape(u@v.t(),[rx[k],N[k],rx[k+1]]), [rx[k],N[k],rx[k+1]]) # shape rzp x N x rz
                 czy = tn.einsum('br,bnB,BR->rnR',Phiz_b[k],b.cores[k]*nrmsc,Phiz_b[k+1]) # shape is rzp x N x rz
                 cz_new = czy - czA
                 # print('Phiz_b',[plm.shape for plm in Phiz_b])
@@ -403,7 +403,7 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 50
 
             if k < d-1:
                 if not last:
-                    left_res = local_product(Phiz[k+1],Phis[k],A.cores[k],tn.reshape(u@v.t(),[rx[k],N[k],rx[k+1]]),[rx[k],N[k],rx[k+1]])
+                    left_res = _local_product(Phiz[k+1],Phis[k],A.cores[k],tn.reshape(u@v.t(),[rx[k],N[k],rx[k+1]]),[rx[k],N[k],rx[k+1]])
                     left_b = tn.einsum('br,bmB,BR->rmR',Phis_b[k],b.cores[k]*nrmsc,Phiz_b[k+1])
                     uk = left_b - left_res # rx_k x N_k x rz_k+1
                     # print('u',u.shape,' uk',uk.shape)
@@ -438,8 +438,8 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 50
                 rx[k+1] = r
 
                 # next phis with norm correction
-                Phis[k+1] = compute_phi_fwd_A(Phis[k], x_cores[k], A.cores[k], x_cores[k]) 
-                Phis_b[k+1] = compute_phi_fwd_rhs(Phis_b[k], b.cores[k],x_cores[k])
+                Phis[k+1] = _compute_phi_fwd_A(Phis[k], x_cores[k], A.cores[k], x_cores[k]) 
+                Phis_b[k+1] = _compute_phi_fwd_rhs(Phis_b[k], b.cores[k],x_cores[k])
                 
                 # ... and norms 
                 norm = tn.linalg.norm(Phis[k+1])
@@ -457,8 +457,8 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 50
 
                 # next phiz
                 if not last:
-                    Phiz[k+1] = compute_phi_fwd_A(Phiz[k], z_cores[k], A.cores[k], x_cores[k]) / normA[k]
-                    Phiz_b[k+1] = compute_phi_fwd_rhs(Phiz_b[k], b.cores[k],z_cores[k]) / normb[k]
+                    Phiz[k+1] = _compute_phi_fwd_A(Phiz[k], z_cores[k], A.cores[k], x_cores[k]) / normA[k]
+                    Phiz_b[k+1] = _compute_phi_fwd_rhs(Phiz_b[k], b.cores[k],z_cores[k]) / normb[k]
             else:
                 x_cores[k] = tn.reshape(u@tn.diag(s[:r]) @ v[:r,:].t(),[rx[k],N[k],rx[k+1]])
 
@@ -491,7 +491,7 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 50
 
 
 
-def compute_phi_bck_A(Phi_now,core_left,core_A,core_right):
+def _compute_phi_bck_A(Phi_now,core_left,core_A,core_right):
     """
     Compute the phi backwards for the form dot(left,A @ right)
 
@@ -511,7 +511,7 @@ def compute_phi_bck_A(Phi_now,core_left,core_A,core_right):
     Phi = oe.contract('LSR,lML,sMNS,rNR->lsr',Phi_now,core_left,core_A,core_right)
     return Phi
 
-def compute_phi_fwd_A(Phi_now, core_left, core_A, core_right):
+def _compute_phi_fwd_A(Phi_now, core_left, core_A, core_right):
     """
     Compute the phi forward for the form dot(left,A @ right)
 
@@ -536,7 +536,7 @@ def compute_phi_fwd_A(Phi_now, core_left, core_A, core_right):
     # print('\n>>>>>>>>>>>>>>>>>>>>>>>>>>Time1 ',tme1,' time 2', tme2) 
     return Phi_next
 
-def compute_phi_bck_rhs(Phi_now,core_b,core):
+def _compute_phi_bck_rhs(Phi_now,core_b,core):
     """
     
 
@@ -553,7 +553,7 @@ def compute_phi_bck_rhs(Phi_now,core_b,core):
     Phi = oe.contract('BR,bnB,rnR->br',Phi_now,core_b,core)
     return Phi
 
-def compute_phi_fwd_rhs(Phi_now,core_rhs,core):
+def _compute_phi_fwd_rhs(Phi_now,core_rhs,core):
     """
     
 

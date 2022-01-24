@@ -8,7 +8,7 @@ Contains routines for computing the TT decomposition and all the basisc linar al
 It also has linear solvers in TT and cross approximation as well as automatic differentiation.
 """
 
-from .torchtt import TT, eye, zeros, kron, ones, random, randn, reshape, meshgrid , dot, elementwise_divide, numel, rank1TT 
+from .torchtt import TT, eye, zeros, kron, ones, random, randn, reshape, meshgrid , dot, elementwise_divide, numel, rank1TT, bilinear_form 
 from . import solvers
 from . import grad
 # from .grad import grad, watch, unwatch

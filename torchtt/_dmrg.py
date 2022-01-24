@@ -6,7 +6,7 @@ Inspired by TT-Toolbox from MATLAB.
 """
 import torchtt
 import torch as tn
-from torchtt.decomposition import rank_chop, QR, SVD
+from torchtt._decomposition import rank_chop, QR, SVD
 import datetime
 import opt_einsum as oe
 

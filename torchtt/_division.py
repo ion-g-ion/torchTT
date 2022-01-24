@@ -6,8 +6,8 @@ Elementwise division using AMEN
 import torch as tn
 import numpy as np
 import datetime
-from torchtt.decomposition import QR, SVD, rl_orthogonal, lr_orthogonal
-from torchtt.iterative_solvers import BiCGSTAB_reset, gmres_restart
+from torchtt._decomposition import QR, SVD, rl_orthogonal, lr_orthogonal
+from torchtt._iterative_solvers import BiCGSTAB_reset, gmres_restart
 import opt_einsum as oe
 
 def local_product(Phi_right, Phi_left, coreA, core, shape):

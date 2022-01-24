@@ -1,0 +1,1081 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>torchtt.solvers API documentation</title>
+<meta name="description" content="System solvers in the TT format." />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS_CHTML" integrity="sha256-kZafAc6mZvK3W3v1pHOcUix30OHQN6pU/NO2oFkqZVw=" crossorigin></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>torchtt.solvers</code></h1>
+</header>
+<section id="section-intro">
+<p>System solvers in the TT format.</p>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">&#34;&#34;&#34;
+System solvers in the TT format.
+
+&#34;&#34;&#34;
+
+import torch as tn
+import numpy as np
+import torchtt
+import datetime
+from torchtt._decomposition import QR, SVD, lr_orthogonal, rl_orthogonal
+from torchtt._iterative_solvers import BiCGSTAB_reset, gmres_restart
+import opt_einsum as oe
+from .errors import *
+
+def _local_product(Phi_right, Phi_left, coreA, core, shape):
+    &#34;&#34;&#34;
+    Compute local matvec product
+
+    Args:
+        Phi (torch.tensor): right tensor of shape r x R x r.
+        Psi (torch.tensor): left tensor of shape lp x Rp x lp.
+        coreA (torch.tensor): current core of A, shape is rp x N x N x r.
+        x (torch.tensor): the current core of x, shape is rp x N x r.
+        shape (torch.Size): the shape of x. 
+
+    Returns:
+        torch.tensor: the reuslt.
+    &#34;&#34;&#34;
+    # tme1 = datetime.datetime.now()
+    # w = tn.einsum(&#39;lsr,smnS,LSR,rnR-&gt;lmL&#39;,Phi_left,coreA,Phi_right,core)
+    # tme1 = datetime.datetime.now() - tme1 
+    # tme2 = datetime.datetime.now() 
+    w = oe.contract(&#39;lsr,smnS,LSR,rnR-&gt;lmL&#39;,Phi_left,coreA,Phi_right,core)
+    #tme2 = datetime.datetime.now() - tme2 
+    
+    #print(&#39;################### &#39;,tme1,tme2)
+    # product = tn.reshape(w,[-1])
+    return w
+
+class _LinearOp():
+    def __init__(self,Phi_left,Phi_right,coreA,shape,prec):
+        self.Phi_left = Phi_left
+        self.Phi_right = Phi_right
+        self.coreA = coreA
+        self.shape = shape
+        self.prec = prec
+        #tme = datetime.datetime.now()
+        #self.contraction = oe.contract_expression(&#39;lsr,smnS,LSR,rnR-&gt;lmL&#39;, Phi_left.shape, coreA.shape, Phi_right.shape, shape)
+        #tme = datetime.datetime.now() - tme 
+        #print(&#39;contr   &#39;,tme)
+        
+        # tme = datetime.datetime.now()
+        if prec == &#39;c&#39;:
+            # Jl = oe.contract(&#39;sd,smnS-&gt;dmnS&#39;,tn.diagonal(Phi_left,0,0,2),coreA)
+            Jl = tn.einsum(&#39;sd,smnS-&gt;dmnS&#39;,tn.diagonal(Phi_left,0,0,2),coreA)
+            Jr = tn.diagonal(Phi_right,0,0,2)
+            # J = oe.contract(&#39;dmnS,SD-&gt;dDmn&#39;,Jl,Jr)
+            J = tn.einsum(&#39;dmnS,SD-&gt;dDmn&#39;,Jl,Jr)
+            self.J = tn.linalg.inv(J)
+        # tme = datetime.datetime.now() - tme 
+        # print(&#39;contr   &#39;,tme)
+    def apply_prec(self,x):
+        
+        if self.prec == &#39;c&#39;:
+            y = tn.einsum(&#39;rnR,rRmn-&gt;rmR&#39;,x,self.J) # no improvement using opt_einsum
+            return y
+        
+    def matvec(self, x, apply_prec = True):
+        if self.prec == None or not apply_prec:
+            x = tn.reshape(x,self.shape)
+            # tme = datetime.datetime.now()
+            #w = oe.contract(&#39;lsr,smnS,LSR,rnR-&gt;lmL&#39;,self.Phi_left,self.coreA,self.Phi_right,x)
+            # # path = oe.contract_path(&#39;lsr,smnS,LSR,rnR-&gt;lmL&#39;,self.Phi_left,self.coreA,self.Phi_right,x,optimize = &#39;optimal&#39;)
+            # # print(path[1])
+            # tme = datetime.datetime.now() - tme
+            # print(&#39;time 1 &#39;,tme)
+            # tme = datetime.datetime.now()
+            # #w = tn.einsum(&#39;lsr,smnS,LSR,rnR-&gt;lmL&#39;,self.Phi_left,self.coreA,self.Phi_right,x)
+            # w = tn.einsum(&#39;rnR,lsr-&gt;nRls&#39;,x,self.Phi_left)
+
+            w = tn.tensordot(x,self.Phi_left,([0],[2])) # shape rnR,lsr-&gt;nRls
+            w = tn.tensordot(w,self.coreA,([0,3],[2,0])) # nRls,smnS-&gt;RlmS
+            w = tn.tensordot(w,self.Phi_right,([0,3],[2,1])) # RlmS,LSR-&gt;lmL 
+            
+            # w = self.contraction(self.Phi_left,self.coreA,self.Phi_right,x)
+            # tme = datetime.datetime.now() - tme
+            # # print(&#39;time 2 &#39;,tme)
+        elif self.prec == &#39;c&#39;:
+            # tme = datetime.datetime.now()
+            x = tn.reshape(x,self.shape)
+            # tme = datetime.datetime.now() - tme 
+            # print(&#39;reshape  &#39;,tme)
+            
+            # tme = datetime.datetime.now()
+            x = self.apply_prec(x)
+            # tme = datetime.datetime.now() - tme 
+            # print(&#39;prec     &#39;,tme)
+            
+            # tme = datetime.datetime.now()
+            # w = self.contraction(self.Phi_left,self.coreA,self.Phi_right,x)
+            # tme = datetime.datetime.now() - tme 
+            # print(&#39;mv       &#39;,tme)
+            
+            # tme = datetime.datetime.now()
+            w = tn.tensordot(x,self.Phi_left,([0],[2])) # shape rnR,lsr-&gt;nRls
+            w = tn.tensordot(w,self.coreA,([0,3],[2,0])) # nRls,smnS-&gt;RlmS
+            w = tn.tensordot(w,self.Phi_right,([0,3],[2,1])) # RlmS,LSR-&gt;lmL 
+            # tme = datetime.datetime.now() - tme 
+            # print(&#39;mv2      &#39;,tme)
+            
+            
+        else:
+            raise Exception(&#39;Preconditioner &#39;+str(self.prec)+&#39; not defined.&#39;)
+        return tn.reshape(w,[-1,1])
+
+def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = &#39;res&#39;, local_iterations = 40, resets = 2, verbose = False, preconditioner = None):
+    &#34;&#34;&#34;
+    Solve a multilinear system \(\\mathsf{Ax} = \\mathsf{b}\) in the Tensor Train format.
+    
+    This method implements the algorithm from [Sergey V Dolgov, Dmitry V Savostyanov, Alternating minimal energy methods for linear systems in higher dimensions](https://epubs.siam.org/doi/abs/10.1137/140953289).
+
+    Example:
+        ```
+        import torchtt
+        A = torchtt.random([(4,4),(5,5),(6,6)],[1,2,3,1]) # create random matrix
+        x = torchtt.random([4,5,6],[1,2,3,1]) # invent a random solution
+        b = A @ x # compute the rhs
+        xx = torchtt.solvers.amen_solve(A,b) # solve
+        print((xx-x).norm()/x.norm()) # error
+        ```
+    
+    Args:
+        A (torchtt.TT): the system matrix in TT.
+        b (torchtt.TT): the right hand side in TT.
+        nswp (int, optional): number of sweeps. Defaults to 22.
+        x0 (torchtt.TT, optional): initial guess. In None is provided the initial guess is a ones tensor. Defaults to None.
+        eps (float, optional): relative residual. Defaults to 1e-10.
+        rmax (int, optional): maximum rank. Defaults to 100.
+        max_full (int, optional): the maximum size of the core until direct solver is used for the local subproblem. Defaults to 500.
+        kickrank (int, optional): [description]. Defaults to 4.
+        kick2 (int, optional): [description]. Defaults to 0.
+        trunc_norm (str, optional): [description]. Defaults to &#39;res&#39;.
+        local_iterations (int, optional): number of GMRES iterations for the local subproblems. Defaults to 40.
+        resets (int, optional): number of resets in the GMRES. Defaults to 2.
+        verbose (bool, optional): choose whether to display or not additional information during the runtime. Defaults to True.
+        preconditioner (string, optional): Choose the preconditioner for the local system. Possible values are None, &#39;c&#39; (central Jacobi preconditioner). No preconditioner is used if None is provided. Defaults to None.
+
+    Raises:
+        InvalidArguments: A and b must be TT instances.
+        IncompatibleTypes: A must be TT-matrix and b must be vector.
+        ShapeMismatch: A is not quadratic.
+        ShapeMismatch: Dimension mismatch.
+
+    Returns:
+        torchtt.TT: the approximation of the solution in TT format.
+    &#34;&#34;&#34;
+    # perform checks of the input data
+    if not (isinstance(A,torchtt.TT) and isinstance(b,torchtt.TT)):
+        raise InvalidArguments(&#39;A and b must be TT instances.&#39;)
+    if not ( A.is_ttm and not b.is_ttm ) :
+        raise IncompatibleTypes(&#39;A must be TT-matrix and b must be vector.&#39;)
+    if A.M != A.N:
+        raise ShapeMismatch(&#39;A is not quadratic.&#39;)
+    if A.N != b.N:
+        raise ShapeMismatch(&#39;Dimension mismatch.&#39;)
+
+    if verbose: time_total = datetime.datetime.now()
+    
+    dtype = A.cores[0].dtype 
+    device = A.cores[0].device
+    rank_search = 1 # binary rank search
+    damp = 2
+
+    if x0 == None:
+        x = torchtt.ones(b.N, dtype = dtype, device = device)
+    else:
+        x = x0
+    
+    rA = A.R
+    N = b.N
+    d = len(N)
+    x_cores = x.cores.copy()
+    rx = x.R.copy()
+    # check if rmax is a list
+    if isinstance(rmax, int):
+        rmax = [1] + (d-1) * [rmax] + [1]
+
+    # z cores
+    rz = [1]+(d-1)*[kickrank+kick2]+[1]
+    z_tt = torchtt.random(N,rz,dtype,device = device)
+    z_cores = z_tt.cores
+    z_cores, rz = rl_orthogonal(z_cores, rz, False)
+    
+    norms = np.zeros(d)
+    Phiz = [tn.ones((1,1,1), dtype = dtype, device = device)] + [None] * (d-1) + [tn.ones((1,1,1), dtype = dtype, device = device)] # size is rzk x Rk x rxk
+    Phiz_b = [tn.ones((1,1), dtype = dtype, device = device)] + [None] * (d-1) + [tn.ones((1,1), dtype = dtype, device = device)]   # size is rzk x rzbk
+    
+    Phis = [tn.ones((1,1,1), dtype = dtype, device = device)] + [None] * (d-1) + [tn.ones((1,1,1), dtype = dtype, device = device)] # size is rk x Rk x rk
+    Phis_b = [tn.ones((1,1), dtype = dtype, device = device)] + [None] * (d-1) + [tn.ones((1,1), dtype = dtype, device = device)] # size is rk x rbk
+
+    last = False
+
+    normA = np.ones((d-1))
+    normb = np.ones((d-1))
+    normx = np.ones((d-1))
+    nrmsc = 1.0
+
+    for swp in range(nswp):
+        tme_sweep = datetime.datetime.now()
+        # right to left orthogonalization
+
+        if verbose:
+            print()
+            print(&#39;Starting sweep %d %s...&#39;%(swp,&#34;(last one) &#34; if last else &#34;&#34;))
+            tme_sweep = datetime.datetime.now() 
+        
+
+        tme = datetime.datetime.now()
+        for k in range(d-1,0,-1):
+            
+            # update the z part (ALS) update
+            if not last:
+                if swp &gt; 0:
+                    czA = _local_product(Phiz[k+1],Phiz[k],A.cores[k],x_cores[k],x_cores[k].shape) # shape rzp x N x rz
+                    czy = tn.einsum(&#39;br,bnB,BR-&gt;rnR&#39;,Phiz_b[k],b.cores[k],Phiz_b[k+1]) # shape is rzp x N x rz
+                    cz_new = czy*nrmsc - czA
+                    _,_,vz = SVD(tn.reshape(cz_new,[cz_new.shape[0],-1]))
+                    cz_new = vz[:min(kickrank,vz.shape[0]),:].t() # truncate to kickrank
+                    if k &lt; d-1: # extend cz_new with random elements
+                        cz_new = tn.cat((cz_new,tn.randn((cz_new.shape[0],kick2),  dtype = dtype, device = device)),1)
+                else:
+                    cz_new = tn.reshape(z_cores[k],[rz[k],-1]).t()
+
+                qz, _ = QR(cz_new)
+                rz[k] = qz.shape[1]
+                z_cores[k] = tn.reshape(qz.t(),[rz[k],N[k],rz[k+1]]) 
+            
+            # norm correction ?
+            if swp &gt; 0: nrmsc = nrmsc * normA[k-1] * normx[k-1] / normb[k-1] 
+        
+            
+            core = tn.reshape(x_cores[k],[rx[k],N[k]*rx[k+1]]).t()
+            Qmat, Rmat = QR(core)
+            
+            core_prev = tn.einsum(&#39;ijk,km-&gt;ijm&#39;,x_cores[k-1],Rmat.T)
+            rx[k] = Qmat.shape[1]
+            
+            current_norm = tn.linalg.norm(core_prev)
+            if current_norm&gt;0:
+                core_prev = core_prev /  current_norm
+            else:
+                current_norm = 1.0
+            normx[k-1] = normx[k-1]*current_norm
+             
+            x_cores[k] = tn.reshape(Qmat.t(),[rx[k],N[k],rx[k+1]]) 
+            x_cores[k-1] = core_prev[:]
+            
+            # update phis (einsum)
+            # print(x_cores[k].shape,A.cores[k].shape,x_cores[k].shape)
+            Phis[k] = _compute_phi_bck_A(Phis[k+1],x_cores[k],A.cores[k],x_cores[k])
+            Phis_b[k] = _compute_phi_bck_rhs(Phis_b[k+1],b.cores[k],x_cores[k])
+            
+            # ... and norms 
+            norm = tn.linalg.norm(Phis[k])
+            norm = norm if norm&gt;0 else 1.0
+            normA[k-1] = norm 
+            Phis[k] =  Phis[k] / norm
+            norm = tn.linalg.norm(Phis_b[k])
+            norm = norm if norm&gt;0 else 1.0
+            normb[k-1] = norm 
+            Phis_b[k] = Phis_b[k]/norm
+            
+            # norm correction
+            nrmsc = nrmsc * normb[k-1]/ (normA[k-1] * normx[k-1])      
+
+            # compute phis_z
+            if not last:
+                Phiz[k] = _compute_phi_bck_A(Phiz[k+1], z_cores[k], A.cores[k], x_cores[k]) / normA[k-1]
+                Phiz_b[k] = _compute_phi_bck_rhs(Phiz_b[k+1], b.cores[k], z_cores[k]) / normb[k-1]
+
+
+        # start loop
+        max_res = 0
+        max_dx = 0
+
+        for k in range(d):
+            if verbose: print(&#39;\tCore&#39;,k) 
+            previous_solution = tn.reshape(x_cores[k],[-1,1])
+            
+        
+            # assemble rhs 
+            rhs = tn.einsum(&#39;br,bmB,BR-&gt;rmR&#39;,Phis_b[k] , b.cores[k] * nrmsc, Phis_b[k+1])
+            rhs = tn.reshape(rhs,[-1,1])
+            norm_rhs = tn.linalg.norm(rhs)
+            
+            #residuals
+            real_tol = (eps/np.sqrt(d))/damp
+        
+            # solve the local system
+            use_full = rx[k]*N[k]*rx[k+1] &lt; max_full
+            if use_full: 
+                # solve the full system
+                if verbose: print(&#39;\t\tChoosing direct solver (local size %d)....&#39;%(rx[k]*N[k]*rx[k+1]))  
+                Bp = tn.einsum(&#39;smnS,LSR-&gt;smnRL&#39;,A.cores[k],Phis[k+1]) # shape is Rp x N x N x r x r
+                #B = tn.einsum(&#39;lsr,smnRL-&gt;rmRlnL&#39;,Phis[k],Bp)
+                B = tn.einsum(&#39;lsr,smnRL-&gt;lmLrnR&#39;,Phis[k],Bp) 
+                B = tn.reshape(B,[rx[k]*N[k]*rx[k+1],rx[k]*N[k]*rx[k+1]])
+
+                solution_now = tn.linalg.solve(B,rhs)   
+                
+                res_old = tn.linalg.norm(B@previous_solution-rhs)/norm_rhs
+                res_new = tn.linalg.norm(B@solution_now-rhs)/norm_rhs
+            else:
+                # iterative solver
+                if verbose: 
+                    print(&#39;\t\tChoosing iterative solver (local size %d)....&#39;%(rx[k]*N[k]*rx[k+1])) 
+                    time_local = datetime.datetime.now()
+                shape_now = [rx[k],N[k],rx[k+1]]
+                Op = _LinearOp(Phis[k],Phis[k+1],A.cores[k],shape_now, preconditioner)
+                
+                # solution_now, flag, nit, res_new = BiCGSTAB_reset(Op, rhs,previous_solution[:], eps_local, local_iterations) 
+                eps_local = real_tol * norm_rhs
+                drhs = Op.matvec(previous_solution, False)
+                drhs = rhs-drhs
+                eps_local = eps_local / tn.linalg.norm(drhs) 
+                solution_now, flag, nit = gmres_restart(Op, drhs, previous_solution*0, rhs.shape[0], local_iterations+1, eps_local, resets)
+                if preconditioner != None:
+                    solution_now = Op.apply_prec(tn.reshape(solution_now,shape_now))
+                    solution_now = tn.reshape(solution_now,[-1,1])
+                
+                solution_now = previous_solution + solution_now
+                res_old = tn.linalg.norm(Op.matvec(previous_solution, False)-rhs)/norm_rhs
+                res_new = tn.linalg.norm(Op.matvec(solution_now, False)-rhs)/norm_rhs
+                if verbose:
+                    print(&#39;\t\tFinished with flag %d after %d iterations with relres %g (from %g)&#39;%(flag,nit,res_new,eps_local)) 
+                    time_local = datetime.datetime.now() - time_local
+                    print(&#39;\t\tTime needed &#39;,time_local)
+            # residual damp check
+            if res_old/res_new &lt; damp and res_new &gt; real_tol:
+                if verbose: print(&#39;WARNING: residual increases. res_old %g, res_new %g, real_tol %g&#39;%(res_old,res_new,real_tol)) # warning (from tt toolbox)
+
+            # compute residual and step size
+            dx = tn.linalg.norm(solution_now-previous_solution)/tn.linalg.norm(solution_now)
+            if verbose: 
+                print(&#39;\t\tdx = %g, res_now = %g, res_old = %g&#39;%(dx,res_new,res_old))
+                
+
+            max_dx = max(dx,max_dx)
+            max_res = max(max_res,res_old)
+            
+            solution_now = tn.reshape(solution_now,[rx[k]*N[k],rx[k+1]])
+            # truncation
+            if k&lt;d-1:
+                u, s, v = SVD(solution_now)
+                # print(&#39;\t\tTruncation of solution of shape&#39;,[rx[k]*N[k],rx[k+1]],&#39; into u&#39;, u.shape, &#39; and v &#39;,v.shape)
+                if trunc_norm == &#39;fro&#39;:
+                    pass
+                else:
+                    # search for a rank such that offeres small enough residuum
+                    # TODO: binary search?
+                    r = 0
+                    for r in range(u.shape[1]-1,0,-1):
+                        solution = u[:,:r] @ tn.diag(s[:r]) @ v[:r,:] # solution has the same size
+                        # res = tn.linalg.norm(tn.reshape(local_product(Phis[k+1],Phis[k],A.cores[k],tn.reshape(solution,[rx[k],N[k],rx[k+1]]),solution_now.shape),[-1,1]) - rhs)/norm_rhs
+                        
+                        if use_full:
+                            res = tn.linalg.norm(B@tn.reshape(solution,[-1,1])-rhs)/norm_rhs
+                        else:
+                            # res = tn.linalg.norm(tn.reshape(local_product(Phis[k+1],Phis[k],A.cores[k],tn.reshape(solution,[rx[k],N[k],rx[k+1]]),solution_now.shape),[-1,1]) - rhs)/norm_rhs
+                            res = tn.linalg.norm(Op.matvec(solution)-rhs)/norm_rhs
+                        if res &gt; max(real_tol*damp,res_new):
+                            break
+                    r += 1
+
+                    r = min([r,tn.numel(s),rmax[k+1]])
+            else:
+                u, v = QR(solution_now)
+                # v = v.t()
+                r = u.shape[1]
+                s = tn.ones(r,  dtype = dtype, device = device)
+
+            u = u[:,:r]
+            v = tn.diag(s[:r]) @ v[:r,:]
+            v = v.t()
+
+            if not last:
+                czA = _local_product(Phiz[k+1], Phiz[k], A.cores[k], tn.reshape(u@v.t(),[rx[k],N[k],rx[k+1]]), [rx[k],N[k],rx[k+1]]) # shape rzp x N x rz
+                czy = tn.einsum(&#39;br,bnB,BR-&gt;rnR&#39;,Phiz_b[k],b.cores[k]*nrmsc,Phiz_b[k+1]) # shape is rzp x N x rz
+                cz_new = czy - czA
+                # print(&#39;Phiz_b&#39;,[plm.shape for plm in Phiz_b])
+                # print(&#39;czA&#39;,czA.shape,&#39; czy&#39;,czy.shape)
+                # print(&#39;rz&#39;,rz)
+                # print(&#39;rx&#39;,rx)
+
+                uz,_,_ = SVD(tn.reshape(cz_new, [rz[k]*N[k],rz[k+1]]))
+                cz_new = uz[:,:min(kickrank,uz.shape[1])] # truncate to kickrank
+                if k &lt; d-1: # extend cz_new with random elements
+                    cz_new = tn.cat((cz_new,tn.randn((cz_new.shape[0],kick2),  dtype = dtype, device = device)),1)
+                
+                qz,_ = QR(cz_new)
+                rz[k+1] = qz.shape[1]
+                z_cores[k] = tn.reshape(qz,[rz[k],N[k],rz[k+1]])
+
+            if k &lt; d-1:
+                if not last:
+                    left_res = _local_product(Phiz[k+1],Phis[k],A.cores[k],tn.reshape(u@v.t(),[rx[k],N[k],rx[k+1]]),[rx[k],N[k],rx[k+1]])
+                    left_b = tn.einsum(&#39;br,bmB,BR-&gt;rmR&#39;,Phis_b[k],b.cores[k]*nrmsc,Phiz_b[k+1])
+                    uk = left_b - left_res # rx_k x N_k x rz_k+1
+                    # print(&#39;u&#39;,u.shape,&#39; uk&#39;,uk.shape)
+                    # print(&#39;rx&#39;,rx,&#39;rz&#39;,rz)
+                    # print(Phis_b[k].shape,Phiz_b[k+1].shape, left_res.shape)
+                    # uk = tn.reshape(uk,[-1,rz[k+1]])
+                    u, Rmat = QR(tn.cat((u,tn.reshape(uk,[u.shape[0],-1])),1))
+                    # print(&#39;Q&#39;,u.shape,&#39; R&#39;, Rmat.shape)
+                    r_add = uk.shape[2]
+                    # print(&#39;v before&#39;,v.shape,&#39; solution shape &#39;,solution_now.shape)
+                    # print(&#39;adding &#39;,[rx[k+1],r_add])
+                    v = tn.cat((v,tn.zeros([rx[k+1],r_add],  dtype = dtype, device = device)), 1)
+                    # print(&#39;v after &#39;,v.shape)
+                    v = v @ Rmat.t()
+                 
+                r = u.shape[1]
+                # print(u.shape,v.shape,x_cores[k+1].shape)
+                v = tn.einsum(&#39;ji,jkl-&gt;ikl&#39;,v,x_cores[k+1])
+                # remove norm correction
+                nrmsc = nrmsc * normA[k] * normx[k] / normb[k]  
+
+                norm_now = tn.linalg.norm(v)
+
+                if norm_now&gt;0:
+                    v = v / norm_now
+                else:
+                    norm_now = 1.0
+                normx[k] = normx[k] * norm_now
+
+                x_cores[k] = tn.reshape(u, [rx[k],N[k],r])
+                x_cores[k+1] = tn.reshape(v, [r,N[k+1],rx[k+2]])
+                rx[k+1] = r
+
+                # next phis with norm correction
+                Phis[k+1] = _compute_phi_fwd_A(Phis[k], x_cores[k], A.cores[k], x_cores[k]) 
+                Phis_b[k+1] = _compute_phi_fwd_rhs(Phis_b[k], b.cores[k],x_cores[k])
+                
+                # ... and norms 
+                norm = tn.linalg.norm(Phis[k+1])
+                norm = norm if norm&gt;0 else 1.0
+                normA[k] = norm 
+                Phis[k+1] = Phis[k+1] / norm
+                norm = tn.linalg.norm(Phis_b[k+1])
+                norm = norm if norm&gt;0 else 1.0
+                normb[k] = norm 
+                Phis_b[k+1] = Phis_b[k+1] / norm
+                
+                # norm correction
+                nrmsc = nrmsc * normb[k] / ( normA[k] * normx[k] )
+
+
+                # next phiz
+                if not last:
+                    Phiz[k+1] = _compute_phi_fwd_A(Phiz[k], z_cores[k], A.cores[k], x_cores[k]) / normA[k]
+                    Phiz_b[k+1] = _compute_phi_fwd_rhs(Phiz_b[k], b.cores[k],z_cores[k]) / normb[k]
+            else:
+                x_cores[k] = tn.reshape(u@tn.diag(s[:r]) @ v[:r,:].t(),[rx[k],N[k],rx[k+1]])
+
+        if verbose:
+            print(&#39;Solution rank is&#39;,rx)
+            print(&#39;Maxres &#39;,max_res)
+            tme_sweep = datetime.datetime.now()-tme_sweep
+            print(&#39;Time &#39;,tme_sweep)
+              
+                
+        if last:
+            break
+
+        if max_res &lt; eps:
+            last = True
+
+    if verbose:
+        time_total = datetime.datetime.now() - time_total
+        print()
+        print(&#39;Finished after&#39; ,swp,&#39; sweeps and &#39;,time_total)
+        print()
+    normx = np.exp(np.sum(np.log(normx))/d)
+
+    for k in range(d):
+        x_cores[k] = x_cores[k] * normx
+
+    x = torchtt.TT(x_cores)
+
+    return x
+
+
+
+def _compute_phi_bck_A(Phi_now,core_left,core_A,core_right):
+    &#34;&#34;&#34;
+    Compute the phi backwards for the form dot(left,A @ right)
+
+    Args:
+        Phi_now (torch.tensor): The current phi. Has shape r1_k+1 x R_k+1 x r2_k+1
+        core_left (torch.tensor): the core on the left. Has shape r1_k x N_k x r1_k+1 
+        core_A (torch.tensor): the core of the matrix. Has shape  R_k x N_k x N_k x R_k
+        core_right (torch.tensor): the core to the right. Has shape r2_k x N_k x r2_k+1 
+
+    Returns:
+        torch.tensor: The following phi (backward). Has shape r1_k x R_k x r2_k
+    &#34;&#34;&#34;
+    
+    # Phip = tn.einsum(&#39;ijk,klm-&gt;ijlm&#39;,core_right,Phi_now)
+    # Phipp = tn.einsum(&#39;ijkl,abjk-&gt;ilba&#39;,Phip,core_A)
+    # Phi = tn.einsum(&#39;ijkl,akj-&gt;ila&#39;,Phipp,core_left)
+    Phi = oe.contract(&#39;LSR,lML,sMNS,rNR-&gt;lsr&#39;,Phi_now,core_left,core_A,core_right)
+    return Phi
+
+def _compute_phi_fwd_A(Phi_now, core_left, core_A, core_right):
+    &#34;&#34;&#34;
+    Compute the phi forward for the form dot(left,A @ right)
+
+    Args:
+        Phi_now (torch.tensor): The current phi. Has shape r1_k x R_k x r2_k
+        core_left (torch.tensor): the core on the left. Has shape r1_k x N_k x r1_k+1 
+        core_A (torch.tensor): the core of the matrix. Has shape  R_k x N_k x N_k x R_k
+        core_right (torch.tensor): the core to the right. Has shape r2_k x N_k x r2_k+1 
+
+    Returns:
+        torch.tensor: The following phi (backward). Has shape r1_k+1 x R_k+1 x r2_k+1
+    &#34;&#34;&#34;
+    # Psip = tn.einsum(&#39;ijk,kbc-&gt;ijbc&#39;, Phi_now, core_left)  # shape is rk-1 x Rk-1 x Nk x rk 
+    # Psipp = tn.einsum(&#39;ijkl,aijd-&gt;klad&#39;, core_A, Psip)  # shape is nk x Rk x rk-1 x rk
+    # Phi_next= tn.einsum(&#39;ijk,jbid-&gt;kbd&#39;,core_right,Psipp) # shape is rk x  Rk x rk
+    # tme1 = datetime.datetime.now()
+   #  Phi_next = tn.einsum(&#39;lsr,lML,sMNS,rNR-&gt;LSR&#39;,Phi_now,core_left,core_A,core_right)
+    # tme1 = datetime.datetime.now() - tme1 
+    # tme2 = datetime.datetime.now()
+    Phi_next = oe.contract(&#39;lsr,lML,sMNS,rNR-&gt;LSR&#39;,Phi_now,core_left,core_A,core_right)
+    # tme2 = datetime.datetime.now() - tme2 
+    # print(&#39;\n&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;Time1 &#39;,tme1,&#39; time 2&#39;, tme2) 
+    return Phi_next
+
+def _compute_phi_bck_rhs(Phi_now,core_b,core):
+    &#34;&#34;&#34;
+    
+
+    Args:
+        Phi_now (torch.tensor): The current phi. Has shape rb_k+1 x r_k+1
+        core_b (torch.tensor): The current core of the rhs. Has shape rb_k x N_k x rb_k+1
+        core (torch.tensor): The current core. Has shape r_k x N_k x r_k+1
+
+    Returns:
+        torch.tensor: The backward phi corresponding to the rhs. Has shape rb_k x r_k
+    &#34;&#34;&#34;
+    #Phit = tn.einsum(&#39;ij,abj-&gt;iba&#39;,Phi_now,core_b)
+    #Phi = tn.einsum(&#39;ijk,kjc-&gt;ic&#39;,core,Phit)
+    Phi = oe.contract(&#39;BR,bnB,rnR-&gt;br&#39;,Phi_now,core_b,core)
+    return Phi
+
+def _compute_phi_fwd_rhs(Phi_now,core_rhs,core):
+    &#34;&#34;&#34;
+    
+
+    Args:
+        Phi_now (torch.tensor): The current phi. Has shape  rb_k x r_k
+        core_b (torch.tensor): The current core of the rhs. Has shape rb_k x N_k+1 x rb_k+1
+        core (torch.tensor): The current core. Has shape r_k x N_k x r_k+1
+
+    Returns:
+        torch.tensor: The forward computer phi for the rhs. Has shape rb_k+1 x r_k+1
+    &#34;&#34;&#34;
+    # tmp = tn.einsum(&#39;ij,jbc-&gt;ibc&#39;,Phi_now,core_rhs) # shape rk-1 x Nk x rbk
+    # Phi_next = tn.einsum(&#39;ijk,ijc-&gt;kc&#39;,core,tmp) 
+    Phi_next = oe.contract(&#39;br,bnB,rnR-&gt;BR&#39;,Phi_now,core_rhs,core)
+    return Phi_next</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="torchtt.solvers.amen_solve"><code class="name flex">
+<span>def <span class="ident">amen_solve</span></span>(<span>A, b, nswp=22, x0=None, eps=1e-10, rmax=100, max_full=500, kickrank=4, kick2=0, trunc_norm='res', local_iterations=40, resets=2, verbose=False, preconditioner=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Solve a multilinear system <span><span class="MathJax_Preview">\mathsf{Ax} = \mathsf{b}</span><script type="math/tex">\mathsf{Ax} = \mathsf{b}</script></span> in the Tensor Train format.</p>
+<p>This method implements the algorithm from <a href="https://epubs.siam.org/doi/abs/10.1137/140953289">Sergey V Dolgov, Dmitry V Savostyanov, Alternating minimal energy methods for linear systems in higher dimensions</a>.</p>
+<h2 id="example">Example</h2>
+<pre><code>import torchtt
+A = torchtt.random([(4,4),(5,5),(6,6)],[1,2,3,1]) # create random matrix
+x = torchtt.random([4,5,6],[1,2,3,1]) # invent a random solution
+b = A @ x # compute the rhs
+xx = torchtt.solvers.amen_solve(A,b) # solve
+print((xx-x).norm()/x.norm()) # error
+</code></pre>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>A</code></strong> :&ensp;<code>torchtt.TT</code></dt>
+<dd>the system matrix in TT.</dd>
+<dt><strong><code>b</code></strong> :&ensp;<code>torchtt.TT</code></dt>
+<dd>the right hand side in TT.</dd>
+<dt><strong><code>nswp</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>number of sweeps. Defaults to 22.</dd>
+<dt><strong><code>x0</code></strong> :&ensp;<code>torchtt.TT</code>, optional</dt>
+<dd>initial guess. In None is provided the initial guess is a ones tensor. Defaults to None.</dd>
+<dt><strong><code>eps</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>relative residual. Defaults to 1e-10.</dd>
+<dt><strong><code>rmax</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>maximum rank. Defaults to 100.</dd>
+<dt><strong><code>max_full</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>the maximum size of the core until direct solver is used for the local subproblem. Defaults to 500.</dd>
+<dt><strong><code>kickrank</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>[description]. Defaults to 4.</dd>
+<dt><strong><code>kick2</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>[description]. Defaults to 0.</dd>
+<dt><strong><code>trunc_norm</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>[description]. Defaults to 'res'.</dd>
+<dt><strong><code>local_iterations</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>number of GMRES iterations for the local subproblems. Defaults to 40.</dd>
+<dt><strong><code>resets</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>number of resets in the GMRES. Defaults to 2.</dd>
+<dt><strong><code>verbose</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>choose whether to display or not additional information during the runtime. Defaults to True.</dd>
+<dt><strong><code>preconditioner</code></strong> :&ensp;<code>string</code>, optional</dt>
+<dd>Choose the preconditioner for the local system. Possible values are None, 'c' (central Jacobi preconditioner). No preconditioner is used if None is provided. Defaults to None.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>InvalidArguments</code></dt>
+<dd>A and b must be TT instances.</dd>
+<dt><code>IncompatibleTypes</code></dt>
+<dd>A must be TT-matrix and b must be vector.</dd>
+<dt><code>ShapeMismatch</code></dt>
+<dd>A is not quadratic.</dd>
+<dt><code>ShapeMismatch</code></dt>
+<dd>Dimension mismatch.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>torchtt.TT</code></dt>
+<dd>the approximation of the solution in TT format.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = &#39;res&#39;, local_iterations = 40, resets = 2, verbose = False, preconditioner = None):
+    &#34;&#34;&#34;
+    Solve a multilinear system \(\\mathsf{Ax} = \\mathsf{b}\) in the Tensor Train format.
+    
+    This method implements the algorithm from [Sergey V Dolgov, Dmitry V Savostyanov, Alternating minimal energy methods for linear systems in higher dimensions](https://epubs.siam.org/doi/abs/10.1137/140953289).
+
+    Example:
+        ```
+        import torchtt
+        A = torchtt.random([(4,4),(5,5),(6,6)],[1,2,3,1]) # create random matrix
+        x = torchtt.random([4,5,6],[1,2,3,1]) # invent a random solution
+        b = A @ x # compute the rhs
+        xx = torchtt.solvers.amen_solve(A,b) # solve
+        print((xx-x).norm()/x.norm()) # error
+        ```
+    
+    Args:
+        A (torchtt.TT): the system matrix in TT.
+        b (torchtt.TT): the right hand side in TT.
+        nswp (int, optional): number of sweeps. Defaults to 22.
+        x0 (torchtt.TT, optional): initial guess. In None is provided the initial guess is a ones tensor. Defaults to None.
+        eps (float, optional): relative residual. Defaults to 1e-10.
+        rmax (int, optional): maximum rank. Defaults to 100.
+        max_full (int, optional): the maximum size of the core until direct solver is used for the local subproblem. Defaults to 500.
+        kickrank (int, optional): [description]. Defaults to 4.
+        kick2 (int, optional): [description]. Defaults to 0.
+        trunc_norm (str, optional): [description]. Defaults to &#39;res&#39;.
+        local_iterations (int, optional): number of GMRES iterations for the local subproblems. Defaults to 40.
+        resets (int, optional): number of resets in the GMRES. Defaults to 2.
+        verbose (bool, optional): choose whether to display or not additional information during the runtime. Defaults to True.
+        preconditioner (string, optional): Choose the preconditioner for the local system. Possible values are None, &#39;c&#39; (central Jacobi preconditioner). No preconditioner is used if None is provided. Defaults to None.
+
+    Raises:
+        InvalidArguments: A and b must be TT instances.
+        IncompatibleTypes: A must be TT-matrix and b must be vector.
+        ShapeMismatch: A is not quadratic.
+        ShapeMismatch: Dimension mismatch.
+
+    Returns:
+        torchtt.TT: the approximation of the solution in TT format.
+    &#34;&#34;&#34;
+    # perform checks of the input data
+    if not (isinstance(A,torchtt.TT) and isinstance(b,torchtt.TT)):
+        raise InvalidArguments(&#39;A and b must be TT instances.&#39;)
+    if not ( A.is_ttm and not b.is_ttm ) :
+        raise IncompatibleTypes(&#39;A must be TT-matrix and b must be vector.&#39;)
+    if A.M != A.N:
+        raise ShapeMismatch(&#39;A is not quadratic.&#39;)
+    if A.N != b.N:
+        raise ShapeMismatch(&#39;Dimension mismatch.&#39;)
+
+    if verbose: time_total = datetime.datetime.now()
+    
+    dtype = A.cores[0].dtype 
+    device = A.cores[0].device
+    rank_search = 1 # binary rank search
+    damp = 2
+
+    if x0 == None:
+        x = torchtt.ones(b.N, dtype = dtype, device = device)
+    else:
+        x = x0
+    
+    rA = A.R
+    N = b.N
+    d = len(N)
+    x_cores = x.cores.copy()
+    rx = x.R.copy()
+    # check if rmax is a list
+    if isinstance(rmax, int):
+        rmax = [1] + (d-1) * [rmax] + [1]
+
+    # z cores
+    rz = [1]+(d-1)*[kickrank+kick2]+[1]
+    z_tt = torchtt.random(N,rz,dtype,device = device)
+    z_cores = z_tt.cores
+    z_cores, rz = rl_orthogonal(z_cores, rz, False)
+    
+    norms = np.zeros(d)
+    Phiz = [tn.ones((1,1,1), dtype = dtype, device = device)] + [None] * (d-1) + [tn.ones((1,1,1), dtype = dtype, device = device)] # size is rzk x Rk x rxk
+    Phiz_b = [tn.ones((1,1), dtype = dtype, device = device)] + [None] * (d-1) + [tn.ones((1,1), dtype = dtype, device = device)]   # size is rzk x rzbk
+    
+    Phis = [tn.ones((1,1,1), dtype = dtype, device = device)] + [None] * (d-1) + [tn.ones((1,1,1), dtype = dtype, device = device)] # size is rk x Rk x rk
+    Phis_b = [tn.ones((1,1), dtype = dtype, device = device)] + [None] * (d-1) + [tn.ones((1,1), dtype = dtype, device = device)] # size is rk x rbk
+
+    last = False
+
+    normA = np.ones((d-1))
+    normb = np.ones((d-1))
+    normx = np.ones((d-1))
+    nrmsc = 1.0
+
+    for swp in range(nswp):
+        tme_sweep = datetime.datetime.now()
+        # right to left orthogonalization
+
+        if verbose:
+            print()
+            print(&#39;Starting sweep %d %s...&#39;%(swp,&#34;(last one) &#34; if last else &#34;&#34;))
+            tme_sweep = datetime.datetime.now() 
+        
+
+        tme = datetime.datetime.now()
+        for k in range(d-1,0,-1):
+            
+            # update the z part (ALS) update
+            if not last:
+                if swp &gt; 0:
+                    czA = _local_product(Phiz[k+1],Phiz[k],A.cores[k],x_cores[k],x_cores[k].shape) # shape rzp x N x rz
+                    czy = tn.einsum(&#39;br,bnB,BR-&gt;rnR&#39;,Phiz_b[k],b.cores[k],Phiz_b[k+1]) # shape is rzp x N x rz
+                    cz_new = czy*nrmsc - czA
+                    _,_,vz = SVD(tn.reshape(cz_new,[cz_new.shape[0],-1]))
+                    cz_new = vz[:min(kickrank,vz.shape[0]),:].t() # truncate to kickrank
+                    if k &lt; d-1: # extend cz_new with random elements
+                        cz_new = tn.cat((cz_new,tn.randn((cz_new.shape[0],kick2),  dtype = dtype, device = device)),1)
+                else:
+                    cz_new = tn.reshape(z_cores[k],[rz[k],-1]).t()
+
+                qz, _ = QR(cz_new)
+                rz[k] = qz.shape[1]
+                z_cores[k] = tn.reshape(qz.t(),[rz[k],N[k],rz[k+1]]) 
+            
+            # norm correction ?
+            if swp &gt; 0: nrmsc = nrmsc * normA[k-1] * normx[k-1] / normb[k-1] 
+        
+            
+            core = tn.reshape(x_cores[k],[rx[k],N[k]*rx[k+1]]).t()
+            Qmat, Rmat = QR(core)
+            
+            core_prev = tn.einsum(&#39;ijk,km-&gt;ijm&#39;,x_cores[k-1],Rmat.T)
+            rx[k] = Qmat.shape[1]
+            
+            current_norm = tn.linalg.norm(core_prev)
+            if current_norm&gt;0:
+                core_prev = core_prev /  current_norm
+            else:
+                current_norm = 1.0
+            normx[k-1] = normx[k-1]*current_norm
+             
+            x_cores[k] = tn.reshape(Qmat.t(),[rx[k],N[k],rx[k+1]]) 
+            x_cores[k-1] = core_prev[:]
+            
+            # update phis (einsum)
+            # print(x_cores[k].shape,A.cores[k].shape,x_cores[k].shape)
+            Phis[k] = _compute_phi_bck_A(Phis[k+1],x_cores[k],A.cores[k],x_cores[k])
+            Phis_b[k] = _compute_phi_bck_rhs(Phis_b[k+1],b.cores[k],x_cores[k])
+            
+            # ... and norms 
+            norm = tn.linalg.norm(Phis[k])
+            norm = norm if norm&gt;0 else 1.0
+            normA[k-1] = norm 
+            Phis[k] =  Phis[k] / norm
+            norm = tn.linalg.norm(Phis_b[k])
+            norm = norm if norm&gt;0 else 1.0
+            normb[k-1] = norm 
+            Phis_b[k] = Phis_b[k]/norm
+            
+            # norm correction
+            nrmsc = nrmsc * normb[k-1]/ (normA[k-1] * normx[k-1])      
+
+            # compute phis_z
+            if not last:
+                Phiz[k] = _compute_phi_bck_A(Phiz[k+1], z_cores[k], A.cores[k], x_cores[k]) / normA[k-1]
+                Phiz_b[k] = _compute_phi_bck_rhs(Phiz_b[k+1], b.cores[k], z_cores[k]) / normb[k-1]
+
+
+        # start loop
+        max_res = 0
+        max_dx = 0
+
+        for k in range(d):
+            if verbose: print(&#39;\tCore&#39;,k) 
+            previous_solution = tn.reshape(x_cores[k],[-1,1])
+            
+        
+            # assemble rhs 
+            rhs = tn.einsum(&#39;br,bmB,BR-&gt;rmR&#39;,Phis_b[k] , b.cores[k] * nrmsc, Phis_b[k+1])
+            rhs = tn.reshape(rhs,[-1,1])
+            norm_rhs = tn.linalg.norm(rhs)
+            
+            #residuals
+            real_tol = (eps/np.sqrt(d))/damp
+        
+            # solve the local system
+            use_full = rx[k]*N[k]*rx[k+1] &lt; max_full
+            if use_full: 
+                # solve the full system
+                if verbose: print(&#39;\t\tChoosing direct solver (local size %d)....&#39;%(rx[k]*N[k]*rx[k+1]))  
+                Bp = tn.einsum(&#39;smnS,LSR-&gt;smnRL&#39;,A.cores[k],Phis[k+1]) # shape is Rp x N x N x r x r
+                #B = tn.einsum(&#39;lsr,smnRL-&gt;rmRlnL&#39;,Phis[k],Bp)
+                B = tn.einsum(&#39;lsr,smnRL-&gt;lmLrnR&#39;,Phis[k],Bp) 
+                B = tn.reshape(B,[rx[k]*N[k]*rx[k+1],rx[k]*N[k]*rx[k+1]])
+
+                solution_now = tn.linalg.solve(B,rhs)   
+                
+                res_old = tn.linalg.norm(B@previous_solution-rhs)/norm_rhs
+                res_new = tn.linalg.norm(B@solution_now-rhs)/norm_rhs
+            else:
+                # iterative solver
+                if verbose: 
+                    print(&#39;\t\tChoosing iterative solver (local size %d)....&#39;%(rx[k]*N[k]*rx[k+1])) 
+                    time_local = datetime.datetime.now()
+                shape_now = [rx[k],N[k],rx[k+1]]
+                Op = _LinearOp(Phis[k],Phis[k+1],A.cores[k],shape_now, preconditioner)
+                
+                # solution_now, flag, nit, res_new = BiCGSTAB_reset(Op, rhs,previous_solution[:], eps_local, local_iterations) 
+                eps_local = real_tol * norm_rhs
+                drhs = Op.matvec(previous_solution, False)
+                drhs = rhs-drhs
+                eps_local = eps_local / tn.linalg.norm(drhs) 
+                solution_now, flag, nit = gmres_restart(Op, drhs, previous_solution*0, rhs.shape[0], local_iterations+1, eps_local, resets)
+                if preconditioner != None:
+                    solution_now = Op.apply_prec(tn.reshape(solution_now,shape_now))
+                    solution_now = tn.reshape(solution_now,[-1,1])
+                
+                solution_now = previous_solution + solution_now
+                res_old = tn.linalg.norm(Op.matvec(previous_solution, False)-rhs)/norm_rhs
+                res_new = tn.linalg.norm(Op.matvec(solution_now, False)-rhs)/norm_rhs
+                if verbose:
+                    print(&#39;\t\tFinished with flag %d after %d iterations with relres %g (from %g)&#39;%(flag,nit,res_new,eps_local)) 
+                    time_local = datetime.datetime.now() - time_local
+                    print(&#39;\t\tTime needed &#39;,time_local)
+            # residual damp check
+            if res_old/res_new &lt; damp and res_new &gt; real_tol:
+                if verbose: print(&#39;WARNING: residual increases. res_old %g, res_new %g, real_tol %g&#39;%(res_old,res_new,real_tol)) # warning (from tt toolbox)
+
+            # compute residual and step size
+            dx = tn.linalg.norm(solution_now-previous_solution)/tn.linalg.norm(solution_now)
+            if verbose: 
+                print(&#39;\t\tdx = %g, res_now = %g, res_old = %g&#39;%(dx,res_new,res_old))
+                
+
+            max_dx = max(dx,max_dx)
+            max_res = max(max_res,res_old)
+            
+            solution_now = tn.reshape(solution_now,[rx[k]*N[k],rx[k+1]])
+            # truncation
+            if k&lt;d-1:
+                u, s, v = SVD(solution_now)
+                # print(&#39;\t\tTruncation of solution of shape&#39;,[rx[k]*N[k],rx[k+1]],&#39; into u&#39;, u.shape, &#39; and v &#39;,v.shape)
+                if trunc_norm == &#39;fro&#39;:
+                    pass
+                else:
+                    # search for a rank such that offeres small enough residuum
+                    # TODO: binary search?
+                    r = 0
+                    for r in range(u.shape[1]-1,0,-1):
+                        solution = u[:,:r] @ tn.diag(s[:r]) @ v[:r,:] # solution has the same size
+                        # res = tn.linalg.norm(tn.reshape(local_product(Phis[k+1],Phis[k],A.cores[k],tn.reshape(solution,[rx[k],N[k],rx[k+1]]),solution_now.shape),[-1,1]) - rhs)/norm_rhs
+                        
+                        if use_full:
+                            res = tn.linalg.norm(B@tn.reshape(solution,[-1,1])-rhs)/norm_rhs
+                        else:
+                            # res = tn.linalg.norm(tn.reshape(local_product(Phis[k+1],Phis[k],A.cores[k],tn.reshape(solution,[rx[k],N[k],rx[k+1]]),solution_now.shape),[-1,1]) - rhs)/norm_rhs
+                            res = tn.linalg.norm(Op.matvec(solution)-rhs)/norm_rhs
+                        if res &gt; max(real_tol*damp,res_new):
+                            break
+                    r += 1
+
+                    r = min([r,tn.numel(s),rmax[k+1]])
+            else:
+                u, v = QR(solution_now)
+                # v = v.t()
+                r = u.shape[1]
+                s = tn.ones(r,  dtype = dtype, device = device)
+
+            u = u[:,:r]
+            v = tn.diag(s[:r]) @ v[:r,:]
+            v = v.t()
+
+            if not last:
+                czA = _local_product(Phiz[k+1], Phiz[k], A.cores[k], tn.reshape(u@v.t(),[rx[k],N[k],rx[k+1]]), [rx[k],N[k],rx[k+1]]) # shape rzp x N x rz
+                czy = tn.einsum(&#39;br,bnB,BR-&gt;rnR&#39;,Phiz_b[k],b.cores[k]*nrmsc,Phiz_b[k+1]) # shape is rzp x N x rz
+                cz_new = czy - czA
+                # print(&#39;Phiz_b&#39;,[plm.shape for plm in Phiz_b])
+                # print(&#39;czA&#39;,czA.shape,&#39; czy&#39;,czy.shape)
+                # print(&#39;rz&#39;,rz)
+                # print(&#39;rx&#39;,rx)
+
+                uz,_,_ = SVD(tn.reshape(cz_new, [rz[k]*N[k],rz[k+1]]))
+                cz_new = uz[:,:min(kickrank,uz.shape[1])] # truncate to kickrank
+                if k &lt; d-1: # extend cz_new with random elements
+                    cz_new = tn.cat((cz_new,tn.randn((cz_new.shape[0],kick2),  dtype = dtype, device = device)),1)
+                
+                qz,_ = QR(cz_new)
+                rz[k+1] = qz.shape[1]
+                z_cores[k] = tn.reshape(qz,[rz[k],N[k],rz[k+1]])
+
+            if k &lt; d-1:
+                if not last:
+                    left_res = _local_product(Phiz[k+1],Phis[k],A.cores[k],tn.reshape(u@v.t(),[rx[k],N[k],rx[k+1]]),[rx[k],N[k],rx[k+1]])
+                    left_b = tn.einsum(&#39;br,bmB,BR-&gt;rmR&#39;,Phis_b[k],b.cores[k]*nrmsc,Phiz_b[k+1])
+                    uk = left_b - left_res # rx_k x N_k x rz_k+1
+                    # print(&#39;u&#39;,u.shape,&#39; uk&#39;,uk.shape)
+                    # print(&#39;rx&#39;,rx,&#39;rz&#39;,rz)
+                    # print(Phis_b[k].shape,Phiz_b[k+1].shape, left_res.shape)
+                    # uk = tn.reshape(uk,[-1,rz[k+1]])
+                    u, Rmat = QR(tn.cat((u,tn.reshape(uk,[u.shape[0],-1])),1))
+                    # print(&#39;Q&#39;,u.shape,&#39; R&#39;, Rmat.shape)
+                    r_add = uk.shape[2]
+                    # print(&#39;v before&#39;,v.shape,&#39; solution shape &#39;,solution_now.shape)
+                    # print(&#39;adding &#39;,[rx[k+1],r_add])
+                    v = tn.cat((v,tn.zeros([rx[k+1],r_add],  dtype = dtype, device = device)), 1)
+                    # print(&#39;v after &#39;,v.shape)
+                    v = v @ Rmat.t()
+                 
+                r = u.shape[1]
+                # print(u.shape,v.shape,x_cores[k+1].shape)
+                v = tn.einsum(&#39;ji,jkl-&gt;ikl&#39;,v,x_cores[k+1])
+                # remove norm correction
+                nrmsc = nrmsc * normA[k] * normx[k] / normb[k]  
+
+                norm_now = tn.linalg.norm(v)
+
+                if norm_now&gt;0:
+                    v = v / norm_now
+                else:
+                    norm_now = 1.0
+                normx[k] = normx[k] * norm_now
+
+                x_cores[k] = tn.reshape(u, [rx[k],N[k],r])
+                x_cores[k+1] = tn.reshape(v, [r,N[k+1],rx[k+2]])
+                rx[k+1] = r
+
+                # next phis with norm correction
+                Phis[k+1] = _compute_phi_fwd_A(Phis[k], x_cores[k], A.cores[k], x_cores[k]) 
+                Phis_b[k+1] = _compute_phi_fwd_rhs(Phis_b[k], b.cores[k],x_cores[k])
+                
+                # ... and norms 
+                norm = tn.linalg.norm(Phis[k+1])
+                norm = norm if norm&gt;0 else 1.0
+                normA[k] = norm 
+                Phis[k+1] = Phis[k+1] / norm
+                norm = tn.linalg.norm(Phis_b[k+1])
+                norm = norm if norm&gt;0 else 1.0
+                normb[k] = norm 
+                Phis_b[k+1] = Phis_b[k+1] / norm
+                
+                # norm correction
+                nrmsc = nrmsc * normb[k] / ( normA[k] * normx[k] )
+
+
+                # next phiz
+                if not last:
+                    Phiz[k+1] = _compute_phi_fwd_A(Phiz[k], z_cores[k], A.cores[k], x_cores[k]) / normA[k]
+                    Phiz_b[k+1] = _compute_phi_fwd_rhs(Phiz_b[k], b.cores[k],z_cores[k]) / normb[k]
+            else:
+                x_cores[k] = tn.reshape(u@tn.diag(s[:r]) @ v[:r,:].t(),[rx[k],N[k],rx[k+1]])
+
+        if verbose:
+            print(&#39;Solution rank is&#39;,rx)
+            print(&#39;Maxres &#39;,max_res)
+            tme_sweep = datetime.datetime.now()-tme_sweep
+            print(&#39;Time &#39;,tme_sweep)
+              
+                
+        if last:
+            break
+
+        if max_res &lt; eps:
+            last = True
+
+    if verbose:
+        time_total = datetime.datetime.now() - time_total
+        print()
+        print(&#39;Finished after&#39; ,swp,&#39; sweeps and &#39;,time_total)
+        print()
+    normx = np.exp(np.sum(np.log(normx))/d)
+
+    for k in range(d):
+        x_cores[k] = x_cores[k] * normx
+
+    x = torchtt.TT(x_cores)
+
+    return x</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="torchtt" href="index.html">torchtt</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="torchtt.solvers.amen_solve" href="#torchtt.solvers.amen_solve">amen_solve</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

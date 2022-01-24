@@ -312,6 +312,18 @@ class TestLinalg(unittest.TestCase):
         
         self.assertLess(tn.linalg.norm(vals-vals_ref), 1e-12, "Mask method error.")
 
+    def test_bilinear(self):
+        """
+        Test the method torchtt.bilinear_form()
+        """
+        A = tntt.random([(5,6),(7,8),(2,3),(4,5)],[1,5,5,3,1])
+        x = tntt.randn([5,7,2,4],[1,2,3,4,1])
+        y = tntt.randn([6,8,3,5],[1,6,5,4,1])
+        
+        res = tntt.bilinear_form(x,A,y)
+        res_ref = tn.einsum('abcd,abcdijkl,ijkl->',x.full(),A.full(),y.full())
+
+        self.assertLess(err_rel(res,res_ref),1e-13,"torchtt.bilinear_form() failed.")
         
 if __name__ == '__main__':
     unittest.main()

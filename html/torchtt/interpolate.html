@@ -1,0 +1,1325 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>torchtt.interpolate API documentation</title>
+<meta name="description" content="Implements the cross approximation methods." />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS_CHTML" integrity="sha256-kZafAc6mZvK3W3v1pHOcUix30OHQN6pU/NO2oFkqZVw=" crossorigin></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>torchtt.interpolate</code></h1>
+</header>
+<section id="section-intro">
+<p>Implements the cross approximation methods.</p>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">&#34;&#34;&#34;
+Implements the cross approximation methods.
+
+&#34;&#34;&#34;
+import torch as tn
+import numpy as np
+import torchtt 
+import datetime
+from torchtt._decomposition import QR, SVD, rank_chop, lr_orthogonal
+from torchtt._iterative_solvers import BiCGSTAB_reset, gmres_restart
+import opt_einsum as oe
+
+
+def _LU(M):
+    &#34;&#34;&#34;
+    Perform an LU decomposition and returns L, U and a permutation vector P. 
+
+    Args:
+        M (torch.tensor): [description]
+
+    Returns:
+        tuple[torch.tensor,torch.tensor,torch.tensor]: L, U, P
+    &#34;&#34;&#34;
+    LU,P = tn.lu(M)
+    P,L,U = tn.lu_unpack(LU,P) # P transpose or not transpose?
+    P = P@tn.reshape(tn.arange(P.shape[1],dtype=P.dtype,device=P.device),[-1,1])
+    # P = tn.reshape(tn.arange(P.shape[1],dtype=P.dtype,device=P.device),[1,-1]) @ P
+    
+    return L, U, tn.squeeze(P).to(tn.int64)
+ 
+def _max_matrix(M):
+    
+    values, indices = M.flatten().topk(1)
+    indices = [np.unravel_index(i, M.shape) for i in indices]
+    return values, indices
+
+def _maxvol(M):
+    &#34;&#34;&#34;
+    Maxvol
+
+    Args:
+        M (torch.tensor): input matrix.
+
+    Returns:
+        torch.tensor: indices of tha maxvol submatrix.
+    &#34;&#34;&#34;
+     
+    if M.shape[1] &gt;= M.shape[0]:
+        # more cols than row -&gt; return all the row indices 
+        idx = tn.tensor(range(M.shape[0]),dtype = tn.int64)
+        return idx
+    else:
+        L, U, P = _LU(M)
+        idx = P[:M.shape[1]]
+    
+    Msub = M[idx,:]
+   
+    Mat = tn.linalg.solve(Msub.T,M.T).t()
+   
+    for i in range(100): 
+        val_max, idx_max = _max_matrix(tn.abs(Mat)) 
+        idx_max = idx_max[0]
+        if val_max&lt;=1+5e-2:
+            idx = tn.sort(idx)[0]
+            return idx
+        Mat += tn.outer(Mat[:,idx_max[1]],Mat[idx[idx_max[1]]]-Mat[idx_max[0],:])/Mat[idx_max[0],idx_max[1]]
+        idx[idx_max[1]]=idx_max[0]
+    return idx
+
+def function_interpolate(function, x, eps = 1e-9, start_tens = None, nswp = 20, kick = 2, dtype = tn.float64, verbose = False):
+    &#34;&#34;&#34;
+    
+
+    Args:
+        function ([type]): [description]
+        x ([type]): [description]
+        eps ([type], optional): [description]. Defaults to 1e-9.
+        start_tens ([type], optional): [description]. Defaults to None.
+        nswp (int, optional): [description]. Defaults to 20.
+        kick (int, optional): [description]. Defaults to 2.
+        dtype ([type], optional): [description]. Defaults to tn.float64.
+        verbose (bool, optional): [description]. Defaults to False.
+
+    Returns:
+        [type]: [description]
+    &#34;&#34;&#34;
+     
+    
+    if isinstance(x,list) or isinstance(x,tuple):
+        eval_mv = True
+        N = x[0].N
+    else:
+        eval_mv = False
+        N = x.N
+    device = None
+    
+    d = len(N)
+    
+    #random init of the tensor
+    if start_tens == None:
+        rank_init = 2
+        cores = torchtt.random(N,rank_init, dtype, device).cores
+        rank = [1]+[rank_init]*(d-1)+[1]
+    else:
+        rank = start_tens.R.copy()
+        cores = [c+0 for c in start_tens.cores]
+    # cores = (ones(N,dtype=dtype)).cores
+    
+
+    cores, rank = lr_orthogonal(cores,rank,False)
+    
+    Mats = []*(d+1)
+    
+    
+    Ps = [tn.ones((1,1),dtype=dtype,device=device)]+(d-1)*[None] + [tn.ones((1,1),dtype=dtype,device=device)]
+    # ortho
+    Rm = tn.ones((1,1),dtype=dtype,device=device)
+    Idx = [tn.zeros((1,0),dtype=tn.int64)]+(d-1)*[None] + [tn.zeros((0,1),dtype=tn.int64)]
+    for k in range(d-1,0,-1):
+
+        tmp = tn.einsum(&#39;ijk,kl-&gt;ijl&#39;,cores[k],Rm)
+        tmp = tn.reshape(tmp,[rank[k],-1]).t()
+        core, Rmat = QR(tmp)
+
+        rnew = min(N[k]*rank[k+1], rank[k]) 
+        Jk = _maxvol(core)
+        # print(Jk)
+        tmp = np.unravel_index(Jk[:rnew],(rank[k+1],N[k]))
+        #if k==d-1:
+        #    idx_new = tn.tensor(tmp[1].reshape([1,-1]))
+        # else:
+        idx_new = tn.tensor(np.vstack( ( tmp[1].reshape([1,-1]),Idx[k+1][:,tmp[0]] ) ))   
+        
+        Idx[k] = idx_new+0
+
+        Rm = core[Jk,:]
+        
+        core = tn.linalg.solve(Rm.T,core.T)
+        Rm = (Rm@Rmat).t()
+        cores[k] = tn.reshape(core,[rnew,N[k],rank[k+1]])
+        core = tn.reshape(core,[-1,rank[k+1]]) @ Ps[k+1]
+        core = tn.reshape(core,[rank[k],-1]).t()
+        _,Ps[k] = QR(core) 
+    cores[0] = tn.einsum(&#39;ijk,kl-&gt;ijl&#39;,cores[0],Rm) 
+
+    # for p in Ps:
+    #     print(p)
+    # for i in Idx:
+    #     print(i)
+    # return
+    n_eval = 0
+    
+    for swp in range(nswp):
+        
+        max_err = 0.0 
+        if verbose:
+            print(&#39;Sweep %d: &#39;%(swp+1))
+        #left to right
+        for k in range(d-1):
+            if verbose: print(&#39;\tLR supercore %d,%d&#39;%(k+1,k+2))
+            I1 = tn.reshape(tn.kron(tn.kron(tn.ones(rank[k],dtype=tn.int64), tn.arange(N[k],dtype=tn.int64)), tn.kron(tn.ones(N[k+1],dtype=tn.int64), tn.ones(rank[k+2],dtype=tn.int64))),[-1,1])
+            I2 = tn.reshape(tn.kron(tn.kron(tn.ones(rank[k],dtype=tn.int64), tn.ones(N[k],dtype=tn.int64)), tn.kron(tn.arange(N[k+1],dtype=tn.int64), tn.ones(rank[k+2],dtype=tn.int64))),[-1,1])
+            I3 = Idx[k][tn.kron(tn.kron(tn.arange(rank[k],dtype=tn.int64), tn.ones(N[k],dtype=tn.int64)), tn.kron(tn.ones(N[k+1],dtype=tn.int64), tn.ones(rank[k+2],dtype=tn.int64))),:]
+            I4 = Idx[k+2][:,tn.kron(tn.kron(tn.ones(rank[k],dtype=tn.int64), tn.ones(N[k],dtype=tn.int64)), tn.kron(tn.ones(N[k+1],dtype=tn.int64), tn.arange(rank[k+2],dtype=tn.int64)))].t()
+           
+            eval_index = tn.concat((I3, I1, I2, I4),1) 
+            eval_index = tn.reshape(eval_index,[-1,d]).to(dtype=tn.int64)
+
+            if verbose: print(&#39;\t\tnumber evaluations&#39;,eval_index.shape[0])
+                
+            if eval_mv:
+                ev = tn.zeros((eval_index.shape[0],0),dtype = dtype)
+                for j in range(d):
+                    core = x[j].cores[0][0,eval_index[:,0],:]
+                    for i in range(1,d):
+                        core = tn.einsum(&#39;ij,jil-&gt;il&#39;,core,x[j].cores[i][:,eval_index[:,i],:])
+                    core = tn.reshape(core[...,0],[-1,1])
+                    ev = tn.hstack((ev,core))
+                supercore = tn.reshape(function(ev),[rank[k],N[k],N[k+1],rank[k+2]])
+                n_eval += core.shape[0]
+            else:
+                core = x.cores[0][0,eval_index[:,0],:]
+                for i in range(1,d):
+                    core = tn.einsum(&#39;ij,jil-&gt;il&#39;,core,x.cores[i][:,eval_index[:,i],:])
+                core = core[...,0]
+                supercore = tn.reshape(function(core),[rank[k],N[k],N[k+1],rank[k+2]])
+                n_eval += core.shape[0]
+                
+            # multiply with P_k left and right
+            supercore = tn.einsum(&#39;ij,jklm,mn-&gt;ikln&#39;,Ps[k],supercore.to(dtype=dtype),Ps[k+2])
+            rank[k] = supercore.shape[0]
+            rank[k+2] = supercore.shape[3]
+            supercore = tn.reshape(supercore,[supercore.shape[0]*supercore.shape[1],-1])
+    
+            # split the super core with svd
+            U,S,V = SVD(supercore)
+            rnew = rank_chop(S.cpu().numpy(),tn.linalg.norm(S).cpu().numpy()*eps/np.sqrt(d-1))+1
+            rnew = min(S.shape[0],rnew)
+            U = U[:,:rnew] 
+            S = S[:rnew]
+            V = V[:rnew,:]
+            # print(&#39;kkt new&#39;,tn.linalg.norm(supercore-U@tn.diag(S)@V))
+            # kick the rank           
+            V = tn.diag(S) @ V
+            UK = tn.randn((U.shape[0],kick), dtype = dtype, device = device)
+            U, Rtemp = QR( tn.cat( (U,UK) , 1) )
+            radd = U.shape[1] - rnew
+            if radd&gt;0: 
+                V =  tn.cat( (V,tn.zeros((radd,V.shape[1]), dtype = dtype, device = device)) , 0 )
+                V = Rtemp @ V
+            
+            # print(&#39;kkt new&#39;,tn.linalg.norm(supercore-U@V))
+            # compute err (dx)
+            super_prev = tn.einsum(&#39;ijk,kmn-&gt;ijmn&#39;,cores[k],cores[k+1])
+            super_prev = tn.einsum(&#39;ij,jklm,mn-&gt;ikln&#39;,Ps[k],super_prev,Ps[k+2])
+            err = tn.linalg.norm(supercore.flatten()-super_prev.flatten())/tn.linalg.norm(supercore)
+            max_err = max(max_err,err)
+            # update the rank
+            if verbose:
+                print(&#39;\t\trank updated %d -&gt; %d, local error %e&#39;%(rank[k+1],U.shape[1],err))
+            rank[k+1] = U.shape[1]
+           
+            
+            U = tn.linalg.solve(Ps[k],tn.reshape(U,[rank[k],-1]))
+            V = tn.linalg.solve(Ps[k+2].t(),tn.reshape(V,[rank[k+1]*N[k+1],rank[k+2]]).t()).t()
+            
+            # U = tn.einsum(&#39;ij,jkl-&gt;ikl&#39;,tn.linalg.inv(Ps[k]),tn.reshape(U,[rank[k],N[k],-1]))
+            # V = tn.einsum(&#39;ijk,kl-&gt;ijl&#39;,tn.reshape(V,[-1,N[k+1],rank[k+2]]),tn.linalg.inv(Ps[k+2]))
+            
+            V = tn.reshape(V,[rank[k+1],-1])
+            U = tn.reshape(U,[-1,rank[k+1]])
+           
+            # split cores  
+            Qmat, Rmat = QR(U)
+            idx = _maxvol(Qmat) 
+            Sub = Qmat[idx,:]
+            core = tn.linalg.solve(Sub.T,Qmat.T).t()
+            core_next = Sub@Rmat@V
+            cores[k] = tn.reshape(core,[rank[k],N[k],rank[k+1]])
+            cores[k+1] = tn.reshape(core_next,[rank[k+1],N[k+1],rank[k+2]])
+            # calc Ps
+            tmp = tn.einsum(&#39;ij,jkl-&gt;ikl&#39;,Ps[k],cores[k])
+            _,Ps[k+1] = QR(tn.reshape(tmp,[rank[k]*N[k],rank[k+1]]))
+            
+            # calc Idx 
+            tmp = np.unravel_index(idx[:rank[k+1]],(rank[k],N[k]))
+            idx_new = tn.tensor(np.hstack( ( Idx[k][tmp[0],:]  , tmp[1].reshape([-1,1]) ) ))   
+            Idx[k+1] = idx_new+0 
+
+            
+        #right to left
+    
+        for k in range(d-2,-1,-1):
+            if verbose: print(&#39;\tRL supercore %d,%d&#39;%(k+1,k+2))
+            I1 = tn.reshape(tn.kron(tn.kron(tn.ones(rank[k],dtype=tn.int64), tn.arange(N[k],dtype=tn.int64)), tn.kron(tn.ones(N[k+1],dtype=tn.int64), tn.ones(rank[k+2],dtype=tn.int64))),[-1,1])
+            I2 = tn.reshape(tn.kron(tn.kron(tn.ones(rank[k],dtype=tn.int64), tn.ones(N[k],dtype=tn.int64)), tn.kron(tn.arange(N[k+1],dtype=tn.int64), tn.ones(rank[k+2],dtype=tn.int64))),[-1,1])
+            I3 = Idx[k][tn.kron(tn.kron(tn.arange(rank[k],dtype=tn.int64), tn.ones(N[k],dtype=tn.int64)), tn.kron(tn.ones(N[k+1],dtype=tn.int64), tn.ones(rank[k+2],dtype=tn.int64))),:]
+            I4 = Idx[k+2][:,tn.kron(tn.kron(tn.ones(rank[k],dtype=tn.int64), tn.ones(N[k],dtype=tn.int64)), tn.kron(tn.ones(N[k+1],dtype=tn.int64), tn.arange(rank[k+2],dtype=tn.int64)))].t()
+           
+            eval_index = tn.concat((I3, I1, I2, I4),1) 
+            eval_index = tn.reshape(eval_index,[-1,d]).to(dtype=tn.int64)
+
+            if verbose: print(&#39;\t\tnumber evaluations&#39;,eval_index.shape[0])
+                
+            if eval_mv:
+                ev = tn.zeros((eval_index.shape[0],0),dtype = dtype)
+                for j in range(d):
+                    core = x[j].cores[0][0,eval_index[:,0],:]
+                    for i in range(1,d):
+                        core = tn.einsum(&#39;ij,jil-&gt;il&#39;,core,x[j].cores[i][:,eval_index[:,i],:])
+                    core = tn.reshape(core[...,0],[-1,1])
+                    ev = tn.hstack((ev,core))
+                supercore = tn.reshape(function(ev),[rank[k],N[k],N[k+1],rank[k+2]])
+                n_eval += core.shape[0]
+            else:
+                core = x.cores[0][0,eval_index[:,0],:]
+                for i in range(1,d):
+                    core = tn.einsum(&#39;ij,jil-&gt;il&#39;,core,x.cores[i][:,eval_index[:,i],:])
+                core = core[...,0]
+                supercore = tn.reshape(function(core),[rank[k],N[k],N[k+1],rank[k+2]])
+                n_eval +=core.shape[0]
+
+            # multiply with P_k left and right
+            supercore = tn.einsum(&#39;ij,jklm,mn-&gt;ikln&#39;,Ps[k],supercore.to(dtype=dtype),Ps[k+2])
+            rank[k] = supercore.shape[0]
+            rank[k+2] = supercore.shape[3]
+            supercore = tn.reshape(supercore,[supercore.shape[0]*supercore.shape[1],-1])
+             
+            # split the super core with svd
+            U,S,V = SVD(supercore)
+            rnew = rank_chop(S.cpu().numpy(),tn.linalg.norm(S).cpu().numpy()*eps/np.sqrt(d-1))+1
+            rnew = min(S.shape[0],rnew)
+            U = U[:,:rnew] 
+            S = S[:rnew]
+            V = V[:rnew,:]
+            # print(&#39;kkt new&#39;,tn.linalg.norm(supercore-U@tn.diag(S)@V))
+            
+            #kick the rank
+            # print(&#39;u before&#39;, U.shape)
+            U = U @ tn.diag(S)
+            VK = tn.randn((kick,V.shape[1]) , dtype=dtype, device = device)
+            # print(&#39;V enrich&#39;, V.shape)
+            V, Rtemp = QR( tn.cat( (V,VK) , 0).t() )
+            radd = Rtemp.shape[1] - rnew
+            # print(&#39;V after QR&#39;,V.shape,Rtemp.shape,radd)
+            if radd&gt;0:
+                U =  tn.cat( (U,tn.zeros((U.shape[0],radd), dtype = dtype, device = device)) , 1 ) 
+                U = U @ Rtemp.T
+                V = V.t()
+            
+            # print(&#39;kkt new&#39;,tn.linalg.norm(supercore-U@V))
+            # compute err (dx)
+            super_prev = tn.einsum(&#39;ijk,kmn-&gt;ijmn&#39;,cores[k],cores[k+1])
+            super_prev = tn.einsum(&#39;ij,jklm,mn-&gt;ikln&#39;,Ps[k],super_prev,Ps[k+2])
+            err = tn.linalg.norm(supercore.flatten()-super_prev.flatten())/tn.linalg.norm(supercore)
+            max_err = max(max_err,err)
+            # update the rank
+            if verbose:
+                print(&#39;\t\trank updated %d -&gt; %d, local error %e&#39;%(rank[k+1],U.shape[1],err))
+            rank[k+1] = U.shape[1]
+
+            U = tn.linalg.solve(Ps[k],tn.reshape(U,[rank[k],-1]))
+            V = tn.linalg.solve(Ps[k+2].t(),tn.reshape(V,[rank[k+1]*N[k+1],rank[k+2]]).t()).t()
+            
+            # U = tn.einsum(&#39;ij,jkl-&gt;ikl&#39;,tn.linalg.inv(Ps[k]),tn.reshape(U,[rank[k],N[k],-1]))
+            # V = tn.einsum(&#39;ijk,kl-&gt;ijl&#39;,tn.reshape(V,[-1,N[k+1],rank[k+2]]),tn.linalg.inv(Ps[k+2]))
+            
+            V = tn.reshape(V,[rank[k+1],-1])
+            U = tn.reshape(U,[-1,rank[k+1]])
+                       
+            # split cores  
+            Qmat, Rmat = QR(V.T)
+            idx = _maxvol(Qmat) 
+            Sub = Qmat[idx,:]
+            core_next = tn.linalg.solve(Sub.T,Qmat.T)
+            core =U@(Sub@Rmat).t()
+            cores[k] = tn.reshape(core,[rank[k],N[k],-1])
+            cores[k+1] = tn.reshape(core_next,[-1,N[k+1],rank[k+2]])
+           
+            
+            # calc Ps
+            tmp = tn.einsum(&#39;ijk,kl-&gt;ijl&#39;,cores[k+1],Ps[k+2])
+            _,tmp = QR(tn.reshape(tmp,[rank[k+1],-1]).t())
+            Ps[k+1] = tmp
+            # calc Idx 
+            tmp = np.unravel_index(idx[:rank[k+1]],(N[k+1],rank[k+2]))
+            idx_new = tn.tensor(np.vstack( ( tmp[0].reshape([1,-1]),Idx[k+2][:,tmp[1]] ) ))   
+            Idx[k+1] = idx_new+0 
+        #xxx = TT(cores)
+        #print(&#39;#            &#39;,xxx[1,2,3,4])
+           
+        # exit condition
+        
+        if max_err&lt;eps: 
+            if verbose: print(&#39;Max error %e &lt; %e  ----&gt;  DONE&#39;%(max_err,eps))
+            break
+        else:
+            if verbose: print(&#39;Max error %g&#39;%(max_err))
+    if verbose: 
+        print(&#39;number of function calls &#39;,n_eval)
+        print()
+        
+    return torchtt.TT(cores)
+
+def dmrg_cross(function, N, eps = 1e-9, nswp = 10, x_start = None, kick = 2, dtype = tn.float64, device = None, eval_vect = True, verbose = False):
+    &#34;&#34;&#34;
+    
+
+    Args:
+        function (function handle): [description]
+        N ([type]): [description]
+        eps ([type], optional): [description]. Defaults to 1e-9.
+        nswp (int, optional): [description]. Defaults to 10.
+        x_start ([type], optional): [description]. Defaults to None.
+        kick (int, optional): [description]. Defaults to 2.
+        dtype ([type], optional): [description]. Defaults to tn.float64.
+        device ([type], optional): [description]. Defaults to None.
+        eval_vect (bool, optional): [description]. Defaults to True.
+        verbose (bool, optional): [description]. Defaults to False.
+
+    Returns:
+        [type]: [description]
+    &#34;&#34;&#34;
+    # store the computed values
+    computed_vals = dict()
+    
+    d = len(N)
+    
+    #random init of the tensor
+    if x_start == None:
+        rank_init = 2
+        cores = torchtt.random(N,rank_init, dtype, device).cores
+        rank = [1]+[rank_init]*(d-1)+[1]
+    else:
+        rank = x_start.R.copy()
+        cores = [c+0 for c in x_start.cores]
+    # cores = (ones(N,dtype=dtype)).cores
+    
+
+    cores, rank = lr_orthogonal(cores,rank,False)
+    
+    Mats = []*(d+1)
+    
+    
+    Ps = [tn.ones((1,1),dtype=dtype,device=device)]+(d-1)*[None] + [tn.ones((1,1),dtype=dtype,device=device)]
+    # ortho
+    Rm = tn.ones((1,1),dtype=dtype,device=device)
+    Idx = [tn.zeros((1,0),dtype=tn.int64)]+(d-1)*[None] + [tn.zeros((0,1),dtype=tn.int64)]
+    for k in range(d-1,0,-1):
+
+        tmp = tn.einsum(&#39;ijk,kl-&gt;ijl&#39;,cores[k],Rm)
+        tmp = tn.reshape(tmp,[rank[k],-1]).t()
+        core, Rmat = QR(tmp)
+
+        rnew = min(N[k]*rank[k+1], rank[k]) 
+        Jk = _maxvol(core)
+        # print(Jk)
+        tmp = np.unravel_index(Jk[:rnew],(rank[k+1],N[k]))
+        #if k==d-1:
+        #    idx_new = tn.tensor(tmp[1].reshape([1,-1]))
+        # else:
+        idx_new = tn.tensor(np.vstack( ( tmp[1].reshape([1,-1]),Idx[k+1][:,tmp[0]] ) ))   
+        
+        Idx[k] = idx_new+0
+
+        Rm = core[Jk,:]
+        
+        core = tn.linalg.solve(Rm.T,core.T)
+        # core = tn.linalg.solve(Rm,core.T)
+        Rm = (Rm@Rmat).t()
+        # core = core.t()
+        cores[k] = tn.reshape(core,[rnew,N[k],rank[k+1]])
+        core = tn.reshape(core,[-1,rank[k+1]]) @ Ps[k+1]
+        core = tn.reshape(core,[rank[k],-1]).t()
+        _,Ps[k] = QR(core) 
+    cores[0] = tn.einsum(&#39;ijk,kl-&gt;ijl&#39;,cores[0],Rm) 
+
+    # for p in Ps:
+    #     print(p)
+    # for i in Idx:
+    #     print(i)
+    # return
+    n_eval = 0
+    
+    for swp in range(nswp):
+        
+        max_err = 0.0 
+        if verbose:
+            print(&#39;Sweep %d: &#39;%(swp+1))
+        #left to right
+        for k in range(d-1):
+            if verbose: print(&#39;\tLR supercore %d,%d&#39;%(k+1,k+2))
+            I1 = tn.reshape(tn.kron(tn.kron(tn.ones(rank[k],dtype=tn.int64), tn.arange(N[k],dtype=tn.int64)), tn.kron(tn.ones(N[k+1],dtype=tn.int64), tn.ones(rank[k+2],dtype=tn.int64))),[-1,1])
+            I2 = tn.reshape(tn.kron(tn.kron(tn.ones(rank[k],dtype=tn.int64), tn.ones(N[k],dtype=tn.int64)), tn.kron(tn.arange(N[k+1],dtype=tn.int64), tn.ones(rank[k+2],dtype=tn.int64))),[-1,1])
+            I3 = Idx[k][tn.kron(tn.kron(tn.arange(rank[k],dtype=tn.int64), tn.ones(N[k],dtype=tn.int64)), tn.kron(tn.ones(N[k+1],dtype=tn.int64), tn.ones(rank[k+2],dtype=tn.int64))),:]
+            I4 = Idx[k+2][:,tn.kron(tn.kron(tn.ones(rank[k],dtype=tn.int64), tn.ones(N[k],dtype=tn.int64)), tn.kron(tn.ones(N[k+1],dtype=tn.int64), tn.arange(rank[k+2],dtype=tn.int64)))].t()
+           
+            eval_index = tn.concat((I3, I1, I2, I4),1) 
+            
+                    
+            eval_index = tn.reshape(eval_index,[-1,d]).to(dtype=tn.int64)
+
+            if verbose: print(&#39;\t\tnumber evaluations&#39;,eval_index.shape[0])
+                
+            if eval_vect:
+                supercore = tn.reshape(function(eval_index),[rank[k],N[k],N[k+1],rank[k+2]])
+                n_eval += eval_index.shape[0]
+
+            # multiply with P_k left and right
+            supercore = tn.einsum(&#39;ij,jklm,mn-&gt;ikln&#39;,Ps[k],supercore.to(dtype=dtype),Ps[k+2])
+            rank[k] = supercore.shape[0]
+            rank[k+2] = supercore.shape[3]
+            supercore = tn.reshape(supercore,[supercore.shape[0]*supercore.shape[1],-1])
+    
+            # split the super core with svd
+            U,S,V = SVD(supercore)
+            rnew = rank_chop(S.cpu().numpy(),tn.linalg.norm(S).cpu().numpy()*eps/np.sqrt(d-1))+1
+            rnew = min(S.shape[0],rnew)
+            U = U[:,:rnew] 
+            S = S[:rnew]
+            V = V[:rnew,:]
+            # print(&#39;kkt new&#39;,tn.linalg.norm(supercore-U@tn.diag(S)@V))
+            # kick the rank           
+            V = tn.diag(S) @ V
+            UK = tn.randn((U.shape[0],kick), dtype = dtype, device = device)
+            U, Rtemp = QR( tn.cat( (U,UK) , 1) )
+            radd = U.shape[1] - rnew
+            if radd&gt;0: V =  tn.cat( (V,tn.zeros((radd,V.shape[1]), dtype = dtype, device = device)) , 0 )
+            V = Rtemp @ V
+            
+            # print(&#39;kkt new&#39;,tn.linalg.norm(supercore-U@V))
+            # compute err (dx)
+            super_prev = tn.einsum(&#39;ijk,kmn-&gt;ijmn&#39;,cores[k],cores[k+1])
+            super_prev = tn.einsum(&#39;ij,jklm,mn-&gt;ikln&#39;,Ps[k],super_prev,Ps[k+2])
+            err = tn.linalg.norm(supercore.flatten()-super_prev.flatten())/tn.linalg.norm(supercore)
+            max_err = max(max_err,err)
+            # update the rank
+            if verbose:
+                print(&#39;\t\trank updated %d -&gt; %d, local error %e&#39;%(rank[k+1],U.shape[1],err))
+            rank[k+1] = U.shape[1]
+           
+            
+            U = tn.linalg.solve(Ps[k],tn.reshape(U,[rank[k],-1]))
+            V = tn.linalg.solve(Ps[k+2].t(),tn.reshape(V,[rank[k+1]*N[k+1],rank[k+2]]).t()).t()
+            
+            # U = tn.einsum(&#39;ij,jkl-&gt;ikl&#39;,tn.linalg.inv(Ps[k]),tn.reshape(U,[rank[k],N[k],-1]))
+            # V = tn.einsum(&#39;ijk,kl-&gt;ijl&#39;,tn.reshape(V,[-1,N[k+1],rank[k+2]]),tn.linalg.inv(Ps[k+2]))
+            
+            V = tn.reshape(V,[rank[k+1],-1])
+            U = tn.reshape(U,[-1,rank[k+1]])
+           
+            # split cores  
+            Qmat, Rmat = QR(U)
+            idx = _maxvol(Qmat) 
+            Sub = Qmat[idx,:]
+            core = tn.linalg.solve(Sub.T,Qmat.T).t()
+            core_next = Sub@Rmat@V
+            cores[k] = tn.reshape(core,[rank[k],N[k],rank[k+1]])
+            cores[k+1] = tn.reshape(core_next,[rank[k+1],N[k+1],rank[k+2]])
+            # calc Ps
+            tmp = tn.einsum(&#39;ij,jkl-&gt;ikl&#39;,Ps[k],cores[k])
+            _,Ps[k+1] = QR(tn.reshape(tmp,[rank[k]*N[k],rank[k+1]]))
+            
+            # calc Idx 
+            tmp = np.unravel_index(idx[:rank[k+1]],(rank[k],N[k]))
+            idx_new = tn.tensor(np.hstack( ( Idx[k][tmp[0],:]  , tmp[1].reshape([-1,1]) ) ))   
+            Idx[k+1] = idx_new+0 
+
+            
+        #right to left
+    
+        for k in range(d-2,-1,-1):
+            if verbose: print(&#39;\tRL supercore %d,%d&#39;%(k+1,k+2))
+            I1 = tn.reshape(tn.kron(tn.kron(tn.ones(rank[k],dtype=tn.int64), tn.arange(N[k],dtype=tn.int64)), tn.kron(tn.ones(N[k+1],dtype=tn.int64), tn.ones(rank[k+2],dtype=tn.int64))),[-1,1])
+            I2 = tn.reshape(tn.kron(tn.kron(tn.ones(rank[k],dtype=tn.int64), tn.ones(N[k],dtype=tn.int64)), tn.kron(tn.arange(N[k+1],dtype=tn.int64), tn.ones(rank[k+2],dtype=tn.int64))),[-1,1])
+            I3 = Idx[k][tn.kron(tn.kron(tn.arange(rank[k],dtype=tn.int64), tn.ones(N[k],dtype=tn.int64)), tn.kron(tn.ones(N[k+1],dtype=tn.int64), tn.ones(rank[k+2],dtype=tn.int64))),:]
+            I4 = Idx[k+2][:,tn.kron(tn.kron(tn.ones(rank[k],dtype=tn.int64), tn.ones(N[k],dtype=tn.int64)), tn.kron(tn.ones(N[k+1],dtype=tn.int64), tn.arange(rank[k+2],dtype=tn.int64)))].t()
+           
+            eval_index = tn.concat((I3, I1, I2, I4),1) 
+            eval_index = tn.reshape(eval_index,[-1,d]).to(dtype=tn.int64)
+            
+            
+            
+            if verbose: print(&#39;\t\tnumber evaluations&#39;,eval_index.shape[0])
+                
+            if eval_vect:
+                supercore = tn.reshape(function(eval_index).to(dtype=dtype),[rank[k],N[k],N[k+1],rank[k+2]])
+                n_eval += eval_index.shape[0]
+
+            # multiply with P_k left and right
+            supercore = tn.einsum(&#39;ij,jklm,mn-&gt;ikln&#39;,Ps[k],supercore.to(dtype=dtype),Ps[k+2])
+            rank[k] = supercore.shape[0]
+            rank[k+2] = supercore.shape[3]
+            supercore = tn.reshape(supercore,[supercore.shape[0]*supercore.shape[1],-1])
+             
+            # split the super core with svd
+            U,S,V = SVD(supercore)
+            rnew = rank_chop(S.cpu().numpy(),tn.linalg.norm(S).cpu().numpy()*eps/np.sqrt(d-1))+1
+            rnew = min(S.shape[0],rnew)
+            U = U[:,:rnew] 
+            S = S[:rnew]
+            V = V[:rnew,:]
+            # print(&#39;kkt new&#39;,tn.linalg.norm(supercore-U@tn.diag(S)@V))
+            
+            #kick the rank
+            U = U @ tn.diag(S)
+            VK = tn.randn((kick,V.shape[1]) , dtype=dtype, device = device)
+            V, Rtemp = QR( tn.cat( (V,VK) , 0).t() )
+            radd = V.shape[1] - rnew
+            if radd&gt;0:
+                U =  tn.cat( (U,tn.zeros((U.shape[0],radd), dtype = dtype, device = device)) , 1 ) 
+                U = U @ Rtemp.T
+                V = V.t()
+            
+            # print(&#39;kkt new&#39;,tn.linalg.norm(supercore-U@V))
+            # compute err (dx)
+            super_prev = tn.einsum(&#39;ijk,kmn-&gt;ijmn&#39;,cores[k],cores[k+1])
+            super_prev = tn.einsum(&#39;ij,jklm,mn-&gt;ikln&#39;,Ps[k],super_prev,Ps[k+2])
+            err = tn.linalg.norm(supercore.flatten()-super_prev.flatten())/tn.linalg.norm(supercore)
+            max_err = max(max_err,err)
+            # update the rank
+            if verbose:
+                print(&#39;\t\trank updated %d -&gt; %d, local error %e&#39;%(rank[k+1],U.shape[1],err))
+            rank[k+1] = U.shape[1]
+
+            U = tn.linalg.solve(Ps[k],tn.reshape(U,[rank[k],-1]))
+            V = tn.linalg.solve(Ps[k+2].t(),tn.reshape(V,[rank[k+1]*N[k+1],rank[k+2]]).t()).t()
+            
+            # U = tn.einsum(&#39;ij,jkl-&gt;ikl&#39;,tn.linalg.inv(Ps[k]),tn.reshape(U,[rank[k],N[k],-1]))
+            # V = tn.einsum(&#39;ijk,kl-&gt;ijl&#39;,tn.reshape(V,[-1,N[k+1],rank[k+2]]),tn.linalg.inv(Ps[k+2]))
+            
+            V = tn.reshape(V,[rank[k+1],-1])
+            U = tn.reshape(U,[-1,rank[k+1]])
+                       
+            # split cores  
+            Qmat, Rmat = QR(V.T)
+            idx = _maxvol(Qmat) 
+            Sub = Qmat[idx,:]
+            core_next = tn.linalg.solve(Sub.T,Qmat.T)
+            core =U@(Sub@Rmat).t()
+            cores[k] = tn.reshape(core,[rank[k],N[k],-1])
+            cores[k+1] = tn.reshape(core_next,[-1,N[k+1],rank[k+2]])
+           
+            
+            # calc Ps
+            tmp = tn.einsum(&#39;ijk,kl-&gt;ijl&#39;,cores[k+1],Ps[k+2])
+            _,tmp = QR(tn.reshape(tmp,[rank[k+1],-1]).t())
+            Ps[k+1] = tmp
+            # calc Idx 
+            tmp = np.unravel_index(idx[:rank[k+1]],(N[k+1],rank[k+2]))
+            idx_new = tn.tensor(np.vstack( ( tmp[0].reshape([1,-1]),Idx[k+2][:,tmp[1]] ) ))   
+            Idx[k+1] = idx_new+0 
+        #xxx = TT(cores)
+        #print(&#39;#            &#39;,xxx[1,2,3,4])
+           
+        # exit condition
+        
+        if max_err&lt;eps: 
+            if verbose: print(&#39;Max error %e &lt; %e  ----&gt;  DONE&#39;%(max_err,eps))
+            break
+        else:
+            if verbose: print(&#39;Max error %g&#39;%(max_err))
+    if verbose: 
+        print(&#39;number of function calls &#39;,n_eval)
+        print()
+        
+    return torchtt.TT(cores)</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="torchtt.interpolate.dmrg_cross"><code class="name flex">
+<span>def <span class="ident">dmrg_cross</span></span>(<span>function, N, eps=1e-09, nswp=10, x_start=None, kick=2, dtype=torch.float64, device=None, eval_vect=True, verbose=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>function</code></strong> :&ensp;<code>function handle</code></dt>
+<dd>[description]</dd>
+<dt><strong><code>N</code></strong> :&ensp;<code>[type]</code></dt>
+<dd>[description]</dd>
+<dt><strong><code>eps</code></strong> :&ensp;<code>[type]</code>, optional</dt>
+<dd>[description]. Defaults to 1e-9.</dd>
+<dt><strong><code>nswp</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>[description]. Defaults to 10.</dd>
+<dt><strong><code>x_start</code></strong> :&ensp;<code>[type]</code>, optional</dt>
+<dd>[description]. Defaults to None.</dd>
+<dt><strong><code>kick</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>[description]. Defaults to 2.</dd>
+<dt><strong><code>dtype</code></strong> :&ensp;<code>[type]</code>, optional</dt>
+<dd>[description]. Defaults to tn.float64.</dd>
+<dt><strong><code>device</code></strong> :&ensp;<code>[type]</code>, optional</dt>
+<dd>[description]. Defaults to None.</dd>
+<dt><strong><code>eval_vect</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>[description]. Defaults to True.</dd>
+<dt><strong><code>verbose</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>[description]. Defaults to False.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>[type]</code></dt>
+<dd>[description]</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def dmrg_cross(function, N, eps = 1e-9, nswp = 10, x_start = None, kick = 2, dtype = tn.float64, device = None, eval_vect = True, verbose = False):
+    &#34;&#34;&#34;
+    
+
+    Args:
+        function (function handle): [description]
+        N ([type]): [description]
+        eps ([type], optional): [description]. Defaults to 1e-9.
+        nswp (int, optional): [description]. Defaults to 10.
+        x_start ([type], optional): [description]. Defaults to None.
+        kick (int, optional): [description]. Defaults to 2.
+        dtype ([type], optional): [description]. Defaults to tn.float64.
+        device ([type], optional): [description]. Defaults to None.
+        eval_vect (bool, optional): [description]. Defaults to True.
+        verbose (bool, optional): [description]. Defaults to False.
+
+    Returns:
+        [type]: [description]
+    &#34;&#34;&#34;
+    # store the computed values
+    computed_vals = dict()
+    
+    d = len(N)
+    
+    #random init of the tensor
+    if x_start == None:
+        rank_init = 2
+        cores = torchtt.random(N,rank_init, dtype, device).cores
+        rank = [1]+[rank_init]*(d-1)+[1]
+    else:
+        rank = x_start.R.copy()
+        cores = [c+0 for c in x_start.cores]
+    # cores = (ones(N,dtype=dtype)).cores
+    
+
+    cores, rank = lr_orthogonal(cores,rank,False)
+    
+    Mats = []*(d+1)
+    
+    
+    Ps = [tn.ones((1,1),dtype=dtype,device=device)]+(d-1)*[None] + [tn.ones((1,1),dtype=dtype,device=device)]
+    # ortho
+    Rm = tn.ones((1,1),dtype=dtype,device=device)
+    Idx = [tn.zeros((1,0),dtype=tn.int64)]+(d-1)*[None] + [tn.zeros((0,1),dtype=tn.int64)]
+    for k in range(d-1,0,-1):
+
+        tmp = tn.einsum(&#39;ijk,kl-&gt;ijl&#39;,cores[k],Rm)
+        tmp = tn.reshape(tmp,[rank[k],-1]).t()
+        core, Rmat = QR(tmp)
+
+        rnew = min(N[k]*rank[k+1], rank[k]) 
+        Jk = _maxvol(core)
+        # print(Jk)
+        tmp = np.unravel_index(Jk[:rnew],(rank[k+1],N[k]))
+        #if k==d-1:
+        #    idx_new = tn.tensor(tmp[1].reshape([1,-1]))
+        # else:
+        idx_new = tn.tensor(np.vstack( ( tmp[1].reshape([1,-1]),Idx[k+1][:,tmp[0]] ) ))   
+        
+        Idx[k] = idx_new+0
+
+        Rm = core[Jk,:]
+        
+        core = tn.linalg.solve(Rm.T,core.T)
+        # core = tn.linalg.solve(Rm,core.T)
+        Rm = (Rm@Rmat).t()
+        # core = core.t()
+        cores[k] = tn.reshape(core,[rnew,N[k],rank[k+1]])
+        core = tn.reshape(core,[-1,rank[k+1]]) @ Ps[k+1]
+        core = tn.reshape(core,[rank[k],-1]).t()
+        _,Ps[k] = QR(core) 
+    cores[0] = tn.einsum(&#39;ijk,kl-&gt;ijl&#39;,cores[0],Rm) 
+
+    # for p in Ps:
+    #     print(p)
+    # for i in Idx:
+    #     print(i)
+    # return
+    n_eval = 0
+    
+    for swp in range(nswp):
+        
+        max_err = 0.0 
+        if verbose:
+            print(&#39;Sweep %d: &#39;%(swp+1))
+        #left to right
+        for k in range(d-1):
+            if verbose: print(&#39;\tLR supercore %d,%d&#39;%(k+1,k+2))
+            I1 = tn.reshape(tn.kron(tn.kron(tn.ones(rank[k],dtype=tn.int64), tn.arange(N[k],dtype=tn.int64)), tn.kron(tn.ones(N[k+1],dtype=tn.int64), tn.ones(rank[k+2],dtype=tn.int64))),[-1,1])
+            I2 = tn.reshape(tn.kron(tn.kron(tn.ones(rank[k],dtype=tn.int64), tn.ones(N[k],dtype=tn.int64)), tn.kron(tn.arange(N[k+1],dtype=tn.int64), tn.ones(rank[k+2],dtype=tn.int64))),[-1,1])
+            I3 = Idx[k][tn.kron(tn.kron(tn.arange(rank[k],dtype=tn.int64), tn.ones(N[k],dtype=tn.int64)), tn.kron(tn.ones(N[k+1],dtype=tn.int64), tn.ones(rank[k+2],dtype=tn.int64))),:]
+            I4 = Idx[k+2][:,tn.kron(tn.kron(tn.ones(rank[k],dtype=tn.int64), tn.ones(N[k],dtype=tn.int64)), tn.kron(tn.ones(N[k+1],dtype=tn.int64), tn.arange(rank[k+2],dtype=tn.int64)))].t()
+           
+            eval_index = tn.concat((I3, I1, I2, I4),1) 
+            
+                    
+            eval_index = tn.reshape(eval_index,[-1,d]).to(dtype=tn.int64)
+
+            if verbose: print(&#39;\t\tnumber evaluations&#39;,eval_index.shape[0])
+                
+            if eval_vect:
+                supercore = tn.reshape(function(eval_index),[rank[k],N[k],N[k+1],rank[k+2]])
+                n_eval += eval_index.shape[0]
+
+            # multiply with P_k left and right
+            supercore = tn.einsum(&#39;ij,jklm,mn-&gt;ikln&#39;,Ps[k],supercore.to(dtype=dtype),Ps[k+2])
+            rank[k] = supercore.shape[0]
+            rank[k+2] = supercore.shape[3]
+            supercore = tn.reshape(supercore,[supercore.shape[0]*supercore.shape[1],-1])
+    
+            # split the super core with svd
+            U,S,V = SVD(supercore)
+            rnew = rank_chop(S.cpu().numpy(),tn.linalg.norm(S).cpu().numpy()*eps/np.sqrt(d-1))+1
+            rnew = min(S.shape[0],rnew)
+            U = U[:,:rnew] 
+            S = S[:rnew]
+            V = V[:rnew,:]
+            # print(&#39;kkt new&#39;,tn.linalg.norm(supercore-U@tn.diag(S)@V))
+            # kick the rank           
+            V = tn.diag(S) @ V
+            UK = tn.randn((U.shape[0],kick), dtype = dtype, device = device)
+            U, Rtemp = QR( tn.cat( (U,UK) , 1) )
+            radd = U.shape[1] - rnew
+            if radd&gt;0: V =  tn.cat( (V,tn.zeros((radd,V.shape[1]), dtype = dtype, device = device)) , 0 )
+            V = Rtemp @ V
+            
+            # print(&#39;kkt new&#39;,tn.linalg.norm(supercore-U@V))
+            # compute err (dx)
+            super_prev = tn.einsum(&#39;ijk,kmn-&gt;ijmn&#39;,cores[k],cores[k+1])
+            super_prev = tn.einsum(&#39;ij,jklm,mn-&gt;ikln&#39;,Ps[k],super_prev,Ps[k+2])
+            err = tn.linalg.norm(supercore.flatten()-super_prev.flatten())/tn.linalg.norm(supercore)
+            max_err = max(max_err,err)
+            # update the rank
+            if verbose:
+                print(&#39;\t\trank updated %d -&gt; %d, local error %e&#39;%(rank[k+1],U.shape[1],err))
+            rank[k+1] = U.shape[1]
+           
+            
+            U = tn.linalg.solve(Ps[k],tn.reshape(U,[rank[k],-1]))
+            V = tn.linalg.solve(Ps[k+2].t(),tn.reshape(V,[rank[k+1]*N[k+1],rank[k+2]]).t()).t()
+            
+            # U = tn.einsum(&#39;ij,jkl-&gt;ikl&#39;,tn.linalg.inv(Ps[k]),tn.reshape(U,[rank[k],N[k],-1]))
+            # V = tn.einsum(&#39;ijk,kl-&gt;ijl&#39;,tn.reshape(V,[-1,N[k+1],rank[k+2]]),tn.linalg.inv(Ps[k+2]))
+            
+            V = tn.reshape(V,[rank[k+1],-1])
+            U = tn.reshape(U,[-1,rank[k+1]])
+           
+            # split cores  
+            Qmat, Rmat = QR(U)
+            idx = _maxvol(Qmat) 
+            Sub = Qmat[idx,:]
+            core = tn.linalg.solve(Sub.T,Qmat.T).t()
+            core_next = Sub@Rmat@V
+            cores[k] = tn.reshape(core,[rank[k],N[k],rank[k+1]])
+            cores[k+1] = tn.reshape(core_next,[rank[k+1],N[k+1],rank[k+2]])
+            # calc Ps
+            tmp = tn.einsum(&#39;ij,jkl-&gt;ikl&#39;,Ps[k],cores[k])
+            _,Ps[k+1] = QR(tn.reshape(tmp,[rank[k]*N[k],rank[k+1]]))
+            
+            # calc Idx 
+            tmp = np.unravel_index(idx[:rank[k+1]],(rank[k],N[k]))
+            idx_new = tn.tensor(np.hstack( ( Idx[k][tmp[0],:]  , tmp[1].reshape([-1,1]) ) ))   
+            Idx[k+1] = idx_new+0 
+
+            
+        #right to left
+    
+        for k in range(d-2,-1,-1):
+            if verbose: print(&#39;\tRL supercore %d,%d&#39;%(k+1,k+2))
+            I1 = tn.reshape(tn.kron(tn.kron(tn.ones(rank[k],dtype=tn.int64), tn.arange(N[k],dtype=tn.int64)), tn.kron(tn.ones(N[k+1],dtype=tn.int64), tn.ones(rank[k+2],dtype=tn.int64))),[-1,1])
+            I2 = tn.reshape(tn.kron(tn.kron(tn.ones(rank[k],dtype=tn.int64), tn.ones(N[k],dtype=tn.int64)), tn.kron(tn.arange(N[k+1],dtype=tn.int64), tn.ones(rank[k+2],dtype=tn.int64))),[-1,1])
+            I3 = Idx[k][tn.kron(tn.kron(tn.arange(rank[k],dtype=tn.int64), tn.ones(N[k],dtype=tn.int64)), tn.kron(tn.ones(N[k+1],dtype=tn.int64), tn.ones(rank[k+2],dtype=tn.int64))),:]
+            I4 = Idx[k+2][:,tn.kron(tn.kron(tn.ones(rank[k],dtype=tn.int64), tn.ones(N[k],dtype=tn.int64)), tn.kron(tn.ones(N[k+1],dtype=tn.int64), tn.arange(rank[k+2],dtype=tn.int64)))].t()
+           
+            eval_index = tn.concat((I3, I1, I2, I4),1) 
+            eval_index = tn.reshape(eval_index,[-1,d]).to(dtype=tn.int64)
+            
+            
+            
+            if verbose: print(&#39;\t\tnumber evaluations&#39;,eval_index.shape[0])
+                
+            if eval_vect:
+                supercore = tn.reshape(function(eval_index).to(dtype=dtype),[rank[k],N[k],N[k+1],rank[k+2]])
+                n_eval += eval_index.shape[0]
+
+            # multiply with P_k left and right
+            supercore = tn.einsum(&#39;ij,jklm,mn-&gt;ikln&#39;,Ps[k],supercore.to(dtype=dtype),Ps[k+2])
+            rank[k] = supercore.shape[0]
+            rank[k+2] = supercore.shape[3]
+            supercore = tn.reshape(supercore,[supercore.shape[0]*supercore.shape[1],-1])
+             
+            # split the super core with svd
+            U,S,V = SVD(supercore)
+            rnew = rank_chop(S.cpu().numpy(),tn.linalg.norm(S).cpu().numpy()*eps/np.sqrt(d-1))+1
+            rnew = min(S.shape[0],rnew)
+            U = U[:,:rnew] 
+            S = S[:rnew]
+            V = V[:rnew,:]
+            # print(&#39;kkt new&#39;,tn.linalg.norm(supercore-U@tn.diag(S)@V))
+            
+            #kick the rank
+            U = U @ tn.diag(S)
+            VK = tn.randn((kick,V.shape[1]) , dtype=dtype, device = device)
+            V, Rtemp = QR( tn.cat( (V,VK) , 0).t() )
+            radd = V.shape[1] - rnew
+            if radd&gt;0:
+                U =  tn.cat( (U,tn.zeros((U.shape[0],radd), dtype = dtype, device = device)) , 1 ) 
+                U = U @ Rtemp.T
+                V = V.t()
+            
+            # print(&#39;kkt new&#39;,tn.linalg.norm(supercore-U@V))
+            # compute err (dx)
+            super_prev = tn.einsum(&#39;ijk,kmn-&gt;ijmn&#39;,cores[k],cores[k+1])
+            super_prev = tn.einsum(&#39;ij,jklm,mn-&gt;ikln&#39;,Ps[k],super_prev,Ps[k+2])
+            err = tn.linalg.norm(supercore.flatten()-super_prev.flatten())/tn.linalg.norm(supercore)
+            max_err = max(max_err,err)
+            # update the rank
+            if verbose:
+                print(&#39;\t\trank updated %d -&gt; %d, local error %e&#39;%(rank[k+1],U.shape[1],err))
+            rank[k+1] = U.shape[1]
+
+            U = tn.linalg.solve(Ps[k],tn.reshape(U,[rank[k],-1]))
+            V = tn.linalg.solve(Ps[k+2].t(),tn.reshape(V,[rank[k+1]*N[k+1],rank[k+2]]).t()).t()
+            
+            # U = tn.einsum(&#39;ij,jkl-&gt;ikl&#39;,tn.linalg.inv(Ps[k]),tn.reshape(U,[rank[k],N[k],-1]))
+            # V = tn.einsum(&#39;ijk,kl-&gt;ijl&#39;,tn.reshape(V,[-1,N[k+1],rank[k+2]]),tn.linalg.inv(Ps[k+2]))
+            
+            V = tn.reshape(V,[rank[k+1],-1])
+            U = tn.reshape(U,[-1,rank[k+1]])
+                       
+            # split cores  
+            Qmat, Rmat = QR(V.T)
+            idx = _maxvol(Qmat) 
+            Sub = Qmat[idx,:]
+            core_next = tn.linalg.solve(Sub.T,Qmat.T)
+            core =U@(Sub@Rmat).t()
+            cores[k] = tn.reshape(core,[rank[k],N[k],-1])
+            cores[k+1] = tn.reshape(core_next,[-1,N[k+1],rank[k+2]])
+           
+            
+            # calc Ps
+            tmp = tn.einsum(&#39;ijk,kl-&gt;ijl&#39;,cores[k+1],Ps[k+2])
+            _,tmp = QR(tn.reshape(tmp,[rank[k+1],-1]).t())
+            Ps[k+1] = tmp
+            # calc Idx 
+            tmp = np.unravel_index(idx[:rank[k+1]],(N[k+1],rank[k+2]))
+            idx_new = tn.tensor(np.vstack( ( tmp[0].reshape([1,-1]),Idx[k+2][:,tmp[1]] ) ))   
+            Idx[k+1] = idx_new+0 
+        #xxx = TT(cores)
+        #print(&#39;#            &#39;,xxx[1,2,3,4])
+           
+        # exit condition
+        
+        if max_err&lt;eps: 
+            if verbose: print(&#39;Max error %e &lt; %e  ----&gt;  DONE&#39;%(max_err,eps))
+            break
+        else:
+            if verbose: print(&#39;Max error %g&#39;%(max_err))
+    if verbose: 
+        print(&#39;number of function calls &#39;,n_eval)
+        print()
+        
+    return torchtt.TT(cores)</code></pre>
+</details>
+</dd>
+<dt id="torchtt.interpolate.function_interpolate"><code class="name flex">
+<span>def <span class="ident">function_interpolate</span></span>(<span>function, x, eps=1e-09, start_tens=None, nswp=20, kick=2, dtype=torch.float64, verbose=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>function</code></strong> :&ensp;<code>[type]</code></dt>
+<dd>[description]</dd>
+<dt><strong><code>x</code></strong> :&ensp;<code>[type]</code></dt>
+<dd>[description]</dd>
+<dt><strong><code>eps</code></strong> :&ensp;<code>[type]</code>, optional</dt>
+<dd>[description]. Defaults to 1e-9.</dd>
+<dt><strong><code>start_tens</code></strong> :&ensp;<code>[type]</code>, optional</dt>
+<dd>[description]. Defaults to None.</dd>
+<dt><strong><code>nswp</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>[description]. Defaults to 20.</dd>
+<dt><strong><code>kick</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>[description]. Defaults to 2.</dd>
+<dt><strong><code>dtype</code></strong> :&ensp;<code>[type]</code>, optional</dt>
+<dd>[description]. Defaults to tn.float64.</dd>
+<dt><strong><code>verbose</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>[description]. Defaults to False.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>[type]</code></dt>
+<dd>[description]</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def function_interpolate(function, x, eps = 1e-9, start_tens = None, nswp = 20, kick = 2, dtype = tn.float64, verbose = False):
+    &#34;&#34;&#34;
+    
+
+    Args:
+        function ([type]): [description]
+        x ([type]): [description]
+        eps ([type], optional): [description]. Defaults to 1e-9.
+        start_tens ([type], optional): [description]. Defaults to None.
+        nswp (int, optional): [description]. Defaults to 20.
+        kick (int, optional): [description]. Defaults to 2.
+        dtype ([type], optional): [description]. Defaults to tn.float64.
+        verbose (bool, optional): [description]. Defaults to False.
+
+    Returns:
+        [type]: [description]
+    &#34;&#34;&#34;
+     
+    
+    if isinstance(x,list) or isinstance(x,tuple):
+        eval_mv = True
+        N = x[0].N
+    else:
+        eval_mv = False
+        N = x.N
+    device = None
+    
+    d = len(N)
+    
+    #random init of the tensor
+    if start_tens == None:
+        rank_init = 2
+        cores = torchtt.random(N,rank_init, dtype, device).cores
+        rank = [1]+[rank_init]*(d-1)+[1]
+    else:
+        rank = start_tens.R.copy()
+        cores = [c+0 for c in start_tens.cores]
+    # cores = (ones(N,dtype=dtype)).cores
+    
+
+    cores, rank = lr_orthogonal(cores,rank,False)
+    
+    Mats = []*(d+1)
+    
+    
+    Ps = [tn.ones((1,1),dtype=dtype,device=device)]+(d-1)*[None] + [tn.ones((1,1),dtype=dtype,device=device)]
+    # ortho
+    Rm = tn.ones((1,1),dtype=dtype,device=device)
+    Idx = [tn.zeros((1,0),dtype=tn.int64)]+(d-1)*[None] + [tn.zeros((0,1),dtype=tn.int64)]
+    for k in range(d-1,0,-1):
+
+        tmp = tn.einsum(&#39;ijk,kl-&gt;ijl&#39;,cores[k],Rm)
+        tmp = tn.reshape(tmp,[rank[k],-1]).t()
+        core, Rmat = QR(tmp)
+
+        rnew = min(N[k]*rank[k+1], rank[k]) 
+        Jk = _maxvol(core)
+        # print(Jk)
+        tmp = np.unravel_index(Jk[:rnew],(rank[k+1],N[k]))
+        #if k==d-1:
+        #    idx_new = tn.tensor(tmp[1].reshape([1,-1]))
+        # else:
+        idx_new = tn.tensor(np.vstack( ( tmp[1].reshape([1,-1]),Idx[k+1][:,tmp[0]] ) ))   
+        
+        Idx[k] = idx_new+0
+
+        Rm = core[Jk,:]
+        
+        core = tn.linalg.solve(Rm.T,core.T)
+        Rm = (Rm@Rmat).t()
+        cores[k] = tn.reshape(core,[rnew,N[k],rank[k+1]])
+        core = tn.reshape(core,[-1,rank[k+1]]) @ Ps[k+1]
+        core = tn.reshape(core,[rank[k],-1]).t()
+        _,Ps[k] = QR(core) 
+    cores[0] = tn.einsum(&#39;ijk,kl-&gt;ijl&#39;,cores[0],Rm) 
+
+    # for p in Ps:
+    #     print(p)
+    # for i in Idx:
+    #     print(i)
+    # return
+    n_eval = 0
+    
+    for swp in range(nswp):
+        
+        max_err = 0.0 
+        if verbose:
+            print(&#39;Sweep %d: &#39;%(swp+1))
+        #left to right
+        for k in range(d-1):
+            if verbose: print(&#39;\tLR supercore %d,%d&#39;%(k+1,k+2))
+            I1 = tn.reshape(tn.kron(tn.kron(tn.ones(rank[k],dtype=tn.int64), tn.arange(N[k],dtype=tn.int64)), tn.kron(tn.ones(N[k+1],dtype=tn.int64), tn.ones(rank[k+2],dtype=tn.int64))),[-1,1])
+            I2 = tn.reshape(tn.kron(tn.kron(tn.ones(rank[k],dtype=tn.int64), tn.ones(N[k],dtype=tn.int64)), tn.kron(tn.arange(N[k+1],dtype=tn.int64), tn.ones(rank[k+2],dtype=tn.int64))),[-1,1])
+            I3 = Idx[k][tn.kron(tn.kron(tn.arange(rank[k],dtype=tn.int64), tn.ones(N[k],dtype=tn.int64)), tn.kron(tn.ones(N[k+1],dtype=tn.int64), tn.ones(rank[k+2],dtype=tn.int64))),:]
+            I4 = Idx[k+2][:,tn.kron(tn.kron(tn.ones(rank[k],dtype=tn.int64), tn.ones(N[k],dtype=tn.int64)), tn.kron(tn.ones(N[k+1],dtype=tn.int64), tn.arange(rank[k+2],dtype=tn.int64)))].t()
+           
+            eval_index = tn.concat((I3, I1, I2, I4),1) 
+            eval_index = tn.reshape(eval_index,[-1,d]).to(dtype=tn.int64)
+
+            if verbose: print(&#39;\t\tnumber evaluations&#39;,eval_index.shape[0])
+                
+            if eval_mv:
+                ev = tn.zeros((eval_index.shape[0],0),dtype = dtype)
+                for j in range(d):
+                    core = x[j].cores[0][0,eval_index[:,0],:]
+                    for i in range(1,d):
+                        core = tn.einsum(&#39;ij,jil-&gt;il&#39;,core,x[j].cores[i][:,eval_index[:,i],:])
+                    core = tn.reshape(core[...,0],[-1,1])
+                    ev = tn.hstack((ev,core))
+                supercore = tn.reshape(function(ev),[rank[k],N[k],N[k+1],rank[k+2]])
+                n_eval += core.shape[0]
+            else:
+                core = x.cores[0][0,eval_index[:,0],:]
+                for i in range(1,d):
+                    core = tn.einsum(&#39;ij,jil-&gt;il&#39;,core,x.cores[i][:,eval_index[:,i],:])
+                core = core[...,0]
+                supercore = tn.reshape(function(core),[rank[k],N[k],N[k+1],rank[k+2]])
+                n_eval += core.shape[0]
+                
+            # multiply with P_k left and right
+            supercore = tn.einsum(&#39;ij,jklm,mn-&gt;ikln&#39;,Ps[k],supercore.to(dtype=dtype),Ps[k+2])
+            rank[k] = supercore.shape[0]
+            rank[k+2] = supercore.shape[3]
+            supercore = tn.reshape(supercore,[supercore.shape[0]*supercore.shape[1],-1])
+    
+            # split the super core with svd
+            U,S,V = SVD(supercore)
+            rnew = rank_chop(S.cpu().numpy(),tn.linalg.norm(S).cpu().numpy()*eps/np.sqrt(d-1))+1
+            rnew = min(S.shape[0],rnew)
+            U = U[:,:rnew] 
+            S = S[:rnew]
+            V = V[:rnew,:]
+            # print(&#39;kkt new&#39;,tn.linalg.norm(supercore-U@tn.diag(S)@V))
+            # kick the rank           
+            V = tn.diag(S) @ V
+            UK = tn.randn((U.shape[0],kick), dtype = dtype, device = device)
+            U, Rtemp = QR( tn.cat( (U,UK) , 1) )
+            radd = U.shape[1] - rnew
+            if radd&gt;0: 
+                V =  tn.cat( (V,tn.zeros((radd,V.shape[1]), dtype = dtype, device = device)) , 0 )
+                V = Rtemp @ V
+            
+            # print(&#39;kkt new&#39;,tn.linalg.norm(supercore-U@V))
+            # compute err (dx)
+            super_prev = tn.einsum(&#39;ijk,kmn-&gt;ijmn&#39;,cores[k],cores[k+1])
+            super_prev = tn.einsum(&#39;ij,jklm,mn-&gt;ikln&#39;,Ps[k],super_prev,Ps[k+2])
+            err = tn.linalg.norm(supercore.flatten()-super_prev.flatten())/tn.linalg.norm(supercore)
+            max_err = max(max_err,err)
+            # update the rank
+            if verbose:
+                print(&#39;\t\trank updated %d -&gt; %d, local error %e&#39;%(rank[k+1],U.shape[1],err))
+            rank[k+1] = U.shape[1]
+           
+            
+            U = tn.linalg.solve(Ps[k],tn.reshape(U,[rank[k],-1]))
+            V = tn.linalg.solve(Ps[k+2].t(),tn.reshape(V,[rank[k+1]*N[k+1],rank[k+2]]).t()).t()
+            
+            # U = tn.einsum(&#39;ij,jkl-&gt;ikl&#39;,tn.linalg.inv(Ps[k]),tn.reshape(U,[rank[k],N[k],-1]))
+            # V = tn.einsum(&#39;ijk,kl-&gt;ijl&#39;,tn.reshape(V,[-1,N[k+1],rank[k+2]]),tn.linalg.inv(Ps[k+2]))
+            
+            V = tn.reshape(V,[rank[k+1],-1])
+            U = tn.reshape(U,[-1,rank[k+1]])
+           
+            # split cores  
+            Qmat, Rmat = QR(U)
+            idx = _maxvol(Qmat) 
+            Sub = Qmat[idx,:]
+            core = tn.linalg.solve(Sub.T,Qmat.T).t()
+            core_next = Sub@Rmat@V
+            cores[k] = tn.reshape(core,[rank[k],N[k],rank[k+1]])
+            cores[k+1] = tn.reshape(core_next,[rank[k+1],N[k+1],rank[k+2]])
+            # calc Ps
+            tmp = tn.einsum(&#39;ij,jkl-&gt;ikl&#39;,Ps[k],cores[k])
+            _,Ps[k+1] = QR(tn.reshape(tmp,[rank[k]*N[k],rank[k+1]]))
+            
+            # calc Idx 
+            tmp = np.unravel_index(idx[:rank[k+1]],(rank[k],N[k]))
+            idx_new = tn.tensor(np.hstack( ( Idx[k][tmp[0],:]  , tmp[1].reshape([-1,1]) ) ))   
+            Idx[k+1] = idx_new+0 
+
+            
+        #right to left
+    
+        for k in range(d-2,-1,-1):
+            if verbose: print(&#39;\tRL supercore %d,%d&#39;%(k+1,k+2))
+            I1 = tn.reshape(tn.kron(tn.kron(tn.ones(rank[k],dtype=tn.int64), tn.arange(N[k],dtype=tn.int64)), tn.kron(tn.ones(N[k+1],dtype=tn.int64), tn.ones(rank[k+2],dtype=tn.int64))),[-1,1])
+            I2 = tn.reshape(tn.kron(tn.kron(tn.ones(rank[k],dtype=tn.int64), tn.ones(N[k],dtype=tn.int64)), tn.kron(tn.arange(N[k+1],dtype=tn.int64), tn.ones(rank[k+2],dtype=tn.int64))),[-1,1])
+            I3 = Idx[k][tn.kron(tn.kron(tn.arange(rank[k],dtype=tn.int64), tn.ones(N[k],dtype=tn.int64)), tn.kron(tn.ones(N[k+1],dtype=tn.int64), tn.ones(rank[k+2],dtype=tn.int64))),:]
+            I4 = Idx[k+2][:,tn.kron(tn.kron(tn.ones(rank[k],dtype=tn.int64), tn.ones(N[k],dtype=tn.int64)), tn.kron(tn.ones(N[k+1],dtype=tn.int64), tn.arange(rank[k+2],dtype=tn.int64)))].t()
+           
+            eval_index = tn.concat((I3, I1, I2, I4),1) 
+            eval_index = tn.reshape(eval_index,[-1,d]).to(dtype=tn.int64)
+
+            if verbose: print(&#39;\t\tnumber evaluations&#39;,eval_index.shape[0])
+                
+            if eval_mv:
+                ev = tn.zeros((eval_index.shape[0],0),dtype = dtype)
+                for j in range(d):
+                    core = x[j].cores[0][0,eval_index[:,0],:]
+                    for i in range(1,d):
+                        core = tn.einsum(&#39;ij,jil-&gt;il&#39;,core,x[j].cores[i][:,eval_index[:,i],:])
+                    core = tn.reshape(core[...,0],[-1,1])
+                    ev = tn.hstack((ev,core))
+                supercore = tn.reshape(function(ev),[rank[k],N[k],N[k+1],rank[k+2]])
+                n_eval += core.shape[0]
+            else:
+                core = x.cores[0][0,eval_index[:,0],:]
+                for i in range(1,d):
+                    core = tn.einsum(&#39;ij,jil-&gt;il&#39;,core,x.cores[i][:,eval_index[:,i],:])
+                core = core[...,0]
+                supercore = tn.reshape(function(core),[rank[k],N[k],N[k+1],rank[k+2]])
+                n_eval +=core.shape[0]
+
+            # multiply with P_k left and right
+            supercore = tn.einsum(&#39;ij,jklm,mn-&gt;ikln&#39;,Ps[k],supercore.to(dtype=dtype),Ps[k+2])
+            rank[k] = supercore.shape[0]
+            rank[k+2] = supercore.shape[3]
+            supercore = tn.reshape(supercore,[supercore.shape[0]*supercore.shape[1],-1])
+             
+            # split the super core with svd
+            U,S,V = SVD(supercore)
+            rnew = rank_chop(S.cpu().numpy(),tn.linalg.norm(S).cpu().numpy()*eps/np.sqrt(d-1))+1
+            rnew = min(S.shape[0],rnew)
+            U = U[:,:rnew] 
+            S = S[:rnew]
+            V = V[:rnew,:]
+            # print(&#39;kkt new&#39;,tn.linalg.norm(supercore-U@tn.diag(S)@V))
+            
+            #kick the rank
+            # print(&#39;u before&#39;, U.shape)
+            U = U @ tn.diag(S)
+            VK = tn.randn((kick,V.shape[1]) , dtype=dtype, device = device)
+            # print(&#39;V enrich&#39;, V.shape)
+            V, Rtemp = QR( tn.cat( (V,VK) , 0).t() )
+            radd = Rtemp.shape[1] - rnew
+            # print(&#39;V after QR&#39;,V.shape,Rtemp.shape,radd)
+            if radd&gt;0:
+                U =  tn.cat( (U,tn.zeros((U.shape[0],radd), dtype = dtype, device = device)) , 1 ) 
+                U = U @ Rtemp.T
+                V = V.t()
+            
+            # print(&#39;kkt new&#39;,tn.linalg.norm(supercore-U@V))
+            # compute err (dx)
+            super_prev = tn.einsum(&#39;ijk,kmn-&gt;ijmn&#39;,cores[k],cores[k+1])
+            super_prev = tn.einsum(&#39;ij,jklm,mn-&gt;ikln&#39;,Ps[k],super_prev,Ps[k+2])
+            err = tn.linalg.norm(supercore.flatten()-super_prev.flatten())/tn.linalg.norm(supercore)
+            max_err = max(max_err,err)
+            # update the rank
+            if verbose:
+                print(&#39;\t\trank updated %d -&gt; %d, local error %e&#39;%(rank[k+1],U.shape[1],err))
+            rank[k+1] = U.shape[1]
+
+            U = tn.linalg.solve(Ps[k],tn.reshape(U,[rank[k],-1]))
+            V = tn.linalg.solve(Ps[k+2].t(),tn.reshape(V,[rank[k+1]*N[k+1],rank[k+2]]).t()).t()
+            
+            # U = tn.einsum(&#39;ij,jkl-&gt;ikl&#39;,tn.linalg.inv(Ps[k]),tn.reshape(U,[rank[k],N[k],-1]))
+            # V = tn.einsum(&#39;ijk,kl-&gt;ijl&#39;,tn.reshape(V,[-1,N[k+1],rank[k+2]]),tn.linalg.inv(Ps[k+2]))
+            
+            V = tn.reshape(V,[rank[k+1],-1])
+            U = tn.reshape(U,[-1,rank[k+1]])
+                       
+            # split cores  
+            Qmat, Rmat = QR(V.T)
+            idx = _maxvol(Qmat) 
+            Sub = Qmat[idx,:]
+            core_next = tn.linalg.solve(Sub.T,Qmat.T)
+            core =U@(Sub@Rmat).t()
+            cores[k] = tn.reshape(core,[rank[k],N[k],-1])
+            cores[k+1] = tn.reshape(core_next,[-1,N[k+1],rank[k+2]])
+           
+            
+            # calc Ps
+            tmp = tn.einsum(&#39;ijk,kl-&gt;ijl&#39;,cores[k+1],Ps[k+2])
+            _,tmp = QR(tn.reshape(tmp,[rank[k+1],-1]).t())
+            Ps[k+1] = tmp
+            # calc Idx 
+            tmp = np.unravel_index(idx[:rank[k+1]],(N[k+1],rank[k+2]))
+            idx_new = tn.tensor(np.vstack( ( tmp[0].reshape([1,-1]),Idx[k+2][:,tmp[1]] ) ))   
+            Idx[k+1] = idx_new+0 
+        #xxx = TT(cores)
+        #print(&#39;#            &#39;,xxx[1,2,3,4])
+           
+        # exit condition
+        
+        if max_err&lt;eps: 
+            if verbose: print(&#39;Max error %e &lt; %e  ----&gt;  DONE&#39;%(max_err,eps))
+            break
+        else:
+            if verbose: print(&#39;Max error %g&#39;%(max_err))
+    if verbose: 
+        print(&#39;number of function calls &#39;,n_eval)
+        print()
+        
+    return torchtt.TT(cores)</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="torchtt" href="index.html">torchtt</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="torchtt.interpolate.dmrg_cross" href="#torchtt.interpolate.dmrg_cross">dmrg_cross</a></code></li>
+<li><code><a title="torchtt.interpolate.function_interpolate" href="#torchtt.interpolate.function_interpolate">function_interpolate</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

@@ -1,11 +1,10 @@
 """
 Manifold gradient module.
 
-@author: ion
 """
 
 import torch as tn
-from torchtt.decomposition import mat_to_tt, to_tt, lr_orthogonal, round_tt, rl_orthogonal
+from torchtt._decomposition import mat_to_tt, to_tt, lr_orthogonal, round_tt, rl_orthogonal
 from . import TT
 
 
