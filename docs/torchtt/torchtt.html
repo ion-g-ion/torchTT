@@ -48,7 +48,7 @@ from torchtt.errors import *
 
 class TT():
     
-    def __init__(self, source, shape=None, eps=1e-10, rmax=2048):
+    def __init__(self, source, shape=None, eps=1e-10, rmax=10000):
         &#34;&#34;&#34;
         Constructor of the TT class. Can convert full tensor in the TT-format (from `torch.tensor` or `numpy.array`).
         In the case of tensor operators of full shape `M1 x ... Md x N1 x ... x Nd`, the shape must be specified as a list of tuples `[(M1,N1),...,(Md,Nd)]`.
@@ -80,7 +80,7 @@ class TT():
             source (torch.tensor ot list[torch.tensor] or numpy.array or None): the input tensor in full format or the cores. If a torch.tensor or numpy array is provided
             shape (list[int] or list[tuple[int]], optional): the shape (if it differs from the one provided). For the TT-matrix case is mandatory. Defaults to None.
             eps (float, optional): tolerance of the TT approximation. Defaults to 1e-10.
-            rmax (int or list[int], optional): maximum rank (either a list of integer or an integer). Defaults to 1000.
+            rmax (int or list[int], optional): maximum rank (either a list of integer or an integer). Defaults to 10000.
 
         Raises:
             RankMismatch: Ranks of the given cores do not match (chace the spaes of the cores).
@@ -2596,7 +2596,7 @@ the shape can be a list of ints or a list of tuples of ints. The second case cre
 <dl>
 <dt id="torchtt.torchtt.TT"><code class="flex name class">
 <span>class <span class="ident">TT</span></span>
-<span>(</span><span>source, shape=None, eps=1e-10, rmax=2048)</span>
+<span>(</span><span>source, shape=None, eps=1e-10, rmax=10000)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Constructor of the TT class. Can convert full tensor in the TT-format (from <code>torch.tensor</code> or <code>numpy.array</code>).
@@ -2628,7 +2628,7 @@ print(Att)
 <dt><strong><code>eps</code></strong> :&ensp;<code>float</code>, optional</dt>
 <dd>tolerance of the TT approximation. Defaults to 1e-10.</dd>
 <dt><strong><code>rmax</code></strong> :&ensp;<code>int</code> or <code>list[int]</code>, optional</dt>
-<dd>maximum rank (either a list of integer or an integer). Defaults to 1000.</dd>
+<dd>maximum rank (either a list of integer or an integer). Defaults to 10000.</dd>
 </dl>
 <h2 id="raises">Raises</h2>
 <dl>
@@ -2647,7 +2647,7 @@ print(Att)
 </summary>
 <pre><code class="python">class TT():
     
-    def __init__(self, source, shape=None, eps=1e-10, rmax=2048):
+    def __init__(self, source, shape=None, eps=1e-10, rmax=10000):
         &#34;&#34;&#34;
         Constructor of the TT class. Can convert full tensor in the TT-format (from `torch.tensor` or `numpy.array`).
         In the case of tensor operators of full shape `M1 x ... Md x N1 x ... x Nd`, the shape must be specified as a list of tuples `[(M1,N1),...,(Md,Nd)]`.
@@ -2679,7 +2679,7 @@ print(Att)
             source (torch.tensor ot list[torch.tensor] or numpy.array or None): the input tensor in full format or the cores. If a torch.tensor or numpy array is provided
             shape (list[int] or list[tuple[int]], optional): the shape (if it differs from the one provided). For the TT-matrix case is mandatory. Defaults to None.
             eps (float, optional): tolerance of the TT approximation. Defaults to 1e-10.
-            rmax (int or list[int], optional): maximum rank (either a list of integer or an integer). Defaults to 1000.
+            rmax (int or list[int], optional): maximum rank (either a list of integer or an integer). Defaults to 10000.
 
         Raises:
             RankMismatch: Ranks of the given cores do not match (chace the spaes of the cores).
