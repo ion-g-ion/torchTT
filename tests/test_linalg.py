@@ -100,7 +100,30 @@ class TestLinalg(unittest.TestCase):
         self.assertLess(err_rel(C.full(),Cr),1e-13,"Multiplication error: Tt-matrices.")
           
     def test_matmult(self):
-        self.assertTrue(True)
+        """
+        Test the matrix multiplication operations.
+        """
+
+        A = tntt.random([(5,6),(7,8),(4,5)],[1,5,3,1])
+        B = tntt.random([(5,6),(7,8),(4,5)],[1,5,3,1]).t()
+        x = tntt.randn([5,7,4],[1,3,2,1])
+        y = tntt.randn([6,8,5],[1,1,2,1])
+
+        A_ref = A.full()
+        B_ref = B.full()
+        x_ref = x.full()
+        y_ref = y.full()
+
+        # matrix matrix
+        C = A@B
+        C_ref = tn.einsum('ijkabc,abcmno->ijkmno', A_ref, B_ref)
+        self.assertLess(err_rel(C.full(),C_ref),1e-13,"torchtt.TT.__matmul__() error: 2 TT matrices.")
+
+        # matrix vector 
+        z = B@x
+        z_ref = tn.einsum('abcijk,ijk->abc', B_ref, x_ref)
+        self.assertLess(err_rel(C.full(),C_ref),1e-13,"torchtt.TT.__matmul__() error: TT matrix with TT vecotr.")
+
 
     def test_matvecdense(self):
         """
@@ -127,6 +150,23 @@ class TestLinalg(unittest.TestCase):
         self.assertEqual(y.shape,yr.shape,'Dense matvec shape mismatch.')
         self.assertLess(err_rel(y,yr),1e-14,'Dense matvec error 2.')
 
+    def test_mode_product(self):
+        """
+        Test the n-mode tensor product.
+        """
+
+        x = tntt.randn([2,3,4,5,6], [1,3,3,3,3,1])
+        M1 = tn.rand((8,3), dtype = tn.float64)
+        M2 = tn.rand((7,2), dtype = tn.float64)
+        M3 = tn.rand((10,5), dtype = tn.float64)
+        
+        y = x.mprod(M1, 1)
+        yr = tn.einsum('ijklm,aj->iaklm',x.full(),M1)
+        self.assertLess(err_rel(y.full(),yr),1e-14,'torchtt.tt.mprod() error: case 1.')
+
+        z = x.mprod([M2, M3], [0, 3])
+        zr = tn.einsum('ijklm,ai,bl->ajkbm', x.full(), M2, M3)
+        self.assertLess(err_rel(z.full(),zr),1e-14,'torchtt.tt.mprod() error: case 2.')
 
 
     def test_dot(self):

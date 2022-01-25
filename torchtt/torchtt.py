@@ -15,7 +15,7 @@ from torchtt._aux_ops import apply_mask, dense_matvec, bilinear_form_aux
 from torchtt.errors import *
 
 class TT():
-    
+
     def __init__(self, source, shape=None, eps=1e-10, rmax=10000):
         """
         Constructor of the TT class. Can convert full tensor in the TT-format (from `torch.tensor` or `numpy.array`).
@@ -45,7 +45,7 @@ class TT():
             ```
             
         Args:
-            source (torch.tensor ot list[torch.tensor] or numpy.array or None): the input tensor in full format or the cores. If a torch.tensor or numpy array is provided
+            source (torch.tensor ot list[torch.tensor] or numpy.array or None): the input tensor in full format or the cores. If a `torch.tensor` or `numpy.array` is provided
             shape (list[int] or list[tuple[int]], optional): the shape (if it differs from the one provided). For the TT-matrix case is mandatory. Defaults to None.
             eps (float, optional): tolerance of the TT approximation. Defaults to 1e-10.
             rmax (int or list[int], optional): maximum rank (either a list of integer or an integer). Defaults to 10000.
@@ -1260,10 +1260,10 @@ class TT():
         if isinstance(factor_matrices,list) and isinstance(mode, list):
             cores_new = [c.clone() for c in self.cores]
             for i in range(len(factor_matrices)):
-                cores_new[mode[i]] =  tn.einsum('imjk,lj->imlk',cores_new[mode[i]],factor_matrices[i]) if self.is_ttm else tn.einsum('ijk,lj->ilk',cores_new[mode[i]],factor_matrices[i]) 
-        elif isinstance(factor_matrices, tn.tensor) and isinstance(mode, int):
+                cores_new[mode[i]] =  tn.einsum('ijk,lj->ilk',cores_new[mode[i]],factor_matrices[i]) if self.is_ttm else tn.einsum('ijk,lj->ilk',cores_new[mode[i]],factor_matrices[i]) 
+        elif isinstance(mode, int) and tn.is_tensor(factor_matrices):
             cores_new = [c.clone() for c in self.cores]
-            cores_new[mode] =  tn.einsum('imjk,lj->imlk',cores_new[mode],factor_matrices) if self.is_ttm else tn.einsum('ijk,lj->ilk',cores_new[mode],factor_matrices) 
+            cores_new[mode] =  tn.einsum('ijk,lj->ilk',cores_new[mode],factor_matrices) if self.is_ttm else tn.einsum('ijk,lj->ilk',cores_new[mode],factor_matrices) 
         else:
             raise InvalidArguments('Invalid arguments.')
         
@@ -1685,7 +1685,7 @@ def elementwise_divide(x, y, eps = 1e-12, starting_tensor = None, nswp = 50, kic
         x (torchtt.TT or scalar): first tensor (can also be scalar of type float, int, torch.tensor with shape (1)).
         y (torchtt.TT): second tensor.
         eps (float, optional): relative acccuracy. Defaults to 1e-12.
-        starting_tensor (torchtt.tensor or None, optional): initial guess of the result (None for random initial guess). Defaults to None.
+        starting_tensor (torchtt.TT or None, optional): initial guess of the result (None for random initial guess). Defaults to None.
         nswp (int, optional): number of iterations. Defaults to 50.
         kick (int, optional): size of rank enrichment. Defaults to 4.
         verbose (bool, optional): display debug info. Defaults to False.

@@ -65,4 +65,5 @@ class TestAD(unittest.TestCase):
         # derivative = (f(x1,A,y)-f(x2,A,y))/(2*h)
         # print(tn.abs(derivative-grad_cores[1][0,0,0])/tn.abs(derivative))
         
-        
+if __name__ == '__main__':
+    unittest.main()
