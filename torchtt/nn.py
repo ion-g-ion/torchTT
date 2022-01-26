@@ -9,6 +9,7 @@ Todo:
 import torch as tn
 import torch.nn as nn
 import torchtt
+from ._aux_ops import dense_matvec
 
 class LinearLayerTT(nn.Module):
     """
@@ -22,11 +23,9 @@ class LinearLayerTT(nn.Module):
     def __init__(self, size_in, size_out, rank, dtype = tn.float32):
         super().__init__()
         self.size_in, self.size_out, self.rank = size_in, size_out, rank
-        self.cores = [None] * len(size_in)
         t = torchtt.randn([(s2,s1) for s1,s2 in zip(size_in,size_out)], rank, dtype=dtype)
-        for i in range(len(size_in)):
-            core = t.cores[i][:] 
-            self.cores[i] = nn.Parameter(core) 
+        #self.cores = [nn.Parameter(tn.Tensor(c.clone())) for c in t.cores] 
+        self.cores = nn.ParameterList([nn.Parameter(c) for c in t.cores])
         #bias
         bias = tn.zeros(size_out, dtype = dtype) 
         self.bias = nn.Parameter(bias)
@@ -45,8 +44,8 @@ class LinearLayerTT(nn.Module):
         Returns:
             torch.tensor: output of the layer.
         """
-        W = torchtt.TT(self.cores)
-        return W @ x + self.bias
+        
+        return dense_matvec(self.cores,x) + self.bias
 
 
  

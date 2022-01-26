@@ -33,11 +33,11 @@ def f(x,A,y):
     """
     z = A @ y + A @ y # operatio that grows the rank
     z = z.round(1e-12) # rank rounding (contains QR and SVD decomposition)
-    z += z+x # some other operation
+    z += z*x # some other operation
     return tntt.dot(x,z) # contract the tensor
 
 #%% Generate random tensors in the TT-format (on the CPU).
-x = tntt.random([200,300,400,500],[1,8,8,8,1])
+x = tntt.random([200,300,400,500],[1,10,10,10,1])
 y = tntt.random([200,300,400,500],[1,8,8,8,1])
 A = tntt.random([(200,200),(300,300),(400,400),(500,500)],[1,8,8,8,1])
 

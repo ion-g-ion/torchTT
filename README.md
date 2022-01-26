@@ -60,7 +60,7 @@ python -m unittest discover tests/
 
 
 ## Documentation and examples
-The documentation ca be gound [here](https://ion-g-ion.github.io/torchTT/torchtt/index.html).
+The documentation ca be found [here](https://ion-g-ion.github.io/torchTT/torchtt/index.html).
 Following example scripts (as well as python notebooks) are also provied provided as part of the documentation:
 
  * [basic_tutorial.py](examples/basic_tutorial.py) / [basic_tutorial.ipynp](examples/basic_tutorial.ipynb): This contains a basic tutorial on decomposing full tensors in the TT format as well as performing rank rounding, slicing. 
