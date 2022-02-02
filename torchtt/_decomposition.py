@@ -380,7 +380,7 @@ def to_tt(A,N=None,eps=1e-14,rmax=100,is_sparse=False):
       
         # tme = datetime.datetime.now()
         # choose the rank according to eps tolerance
-        r1 = rank_chop(s.numpy(), ep*tn.linalg.norm(s).numpy())
+        r1 = rank_chop(s.cpu().numpy(), ep*tn.linalg.norm(s).cpu().numpy())
         r1 = min([r1,rmax[i+1]])
         
         u = u[:,:r1]

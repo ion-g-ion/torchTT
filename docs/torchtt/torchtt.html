@@ -1707,7 +1707,7 @@ def bilinear_form(x,A,y):
     d = len(x.N)
     return bilinear_form_aux(x.cores,A.cores,y.cores,d)
 
-def elementwise_divide(x, y, eps = 1e-12, starting_tensor = None, nswp = 50, kick = 4, verbose = False):
+def elementwise_divide(x, y, eps = 1e-12, starting_tensor = None, nswp = 50, kick = 4, local_iterations = 40, resets = 2, verbose = False):
     &#34;&#34;&#34;
     Perform the elemntwise division x/y of two tensors in the TT format using the AMEN method.
     Use this method if different AMEN arguments are needed.
@@ -1720,13 +1720,15 @@ def elementwise_divide(x, y, eps = 1e-12, starting_tensor = None, nswp = 50, kic
         starting_tensor (torchtt.TT or None, optional): initial guess of the result (None for random initial guess). Defaults to None.
         nswp (int, optional): number of iterations. Defaults to 50.
         kick (int, optional): size of rank enrichment. Defaults to 4.
+        local_iterations (int, optional): the number of iterations for the local iterative solver. Defaults to 40.
+        resets (int, optional): the number of restarts in the GMRES solver. Defaults to 2.
         verbose (bool, optional): display debug info. Defaults to False.
 
     Returns:
         torchtt.TT: the result
     &#34;&#34;&#34;
 
-    cores_new = amen_divide(y,x,nswp,starting_tensor,eps,rmax = 1000, kickrank = kick, verbose=verbose)
+    cores_new = amen_divide(y,x,nswp,starting_tensor,eps,rmax = 1000, kickrank = kick, local_iterations = local_iterations, resets = resets, verbose=verbose)
     return TT(cores_new)
 
 def rank1TT(vectors):
@@ -1927,7 +1929,7 @@ The modes of the tensor a along which the index contraction with b is performed 
 </details>
 </dd>
 <dt id="torchtt.torchtt.elementwise_divide"><code class="name flex">
-<span>def <span class="ident">elementwise_divide</span></span>(<span>x, y, eps=1e-12, starting_tensor=None, nswp=50, kick=4, verbose=False)</span>
+<span>def <span class="ident">elementwise_divide</span></span>(<span>x, y, eps=1e-12, starting_tensor=None, nswp=50, kick=4, local_iterations=40, resets=2, verbose=False)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Perform the elemntwise division x/y of two tensors in the TT format using the AMEN method.
@@ -1947,6 +1949,10 @@ This method does not check the validity of the inputs.</p>
 <dd>number of iterations. Defaults to 50.</dd>
 <dt><strong><code>kick</code></strong> :&ensp;<code>int</code>, optional</dt>
 <dd>size of rank enrichment. Defaults to 4.</dd>
+<dt><strong><code>local_iterations</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>the number of iterations for the local iterative solver. Defaults to 40.</dd>
+<dt><strong><code>resets</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>the number of restarts in the GMRES solver. Defaults to 2.</dd>
 <dt><strong><code>verbose</code></strong> :&ensp;<code>bool</code>, optional</dt>
 <dd>display debug info. Defaults to False.</dd>
 </dl>
@@ -1959,7 +1965,7 @@ This method does not check the validity of the inputs.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def elementwise_divide(x, y, eps = 1e-12, starting_tensor = None, nswp = 50, kick = 4, verbose = False):
+<pre><code class="python">def elementwise_divide(x, y, eps = 1e-12, starting_tensor = None, nswp = 50, kick = 4, local_iterations = 40, resets = 2, verbose = False):
     &#34;&#34;&#34;
     Perform the elemntwise division x/y of two tensors in the TT format using the AMEN method.
     Use this method if different AMEN arguments are needed.
@@ -1972,13 +1978,15 @@ This method does not check the validity of the inputs.</p>
         starting_tensor (torchtt.TT or None, optional): initial guess of the result (None for random initial guess). Defaults to None.
         nswp (int, optional): number of iterations. Defaults to 50.
         kick (int, optional): size of rank enrichment. Defaults to 4.
+        local_iterations (int, optional): the number of iterations for the local iterative solver. Defaults to 40.
+        resets (int, optional): the number of restarts in the GMRES solver. Defaults to 2.
         verbose (bool, optional): display debug info. Defaults to False.
 
     Returns:
         torchtt.TT: the result
     &#34;&#34;&#34;
 
-    cores_new = amen_divide(y,x,nswp,starting_tensor,eps,rmax = 1000, kickrank = kick, verbose=verbose)
+    cores_new = amen_divide(y,x,nswp,starting_tensor,eps,rmax = 1000, kickrank = kick, local_iterations = local_iterations, resets = resets, verbose=verbose)
     return TT(cores_new)</code></pre>
 </details>
 </dd>

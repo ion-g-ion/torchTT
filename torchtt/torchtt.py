@@ -1675,7 +1675,7 @@ def bilinear_form(x,A,y):
     d = len(x.N)
     return bilinear_form_aux(x.cores,A.cores,y.cores,d)
 
-def elementwise_divide(x, y, eps = 1e-12, starting_tensor = None, nswp = 50, kick = 4, verbose = False):
+def elementwise_divide(x, y, eps = 1e-12, starting_tensor = None, nswp = 50, kick = 4, local_iterations = 40, resets = 2, verbose = False):
     """
     Perform the elemntwise division x/y of two tensors in the TT format using the AMEN method.
     Use this method if different AMEN arguments are needed.
@@ -1688,13 +1688,15 @@ def elementwise_divide(x, y, eps = 1e-12, starting_tensor = None, nswp = 50, kic
         starting_tensor (torchtt.TT or None, optional): initial guess of the result (None for random initial guess). Defaults to None.
         nswp (int, optional): number of iterations. Defaults to 50.
         kick (int, optional): size of rank enrichment. Defaults to 4.
+        local_iterations (int, optional): the number of iterations for the local iterative solver. Defaults to 40.
+        resets (int, optional): the number of restarts in the GMRES solver. Defaults to 2.
         verbose (bool, optional): display debug info. Defaults to False.
 
     Returns:
         torchtt.TT: the result
     """
 
-    cores_new = amen_divide(y,x,nswp,starting_tensor,eps,rmax = 1000, kickrank = kick, verbose=verbose)
+    cores_new = amen_divide(y,x,nswp,starting_tensor,eps,rmax = 1000, kickrank = kick, local_iterations = local_iterations, resets = resets, verbose=verbose)
     return TT(cores_new)
 
 def rank1TT(vectors):
