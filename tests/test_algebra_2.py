@@ -51,6 +51,22 @@ class TestLinalgAdvanced(unittest.TestCase):
         self.assertLess(err_rel(a.full(),y.full()/x.full()),1e-11,"AMEN division problem: TT and TT.")
         self.assertLess(err_rel(b.full(),1/x.full()),1e-11,"AMEN division problem: scalar and TT.")
         self.assertLess(err_rel(c.full(),1/x.full()),1e-11,"AMEN division problem: scalar and TT part 2.")
-
+        
+    def test_amen_division_preconditioned(self):
+        """
+        Test the elemntwise division using AMEN (use preconditioner for the local subsystem).
+        """
+        N = [7,8,9,10]
+        xs = tntt.meshgrid([tn.linspace(0,1,n, dtype = tn.float64) for n in N])
+        x = xs[0]+xs[1]+xs[2]+xs[3]+xs[1]*xs[2]+(1-xs[3])*xs[2]+1
+        x = x.round(0)
+        y = tntt.ones(x.N)
+        
+        a = tntt.elementwise_divide(y,x,preconditioner = 'c')
+       
+        
+        self.assertLess(err_rel(a.full(),y.full()/x.full()),1e-11,"AMEN division problem (preconditioner): TT and TT.")
+        
+        
 if __name__ == '__main__':
     unittest.main()

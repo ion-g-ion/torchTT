@@ -36,33 +36,23 @@ Manifold gradient module.
 import torch as tn
 from torchtt._decomposition import mat_to_tt, to_tt, lr_orthogonal, round_tt, rl_orthogonal
 from . import TT
+from torchtt.errors import *
 
-
-def delta2cores(tt_cores, R, Sds, is_ttm = False, ortho = None):
-    &#39;&#39;&#39;
+def _delta2cores(tt_cores, R, Sds, is_ttm = False, ortho = None):
+    &#34;&#34;&#34;
     Convert the detla notation to TT.
-    Implements Algorithm 5.1 from &#34;AUTOMATIC DIFFERENTIATION FOR RIEMANNIAN OPTIMIZATION ON
-                                   LOW-RANK MATRIX AND TENSOR-TRAIN MANIFOLDS&#34;.
-    
-    Parameters
-    ----------
-    tt_cores : list of torch tensors.
-        The cores of x.
-    R : list of integers.
-        The rank of x.
-    Sds : list of TF tensors.
-        The Delta notation cores.
-    is_ttm : bool, optional
-        Is True iff x is a TT-matrix. The default is False.
-    ortho : list of lists TT-cores, optional
-        The left and right orthogonal cores of tt_cores. The default is None.
-    
-    Returns
-    -------
-    cores_new : list of TF tensors.
-        The resulting TT-cores.
+    Implements Algorithm 5.1 from &#34;AUTOMATIC DIFFERENTIATION FOR RIEMANNIAN OPTIMIZATION ON LOW-RANK MATRIX AND TENSOR-TRAIN MANIFOLDS&#34;.
 
-    &#39;&#39;&#39;
+    Args:
+        tt_cores (list[torch.tensor]): the TT cores.
+        R (list[int]): the rank of the tensor.
+        Sds (list[torch.tensor]): deltas.
+        is_ttm (bool, optional): is TT amtrix or not. Defaults to False.
+        ortho (list[list[torch.tensor]], optional): the left and right orthogonal cores of tt_cores. Defaults to None.
+
+    Returns:
+        list[torch.tensor]: the resulting TT cores.
+    &#34;&#34;&#34;
     
     if ortho == None:
         l_cores,_  = lr_orthogonal(tt_cores, R, is_ttm)
@@ -84,24 +74,17 @@ def delta2cores(tt_cores, R, Sds, is_ttm = False, ortho = None):
     return cores_new
 
 def riemannian_gradient(x,func):
-    &#39;&#39;&#39;
+    &#34;&#34;&#34;
     Compute the Riemannian gradient using AD.
 
-    Parameters
-    ----------
-    x : TT-tensor
-        the point on the manifold where the gradient is computed.
-    func : function handle
-        function that has to be differentiated. The function takes as only argument TT-objects.
-    is_ttm : bool, optional
-        True if a TT-matrix is passed as argument, False if a TT-tensor is passed. The default is False.
+    Args:
+        x (torchtt.TT): the point on the manifold where the gradient is computed.
+        func ([type]): function that has to be differentiated. The function takes as only argument `torchtt.TT` instances.
 
-    Returns
-    -------
-    TT-tensor
-        The gradient projected on the tangent space of x.
+    Returns:
+        torchtt.TT: the gradient projected on the tangent space of x.
+    &#34;&#34;&#34;
 
-    &#39;&#39;&#39;
     l_cores,_  = lr_orthogonal(x.cores, x.R, x.is_ttm)
     r_cores,_  = rl_orthogonal(l_cores, x.R, x.is_ttm)
     
@@ -117,7 +100,7 @@ def riemannian_gradient(x,func):
     # AD part
     for i in range(d):
         Rs[i].requires_grad_(True)
-    Ghats = delta2cores(x.cores, R, Rs, is_ttm = is_ttm,ortho = [l_cores,r_cores])
+    Ghats = _delta2cores(x.cores, R, Rs, is_ttm = is_ttm,ortho = [l_cores,r_cores])
     fval = func(TT(Ghats))
     fval.backward() 
 
@@ -137,34 +120,29 @@ def riemannian_gradient(x,func):
         
     # print([tf.einsum(&#39;ijk,ijl-&gt;kl&#39;,l_cores[i],Sds[i]).numpy() for i in range(d-1)])
     # delta to TT
-    grad_cores = delta2cores(x.cores, R, Sds, is_ttm,ortho = [l_cores,r_cores])
+    grad_cores = _delta2cores(x.cores, R, Sds, is_ttm,ortho = [l_cores,r_cores])
     return TT(grad_cores)
         
 def riemannian_projection(Xspace,z):
-    &#39;&#39;&#39;
+    &#34;&#34;&#34;
     Project the tensor z onto the tangent space defined at xspace
 
-    Parameters
-    ----------
-    Xspace : TT-tensor.
-        The target where the tensor should be projected.
-    z : TT-tensor.
-        The tensor that should be projected.
+    Args:
+        Xspace (torchtt.TT): the target where the tensor should be projected.
+        z (torchtt.TT): the tensor that should be projected.
 
-    Raises
-    ------
-    Exception
-        Raised if operands are not the same type (TT-teosor or TT-matrix).
+    Raises:
+        IncompatibleTypes: Both must be of same type.
 
-    Returns
-    -------
-    TT-object
-        The projection (the TT-rank should be the same as the one from Xspace).
+    Returns:
+        torchtt.TT: the projection.
+    &#34;&#34;&#34;
 
-    &#39;&#39;&#39;
     if Xspace.is_ttm != z.is_ttm:
-        raise Exception(&#39;Both must be of same type.&#39;)
-        
+        raise IncompatibleTypes(&#39;Both must be of same type.&#39;)
+       
+    is_ttm = Xspace.is_ttm
+     
     l_cores,R  = lr_orthogonal(Xspace.cores, Xspace.R, Xspace.is_ttm)
     r_cores,_  = rl_orthogonal(l_cores, R, Xspace.is_ttm)
     
@@ -176,7 +154,10 @@ def riemannian_projection(Xspace,z):
     Pleft = []
     tmp = tn.ones((1,1),dtype=Xspace.cores[0].dtype, device = Xspace.cores[0].device)
     for k in range(d-1):
-        tmp = tn.einsum(&#39;rs,riR,siS-&gt;RS&#39;,tmp,l_cores[k],z.cores[k]) # size rk x sk
+        if is_ttm:
+            tmp = tn.einsum(&#39;rs,rijR,sijS-&gt;RS&#39;,tmp,l_cores[k],z.cores[k]) # size rk x sk
+        else:
+            tmp = tn.einsum(&#39;rs,riR,siS-&gt;RS&#39;,tmp,l_cores[k],z.cores[k]) # size rk x sk
         Pleft.append(tmp)
         
    
@@ -184,7 +165,10 @@ def riemannian_projection(Xspace,z):
     Pright = []
     tmp = tn.ones((1,1), dtype = Xspace.cores[0].dtype, device = Xspace.cores[0].device)
     for k in range(d-1,0,-1):
-        tmp = tn.einsum(&#39;RS,riR,siS-&gt;rs&#39;,tmp,r_cores[k],z.cores[k]) # size rk x sk
+        if is_ttm:
+            tmp = tn.einsum(&#39;RS,rijR,sijS-&gt;rs&#39;,tmp,r_cores[k],z.cores[k]) # size rk x sk
+        else:
+            tmp = tn.einsum(&#39;RS,riR,siS-&gt;rs&#39;,tmp,r_cores[k],z.cores[k]) # size rk x sk
         Pright.append(tmp)
     Pright = Pright[::-1]
     
@@ -198,15 +182,23 @@ def riemannian_projection(Xspace,z):
         else:
             L = Pleft[k-1]
         if k==d-1:
-            Sds.append(tn.einsum(&#39;rs,siS-&gt;riS&#39;,L,z.cores[k]))           
+            if is_ttm:
+                Sds.append(tn.einsum(&#39;rs,sjiS-&gt;rjiS&#39;,L,z.cores[k]))   
+            else:
+                Sds.append(tn.einsum(&#39;rs,siS-&gt;riS&#39;,L,z.cores[k]))           
         else:
             R = Pright[k]
-            tmp1 = tn.einsum(&#39;rs,siS-&gt;riS&#39;,L,z.cores[k])
-            tmp2 = tn.einsum(&#39;riR,RS-&gt;riS&#39;,l_cores[k],tn.einsum(&#39;rs,riR,siS-&gt;RS&#39;,L,l_cores[k],z.cores[k]))
-            Sds.append(tn.einsum(&#39;riS,RS-&gt;riR&#39;,tmp1-tmp2,R))
+            if is_ttm:
+                tmp1 = tn.einsum(&#39;rs,sijS-&gt;rijS&#39;,L,z.cores[k])
+                tmp2 = tn.einsum(&#39;rijR,RS-&gt;rijS&#39;,l_cores[k],tn.einsum(&#39;rs,rijR,sijS-&gt;RS&#39;,L,l_cores[k],z.cores[k]))
+                Sds.append(tn.einsum(&#39;rijS,RS-&gt;rijR&#39;,tmp1-tmp2,R))
+            else:
+                tmp1 = tn.einsum(&#39;rs,siS-&gt;riS&#39;,L,z.cores[k])
+                tmp2 = tn.einsum(&#39;riR,RS-&gt;riS&#39;,l_cores[k],tn.einsum(&#39;rs,riR,siS-&gt;RS&#39;,L,l_cores[k],z.cores[k]))
+                Sds.append(tn.einsum(&#39;riS,RS-&gt;riR&#39;,tmp1-tmp2,R))  
         
     # convert Sds to TT
-    grad_cores = delta2cores(Xspace.cores, R, Sds, Xspace.is_ttm,ortho = [l_cores,r_cores])
+    grad_cores = _delta2cores(Xspace.cores, R, Sds, Xspace.is_ttm,ortho = [l_cores,r_cores])
 
     return TT(grad_cores)</code></pre>
 </details>
@@ -218,121 +210,39 @@ def riemannian_projection(Xspace,z):
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="torchtt.manifold.delta2cores"><code class="name flex">
-<span>def <span class="ident">delta2cores</span></span>(<span>tt_cores, R, Sds, is_ttm=False, ortho=None)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Convert the detla notation to TT.
-Implements Algorithm 5.1 from "AUTOMATIC DIFFERENTIATION FOR RIEMANNIAN OPTIMIZATION ON
-LOW-RANK MATRIX AND TENSOR-TRAIN MANIFOLDS".</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt>tt_cores : list of torch tensors.</dt>
-<dt>The cores of x.</dt>
-<dt>R : list of integers.</dt>
-<dt>The rank of x.</dt>
-<dt>Sds : list of TF tensors.</dt>
-<dt>The Delta notation cores.</dt>
-<dt><strong><code>is_ttm</code></strong> :&ensp;<code>bool</code>, optional</dt>
-<dd>Is True iff x is a TT-matrix. The default is False.</dd>
-<dt><strong><code>ortho</code></strong> :&ensp;<code>list</code> of <code>lists TT-cores</code>, optional</dt>
-<dd>The left and right orthogonal cores of tt_cores. The default is None.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<p>cores_new : list of TF tensors.
-The resulting TT-cores.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def delta2cores(tt_cores, R, Sds, is_ttm = False, ortho = None):
-    &#39;&#39;&#39;
-    Convert the detla notation to TT.
-    Implements Algorithm 5.1 from &#34;AUTOMATIC DIFFERENTIATION FOR RIEMANNIAN OPTIMIZATION ON
-                                   LOW-RANK MATRIX AND TENSOR-TRAIN MANIFOLDS&#34;.
-    
-    Parameters
-    ----------
-    tt_cores : list of torch tensors.
-        The cores of x.
-    R : list of integers.
-        The rank of x.
-    Sds : list of TF tensors.
-        The Delta notation cores.
-    is_ttm : bool, optional
-        Is True iff x is a TT-matrix. The default is False.
-    ortho : list of lists TT-cores, optional
-        The left and right orthogonal cores of tt_cores. The default is None.
-    
-    Returns
-    -------
-    cores_new : list of TF tensors.
-        The resulting TT-cores.
-
-    &#39;&#39;&#39;
-    
-    if ortho == None:
-        l_cores,_  = lr_orthogonal(tt_cores, R, is_ttm)
-        r_cores,_  = rl_orthogonal(tt_cores, R, is_ttm)
-    else:
-        l_cores = ortho[0]
-        r_cores = ortho[1]
-    
-    # first
-    cores_new = [tn.cat((Sds[0],l_cores[0]),2 if not is_ttm else 3)]
-    # 2...d-1
-    for k in range(1,len(tt_cores)-1):
-        up = tn.cat((r_cores[k],tn.zeros((r_cores[k].shape),dtype = l_cores[0].dtype, device = l_cores[0].device)),2 if not is_ttm else 3)
-        down = tn.cat((Sds[k],l_cores[k]),2 if not is_ttm else 3)
-        cores_new.append(tn.cat((up,down),0))
-    # last
-    cores_new.append(tn.cat((r_cores[-1],Sds[-1]),0))
-    
-    return cores_new</code></pre>
-</details>
-</dd>
 <dt id="torchtt.manifold.riemannian_gradient"><code class="name flex">
 <span>def <span class="ident">riemannian_gradient</span></span>(<span>x, func)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Compute the Riemannian gradient using AD.</p>
-<h2 id="parameters">Parameters</h2>
+<h2 id="args">Args</h2>
 <dl>
-<dt><strong><code>x</code></strong> :&ensp;<code>TT-tensor</code></dt>
+<dt><strong><code>x</code></strong> :&ensp;<code>torchtt.TT</code></dt>
 <dd>the point on the manifold where the gradient is computed.</dd>
-<dt><strong><code>func</code></strong> :&ensp;<code>function handle</code></dt>
-<dd>function that has to be differentiated. The function takes as only argument TT-objects.</dd>
-<dt><strong><code>is_ttm</code></strong> :&ensp;<code>bool</code>, optional</dt>
-<dd>True if a TT-matrix is passed as argument, False if a TT-tensor is passed. The default is False.</dd>
+<dt><strong><code>func</code></strong> :&ensp;<code>[type]</code></dt>
+<dd>function that has to be differentiated. The function takes as only argument <code>torchtt.TT</code> instances.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>TT-tensor</code></dt>
-<dd>The gradient projected on the tangent space of x.</dd>
+<dt><code>torchtt.TT</code></dt>
+<dd>the gradient projected on the tangent space of x.</dd>
 </dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def riemannian_gradient(x,func):
-    &#39;&#39;&#39;
+    &#34;&#34;&#34;
     Compute the Riemannian gradient using AD.
 
-    Parameters
-    ----------
-    x : TT-tensor
-        the point on the manifold where the gradient is computed.
-    func : function handle
-        function that has to be differentiated. The function takes as only argument TT-objects.
-    is_ttm : bool, optional
-        True if a TT-matrix is passed as argument, False if a TT-tensor is passed. The default is False.
+    Args:
+        x (torchtt.TT): the point on the manifold where the gradient is computed.
+        func ([type]): function that has to be differentiated. The function takes as only argument `torchtt.TT` instances.
 
-    Returns
-    -------
-    TT-tensor
-        The gradient projected on the tangent space of x.
+    Returns:
+        torchtt.TT: the gradient projected on the tangent space of x.
+    &#34;&#34;&#34;
 
-    &#39;&#39;&#39;
     l_cores,_  = lr_orthogonal(x.cores, x.R, x.is_ttm)
     r_cores,_  = rl_orthogonal(l_cores, x.R, x.is_ttm)
     
@@ -348,7 +258,7 @@ The resulting TT-cores.</p></div>
     # AD part
     for i in range(d):
         Rs[i].requires_grad_(True)
-    Ghats = delta2cores(x.cores, R, Rs, is_ttm = is_ttm,ortho = [l_cores,r_cores])
+    Ghats = _delta2cores(x.cores, R, Rs, is_ttm = is_ttm,ortho = [l_cores,r_cores])
     fval = func(TT(Ghats))
     fval.backward() 
 
@@ -368,7 +278,7 @@ The resulting TT-cores.</p></div>
         
     # print([tf.einsum(&#39;ijk,ijl-&gt;kl&#39;,l_cores[i],Sds[i]).numpy() for i in range(d-1)])
     # delta to TT
-    grad_cores = delta2cores(x.cores, R, Sds, is_ttm,ortho = [l_cores,r_cores])
+    grad_cores = _delta2cores(x.cores, R, Sds, is_ttm,ortho = [l_cores,r_cores])
     return TT(grad_cores)</code></pre>
 </details>
 </dd>
@@ -377,50 +287,47 @@ The resulting TT-cores.</p></div>
 </code></dt>
 <dd>
 <div class="desc"><p>Project the tensor z onto the tangent space defined at xspace</p>
-<h2 id="parameters">Parameters</h2>
-<p>Xspace : TT-tensor.
-The target where the tensor should be projected.
-z : TT-tensor.
-The tensor that should be projected.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>Xspace</code></strong> :&ensp;<code>torchtt.TT</code></dt>
+<dd>the target where the tensor should be projected.</dd>
+<dt><strong><code>z</code></strong> :&ensp;<code>torchtt.TT</code></dt>
+<dd>the tensor that should be projected.</dd>
+</dl>
 <h2 id="raises">Raises</h2>
 <dl>
-<dt><code>Exception</code></dt>
-<dd>Raised if operands are not the same type (TT-teosor or TT-matrix).</dd>
+<dt><code>IncompatibleTypes</code></dt>
+<dd>Both must be of same type.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>TT-object</code></dt>
-<dd>The projection (the TT-rank should be the same as the one from Xspace).</dd>
+<dt><code>torchtt.TT</code></dt>
+<dd>the projection.</dd>
 </dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def riemannian_projection(Xspace,z):
-    &#39;&#39;&#39;
+    &#34;&#34;&#34;
     Project the tensor z onto the tangent space defined at xspace
 
-    Parameters
-    ----------
-    Xspace : TT-tensor.
-        The target where the tensor should be projected.
-    z : TT-tensor.
-        The tensor that should be projected.
+    Args:
+        Xspace (torchtt.TT): the target where the tensor should be projected.
+        z (torchtt.TT): the tensor that should be projected.
 
-    Raises
-    ------
-    Exception
-        Raised if operands are not the same type (TT-teosor or TT-matrix).
+    Raises:
+        IncompatibleTypes: Both must be of same type.
 
-    Returns
-    -------
-    TT-object
-        The projection (the TT-rank should be the same as the one from Xspace).
+    Returns:
+        torchtt.TT: the projection.
+    &#34;&#34;&#34;
 
-    &#39;&#39;&#39;
     if Xspace.is_ttm != z.is_ttm:
-        raise Exception(&#39;Both must be of same type.&#39;)
-        
+        raise IncompatibleTypes(&#39;Both must be of same type.&#39;)
+       
+    is_ttm = Xspace.is_ttm
+     
     l_cores,R  = lr_orthogonal(Xspace.cores, Xspace.R, Xspace.is_ttm)
     r_cores,_  = rl_orthogonal(l_cores, R, Xspace.is_ttm)
     
@@ -432,7 +339,10 @@ The tensor that should be projected.</p>
     Pleft = []
     tmp = tn.ones((1,1),dtype=Xspace.cores[0].dtype, device = Xspace.cores[0].device)
     for k in range(d-1):
-        tmp = tn.einsum(&#39;rs,riR,siS-&gt;RS&#39;,tmp,l_cores[k],z.cores[k]) # size rk x sk
+        if is_ttm:
+            tmp = tn.einsum(&#39;rs,rijR,sijS-&gt;RS&#39;,tmp,l_cores[k],z.cores[k]) # size rk x sk
+        else:
+            tmp = tn.einsum(&#39;rs,riR,siS-&gt;RS&#39;,tmp,l_cores[k],z.cores[k]) # size rk x sk
         Pleft.append(tmp)
         
    
@@ -440,7 +350,10 @@ The tensor that should be projected.</p>
     Pright = []
     tmp = tn.ones((1,1), dtype = Xspace.cores[0].dtype, device = Xspace.cores[0].device)
     for k in range(d-1,0,-1):
-        tmp = tn.einsum(&#39;RS,riR,siS-&gt;rs&#39;,tmp,r_cores[k],z.cores[k]) # size rk x sk
+        if is_ttm:
+            tmp = tn.einsum(&#39;RS,rijR,sijS-&gt;rs&#39;,tmp,r_cores[k],z.cores[k]) # size rk x sk
+        else:
+            tmp = tn.einsum(&#39;RS,riR,siS-&gt;rs&#39;,tmp,r_cores[k],z.cores[k]) # size rk x sk
         Pright.append(tmp)
     Pright = Pright[::-1]
     
@@ -454,15 +367,23 @@ The tensor that should be projected.</p>
         else:
             L = Pleft[k-1]
         if k==d-1:
-            Sds.append(tn.einsum(&#39;rs,siS-&gt;riS&#39;,L,z.cores[k]))           
+            if is_ttm:
+                Sds.append(tn.einsum(&#39;rs,sjiS-&gt;rjiS&#39;,L,z.cores[k]))   
+            else:
+                Sds.append(tn.einsum(&#39;rs,siS-&gt;riS&#39;,L,z.cores[k]))           
         else:
             R = Pright[k]
-            tmp1 = tn.einsum(&#39;rs,siS-&gt;riS&#39;,L,z.cores[k])
-            tmp2 = tn.einsum(&#39;riR,RS-&gt;riS&#39;,l_cores[k],tn.einsum(&#39;rs,riR,siS-&gt;RS&#39;,L,l_cores[k],z.cores[k]))
-            Sds.append(tn.einsum(&#39;riS,RS-&gt;riR&#39;,tmp1-tmp2,R))
+            if is_ttm:
+                tmp1 = tn.einsum(&#39;rs,sijS-&gt;rijS&#39;,L,z.cores[k])
+                tmp2 = tn.einsum(&#39;rijR,RS-&gt;rijS&#39;,l_cores[k],tn.einsum(&#39;rs,rijR,sijS-&gt;RS&#39;,L,l_cores[k],z.cores[k]))
+                Sds.append(tn.einsum(&#39;rijS,RS-&gt;rijR&#39;,tmp1-tmp2,R))
+            else:
+                tmp1 = tn.einsum(&#39;rs,siS-&gt;riS&#39;,L,z.cores[k])
+                tmp2 = tn.einsum(&#39;riR,RS-&gt;riS&#39;,l_cores[k],tn.einsum(&#39;rs,riR,siS-&gt;RS&#39;,L,l_cores[k],z.cores[k]))
+                Sds.append(tn.einsum(&#39;riS,RS-&gt;riR&#39;,tmp1-tmp2,R))  
         
     # convert Sds to TT
-    grad_cores = delta2cores(Xspace.cores, R, Sds, Xspace.is_ttm,ortho = [l_cores,r_cores])
+    grad_cores = _delta2cores(Xspace.cores, R, Sds, Xspace.is_ttm,ortho = [l_cores,r_cores])
 
     return TT(grad_cores)</code></pre>
 </details>
@@ -485,7 +406,6 @@ The tensor that should be projected.</p>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="torchtt.manifold.delta2cores" href="#torchtt.manifold.delta2cores">delta2cores</a></code></li>
 <li><code><a title="torchtt.manifold.riemannian_gradient" href="#torchtt.manifold.riemannian_gradient">riemannian_gradient</a></code></li>
 <li><code><a title="torchtt.manifold.riemannian_projection" href="#torchtt.manifold.riemannian_projection">riemannian_projection</a></code></li>
 </ul>

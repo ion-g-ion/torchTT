@@ -847,6 +847,15 @@ class TT():
         Contracts a tensor in the TT format along the given indices and retuyrns the resulting tensor in the TT format.
         If no index list is given, the sum over all indices is performed.
 
+        Examples:
+            ```
+            a = torchtt.ones([3,4,5,6,7])
+            print(a.sum()) 
+            print(a.sum([0,2,4]))
+            print(a.sum([1,2]))
+            print(a.sum([0,1,2,3,4]))
+            ```
+            
         Args:
             index (int or list[int] or None, optional): the indices along which the summation is performed. None selects all of them. Defaults to None.
 
@@ -854,7 +863,7 @@ class TT():
             InvalidArguments: Invalid index.
 
         Returns:
-            torchtt.TT or torch.tensor: the result.
+            torchtt.TT/torch.tensor: the result.
         &#34;&#34;&#34;
         
         if index != None and isinstance(index,int):
@@ -892,7 +901,8 @@ class TT():
                         
             S = TT(cores)
             S.reduce_dims()
-            
+            if len(S.cores)==1 and tn.numel(S.cores[0])==1:
+                S = tn.squeeze(S.cores[0])
         return S
 
     def to_ttm(self):
@@ -1180,8 +1190,16 @@ class TT():
         The product of the mode sizes should be a power of mode_size.
         The tensor in QTT can be converted back using the qtt_to_tens() method.
 
+        Examples:
+            ```
+            x = torchtt.random([16,8,64,128],[1,2,10,12,1])
+            x_qtt = x.to_qtt()
+            print(x_qtt)
+            xf = x_qtt.qtt_to_tens(x.N) # a TT-rounding is recommended.
+            ```
+            
         Args:
-            eps (flaot,optional): the accuracy. Defaults to 1e-12.
+            eps (float,optional): the accuracy. Defaults to 1e-12.
             mode_size (int, optional): the size of the modes. Defaults to 2.
             rmax (int): the maximum rank. Defaults to 2048.
             
@@ -1192,14 +1210,7 @@ class TT():
 
         Returns:
             torchtt.TT: the resulting reshaped tensor.
-            
-        Examples:
-            import torchtt
-            x = torchtt.random([16,8,64,128],[1,2,10,12,1])
-            x_qtt = x.to_qtt()
-            print(x_qtt)
-            xf = x_qtt.qtt_to_tens(x.N) # a TT-rounding is recommended.
-            
+                       
         &#34;&#34;&#34;
        
         cores_new = []
@@ -1625,6 +1636,15 @@ def dot(a,b,axis=None):
     The number of dimensions of a must be greater or equal as b.
     The modes of the tensor a along which the index contraction with b is performed are given in axis.
 
+    Examples:
+        ```
+        a = torchtt.randn([3,4,5,6,7],[1,2,2,2,2,1])
+        b = torchtt.randn([3,4,5,6,7],[1,2,2,2,2,1])
+        c = torchtt.randn([3,5,6],[1,2,2,1])
+        print(torchtt.dot(a,b))
+        print(torchtt.dot(a,c,[0,2,3]))
+        ```
+
     Args:
         a (torchtt.TT): the first tensor.
         b (torchtt.TT): the second tensor.
@@ -1707,7 +1727,7 @@ def bilinear_form(x,A,y):
     d = len(x.N)
     return bilinear_form_aux(x.cores,A.cores,y.cores,d)
 
-def elementwise_divide(x, y, eps = 1e-12, starting_tensor = None, nswp = 50, kick = 4, local_iterations = 40, resets = 2, verbose = False):
+def elementwise_divide(x, y, eps = 1e-12, starting_tensor = None, nswp = 50, kick = 4, local_iterations = 40, resets = 2, preconditioner = None, verbose = False):
     &#34;&#34;&#34;
     Perform the elemntwise division x/y of two tensors in the TT format using the AMEN method.
     Use this method if different AMEN arguments are needed.
@@ -1722,13 +1742,14 @@ def elementwise_divide(x, y, eps = 1e-12, starting_tensor = None, nswp = 50, kic
         kick (int, optional): size of rank enrichment. Defaults to 4.
         local_iterations (int, optional): the number of iterations for the local iterative solver. Defaults to 40.
         resets (int, optional): the number of restarts in the GMRES solver. Defaults to 2.
+        preconditioner (string, optional): Use preconditioner for the local solver (possible vaules None, &#39;c&#39;). Defaults to None. 
         verbose (bool, optional): display debug info. Defaults to False.
 
     Returns:
         torchtt.TT: the result
     &#34;&#34;&#34;
 
-    cores_new = amen_divide(y,x,nswp,starting_tensor,eps,rmax = 1000, kickrank = kick, local_iterations = local_iterations, resets = resets, verbose=verbose)
+    cores_new = amen_divide(y,x,nswp,starting_tensor,eps,rmax = 1000, kickrank = kick, local_iterations = local_iterations, resets = resets, verbose=verbose, preconditioner = preconditioner)
     return TT(cores_new)
 
 def rank1TT(vectors):
@@ -1834,6 +1855,13 @@ If both a and b have identical mode sizes the result is the dot product.
 If a and b have inequal mode sizes, the function perform index contraction.
 The number of dimensions of a must be greater or equal as b.
 The modes of the tensor a along which the index contraction with b is performed are given in axis.</p>
+<h2 id="examples">Examples</h2>
+<pre><code>a = torchtt.randn([3,4,5,6,7],[1,2,2,2,2,1])
+b = torchtt.randn([3,4,5,6,7],[1,2,2,2,2,1])
+c = torchtt.randn([3,5,6],[1,2,2,1])
+print(torchtt.dot(a,b))
+print(torchtt.dot(a,c,[0,2,3]))
+</code></pre>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>a</code></strong> :&ensp;<code>torchtt.TT</code></dt>
@@ -1870,6 +1898,15 @@ The modes of the tensor a along which the index contraction with b is performed 
     If a and b have inequal mode sizes, the function perform index contraction. 
     The number of dimensions of a must be greater or equal as b.
     The modes of the tensor a along which the index contraction with b is performed are given in axis.
+
+    Examples:
+        ```
+        a = torchtt.randn([3,4,5,6,7],[1,2,2,2,2,1])
+        b = torchtt.randn([3,4,5,6,7],[1,2,2,2,2,1])
+        c = torchtt.randn([3,5,6],[1,2,2,1])
+        print(torchtt.dot(a,b))
+        print(torchtt.dot(a,c,[0,2,3]))
+        ```
 
     Args:
         a (torchtt.TT): the first tensor.
@@ -1929,7 +1966,7 @@ The modes of the tensor a along which the index contraction with b is performed 
 </details>
 </dd>
 <dt id="torchtt.torchtt.elementwise_divide"><code class="name flex">
-<span>def <span class="ident">elementwise_divide</span></span>(<span>x, y, eps=1e-12, starting_tensor=None, nswp=50, kick=4, local_iterations=40, resets=2, verbose=False)</span>
+<span>def <span class="ident">elementwise_divide</span></span>(<span>x, y, eps=1e-12, starting_tensor=None, nswp=50, kick=4, local_iterations=40, resets=2, preconditioner=None, verbose=False)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Perform the elemntwise division x/y of two tensors in the TT format using the AMEN method.
@@ -1953,6 +1990,8 @@ This method does not check the validity of the inputs.</p>
 <dd>the number of iterations for the local iterative solver. Defaults to 40.</dd>
 <dt><strong><code>resets</code></strong> :&ensp;<code>int</code>, optional</dt>
 <dd>the number of restarts in the GMRES solver. Defaults to 2.</dd>
+<dt><strong><code>preconditioner</code></strong> :&ensp;<code>string</code>, optional</dt>
+<dd>Use preconditioner for the local solver (possible vaules None, 'c'). Defaults to None. </dd>
 <dt><strong><code>verbose</code></strong> :&ensp;<code>bool</code>, optional</dt>
 <dd>display debug info. Defaults to False.</dd>
 </dl>
@@ -1965,7 +2004,7 @@ This method does not check the validity of the inputs.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def elementwise_divide(x, y, eps = 1e-12, starting_tensor = None, nswp = 50, kick = 4, local_iterations = 40, resets = 2, verbose = False):
+<pre><code class="python">def elementwise_divide(x, y, eps = 1e-12, starting_tensor = None, nswp = 50, kick = 4, local_iterations = 40, resets = 2, preconditioner = None, verbose = False):
     &#34;&#34;&#34;
     Perform the elemntwise division x/y of two tensors in the TT format using the AMEN method.
     Use this method if different AMEN arguments are needed.
@@ -1980,13 +2019,14 @@ This method does not check the validity of the inputs.</p>
         kick (int, optional): size of rank enrichment. Defaults to 4.
         local_iterations (int, optional): the number of iterations for the local iterative solver. Defaults to 40.
         resets (int, optional): the number of restarts in the GMRES solver. Defaults to 2.
+        preconditioner (string, optional): Use preconditioner for the local solver (possible vaules None, &#39;c&#39;). Defaults to None. 
         verbose (bool, optional): display debug info. Defaults to False.
 
     Returns:
         torchtt.TT: the result
     &#34;&#34;&#34;
 
-    cores_new = amen_divide(y,x,nswp,starting_tensor,eps,rmax = 1000, kickrank = kick, local_iterations = local_iterations, resets = resets, verbose=verbose)
+    cores_new = amen_divide(y,x,nswp,starting_tensor,eps,rmax = 1000, kickrank = kick, local_iterations = local_iterations, resets = resets, verbose=verbose, preconditioner = preconditioner)
     return TT(cores_new)</code></pre>
 </details>
 </dd>
@@ -3454,6 +3494,15 @@ print(Att)
         Contracts a tensor in the TT format along the given indices and retuyrns the resulting tensor in the TT format.
         If no index list is given, the sum over all indices is performed.
 
+        Examples:
+            ```
+            a = torchtt.ones([3,4,5,6,7])
+            print(a.sum()) 
+            print(a.sum([0,2,4]))
+            print(a.sum([1,2]))
+            print(a.sum([0,1,2,3,4]))
+            ```
+            
         Args:
             index (int or list[int] or None, optional): the indices along which the summation is performed. None selects all of them. Defaults to None.
 
@@ -3461,7 +3510,7 @@ print(Att)
             InvalidArguments: Invalid index.
 
         Returns:
-            torchtt.TT or torch.tensor: the result.
+            torchtt.TT/torch.tensor: the result.
         &#34;&#34;&#34;
         
         if index != None and isinstance(index,int):
@@ -3499,7 +3548,8 @@ print(Att)
                         
             S = TT(cores)
             S.reduce_dims()
-            
+            if len(S.cores)==1 and tn.numel(S.cores[0])==1:
+                S = tn.squeeze(S.cores[0])
         return S
 
     def to_ttm(self):
@@ -3787,8 +3837,16 @@ print(Att)
         The product of the mode sizes should be a power of mode_size.
         The tensor in QTT can be converted back using the qtt_to_tens() method.
 
+        Examples:
+            ```
+            x = torchtt.random([16,8,64,128],[1,2,10,12,1])
+            x_qtt = x.to_qtt()
+            print(x_qtt)
+            xf = x_qtt.qtt_to_tens(x.N) # a TT-rounding is recommended.
+            ```
+            
         Args:
-            eps (flaot,optional): the accuracy. Defaults to 1e-12.
+            eps (float,optional): the accuracy. Defaults to 1e-12.
             mode_size (int, optional): the size of the modes. Defaults to 2.
             rmax (int): the maximum rank. Defaults to 2048.
             
@@ -3799,14 +3857,7 @@ print(Att)
 
         Returns:
             torchtt.TT: the resulting reshaped tensor.
-            
-        Examples:
-            import torchtt
-            x = torchtt.random([16,8,64,128],[1,2,10,12,1])
-            x_qtt = x.to_qtt()
-            print(x_qtt)
-            xf = x_qtt.qtt_to_tens(x.N) # a TT-rounding is recommended.
-            
+                       
         &#34;&#34;&#34;
        
         cores_new = []
@@ -4572,6 +4623,13 @@ The maximum rank is also provided.</p>
 <dd>
 <div class="desc"><p>Contracts a tensor in the TT format along the given indices and retuyrns the resulting tensor in the TT format.
 If no index list is given, the sum over all indices is performed.</p>
+<h2 id="examples">Examples</h2>
+<pre><code>a = torchtt.ones([3,4,5,6,7])
+print(a.sum()) 
+print(a.sum([0,2,4]))
+print(a.sum([1,2]))
+print(a.sum([0,1,2,3,4]))
+</code></pre>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>index</code></strong> :&ensp;<code>int</code> or <code>list[int]</code> or <code>None</code>, optional</dt>
@@ -4583,10 +4641,7 @@ If no index list is given, the sum over all indices is performed.</p>
 <dd>Invalid index.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<dl>
-<dt><code>torchtt.TT</code> or <code>torch.tensor</code></dt>
-<dd>the result.</dd>
-</dl></div>
+<p>torchtt.TT/torch.tensor: the result.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4596,6 +4651,15 @@ If no index list is given, the sum over all indices is performed.</p>
     Contracts a tensor in the TT format along the given indices and retuyrns the resulting tensor in the TT format.
     If no index list is given, the sum over all indices is performed.
 
+    Examples:
+        ```
+        a = torchtt.ones([3,4,5,6,7])
+        print(a.sum()) 
+        print(a.sum([0,2,4]))
+        print(a.sum([1,2]))
+        print(a.sum([0,1,2,3,4]))
+        ```
+        
     Args:
         index (int or list[int] or None, optional): the indices along which the summation is performed. None selects all of them. Defaults to None.
 
@@ -4603,7 +4667,7 @@ If no index list is given, the sum over all indices is performed.</p>
         InvalidArguments: Invalid index.
 
     Returns:
-        torchtt.TT or torch.tensor: the result.
+        torchtt.TT/torch.tensor: the result.
     &#34;&#34;&#34;
     
     if index != None and isinstance(index,int):
@@ -4641,7 +4705,8 @@ If no index list is given, the sum over all indices is performed.</p>
                     
         S = TT(cores)
         S.reduce_dims()
-        
+        if len(S.cores)==1 and tn.numel(S.cores[0])==1:
+            S = tn.squeeze(S.cores[0])
     return S</code></pre>
 </details>
 </dd>
@@ -4721,9 +4786,15 @@ torchtt.TT: the transpose.</p></div>
 <div class="desc"><p>Converts a tensor to the QTT format: N1 x N2 x &hellip; x Nd -&gt; mode_size x mode_size x &hellip; x mode_size.
 The product of the mode sizes should be a power of mode_size.
 The tensor in QTT can be converted back using the qtt_to_tens() method.</p>
+<h2 id="examples">Examples</h2>
+<pre><code>x = torchtt.random([16,8,64,128],[1,2,10,12,1])
+x_qtt = x.to_qtt()
+print(x_qtt)
+xf = x_qtt.qtt_to_tens(x.N) # a TT-rounding is recommended.
+</code></pre>
 <h2 id="args">Args</h2>
 <dl>
-<dt><strong><code>eps</code></strong> :&ensp;<code>flaot</code>,optional</dt>
+<dt><strong><code>eps</code></strong> :&ensp;<code>float</code>,optional</dt>
 <dd>the accuracy. Defaults to 1e-12.</dd>
 <dt><strong><code>mode_size</code></strong> :&ensp;<code>int</code>, optional</dt>
 <dd>the size of the modes. Defaults to 2.</dd>
@@ -4741,13 +4812,7 @@ The tensor in QTT can be converted back using the qtt_to_tens() method.</p>
 <dl>
 <dt><code>torchtt.TT</code></dt>
 <dd>the resulting reshaped tensor.</dd>
-</dl>
-<h2 id="examples">Examples</h2>
-<p>import torchtt
-x = torchtt.random([16,8,64,128],[1,2,10,12,1])
-x_qtt = x.to_qtt()
-print(x_qtt)
-xf = x_qtt.qtt_to_tens(x.N) # a TT-rounding is recommended.</p></div>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4758,8 +4823,16 @@ xf = x_qtt.qtt_to_tens(x.N) # a TT-rounding is recommended.</p></div>
     The product of the mode sizes should be a power of mode_size.
     The tensor in QTT can be converted back using the qtt_to_tens() method.
 
+    Examples:
+        ```
+        x = torchtt.random([16,8,64,128],[1,2,10,12,1])
+        x_qtt = x.to_qtt()
+        print(x_qtt)
+        xf = x_qtt.qtt_to_tens(x.N) # a TT-rounding is recommended.
+        ```
+        
     Args:
-        eps (flaot,optional): the accuracy. Defaults to 1e-12.
+        eps (float,optional): the accuracy. Defaults to 1e-12.
         mode_size (int, optional): the size of the modes. Defaults to 2.
         rmax (int): the maximum rank. Defaults to 2048.
         
@@ -4770,14 +4843,7 @@ xf = x_qtt.qtt_to_tens(x.N) # a TT-rounding is recommended.</p></div>
 
     Returns:
         torchtt.TT: the resulting reshaped tensor.
-        
-    Examples:
-        import torchtt
-        x = torchtt.random([16,8,64,128],[1,2,10,12,1])
-        x_qtt = x.to_qtt()
-        print(x_qtt)
-        xf = x_qtt.qtt_to_tens(x.N) # a TT-rounding is recommended.
-        
+                   
     &#34;&#34;&#34;
    
     cores_new = []

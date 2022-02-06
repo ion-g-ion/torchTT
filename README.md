@@ -63,13 +63,19 @@ python -m unittest discover tests/
 The documentation ca be found [here](https://ion-g-ion.github.io/torchTT/torchtt/index.html).
 Following example scripts (as well as python notebooks) are also provied provided as part of the documentation:
 
- * [basic_tutorial.py](examples/basic_tutorial.py) / [basic_tutorial.ipynp](examples/basic_tutorial.ipynb): This contains a basic tutorial on decomposing full tensors in the TT format as well as performing rank rounding, slicing. 
- * [basic_linalg.py](examples/basic_linalg.py) / [basic_linalg.ipynp](examples/basic_linalg.ipynb): This tutorial presents all the algebra operations that can be performed in the TT format.
- * [efficient_linalg.py](examples/efficient_linalg.py) / [efficient_linalg.ipynb](examples/efficient_linalg.ipynb): contains the DMRG for fast matves and AMEN for elementwise inversion in the TT format.
- * [automatic_differentiation.py](examples/automatic_differentiation.py) / [automatic_differentiation.ipynp](examples/automatic_differentiation.ipynb): Basic tutorial on AD in `torchtt`.
- * [cross_interpolation.py](examples/cross_interpolation.py) / [cross_interpolation.ipynb](examples/cross_interpolation.ipynb): In this script, the cross interpolation emthod is exemplified.
- * [system_solvers.py](examples/system_solvers.py) / [system_solvers.ipynb](examples/system_solvers.ipynb): This contains the bais ussage of the multilinear solvers.
- * [cuda.py](examples/cuda.py) / [cuda.ipynb](examples/cuda.ipynb): This provides an example on how to use the GPU acceleration.
+ * [basic_tutorial.py](examples/basic_tutorial.py) / [basic_tutorial.ipynp](examples/basic_tutorial.ipynb): This contains a basic tutorial on decomposing full tensors in the TT format as well as performing rank rounding, slicing ([Try on google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/basic_tutorial.ipynb)). 
+ * [basic_linalg.py](examples/basic_linalg.py) / [basic_linalg.ipynp](examples/basic_linalg.ipynb): This tutorial presents all the algebra operations that can be performed in the TT format ([Try on google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/basic_linalg.ipynb)). 
+ * [efficient_linalg.py](examples/efficient_linalg.py) / [efficient_linalg.ipynb](examples/efficient_linalg.ipynb): contains the DMRG for fast matves and AMEN for elementwise inversion in the TT format ([Try on google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/efficient_linalg.ipynb)). 
+ * [automatic_differentiation.py](examples/automatic_differentiation.py) / [automatic_differentiation.ipynp](examples/automatic_differentiation.ipynb): Basic tutorial on AD in `torchtt` ([Try on google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/automatic_differentiation.ipynb)). 
+ * [cross_interpolation.py](examples/cross_interpolation.py) / [cross_interpolation.ipynb](examples/cross_interpolation.ipynb): In this script, the cross interpolation emthod is exemplified ([Try on google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/cross_interpolation.ipynb)). 
+ * [system_solvers.py](examples/system_solvers.py) / [system_solvers.ipynb](examples/system_solvers.ipynb): This contains the bais ussage of the multilinear solvers ([Try on google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/system_solvers.ipynb)). 
+ * [cuda.py](examples/cuda.py) / [cuda.ipynb](examples/cuda.ipynb): This provides an example on how to use the GPU acceleration ([Try on google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/cuda.ipynb)). 
  
+ The documentation is generated using `pdoc3` with:
+
+ ```
+ pdoc3 --html torchtt -o docs/ --config latex_math=True --force
+ ```
+
 ## Author 
 Ion Gabriel Ion, e-mail: ion.ion.gabriel@gmail.com

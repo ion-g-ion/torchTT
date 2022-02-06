@@ -112,11 +112,6 @@ class TestDecomposition(unittest.TestCase):
     def test_decomposition_orthogonal(self):
         """
         Checks the lr_orthogonal function. The reconstructed tensor should remain the same.
-    
-        Returns
-        -------
-        None.
-    
         """
         # print('Testing: TT-orthogonalization.')
         cores = [tn.rand([1,20,3],dtype=tn.float64), tn.rand([3,10,4],dtype=tn.float64), tn.rand([4,5,20],dtype=tn.float64), tn.rand([20,5,2],dtype=tn.float64), tn.rand([2,10,1],dtype=tn.float64)]
@@ -145,17 +140,40 @@ class TestDecomposition(unittest.TestCase):
             c = cores[i]
             R = tn.reshape(c,[c.shape[0],-1]).numpy()
             self.assertTrue(np.linalg.norm(R @ R.T - np.eye(R.shape[0])) < 1e-12 or i==0)
+          
+    def test_decomposition_orthogonal_ttm(self):
+        """
+        Test the lr and rt orthogonal functions for a TT matrix.
+        """
+        T = tntt.random([(3,4),(5,6),(7,8),(9,4)],[1,2,3,4,1])
+        T_ref = T.full()
+        
+        cores, R = tntt._decomposition.lr_orthogonal(T.cores, T.R, T.is_ttm)
+        Tfull = tntt.TT(cores).full()
+        
+        self.assertTrue(err_rel(Tfull,T_ref)<1e-12,'Left to right ortho error too high.')
+        
+        for i in range(len(cores)):
+            c = cores[i]
+            L = tn.reshape(c,[-1,c.shape[-1]]).numpy()
+            self.assertTrue(np.linalg.norm(L.T @ L - np.eye(L.shape[1])) < 1e-12 or i==len(cores)-1,'Cores are not left orthogonal after LR orthogonalization.')
                 
+        
+        cores, R = tntt._decomposition.rl_orthogonal(T.cores, T.R, T.is_ttm)
+        Tfull = tntt.TT(cores).full()
+        
+        self.assertTrue(err_rel(Tfull,T_ref)<1e-12,'Right to left ortho error too high.')
+
+        
+        for i in range(len(cores)):
+            c = cores[i]
+            R = tn.reshape(c,[c.shape[0],-1]).numpy()
+            self.assertTrue(np.linalg.norm(R @ R.T - np.eye(R.shape[0])) < 1e-12 or i==0)
     
     def test_decomposition_rounding(self):
         """
         Testing the rounding of a TT-tensor.
         A rank-4tensor is constructed and successive approximations are performed.
-    
-        Returns
-        -------
-        None.
-            
         """
         # print('Testing: TT-rounding.')
         

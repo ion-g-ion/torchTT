@@ -113,7 +113,7 @@ class _LinearOp():
             raise Exception('Preconditioner '+str(self.prec)+' not defined.')
         return tn.reshape(w,[-1,1])
 
-def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = 'res', local_iterations = 40, resets = 2, verbose = False, preconditioner = None):
+def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = 'res', local_solver = 1, local_iterations = 40, resets = 2, verbose = False, preconditioner = None):
     """
     Solve a multilinear system \(\\mathsf{Ax} = \\mathsf{b}\) in the Tensor Train format.
     
@@ -137,9 +137,10 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 50
         eps (float, optional): relative residual. Defaults to 1e-10.
         rmax (int, optional): maximum rank. Defaults to 100.
         max_full (int, optional): the maximum size of the core until direct solver is used for the local subproblem. Defaults to 500.
-        kickrank (int, optional): [description]. Defaults to 4.
+        kickrank (int, optional): rank enrichment. Defaults to 4.
         kick2 (int, optional): [description]. Defaults to 0.
         trunc_norm (str, optional): [description]. Defaults to 'res'.
+        local_solver (int, optional): choose local iterative solver: 1 for GMRES and 2 for BiCGSTAB. Defaults to 1.
         local_iterations (int, optional): number of GMRES iterations for the local subproblems. Defaults to 40.
         resets (int, optional): number of resets in the GMRES. Defaults to 2.
         verbose (bool, optional): choose whether to display or not additional information during the runtime. Defaults to True.
@@ -313,7 +314,7 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 50
             else:
                 # iterative solver
                 if verbose: 
-                    print('\t\tChoosing iterative solver (local size %d)....'%(rx[k]*N[k]*rx[k+1])) 
+                    print('\t\tChoosing iterative solver %s (local size %d)....'%('GMRES' if local_solver==1 else 'BiCGSTAB_reset', rx[k]*N[k]*rx[k+1])) 
                     time_local = datetime.datetime.now()
                 shape_now = [rx[k],N[k],rx[k+1]]
                 Op = _LinearOp(Phis[k],Phis[k+1],A.cores[k],shape_now, preconditioner)
@@ -322,8 +323,15 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 50
                 eps_local = real_tol * norm_rhs
                 drhs = Op.matvec(previous_solution, False)
                 drhs = rhs-drhs
-                eps_local = eps_local / tn.linalg.norm(drhs) 
-                solution_now, flag, nit = gmres_restart(Op, drhs, previous_solution*0, rhs.shape[0], local_iterations+1, eps_local, resets)
+                eps_local = eps_local / tn.linalg.norm(drhs)
+                if local_solver == 1: 
+                    solution_now, flag, nit = gmres_restart(Op, drhs, previous_solution*0, rhs.shape[0], local_iterations+1, eps_local, resets)
+                elif local_solver == 2:
+                    solution_now, flag, nit, _ = BiCGSTAB_reset(Op, drhs, previous_solution*0, eps_local, local_iterations)
+                else:
+                    raise InvalidArguments('Solver not implemented.')
+                    
+                
                 if preconditioner != None:
                     solution_now = Op.apply_prec(tn.reshape(solution_now,shape_now))
                     solution_now = tn.reshape(solution_now,[-1,1])

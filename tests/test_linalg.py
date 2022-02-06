@@ -363,7 +363,7 @@ class TestLinalg(unittest.TestCase):
         res = tntt.bilinear_form(x,A,y)
         res_ref = tn.einsum('abcd,abcdijkl,ijkl->',x.full(),A.full(),y.full())
 
-        self.assertLess(err_rel(res,res_ref),1e-13,"torchtt.bilinear_form() failed.")
+        self.assertLess(err_rel(res,res_ref),5e-13,"torchtt.bilinear_form() failed.")
         
 if __name__ == '__main__':
     unittest.main()

@@ -8,8 +8,12 @@ import datetime
 # create a random tensor 
 N = 20
 target = tntt.random([N]*4,[1,4,5,3,1])
+Xs = tntt.meshgrid([tn.linspace(0,1,N, dtype = tn.float64)]*4)
+target = Xs[0]+1+Xs[1]+Xs[2]+Xs[3]+Xs[0]*Xs[1]+Xs[1]*Xs[2]+tntt.TT(tn.sin(Xs[0].full()))
+target = target.round(1e-10)
+print(target.R)
 
-M = 10000 # number of observations 
+M = 2500 # number of observations 
 indices = tn.randint(0,N,(M,4))
 
 # observations are considered to be noisy
@@ -17,16 +21,16 @@ sigma_noise = 0.001
 obs = tn.normal(target.apply_mask(indices), sigma_noise)
 
 # define the loss function
-loss = lambda x: (x.apply_mask(indices)-obs).norm()**2
+loss = lambda x: (x.apply_mask(indices)-obs).norm()**2+1e-18*x.norm()**2
 
 #%% Manifold learning
 print('Riemannian gradient descent\n')
 # starting point
-x = tntt.random([N]*4,[1,5,5,5,1])
+x = tntt.randn([N]*4,[1,3,3,3,1])
 
 tme = datetime.datetime.now()
 # iterations
-for i in range(25):
+for i in range(10250):
     # manifold gradient 
     gr = tntt.manifold.riemannian_gradient(x,loss)
 
@@ -38,7 +42,7 @@ for i in range(25):
     # compute loss value
     if (i+1)%10 == 0:
         loss_value = loss(x)
-        print('Iteration %4d loss value %e error %e'%(i+1,loss_value.numpy(),(x-target).norm()/target.norm()))
+        print('Iteration %4d loss value %e error %e tensor norm %e'%(i+1,loss_value.numpy(),(x-target).norm()/target.norm(), x.norm()**2))
 
 tme = datetime.datetime.now() - tme
 print('')

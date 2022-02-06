@@ -8,6 +8,8 @@ import torch as tn
 import datetime
 import numpy as np
 
+def BiCGSTAB(Op, rhs, x0, eps=1e-6, nmax = 40):
+    pass
 
 def BiCGSTAB_reset(Op,rhs,x0,eps=1e-6,nmax=40):
     """
@@ -41,9 +43,10 @@ def BiCGSTAB_reset(Op,rhs,x0,eps=1e-6,nmax=40):
         
         x_n = x + alpha*p + omega*s
         r_n = s - omega*As
-        r_nn = tn.linalg.norm(r_n).numpy()
+        r_nn = tn.linalg.norm(r_n)
         # print('\t\t\t',r_nn)
-        if r_nn < eps * norm_rhs.numpy():
+        # print(r_nn,eps,norm_rhs)
+        if r_nn < eps * norm_rhs:
         # if tf.linalg.norm(r_n)<eps:
             #print(r_n)
             break

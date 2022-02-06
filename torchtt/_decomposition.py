@@ -136,7 +136,7 @@ def rl_orthogonal(tt_cores, R, is_ttm, no_gpu = False):
 
         if is_ttm:
             mode_shape = [cores_new[i].shape[1],cores_new[i].shape[2]]
-            core_now = tn.reshape(cores_new[i],[cores_new[i].shape[1]*cores_new[i].shape[2]*cores_new[i].shape[3],cores_new[i].shape[0]]).t()
+            core_now = tn.reshape(cores_new[i],[cores_new[i].shape[0],cores_new[i].shape[2]*cores_new[i].shape[3]*cores_new[i].shape[1]]).t()
         else:
             mode_shape = [cores_new[i].shape[1]]
             core_now = tn.reshape(cores_new[i],[cores_new[i].shape[0],cores_new[i].shape[1]*cores_new[i].shape[2]]).t()

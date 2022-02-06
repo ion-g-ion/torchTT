@@ -32,6 +32,26 @@ class TestAD(unittest.TestCase):
         self.assertListEqual(gr_proj.R,[2*r if r!=1 else 1 for r in R],"TT manifold: Riemannian projection error: ranks mismatch.")
         self.assertLess(err_rel(gr_ad.full(),gr_proj.full()),1e-12,"TT manifold: Riemannian gradient and projected gradient differ.")
     
+    def test_mainfold_matrix(self):
+        """
+        Test the manifold gradient and the manifold projection for the TT matrix case.
+        """ 
+
+        A = torchtt.randn([(2,3),(4,5),(6,7),(4,2)],[1,2,3,2,1])
+        X = torchtt.randn([(2,3),(4,5),(6,7),(4,2)],[1,3,2,2,1])
+        
+        func = lambda x: 0.5*(x-A).norm(True)
+        
+        
+        gr_ad = torchtt.manifold.riemannian_gradient(X, func)
+
+        gr_proj = torchtt.manifold.riemannian_projection(X, (X-A))
+
+        self.assertListEqual(gr_ad.R,[2*r if r!=1 else 1 for r in X.R],"TT manifold: Riemannian gradient error: ranks mismatch.")
+        self.assertListEqual(gr_proj.R,[2*r if r!=1 else 1 for r in X.R],"TT manifold: Riemannian projection error: ranks mismatch.")
+        self.assertLess(err_rel(gr_ad.full(),gr_proj.full()),1e-12,"TT manifold: Riemannian gradient and projected gradient differ.")
+        
+        
     def test_ad(self):
         """
         Test the AD functionality.

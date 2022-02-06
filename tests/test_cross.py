@@ -9,7 +9,7 @@ import numpy as np
 err_rel = lambda t, ref :  tn.linalg.norm(t-ref).numpy() / tn.linalg.norm(ref).numpy() if ref.shape == t.shape else np.inf
 
 
-class TestLinalgAdvanced(unittest.TestCase):
+class TestCrossApproximation(unittest.TestCase):
     
     def test_dmrg_corss_interpolation(self):
         """

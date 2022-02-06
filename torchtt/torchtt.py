@@ -815,6 +815,15 @@ class TT():
         Contracts a tensor in the TT format along the given indices and retuyrns the resulting tensor in the TT format.
         If no index list is given, the sum over all indices is performed.
 
+        Examples:
+            ```
+            a = torchtt.ones([3,4,5,6,7])
+            print(a.sum()) 
+            print(a.sum([0,2,4]))
+            print(a.sum([1,2]))
+            print(a.sum([0,1,2,3,4]))
+            ```
+            
         Args:
             index (int or list[int] or None, optional): the indices along which the summation is performed. None selects all of them. Defaults to None.
 
@@ -822,7 +831,7 @@ class TT():
             InvalidArguments: Invalid index.
 
         Returns:
-            torchtt.TT or torch.tensor: the result.
+            torchtt.TT/torch.tensor: the result.
         """
         
         if index != None and isinstance(index,int):
@@ -860,7 +869,8 @@ class TT():
                         
             S = TT(cores)
             S.reduce_dims()
-            
+            if len(S.cores)==1 and tn.numel(S.cores[0])==1:
+                S = tn.squeeze(S.cores[0])
         return S
 
     def to_ttm(self):
@@ -1148,8 +1158,16 @@ class TT():
         The product of the mode sizes should be a power of mode_size.
         The tensor in QTT can be converted back using the qtt_to_tens() method.
 
+        Examples:
+            ```
+            x = torchtt.random([16,8,64,128],[1,2,10,12,1])
+            x_qtt = x.to_qtt()
+            print(x_qtt)
+            xf = x_qtt.qtt_to_tens(x.N) # a TT-rounding is recommended.
+            ```
+            
         Args:
-            eps (flaot,optional): the accuracy. Defaults to 1e-12.
+            eps (float,optional): the accuracy. Defaults to 1e-12.
             mode_size (int, optional): the size of the modes. Defaults to 2.
             rmax (int): the maximum rank. Defaults to 2048.
             
@@ -1160,14 +1178,7 @@ class TT():
 
         Returns:
             torchtt.TT: the resulting reshaped tensor.
-            
-        Examples:
-            import torchtt
-            x = torchtt.random([16,8,64,128],[1,2,10,12,1])
-            x_qtt = x.to_qtt()
-            print(x_qtt)
-            xf = x_qtt.qtt_to_tens(x.N) # a TT-rounding is recommended.
-            
+                       
         """
        
         cores_new = []
@@ -1593,6 +1604,15 @@ def dot(a,b,axis=None):
     The number of dimensions of a must be greater or equal as b.
     The modes of the tensor a along which the index contraction with b is performed are given in axis.
 
+    Examples:
+        ```
+        a = torchtt.randn([3,4,5,6,7],[1,2,2,2,2,1])
+        b = torchtt.randn([3,4,5,6,7],[1,2,2,2,2,1])
+        c = torchtt.randn([3,5,6],[1,2,2,1])
+        print(torchtt.dot(a,b))
+        print(torchtt.dot(a,c,[0,2,3]))
+        ```
+
     Args:
         a (torchtt.TT): the first tensor.
         b (torchtt.TT): the second tensor.
@@ -1675,7 +1695,7 @@ def bilinear_form(x,A,y):
     d = len(x.N)
     return bilinear_form_aux(x.cores,A.cores,y.cores,d)
 
-def elementwise_divide(x, y, eps = 1e-12, starting_tensor = None, nswp = 50, kick = 4, local_iterations = 40, resets = 2, verbose = False):
+def elementwise_divide(x, y, eps = 1e-12, starting_tensor = None, nswp = 50, kick = 4, local_iterations = 40, resets = 2, preconditioner = None, verbose = False):
     """
     Perform the elemntwise division x/y of two tensors in the TT format using the AMEN method.
     Use this method if different AMEN arguments are needed.
@@ -1690,13 +1710,14 @@ def elementwise_divide(x, y, eps = 1e-12, starting_tensor = None, nswp = 50, kic
         kick (int, optional): size of rank enrichment. Defaults to 4.
         local_iterations (int, optional): the number of iterations for the local iterative solver. Defaults to 40.
         resets (int, optional): the number of restarts in the GMRES solver. Defaults to 2.
+        preconditioner (string, optional): Use preconditioner for the local solver (possible vaules None, 'c'). Defaults to None. 
         verbose (bool, optional): display debug info. Defaults to False.
 
     Returns:
         torchtt.TT: the result
     """
 
-    cores_new = amen_divide(y,x,nswp,starting_tensor,eps,rmax = 1000, kickrank = kick, local_iterations = local_iterations, resets = resets, verbose=verbose)
+    cores_new = amen_divide(y,x,nswp,starting_tensor,eps,rmax = 1000, kickrank = kick, local_iterations = local_iterations, resets = resets, verbose=verbose, preconditioner = preconditioner)
     return TT(cores_new)
 
 def rank1TT(vectors):

@@ -36,15 +36,15 @@ class LinearOp():
         self.prec = prec
         # self.contraction = oe.contract_expression('lsr,smS,LSR,rmR->lmL', Phi_left.shape, coreA.shape, Phi_right.shape, shape)
         if prec == 'c':
-            Jl = oe.contract('sd,smnS->dmnS',tn.diagonal(Phi_left,0,0,2),coreA)
+            Jl = tn.einsum('sd,smS->dmS',tn.diagonal(Phi_left,0,0,2),coreA)
             Jr = tn.diagonal(Phi_right,0,0,2)
-            J = oe.contract('dmnS,SD->dDmn',Jl,Jr)
-            self.J = tn.linalg.inv(J)
+            J = tn.einsum('dmS,SD->dmD',Jl,Jr)
+            self.J = 1/J
             
     def apply_prec(self,x):
         
         if self.prec == 'c':
-            y = tn.einsum('rnR,rRmn->rmR',x,self.J) # no improvement using opt_einsum
+            y = x * self.J # no improvement using opt_einsum
             return y
         
     def matvec(self, x, apply_prec = True):
