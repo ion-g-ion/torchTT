@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
 <title>torchtt.nn API documentation</title>
-<meta name="description" content="Implements a basic TT layer for constructing deep TT networks …" />
+<meta name="description" content="Implements a basic TT layer for constructing deep TT networks." />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
 <link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
@@ -24,10 +24,6 @@
 </header>
 <section id="section-intro">
 <p>Implements a basic TT layer for constructing deep TT networks.</p>
-<p>Todo: </p>
-<ul>
-<li>finish it</li>
-</ul>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -35,35 +31,56 @@
 <pre><code class="python">&#34;&#34;&#34;
 Implements a basic TT layer for constructing deep TT networks.
 
-Todo: 
-
- * finish it
-    
 &#34;&#34;&#34;
 import torch as tn
 import torch.nn as nn
 import torchtt
 from ._aux_ops import dense_matvec
-
+from .errors import *
 class LinearLayerTT(nn.Module):
     &#34;&#34;&#34;
-    Implements a basic Tt linear layer.
+    Basic class for TT layers. See [Tensorizing Neural Networks](https://arxiv.org/abs/1509.06569) for a detailed description.
+    It can be used similarily to any layer from `torch.nn`.
+    The output of the layer is \(\\mathcal{LTT}(\\mathsf{x}) =\\mathsf{Wx}+\\mathsf{b}\), where the tensor operator \(\\mathsf{W}\) is represented in the TT format (with a fixed prescribed rank).
 
-    Args:
-        size_in (list[int]): the input shape of the layer.shape
-        size_out (list[int]): the output of the layer. Has to be of equal length with `size_in`.
-        rank (list[int]): the rank of the TT layer. Has to be `len(rank)==len(size_in)+1`.
     &#34;&#34;&#34;
-    def __init__(self, size_in, size_out, rank, dtype = tn.float32):
+    def __init__(self, size_in, size_out, rank, dtype = tn.float32, initializer = &#39;He&#39;):
+        &#34;&#34;&#34;
+        Constructor of the TT layer class. 
+        
+        Possible initializers are:
+        
+         * `&#39;He&#39;` for He Normal (He-et-al) initialization.
+         * `&#39;Glo&#39;` for Glorot initialization.
+            
+        Args:
+            size_in (list[int]): the size of the input tensor.
+            size_out (list[int]): the size of the output tensor.
+            rank (list[int]): the rank of the tensor operator.
+            dtype (torch.dtype, optional): the dtype of the layer. Defaults to tn.float32.
+            initializer (str, optional): the initializer for the weights and biases. Defaults to &#39;He&#39;.
+            
+        Raises:
+            InvalidArguments: Initializer not defined. Possible choices are &#39;He&#39; and &#39;Glo&#39;.
+        &#34;&#34;&#34;
         super().__init__()
         self.size_in, self.size_out, self.rank = size_in, size_out, rank
-        t = torchtt.randn([(s2,s1) for s1,s2 in zip(size_in,size_out)], rank, dtype=dtype)
-        #self.cores = [nn.Parameter(tn.Tensor(c.clone())) for c in t.cores] 
-        self.cores = nn.ParameterList([nn.Parameter(c) for c in t.cores])
-        #bias
-        bias = tn.zeros(size_out, dtype = dtype) 
-        self.bias = nn.Parameter(bias)
-
+        if initializer==&#39;He&#39;:
+            t = torchtt.randn([(s2,s1) for s1,s2 in zip(size_in,size_out)], rank, dtype=dtype, var = 2/tn.prod(tn.tensor([s1 for s1 in size_in])))
+            #self.cores = [nn.Parameter(tn.Tensor(c.clone())) for c in t.cores] 
+            self.cores = nn.ParameterList([nn.Parameter(c) for c in t.cores])
+            #bias
+            bias = tn.zeros(size_out, dtype = dtype) 
+            self.bias = nn.Parameter(bias)
+        elif initializer==&#39;Glo&#39;:
+            t = torchtt.randn([(s2,s1) for s1,s2 in zip(size_in,size_out)], rank, dtype=dtype, var = 1/(tn.prod(tn.tensor([s1 for s1 in size_in]))+tn.prod(tn.tensor([s1 for s1 in size_out]))) )
+            #self.cores = [nn.Parameter(tn.Tensor(c.clone())) for c in t.cores] 
+            self.cores = nn.ParameterList([nn.Parameter(c) for c in t.cores])
+            #bias
+            bias = tn.zeros(size_out, dtype = dtype) 
+            self.bias = nn.Parameter(bias)
+        else:
+            raise InvalidArguments(&#39;Initializer not defined. Possible choices are \&#39;He\&#39; and \&#39;Glo\&#39;.&#39;)
 
 
     def forward(self, x):
@@ -96,43 +113,84 @@ class LinearLayerTT(nn.Module):
 <dl>
 <dt id="torchtt.nn.LinearLayerTT"><code class="flex name class">
 <span>class <span class="ident">LinearLayerTT</span></span>
-<span>(</span><span>size_in, size_out, rank, dtype=torch.float32)</span>
+<span>(</span><span>size_in, size_out, rank, dtype=torch.float32, initializer='He')</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Implements a basic Tt linear layer.</p>
+<div class="desc"><p>Basic class for TT layers. See <a href="https://arxiv.org/abs/1509.06569">Tensorizing Neural Networks</a> for a detailed description.
+It can be used similarily to any layer from <code>torch.nn</code>.
+The output of the layer is <span><span class="MathJax_Preview">\mathcal{LTT}(\mathsf{x}) =\mathsf{Wx}+\mathsf{b}</span><script type="math/tex">\mathcal{LTT}(\mathsf{x}) =\mathsf{Wx}+\mathsf{b}</script></span>, where the tensor operator <span><span class="MathJax_Preview">\mathsf{W}</span><script type="math/tex">\mathsf{W}</script></span> is represented in the TT format (with a fixed prescribed rank).</p>
+<p>Constructor of the TT layer class. </p>
+<p>Possible initializers are:</p>
+<ul>
+<li><code>'He'</code> for He Normal (He-et-al) initialization.</li>
+<li><code>'Glo'</code> for Glorot initialization.</li>
+</ul>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>size_in</code></strong> :&ensp;<code>list[int]</code></dt>
-<dd>the input shape of the layer.shape</dd>
+<dd>the size of the input tensor.</dd>
 <dt><strong><code>size_out</code></strong> :&ensp;<code>list[int]</code></dt>
-<dd>the output of the layer. Has to be of equal length with <code>size_in</code>.</dd>
+<dd>the size of the output tensor.</dd>
 <dt><strong><code>rank</code></strong> :&ensp;<code>list[int]</code></dt>
-<dd>the rank of the TT layer. Has to be <code>len(rank)==len(size_in)+1</code>.</dd>
+<dd>the rank of the tensor operator.</dd>
+<dt><strong><code>dtype</code></strong> :&ensp;<code>torch.dtype</code>, optional</dt>
+<dd>the dtype of the layer. Defaults to tn.float32.</dd>
+<dt><strong><code>initializer</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>the initializer for the weights and biases. Defaults to 'He'.</dd>
 </dl>
-<p>Initializes internal Module state, shared by both nn.Module and ScriptModule.</p></div>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>InvalidArguments</code></dt>
+<dd>Initializer not defined. Possible choices are 'He' and 'Glo'.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class LinearLayerTT(nn.Module):
     &#34;&#34;&#34;
-    Implements a basic Tt linear layer.
+    Basic class for TT layers. See [Tensorizing Neural Networks](https://arxiv.org/abs/1509.06569) for a detailed description.
+    It can be used similarily to any layer from `torch.nn`.
+    The output of the layer is \(\\mathcal{LTT}(\\mathsf{x}) =\\mathsf{Wx}+\\mathsf{b}\), where the tensor operator \(\\mathsf{W}\) is represented in the TT format (with a fixed prescribed rank).
 
-    Args:
-        size_in (list[int]): the input shape of the layer.shape
-        size_out (list[int]): the output of the layer. Has to be of equal length with `size_in`.
-        rank (list[int]): the rank of the TT layer. Has to be `len(rank)==len(size_in)+1`.
     &#34;&#34;&#34;
-    def __init__(self, size_in, size_out, rank, dtype = tn.float32):
+    def __init__(self, size_in, size_out, rank, dtype = tn.float32, initializer = &#39;He&#39;):
+        &#34;&#34;&#34;
+        Constructor of the TT layer class. 
+        
+        Possible initializers are:
+        
+         * `&#39;He&#39;` for He Normal (He-et-al) initialization.
+         * `&#39;Glo&#39;` for Glorot initialization.
+            
+        Args:
+            size_in (list[int]): the size of the input tensor.
+            size_out (list[int]): the size of the output tensor.
+            rank (list[int]): the rank of the tensor operator.
+            dtype (torch.dtype, optional): the dtype of the layer. Defaults to tn.float32.
+            initializer (str, optional): the initializer for the weights and biases. Defaults to &#39;He&#39;.
+            
+        Raises:
+            InvalidArguments: Initializer not defined. Possible choices are &#39;He&#39; and &#39;Glo&#39;.
+        &#34;&#34;&#34;
         super().__init__()
         self.size_in, self.size_out, self.rank = size_in, size_out, rank
-        t = torchtt.randn([(s2,s1) for s1,s2 in zip(size_in,size_out)], rank, dtype=dtype)
-        #self.cores = [nn.Parameter(tn.Tensor(c.clone())) for c in t.cores] 
-        self.cores = nn.ParameterList([nn.Parameter(c) for c in t.cores])
-        #bias
-        bias = tn.zeros(size_out, dtype = dtype) 
-        self.bias = nn.Parameter(bias)
-
+        if initializer==&#39;He&#39;:
+            t = torchtt.randn([(s2,s1) for s1,s2 in zip(size_in,size_out)], rank, dtype=dtype, var = 2/tn.prod(tn.tensor([s1 for s1 in size_in])))
+            #self.cores = [nn.Parameter(tn.Tensor(c.clone())) for c in t.cores] 
+            self.cores = nn.ParameterList([nn.Parameter(c) for c in t.cores])
+            #bias
+            bias = tn.zeros(size_out, dtype = dtype) 
+            self.bias = nn.Parameter(bias)
+        elif initializer==&#39;Glo&#39;:
+            t = torchtt.randn([(s2,s1) for s1,s2 in zip(size_in,size_out)], rank, dtype=dtype, var = 1/(tn.prod(tn.tensor([s1 for s1 in size_in]))+tn.prod(tn.tensor([s1 for s1 in size_out]))) )
+            #self.cores = [nn.Parameter(tn.Tensor(c.clone())) for c in t.cores] 
+            self.cores = nn.ParameterList([nn.Parameter(c) for c in t.cores])
+            #bias
+            bias = tn.zeros(size_out, dtype = dtype) 
+            self.bias = nn.Parameter(bias)
+        else:
+            raise InvalidArguments(&#39;Initializer not defined. Possible choices are \&#39;He\&#39; and \&#39;Glo\&#39;.&#39;)
 
 
     def forward(self, x):
