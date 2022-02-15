@@ -1295,18 +1295,26 @@ class TT():
 
         Raises:
             InvalidArguments: Invalid arguments.
-
+            ShapeMismatch: The n-th mode of the tensor must be equal with the 2nd mode of the matrix.
+            IncompatibleTypes: n-model product works only with TT-tensors and not TT matrices.
+            
         Returns:
             torchtt.TT: the result
         &#34;&#34;&#34;
+        if self.is_ttm:
+            raise IncompatibleTypes(&#34;n-model product works only with TT-tensors and not TT matrices.&#34;)
     
         if isinstance(factor_matrices,list) and isinstance(mode, list):
             cores_new = [c.clone() for c in self.cores]
             for i in range(len(factor_matrices)):
-                cores_new[mode[i]] =  tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode[i]],factor_matrices[i]) if self.is_ttm else tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode[i]],factor_matrices[i]) 
+                if cores_new[mode[i]].shape[1] != factor_matrices[i].shape[1]:
+                    raise ShapeMismatch(&#34;The n-th mode of the tensor must be equal with the 2nd mode of the matrix.&#34;)
+                cores_new[mode[i]] =  tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode[i]],factor_matrices[i]) # if self.is_ttm else tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode[i]],factor_matrices[i]) 
         elif isinstance(mode, int) and tn.is_tensor(factor_matrices):
             cores_new = [c.clone() for c in self.cores]
-            cores_new[mode] =  tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode],factor_matrices) if self.is_ttm else tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode],factor_matrices) 
+            if cores_new[mode].shape[1] != factor_matrices.shape[1]:
+                raise ShapeMismatch(&#34;The n-th mode of the tensor must be equal with the 2nd mode of the matrix.&#34;)
+            cores_new[mode] =  tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode],factor_matrices) # if self.is_ttm else tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode],factor_matrices) 
         else:
             raise InvalidArguments(&#39;Invalid arguments.&#39;)
         
@@ -3942,18 +3950,26 @@ print(Att)
 
         Raises:
             InvalidArguments: Invalid arguments.
-
+            ShapeMismatch: The n-th mode of the tensor must be equal with the 2nd mode of the matrix.
+            IncompatibleTypes: n-model product works only with TT-tensors and not TT matrices.
+            
         Returns:
             torchtt.TT: the result
         &#34;&#34;&#34;
+        if self.is_ttm:
+            raise IncompatibleTypes(&#34;n-model product works only with TT-tensors and not TT matrices.&#34;)
     
         if isinstance(factor_matrices,list) and isinstance(mode, list):
             cores_new = [c.clone() for c in self.cores]
             for i in range(len(factor_matrices)):
-                cores_new[mode[i]] =  tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode[i]],factor_matrices[i]) if self.is_ttm else tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode[i]],factor_matrices[i]) 
+                if cores_new[mode[i]].shape[1] != factor_matrices[i].shape[1]:
+                    raise ShapeMismatch(&#34;The n-th mode of the tensor must be equal with the 2nd mode of the matrix.&#34;)
+                cores_new[mode[i]] =  tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode[i]],factor_matrices[i]) # if self.is_ttm else tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode[i]],factor_matrices[i]) 
         elif isinstance(mode, int) and tn.is_tensor(factor_matrices):
             cores_new = [c.clone() for c in self.cores]
-            cores_new[mode] =  tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode],factor_matrices) if self.is_ttm else tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode],factor_matrices) 
+            if cores_new[mode].shape[1] != factor_matrices.shape[1]:
+                raise ShapeMismatch(&#34;The n-th mode of the tensor must be equal with the 2nd mode of the matrix.&#34;)
+            cores_new[mode] =  tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode],factor_matrices) # if self.is_ttm else tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode],factor_matrices) 
         else:
             raise InvalidArguments(&#39;Invalid arguments.&#39;)
         
@@ -4263,6 +4279,10 @@ If factor_matrices is a list, the mode has to be list[int] of equal size.</dd>
 <dl>
 <dt><code>InvalidArguments</code></dt>
 <dd>Invalid arguments.</dd>
+<dt><code>ShapeMismatch</code></dt>
+<dd>The n-th mode of the tensor must be equal with the 2nd mode of the matrix.</dd>
+<dt><code>IncompatibleTypes</code></dt>
+<dd>n-model product works only with TT-tensors and not TT matrices.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -4284,18 +4304,26 @@ If factor_matrices is a list, the mode has to be list[int] of equal size.</dd>
 
     Raises:
         InvalidArguments: Invalid arguments.
-
+        ShapeMismatch: The n-th mode of the tensor must be equal with the 2nd mode of the matrix.
+        IncompatibleTypes: n-model product works only with TT-tensors and not TT matrices.
+        
     Returns:
         torchtt.TT: the result
     &#34;&#34;&#34;
+    if self.is_ttm:
+        raise IncompatibleTypes(&#34;n-model product works only with TT-tensors and not TT matrices.&#34;)
 
     if isinstance(factor_matrices,list) and isinstance(mode, list):
         cores_new = [c.clone() for c in self.cores]
         for i in range(len(factor_matrices)):
-            cores_new[mode[i]] =  tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode[i]],factor_matrices[i]) if self.is_ttm else tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode[i]],factor_matrices[i]) 
+            if cores_new[mode[i]].shape[1] != factor_matrices[i].shape[1]:
+                raise ShapeMismatch(&#34;The n-th mode of the tensor must be equal with the 2nd mode of the matrix.&#34;)
+            cores_new[mode[i]] =  tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode[i]],factor_matrices[i]) # if self.is_ttm else tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode[i]],factor_matrices[i]) 
     elif isinstance(mode, int) and tn.is_tensor(factor_matrices):
         cores_new = [c.clone() for c in self.cores]
-        cores_new[mode] =  tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode],factor_matrices) if self.is_ttm else tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode],factor_matrices) 
+        if cores_new[mode].shape[1] != factor_matrices.shape[1]:
+            raise ShapeMismatch(&#34;The n-th mode of the tensor must be equal with the 2nd mode of the matrix.&#34;)
+        cores_new[mode] =  tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode],factor_matrices) # if self.is_ttm else tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode],factor_matrices) 
     else:
         raise InvalidArguments(&#39;Invalid arguments.&#39;)
     

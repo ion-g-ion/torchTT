@@ -21,8 +21,8 @@ test_data = datasets.MNIST(root = 'downloads', train = False, transform = ToTens
 
 
 #%% Create 2 dataloaders for the training set and the test set.
-dataloader_train = tn.utils.data.DataLoader(train_data, batch_size=1000, shuffle=True, num_workers=1)
-dataloader_test = tn.utils.data.DataLoader(test_data, batch_size=100, shuffle=True, num_workers=1)
+dataloader_train = tn.utils.data.DataLoader(train_data, batch_size=1000, shuffle=True, num_workers=10)
+dataloader_test = tn.utils.data.DataLoader(test_data, batch_size=100, shuffle=True, num_workers=10)
 
 
 #%% Define the neural network arhitecture. I contains 2 hidden TT layers (with RELU activation function) with a linear output layer. A sotmax is applied at the output.
