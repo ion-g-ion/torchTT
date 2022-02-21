@@ -31,6 +31,7 @@ def apply_mask(cores, R, indices):
 
     return tn.squeeze(result)
 
+
 def dense_matvec(cores, other):
     """
     Performs multiplication between a TT-matrix and a full tensor.

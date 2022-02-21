@@ -169,7 +169,7 @@ class TT():
             device (torch.device, optional): The CUDA device (None for CPU). Defaults to None.
 
         Returns:
-            TT-oject: The TT-object. The TT-cores are on CUDA.
+            torchtt.TT: The TT-object. The TT-cores are on CUDA.
         """
          
         t = TT(None)
@@ -187,7 +187,7 @@ class TT():
         Retrive the cores from the GPU.
 
         Returns:
-            TT-object: The TT-object on CPU.
+            torchtt.TT: The TT-object on CPU.
         """
 
         t = TT(None)
@@ -216,7 +216,7 @@ class TT():
 
         Args:
             device (torch.device, optional): The desired device. If none is provided, the device is the CPU. Defaults to None.
-            dtype (torch.dtype, optional): The desired dtype (torch.float64, torch.float32,...). If none is provided the dtype is not changed. Defaults to None.
+            dtype (torch.dtype, optional): The desired dtype (torch.float64, torch.float32,...). If None is provided the dtype is not changed. Defaults to None.
         """
         t = TT(None)
         t.N = self.N.copy()
@@ -656,16 +656,19 @@ class TT():
         """
         Evaluate the tensor on the given index list.
 
+        Examples:
+            ```
+            x = torchtt.random([10,12,14],[1,4,5,1])
+            indices = torch.tensor([[0,0,0],[1,2,3],[1,1,1]])
+            val = x.apply_mask(indices)
+            ```
+            
         Args:
             indices (list[list[int]]): the index list where the tensor should be evaluated. Length is M.
 
         Returns:
             torch.tensor: the values of the tensor
 
-        Examples:
-            x = torchtt.random([10,12,14],[1,4,5,1])
-            indices = torch.tensor([[0,0,0],[1,2,3],[1,1,1]])
-            val = x.apply_mask(indices)
         """
         result = apply_mask(self.cores,self.R,indices)
         return result
@@ -676,7 +679,7 @@ class TT():
         This operation is performed using the AMEN solver. The number of sweeps and rthe relative accuracy are fixed.
         For most cases it is sufficient but sometimes it can fail.
         Check the function torchtt.elementwise_divide() if you want to change the arguments of the AMEN solver.
-        Example: z = 1.0/x # x is TT instance
+        
 
         Args:
             other (torchtt.TT or float or int or torch.tensor with 1 element): the first operand.
@@ -712,8 +715,12 @@ class TT():
         This operation is performed using the AMEN solver. The number of sweeps and rthe relative accuracy are fixed.
         For most cases it is sufficient but sometimes it can fail.
         Check the function torchtt.elementwise_divide() if you want to change the arguments of the AMEN solver.
-        Example: z = 1.0/x # x is TT instance
-
+        
+        Example: 
+            ```
+            z = 1.0/x # x is TT instance
+            ```
+            
         Args:
             other (torchtt.TT or float or int or torch.tensor with 1 element): the first operand.
 
@@ -737,15 +744,15 @@ class TT():
     def t(self):
         """
         Returns the transpoise of a given TT matrix.
-        
-        Raises:
-            InvalidArguments: Has to TT matrix.
-            
+                    
         Returns: 
-            torchtt.TT: the transpose. 
+            torchtt.TT: the transpose.
+            
+        Raises:
+            InvalidArguments: Has to be TT matrix.
         """ 
         if not self.is_ttm:
-            raise InvalidArguments('Has to TT matrix.')
+            raise InvalidArguments('Has to be TT matrix.')
             
         cores_new = [tn.permute(c,[0,2,1,3]) for c in self.cores]
         

@@ -4,9 +4,10 @@ Implements a basic TT layer for constructing deep TT networks.
 """
 import torch as tn
 import torch.nn as nn
-import torchtt
+import torchtt 
 from ._aux_ops import dense_matvec
 from .errors import *
+
 class LinearLayerTT(nn.Module):
     """
     Basic class for TT layers. See [Tensorizing Neural Networks](https://arxiv.org/abs/1509.06569) for a detailed description.
@@ -16,7 +17,7 @@ class LinearLayerTT(nn.Module):
     """
     def __init__(self, size_in, size_out, rank, dtype = tn.float32, initializer = 'He'):
         """
-        Constructor of the TT layer class. 
+        The constructor of the TT layer class takes as arguments the input shape and the output shape for the layer, the rank as well as the dtype and the initializer.
         
         Possible initializers are:
         
@@ -27,7 +28,7 @@ class LinearLayerTT(nn.Module):
             size_in (list[int]): the size of the input tensor.
             size_out (list[int]): the size of the output tensor.
             rank (list[int]): the rank of the tensor operator.
-            dtype (torch.dtype, optional): the dtype of the layer. Defaults to tn.float32.
+            dtype (torch.dtype, optional): the dtype of the layer. Defaults to torch.float32.
             initializer (str, optional): the initializer for the weights and biases. Defaults to 'He'.
             
         Raises:
@@ -52,7 +53,7 @@ class LinearLayerTT(nn.Module):
         else:
             raise InvalidArguments('Initializer not defined. Possible choices are \'He\' and \'Glo\'.')
 
-
+    @tn.jit.export 
     def forward(self, x):
         """
         Computes the output of the layer for the given input. 
@@ -66,7 +67,18 @@ class LinearLayerTT(nn.Module):
             torch.tensor: output of the layer.
         """
         
-        return dense_matvec(self.cores,x) + self.bias
+        # return dense_matvec(self.cores,x) + self.bias
+        
+        result = tn.unsqueeze(x,-1)
+
+        d = len(self.size_in)
+        D = len(x.shape)
+
+        for c in self.cores:
+            result = tn.tensordot(result,c,([D-d,-1],[2,0]))
+        result = tn.squeeze(result,-1)
+
+        return result+self.bias
 
 
  

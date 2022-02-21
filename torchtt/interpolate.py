@@ -107,7 +107,7 @@ def function_interpolate(function, x, eps = 1e-9, start_tens = None, nswp = 20, 
         verbose (bool, optional): display debug information to the console. Defaults to False.
 
     Returns:
-        torchtt.tt: the result.
+        torchtt.TT: the result.
     """
      
     

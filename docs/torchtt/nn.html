@@ -34,9 +34,10 @@ Implements a basic TT layer for constructing deep TT networks.
 &#34;&#34;&#34;
 import torch as tn
 import torch.nn as nn
-import torchtt
+import torchtt 
 from ._aux_ops import dense_matvec
 from .errors import *
+
 class LinearLayerTT(nn.Module):
     &#34;&#34;&#34;
     Basic class for TT layers. See [Tensorizing Neural Networks](https://arxiv.org/abs/1509.06569) for a detailed description.
@@ -46,7 +47,7 @@ class LinearLayerTT(nn.Module):
     &#34;&#34;&#34;
     def __init__(self, size_in, size_out, rank, dtype = tn.float32, initializer = &#39;He&#39;):
         &#34;&#34;&#34;
-        Constructor of the TT layer class. 
+        The constructor of the TT layer class takes as arguments the input shape and the output shape for the layer, the rank as well as the dtype and the initializer.
         
         Possible initializers are:
         
@@ -57,7 +58,7 @@ class LinearLayerTT(nn.Module):
             size_in (list[int]): the size of the input tensor.
             size_out (list[int]): the size of the output tensor.
             rank (list[int]): the rank of the tensor operator.
-            dtype (torch.dtype, optional): the dtype of the layer. Defaults to tn.float32.
+            dtype (torch.dtype, optional): the dtype of the layer. Defaults to torch.float32.
             initializer (str, optional): the initializer for the weights and biases. Defaults to &#39;He&#39;.
             
         Raises:
@@ -82,7 +83,7 @@ class LinearLayerTT(nn.Module):
         else:
             raise InvalidArguments(&#39;Initializer not defined. Possible choices are \&#39;He\&#39; and \&#39;Glo\&#39;.&#39;)
 
-
+    @tn.jit.export 
     def forward(self, x):
         &#34;&#34;&#34;
         Computes the output of the layer for the given input. 
@@ -96,7 +97,18 @@ class LinearLayerTT(nn.Module):
             torch.tensor: output of the layer.
         &#34;&#34;&#34;
         
-        return dense_matvec(self.cores,x) + self.bias
+        # return dense_matvec(self.cores,x) + self.bias
+        
+        result = tn.unsqueeze(x,-1)
+
+        d = len(self.size_in)
+        D = len(x.shape)
+
+        for c in self.cores:
+            result = tn.tensordot(result,c,([D-d,-1],[2,0]))
+        result = tn.squeeze(result,-1)
+
+        return result+self.bias
 
 
  </code></pre>
@@ -119,7 +131,7 @@ class LinearLayerTT(nn.Module):
 <div class="desc"><p>Basic class for TT layers. See <a href="https://arxiv.org/abs/1509.06569">Tensorizing Neural Networks</a> for a detailed description.
 It can be used similarily to any layer from <code>torch.nn</code>.
 The output of the layer is <span><span class="MathJax_Preview">\mathcal{LTT}(\mathsf{x}) =\mathsf{Wx}+\mathsf{b}</span><script type="math/tex">\mathcal{LTT}(\mathsf{x}) =\mathsf{Wx}+\mathsf{b}</script></span>, where the tensor operator <span><span class="MathJax_Preview">\mathsf{W}</span><script type="math/tex">\mathsf{W}</script></span> is represented in the TT format (with a fixed prescribed rank).</p>
-<p>Constructor of the TT layer class. </p>
+<p>The constructor of the TT layer class takes as arguments the input shape and the output shape for the layer, the rank as well as the dtype and the initializer.</p>
 <p>Possible initializers are:</p>
 <ul>
 <li><code>'He'</code> for He Normal (He-et-al) initialization.</li>
@@ -134,7 +146,7 @@ The output of the layer is <span><span class="MathJax_Preview">\mathcal{LTT}(\ma
 <dt><strong><code>rank</code></strong> :&ensp;<code>list[int]</code></dt>
 <dd>the rank of the tensor operator.</dd>
 <dt><strong><code>dtype</code></strong> :&ensp;<code>torch.dtype</code>, optional</dt>
-<dd>the dtype of the layer. Defaults to tn.float32.</dd>
+<dd>the dtype of the layer. Defaults to torch.float32.</dd>
 <dt><strong><code>initializer</code></strong> :&ensp;<code>str</code>, optional</dt>
 <dd>the initializer for the weights and biases. Defaults to 'He'.</dd>
 </dl>
@@ -156,7 +168,7 @@ The output of the layer is <span><span class="MathJax_Preview">\mathcal{LTT}(\ma
     &#34;&#34;&#34;
     def __init__(self, size_in, size_out, rank, dtype = tn.float32, initializer = &#39;He&#39;):
         &#34;&#34;&#34;
-        Constructor of the TT layer class. 
+        The constructor of the TT layer class takes as arguments the input shape and the output shape for the layer, the rank as well as the dtype and the initializer.
         
         Possible initializers are:
         
@@ -167,7 +179,7 @@ The output of the layer is <span><span class="MathJax_Preview">\mathcal{LTT}(\ma
             size_in (list[int]): the size of the input tensor.
             size_out (list[int]): the size of the output tensor.
             rank (list[int]): the rank of the tensor operator.
-            dtype (torch.dtype, optional): the dtype of the layer. Defaults to tn.float32.
+            dtype (torch.dtype, optional): the dtype of the layer. Defaults to torch.float32.
             initializer (str, optional): the initializer for the weights and biases. Defaults to &#39;He&#39;.
             
         Raises:
@@ -192,7 +204,7 @@ The output of the layer is <span><span class="MathJax_Preview">\mathcal{LTT}(\ma
         else:
             raise InvalidArguments(&#39;Initializer not defined. Possible choices are \&#39;He\&#39; and \&#39;Glo\&#39;.&#39;)
 
-
+    @tn.jit.export 
     def forward(self, x):
         &#34;&#34;&#34;
         Computes the output of the layer for the given input. 
@@ -206,7 +218,18 @@ The output of the layer is <span><span class="MathJax_Preview">\mathcal{LTT}(\ma
             torch.tensor: output of the layer.
         &#34;&#34;&#34;
         
-        return dense_matvec(self.cores,x) + self.bias</code></pre>
+        # return dense_matvec(self.cores,x) + self.bias
+        
+        result = tn.unsqueeze(x,-1)
+
+        d = len(self.size_in)
+        D = len(x.shape)
+
+        for c in self.cores:
+            result = tn.tensordot(result,c,([D-d,-1],[2,0]))
+        result = tn.squeeze(result,-1)
+
+        return result+self.bias</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -245,7 +268,8 @@ The output of the layer is <span><span class="MathJax_Preview">\mathcal{LTT}(\ma
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def forward(self, x):
+<pre><code class="python">@tn.jit.export 
+def forward(self, x):
     &#34;&#34;&#34;
     Computes the output of the layer for the given input. 
     
@@ -258,7 +282,18 @@ The output of the layer is <span><span class="MathJax_Preview">\mathcal{LTT}(\ma
         torch.tensor: output of the layer.
     &#34;&#34;&#34;
     
-    return dense_matvec(self.cores,x) + self.bias</code></pre>
+    # return dense_matvec(self.cores,x) + self.bias
+    
+    result = tn.unsqueeze(x,-1)
+
+    d = len(self.size_in)
+    D = len(x.shape)
+
+    for c in self.cores:
+        result = tn.tensordot(result,c,([D-d,-1],[2,0]))
+    result = tn.squeeze(result,-1)
+
+    return result+self.bias</code></pre>
 </details>
 </dd>
 </dl>

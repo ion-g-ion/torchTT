@@ -52,7 +52,7 @@ def grad(val, tens, core_indices = None):
 
     Args:
         val (torch.tensor): Scalar tensor that has to be differentiated.
-        tens (torchtt.tensor): The given tensor.
+        tens (torchtt.TT): The given tensor.
         core_indices (list[int], optional): The list of cores to construct the gradient. If None is provided, all the cores are watched. Defaults to None.
 
     Returns:
@@ -78,7 +78,7 @@ def grad_list(val, tensors, all_in_one = True):
         all_in_one (bool, optional): Put all the cores in one list or create a list of lists with the cores. Defaults to True.
     
     Returns:
-        list[list[torchtt.tensors]]: the resulting derivatives.
+        list[list[torchtt.TT]]: the resulting derivatives.
     """
     val.backward()
     cores_list = []
