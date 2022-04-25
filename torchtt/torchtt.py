@@ -892,13 +892,13 @@ class TT():
         cores_new = [tn.reshape(c,(c.shape[0],c.shape[1],1,c.shape[2])) for c in self.cores]
         return TT(cores_new)
 
-    def reduce_dims(self):
+    def reduce_dims(self, exclude = []):
         """
         Reduces the size 1 modes of the TT-object.
         At least one mode should be larger than 1.
 
-        Returns:
-            None.
+        Args:
+            exclude (list, optional): Indices to exclude. Defaults to [].
         """
         
         # TODO: implement a version that reduces the rank also. by spliting the cores with modes 1 into 2 using the SVD.
@@ -908,7 +908,7 @@ class TT():
             
             for i in range(len(self.N)):
                 
-                if self.cores[i].shape[1] == 1 and self.cores[i].shape[2] == 1:
+                if self.cores[i].shape[1] == 1 and self.cores[i].shape[2] == 1 and not i in exclude:
                     if self.cores[i].shape[0] > self.cores[i].shape[3] or i == len(self.N)-1:
                         # multiply to the left
                         if len(cores_new) > 0:
@@ -941,7 +941,7 @@ class TT():
             
             for i in range(len(self.N)):
                 
-                if self.cores[i].shape[1] == 1:
+                if self.cores[i].shape[1] == 1 and not i in exclude:
                     if self.cores[i].shape[0] > self.cores[i].shape[2] or i == len(self.N)-1:
                         # multiply to the left
                         if len(cores_new) > 0:
@@ -975,7 +975,7 @@ class TT():
         
     def __getitem__(self,index):
         """
-        Performs slicinf of a TT object.
+        Performs slicing of a TT object.
         Both TT matrix and TT tensor are supported.
         Similar to pytorch or numpy slicing.
 
@@ -985,6 +985,7 @@ class TT():
         Raises:
             NotImplementedError: Ellipsis are not supported.
             InvalidArguments: Slice size is invalid.
+            InvalidArguments: Slice carguments not valid. They have to be either int, slice or None.
             InvalidArguments: Invalid slice. Tensor is not 1d.
 
 
@@ -999,37 +1000,63 @@ class TT():
         
         # if a slice containg integers is passed, an element is returned
         # if ranged slices are used, a TT-object has to be returned.
+
+        exclude = []
         
         if isinstance(index,tuple):
             # check if more than one Ellipsis are to be found.
             if index.count(Ellipsis) > 0:
                 raise NotImplementedError('Ellipsis are not supported.')
             if self.is_ttm:
-                if len(index) != len(self.N)*2:
-                    raise InvalidArguments('Slice size is invalid.')
+                
                     
                 cores_new = []
-                for i in range(len(self.cores)):
-                    # cores_new.append(self.cores[i][:,index[i],index[i+len(self.N)],:])
-                    if isinstance(index[i],slice):
-                        cores_new.append(self.cores[i][:,index[i],index[i+len(self.N)],:])
+                k=0
+                for i in range(len(index)//2):
+                    idx1 = index[i]
+                    idx2 = index[i+len(index)//2]
+                    if isinstance(idx1,slice) and isinstance(idx2,slice):
+                        cores_new.append(self.cores[k][:,idx1,idx2,:])
+                        k+=1
+                    elif idx1==None and idx2==None:
+                        # extend the tensor
+                        tmp = tn.eye(cores_new[-1].shape[-1] if len(cores_new)!=0 else 1, device = self.cores[0].device, dtype = self.cores[0].dtype)[:,None,None,:]
+                        cores_new.append(tmp)
+                        exclude.append(i)
+                    elif isinstance(idx1, int) and isinstance(idx2,int):
+                        cores_new.append(tn.reshape(self.cores[k][:,idx1,idx2,:],[self.R[k],1,1,self.R[k+1]]))
+                        k+=1
                     else:
-                        cores_new.append(tn.reshape(self.cores[i][:,index[i],index[i+len(self.N)],:],[self.R[i],1,1,self.R[i+1]]))
-               
+                        raise InvalidArguments("Slice carguments not valid. They have to be either int, slice or None.")
+                if k<len(self.cores):
+                    raise InvalidArguments('Slice size is invalid.')
                 
             else:
-                if len(index) != len(self.N):
-                    raise InvalidArguments('Slice size is invalid.')
+                # if len(index) != len(self.N):
+                #    raise InvalidArguments('Slice size is invalid.')
                     
                 cores_new = []
-                for i in range(len(self.cores)):
-                    if isinstance(index[i],slice):
-                        cores_new.append(self.cores[i][:,index[i],:])
+                k = 0
+                for i,idx in enumerate(index):
+                    if isinstance(idx,slice):
+                        cores_new.append(self.cores[k][:,idx,:])
+                        k+=1
+                    elif idx==None:
+                        # extend the tensor
+                        tmp = tn.eye(cores_new[-1].shape[-1] if len(cores_new)!=0 else 1, device = self.cores[0].device, dtype = self.cores[0].dtype)[:,None,:]
+                        cores_new.append(tmp)
+                        exclude.append(i)
+                    elif isinstance(idx, int):
+                        cores_new.append(tn.reshape(self.cores[k][:,idx,:],[self.R[k],-1,self.R[k+1]]))
+                        k+=1
                     else:
-                        cores_new.append(tn.reshape(self.cores[i][:,index[i],:],[self.R[i],-1,self.R[i+1]]))
-            
+                        raise InvalidArguments("Slice carguments not valid. They have to be either int, slice or None.")
+                if k<len(self.cores):
+                    raise InvalidArguments('Slice size is invalid.')
+                        
+                
             sliced = TT(cores_new)
-            sliced.reduce_dims()
+            sliced.reduce_dims(exclude)
             if (sliced.is_ttm == False and sliced.N == [1]) or (sliced.is_ttm and sliced.N == [1] and sliced.M == [1]):
                 sliced = tn.squeeze(sliced.cores[0])
                 
