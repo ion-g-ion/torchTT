@@ -1659,7 +1659,7 @@ def meshgrid(vectors):
         vectors (list[torch.tensor]): the vectors (1d tensors).
 
     Returns:
-        list[torchtt.TT]: the resulting meshgrid.
+        list[TT]: the resulting meshgrid.
     &#34;&#34;&#34;
     
     Xs = []
@@ -1818,7 +1818,33 @@ def numel(tensor):
         int: number of floats stored for the TT decomposition.
     &#34;&#34;&#34;
     
-    return sum([tn.numel(tensor.cores[i]) for i in range(len(tensor.N))])</code></pre>
+    return sum([tn.numel(tensor.cores[i]) for i in range(len(tensor.N))])
+
+def diag(input):
+    &#34;&#34;&#34;
+    Creates diagonal TT matrix from TT tensor or extracts the diagonal of a TT matrix:
+
+    * If a TT matrix is provided the result is a TT tensor representing the diagonal \( \\mathsf{x}_{i_1...i_d} = \\mathsf{A}_{i_1...i_d,i_1...i_d} \)
+
+    * If a TT tensor is provided the result is a diagonal TT matrix with the entries \( \\mathsf{A}_{i_1...i_d,j_1...j_d} = \\mathsf{x}_{i_1...i_d} \\delta_{i_1}^{j_1} \\cdots \\delta_{i_d}^{j_d} \)
+
+    Args:
+        input (TT): the input. 
+
+    Raises:
+        InvalidArguments: Input must be a torchtt.TT instance.
+
+    Returns:
+        torchtt.TT: the result.
+    &#34;&#34;&#34;
+
+    if not isinstance(input, TT):
+        raise InvalidArguments(&#34;Input must be a torchtt.TT instance.&#34;)
+
+    if input.is_ttm:
+        return TT([tn.diagonal(c, dim1 = 1, dim2 = 2) for c in input.cores])
+    else:
+        return TT([tn.einsum(&#39;ijk,jm-&gt;ijmk&#39;,c,tn.eye(c.shape[1])) for c in input.cores])</code></pre>
 </details>
 </section>
 <section>
@@ -1885,6 +1911,65 @@ def numel(tensor):
         raise ShapeMismatch(&#34;Check the shapes. Required is x.N == A.M and y.N == A.N.&#34;)
     d = len(x.N)
     return bilinear_form_aux(x.cores,A.cores,y.cores,d)</code></pre>
+</details>
+</dd>
+<dt id="torchtt.torchtt.diag"><code class="name flex">
+<span>def <span class="ident">diag</span></span>(<span>input)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Creates diagonal TT matrix from TT tensor or extracts the diagonal of a TT matrix:</p>
+<ul>
+<li>
+<p>If a TT matrix is provided the result is a TT tensor representing the diagonal <span><span class="MathJax_Preview"> \mathsf{x}_{i_1...i_d} = \mathsf{A}_{i_1...i_d,i_1...i_d} </span><script type="math/tex"> \mathsf{x}_{i_1...i_d} = \mathsf{A}_{i_1...i_d,i_1...i_d} </script></span></p>
+</li>
+<li>
+<p>If a TT tensor is provided the result is a diagonal TT matrix with the entries <span><span class="MathJax_Preview"> \mathsf{A}_{i_1...i_d,j_1...j_d} = \mathsf{x}_{i_1...i_d} \delta_{i_1}^{j_1} \cdots \delta_{i_d}^{j_d} </span><script type="math/tex"> \mathsf{A}_{i_1...i_d,j_1...j_d} = \mathsf{x}_{i_1...i_d} \delta_{i_1}^{j_1} \cdots \delta_{i_d}^{j_d} </script></span></p>
+</li>
+</ul>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>input</code></strong> :&ensp;<code><a title="torchtt.torchtt.TT" href="#torchtt.torchtt.TT">TT</a></code></dt>
+<dd>the input. </dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>InvalidArguments</code></dt>
+<dd>Input must be a torchtt.TT instance.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>torchtt.TT</code></dt>
+<dd>the result.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def diag(input):
+    &#34;&#34;&#34;
+    Creates diagonal TT matrix from TT tensor or extracts the diagonal of a TT matrix:
+
+    * If a TT matrix is provided the result is a TT tensor representing the diagonal \( \\mathsf{x}_{i_1...i_d} = \\mathsf{A}_{i_1...i_d,i_1...i_d} \)
+
+    * If a TT tensor is provided the result is a diagonal TT matrix with the entries \( \\mathsf{A}_{i_1...i_d,j_1...j_d} = \\mathsf{x}_{i_1...i_d} \\delta_{i_1}^{j_1} \\cdots \\delta_{i_d}^{j_d} \)
+
+    Args:
+        input (TT): the input. 
+
+    Raises:
+        InvalidArguments: Input must be a torchtt.TT instance.
+
+    Returns:
+        torchtt.TT: the result.
+    &#34;&#34;&#34;
+
+    if not isinstance(input, TT):
+        raise InvalidArguments(&#34;Input must be a torchtt.TT instance.&#34;)
+
+    if input.is_ttm:
+        return TT([tn.diagonal(c, dim1 = 1, dim2 = 2) for c in input.cores])
+    else:
+        return TT([tn.einsum(&#39;ijk,jm-&gt;ijmk&#39;,c,tn.eye(c.shape[1])) for c in input.cores])</code></pre>
 </details>
 </dd>
 <dt id="torchtt.torchtt.dot"><code class="name flex">
@@ -2196,7 +2281,7 @@ The result is a list of torchtt.TT instances of shapes N1 x &hellip; x Nd.</p>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>list[torchtt.TT]</code></dt>
+<dt><code>list[<a title="torchtt.torchtt.TT" href="#torchtt.torchtt.TT">TT</a>]</code></dt>
 <dd>the resulting meshgrid.</dd>
 </dl></div>
 <details class="source">
@@ -2213,7 +2298,7 @@ The result is a list of torchtt.TT instances of shapes N1 x &hellip; x Nd.</p>
         vectors (list[torch.tensor]): the vectors (1d tensors).
 
     Returns:
-        list[torchtt.TT]: the resulting meshgrid.
+        list[TT]: the resulting meshgrid.
     &#34;&#34;&#34;
     
     Xs = []
@@ -5032,6 +5117,7 @@ N1 x &hellip; x Nd x 1 x &hellip; x 1.</p>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="two-column">
 <li><code><a title="torchtt.torchtt.bilinear_form" href="#torchtt.torchtt.bilinear_form">bilinear_form</a></code></li>
+<li><code><a title="torchtt.torchtt.diag" href="#torchtt.torchtt.diag">diag</a></code></li>
 <li><code><a title="torchtt.torchtt.dot" href="#torchtt.torchtt.dot">dot</a></code></li>
 <li><code><a title="torchtt.torchtt.elementwise_divide" href="#torchtt.torchtt.elementwise_divide">elementwise_divide</a></code></li>
 <li><code><a title="torchtt.torchtt.eye" href="#torchtt.torchtt.eye">eye</a></code></li>

@@ -1627,7 +1627,7 @@ def meshgrid(vectors):
         vectors (list[torch.tensor]): the vectors (1d tensors).
 
     Returns:
-        list[torchtt.TT]: the resulting meshgrid.
+        list[TT]: the resulting meshgrid.
     """
     
     Xs = []
@@ -1787,3 +1787,29 @@ def numel(tensor):
     """
     
     return sum([tn.numel(tensor.cores[i]) for i in range(len(tensor.N))])
+
+def diag(input):
+    """
+    Creates diagonal TT matrix from TT tensor or extracts the diagonal of a TT matrix:
+
+    * If a TT matrix is provided the result is a TT tensor representing the diagonal \( \\mathsf{x}_{i_1...i_d} = \\mathsf{A}_{i_1...i_d,i_1...i_d} \)
+
+    * If a TT tensor is provided the result is a diagonal TT matrix with the entries \( \\mathsf{A}_{i_1...i_d,j_1...j_d} = \\mathsf{x}_{i_1...i_d} \\delta_{i_1}^{j_1} \\cdots \\delta_{i_d}^{j_d} \)
+
+    Args:
+        input (TT): the input. 
+
+    Raises:
+        InvalidArguments: Input must be a torchtt.TT instance.
+
+    Returns:
+        torchtt.TT: the result.
+    """
+
+    if not isinstance(input, TT):
+        raise InvalidArguments("Input must be a torchtt.TT instance.")
+
+    if input.is_ttm:
+        return TT([tn.diagonal(c, dim1 = 1, dim2 = 2) for c in input.cores])
+    else:
+        return TT([tn.einsum('ijk,jm->ijmk',c,tn.eye(c.shape[1])) for c in input.cores])

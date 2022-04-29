@@ -76,3 +76,4 @@ def bilinear_form_aux(x_cores, A_cores, y_cores, d):
         result = tn.einsum('LSrn,rnR->LSR',result,y_cores[i]) 
         
     return tn.squeeze(result)
+
