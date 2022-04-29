@@ -1762,19 +1762,18 @@ def elementwise_divide(x, y, eps = 1e-12, starting_tensor = None, nswp = 50, kic
     cores_new = amen_divide(y,x,nswp,starting_tensor,eps,rmax = 1000, kickrank = kick, local_iterations = local_iterations, resets = resets, verbose=verbose, preconditioner = preconditioner)
     return TT(cores_new)
 
-def rank1TT(vectors):
+def rank1TT(elements):
     """
-    Compute the rank 1 TT from a list of vectors.
+    Compute the rank 1 TT from a list of vectors (or matrices).
 
     Args:
-        vectors (list[torch.tensor]): the list of vectors.
+        elements (list[torch.tensor]): the list of vectors (or matrices in case a TT matrix should be created).
 
     Returns:
         torchtt.TT: the resulting TT object.
     """
     
-    return TT([tn.reshape(vectors[i],[1,-1,1]) for i in range(len(vectors))])
-
+    return TT([e[None,...,None] for e in elements])
  
 def numel(tensor):
     """
