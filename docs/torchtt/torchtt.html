@@ -48,6 +48,55 @@ from torchtt.errors import *
 
 class TT():
 
+    cores : list[tn.tensor]
+    &#34;&#34;&#34; The TT cores as a list of `torch.tensor` instances.&#34;&#34;&#34;
+    
+    @property
+    def is_ttm(self):
+        &#34;&#34;&#34;
+        Check whether the instance is a TT operator or not.
+
+        Returns:
+            bool: the flag.
+        &#34;&#34;&#34;
+        return self.__is_ttm
+
+    @property 
+    def M(self):
+        &#34;&#34;&#34;
+        Return the &#34;row&#34; shape in case of TT matrices.
+
+        Raises:
+            IncompatibleTypes: The field is_ttm is defined only for TT matrices.
+
+        Returns:
+            list[int]: the shape.
+        &#34;&#34;&#34;
+        if not self.__is_ttm:
+            raise IncompatibleTypes(&#34;The field is_ttm is defined only for TT matrices.&#34;)
+        return self.__M.copy()
+
+    @property 
+    def N(self):
+        &#34;&#34;&#34;
+        Return the shape of a tensor or the &#34;column&#34; shape of a TT operator.
+
+        Returns:
+            list[int]: the shape.
+        &#34;&#34;&#34;
+        return self.__N.copy()
+    
+    @property
+    def R(self):
+        &#34;&#34;&#34;
+        The rank of the TT decomposition.
+        It&#39;s length should be `len(R)==len(N)+1`.
+
+        Returns:
+            list[int]: the rank.
+        &#34;&#34;&#34;
+        return self.__R.copy()
+
     def __init__(self, source, shape=None, eps=1e-10, rmax=10000):
         &#34;&#34;&#34;
         Constructor of the TT class. Can convert full tensor in the TT-format (from `torch.tensor` or `numpy.array`).
@@ -59,7 +108,7 @@ class TT():
         
         \(\\mathsf{x}=\\sum\\limits_{r_1...r_{d-1}=1}^{R_1,...,R_{d-1}} \\mathsf{x}^{(1)}_{1i_1r_1}\\cdots\\mathsf{x}^{(d)}_{r_{d-1}i_d1}\),
         
-        where \(\\{\\mathsf{x}^{(k)}\\}_{k=1}^d\) are the TT cores and \(\mathbf{R}=(1,R_1,...,R_{d-1},1)\) is the TT rank.
+        where \(\\{\\mathsf{x}^{(k)}\\}_{k=1}^d\) are the TT cores and \(\\mathbf{R}=(1,R_1,...,R_{d-1},1)\) is the TT rank.
         Using the constructor, a TT decomposition of a tensor can be computed. The TT cores are stored as a list in `torchtt.TT.cores`.   
         This class implements basic operators such as `+,-,*,/,@,**` (add, subtract, elementwise multiplication, elementwise division, matrix vector product and Kronecker product) between TT instances.
 
@@ -93,10 +142,10 @@ class TT():
         if source is None:
             # empty TT
             self.cores = []
-            self.M = []
-            self.N = []
-            self.R = [1,1]
-            self.is_ttm = False
+            self.__M = []
+            self.__N = []
+            self.__R = [1,1]
+            self.__is_ttm = False
             
         elif isinstance(source, list):
             # tt cores were passed directly
@@ -126,70 +175,70 @@ class TT():
                 raise InvalidArguments(&#34;Check the ranks and the mode size.&#34;)
             
             self.cores = source
-            self.R = R
-            self.N = N
+            self.__R = R
+            self.__N = N
             if len(M) == len(N):
-                self.M = M
-                self.is_ttm = True
+                self.__M = M
+                self.__is_ttm = True
             else:
-                self.is_ttm = False
-            self.shape = [ (m,n) for m,n in zip(self.M,self.N) ] if self.is_ttm else [n for n in self.N]     
+                self.__is_ttm = False
+            self.shape = [ (m,n) for m,n in zip(self.__M,self.__N) ] if self.__is_ttm else [n for n in self.N]     
 
         elif tn.is_tensor(source):
             if shape == None:
                 # no size is given. Deduce it from the tensor. No TT-matrix in this case.
-                self.N = list(source.shape)
-                if len(self.N)&gt;1:
-                    self.cores, self.R = to_tt(source,self.N,eps,rmax,is_sparse=False)
+                self.__N = list(source.shape)
+                if len(self.__N)&gt;1:
+                    self.cores, self.__R = to_tt(source,self.__N,eps,rmax,is_sparse=False)
                 else:    
-                    self.cores = [tn.reshape(source,[1,self.N[0],1])]
-                    self.R = [1,1]
-                self.is_ttm = False
+                    self.cores = [tn.reshape(source,[1,self.__N[0],1])]
+                    self.__R = [1,1]
+                self.__is_ttm = False
             elif isinstance(shape,list) and isinstance(shape[0],tuple):
                 # if the size contains tuples, we have a TT-matrix.
                 if len(shape) &gt; 1:
-                    self.M = [s[0] for s in shape]
-                    self.N = [s[1] for s in shape]
-                    self.cores, self.R = mat_to_tt(source, self.M, self.N, eps, rmax)
-                    self.is_ttm = True
+                    self.__M = [s[0] for s in shape]
+                    self.__N = [s[1] for s in shape]
+                    self.cores, self.__R = mat_to_tt(source, self.__M, self.__N, eps, rmax)
+                    self.__is_ttm = True
                 else:
-                    self.M = [shape[0][0]]
-                    self.N = [shape[0][1]]
-                    self.cores, self.R = [tn.reshape(source,[1,shape[0][0],shape[0][1],1])], [1,1]
-                    self.is_ttm = True
+                    self.__M = [shape[0][0]]
+                    self.__N = [shape[0][1]]
+                    self.cores, self.__R = [tn.reshape(source,[1,shape[0][0],shape[0][1],1])], [1,1]
+                    self.__is_ttm = True
             else:
                 # TT-decomposition with prescribed size
                 # perform reshape first
-                self.N = shape
-                self.cores, self.R = to_tt(tn.reshape(source,shape),self.N,eps,rmax,is_sparse=False)
-                self.is_ttm = False
-            self.shape = [ (m,n) for m,n in zip(self.M,self.N) ] if self.is_ttm else [n for n in self.N]     
+                self.__N = shape
+                self.cores, self.__R = to_tt(tn.reshape(source,shape),self.__N,eps,rmax,is_sparse=False)
+                self.__is_ttm = False
+            self.shape = [ (m,n) for m,n in zip(self.__M,self.__N) ] if self.__is_ttm else [n for n in self.N]     
 
         elif isinstance(source, np.ndarray):
             source = tn.tensor(source) 
                     
             if shape == None:
                 # no size is given. Deduce it from the tensor. No TT-matrix in this case.
-                self.N = list(source.shape)
-                if len(self.N)&gt;1:
-                    self.cores, self.R = to_tt(source,self.N,eps,rmax,is_sparse=False)
+                self.__N = list(source.shape)
+                if len(self.__N)&gt;1:
+                    self.cores, self.__R = to_tt(source,self.__N,eps,rmax,is_sparse=False)
                 else:    
-                    self.cores = [tn.reshape(source,[1,self.N[0],1])]
-                    self.R = [1,1]
-                self.is_ttm = False
+                    self.cores = [tn.reshape(source,[1,self.__N[0],1])]
+                    self.__R = [1,1]
+                self.__is_ttm = False
             elif isinstance(shape,list) and isinstance(shape[0],tuple):
                 # if the size contains tuples, we have a TT-matrix.
-                self.M = [s[0] for s in shape]
-                self.N = [s[1] for s in shape]
-                self.cores, self.R = mat_to_tt(source, self.M, self.N, eps, rmax)
-                self.is_ttm = True
+                self.__M = [s[0] for s in shape]
+                self.__N = [s[1] for s in shape]
+                self.cores, self.__R = mat_to_tt(source, self.__M, self.__N, eps, rmax)
+                self.__is_ttm = True
             else:
                 # TT-decomposition with prescribed size
                 # perform reshape first
-                self.N = shape
-                self.cores, self.R = to_tt(tn.reshape(source,shape),self.N,eps,rmax,is_sparse=False)
-                self.is_ttm = False
-            self.shape = [ (m,n) for m,n in zip(self.M,self.N) ] if self.is_ttm else [n for n in self.N]     
+                self.__N = shape
+                self.cores, self.__R = to_tt(tn.reshape(source,shape),self.__N,eps,rmax,is_sparse=False)
+                self.__is_ttm = False
+            self.shape = [ (m,n) for m,n in zip(self.__M,self.__N) ] if self.__is_ttm else [n for n in self.N]     
         else:
             raise NotImplementedError(&#34;Function only implemented for torch tensors, numpy arrays, list of cores as torch tensors and None.&#34;)
 
@@ -204,13 +253,8 @@ class TT():
             torchtt.TT: The TT-object. The TT-cores are on CUDA.
         &#34;&#34;&#34;
          
-        t = TT(None)
-        t.N = self.N.copy()
-        t.R = self.R.copy()
-        t.is_ttm = self.is_ttm
-        if self.is_ttm:
-            t.M = self.M.copy()
-        t.cores = [ c.cuda(device) for c in self.cores]
+        
+        t = TT([ c.cuda(device) for c in self.cores])
 
         return t
 
@@ -222,15 +266,8 @@ class TT():
             torchtt.TT: The TT-object on CPU.
         &#34;&#34;&#34;
 
-        t = TT(None)
-        t.N = self.N.copy()
-        t.R = self.R.copy()
-        t.is_ttm = self.is_ttm
-        if self.is_ttm:
-            t.M = self.M.copy()
-        t.cores = [ c.cpu() for c in self.cores]
-
-        return t
+        
+        return TT([ c.cpu() for c in self.cores])
 
     def is_cuda(self):
         &#34;&#34;&#34;
@@ -251,11 +288,11 @@ class TT():
             dtype (torch.dtype, optional): The desired dtype (torch.float64, torch.float32,...). If None is provided the dtype is not changed. Defaults to None.
         &#34;&#34;&#34;
         t = TT(None)
-        t.N = self.N.copy()
-        t.R = self.R.copy()
-        t.is_ttm = self.is_ttm
-        if self.is_ttm:
-            t.M = self.M.copy()
+        t.N = self.__N.copy()
+        t.R = self.__R.copy()
+        t.is_ttm = self.__is_ttm
+        if self.__is_ttm:
+            t.M = self.__M.copy()
         t.cores = [ c.to(device=device,dtype=dtype) for c in self.cores]
 
         return t
@@ -286,14 +323,14 @@ class TT():
         Returns:
             torch.tensor: the full tensor.
         &#34;&#34;&#34;
-        if self.is_ttm:
+        if self.__is_ttm:
             # the case of tt-matrix
             tfull = self.cores[0][0,:,:,:]
             for i in  range(1,len(self.cores)-1) :
                 tfull = tn.einsum(&#39;...i,ijkl-&gt;...jkl&#39;,tfull,self.cores[i])
-            if len(self.N) != 1:
+            if len(self.__N) != 1:
                 tfull = tn.einsum(&#39;...i,ijk-&gt;...jk&#39;,tfull,self.cores[-1][:,:,:,0])
-                tfull = tn.permute(tfull,list(np.arange(len(self.N))*2)+list(np.arange(len(self.N))*2+1))
+                tfull = tn.permute(tfull,list(np.arange(len(self.__N))*2)+list(np.arange(len(self.N))*2+1))
             else:
                 tfull = tfull[:,:,0]
         else:
@@ -301,7 +338,7 @@ class TT():
             tfull = self.cores[0][0,:,:]
             for i in  range(1,len(self.cores)-1) :
                 tfull = tn.einsum(&#39;...i,ijk-&gt;...jk&#39;,tfull,self.cores[i])
-            if len(self.N) != 1:
+            if len(self.__N) != 1:
                 tfull = tn.einsum(&#39;...i,ij-&gt;...j&#39;,tfull,self.cores[-1][:,:,0])
             else:
                 tfull = tn.squeeze(tfull)
@@ -326,22 +363,22 @@ class TT():
             string: the string representation of a torchtt.TT
         &#34;&#34;&#34;
         
-        if self.is_ttm:
+        if self.__is_ttm:
             output = &#39;TT-matrix&#39; 
             output += &#39; with sizes and ranks:\n&#39;
-            output += &#39;M = &#39; + str(self.M) + &#39;\nN = &#39; + str(self.N) + &#39;\n&#39;
-            output += &#39;R = &#39; + str(self.R) + &#39;\n&#39;
+            output += &#39;M = &#39; + str(self.__M) + &#39;\nN = &#39; + str(self.__N) + &#39;\n&#39;
+            output += &#39;R = &#39; + str(self.__R) + &#39;\n&#39;
             output += &#39;Device: &#39;+str(self.cores[0].device)+&#39;, dtype: &#39;+str(self.cores[0].dtype)+&#39;\n&#39;
             entries = sum([tn.numel(c)  for c in self.cores])
-            output += &#39;#entries &#39; + str(entries) +&#39; compression &#39; + str(entries/np.prod(np.array(self.N,dtype=np.float64)*np.array(self.M,dtype=np.float64))) +  &#39;\n&#39;
+            output += &#39;#entries &#39; + str(entries) +&#39; compression &#39; + str(entries/np.prod(np.array(self.__N,dtype=np.float64)*np.array(self.__M,dtype=np.float64))) +  &#39;\n&#39;
         else:
             output = &#39;TT&#39;
             output += &#39; with sizes and ranks:\n&#39;
-            output += &#39;N = &#39; + str(self.N) + &#39;\n&#39;
-            output += &#39;R = &#39; + str(self.R) + &#39;\n\n&#39;
+            output += &#39;N = &#39; + str(self.__N) + &#39;\n&#39;
+            output += &#39;R = &#39; + str(self.__R) + &#39;\n\n&#39;
             output += &#39;Device: &#39;+str(self.cores[0].device)+&#39;, dtype: &#39;+str(self.cores[0].dtype)+&#39;\n&#39;
             entries = sum([tn.numel(c) for c in self.cores])
-            output += &#39;#entries &#39; + str(entries) +&#39; compression &#39;  + str(entries/np.prod(np.array(self.N,dtype=np.float64))) + &#39;\n&#39;
+            output += &#39;#entries &#39; + str(entries) +&#39; compression &#39;  + str(entries/np.prod(np.array(self.__N,dtype=np.float64))) + &#39;\n&#39;
         
         return output
     
@@ -380,14 +417,14 @@ class TT():
             # the second term is a scalar
             cores =  []
             
-            for i in range(len(self.N)):
-                if self.is_ttm:
-                    pad1 = (0,0 if i == len(self.N)-1 else 1 , 0,0 , 0,0 , 0,0 if i==0 else 1)
-                    pad2 = (0 if i == len(self.N)-1 else self.R[i+1],0 , 0,0 , 0,0 , 0 if i==0 else self.R[i],0)
+            for i in range(len(self.__N)):
+                if self.__is_ttm:
+                    pad1 = (0,0 if i == len(self.__N)-1 else 1 , 0,0 , 0,0 , 0,0 if i==0 else 1)
+                    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0,0 , 0 if i==0 else self.R[i],0)
                     othr = tn.ones([1,1,1,1],dtype=self.cores[i].dtype) * (other if i ==0 else 1)
                 else:
-                    pad1 = (0,0 if i == len(self.N)-1 else 1 , 0,0 , 0,0 if i==0 else 1)
-                    pad2 = (0 if i == len(self.N)-1 else self.R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
+                    pad1 = (0,0 if i == len(self.__N)-1 else 1 , 0,0 , 0,0 if i==0 else 1)
+                    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
                     othr = tn.ones([1,1,1],dtype=self.cores[i].dtype) * (other if i ==0 else 1)
                 
 
@@ -397,28 +434,28 @@ class TT():
             result = TT(cores)
         elif isinstance(other,TT):
         #second term is TT object 
-            if self.is_ttm and other.is_ttm:
+            if self.__is_ttm and other.is_ttm:
                 # both are TT-matrices
-                if self.M != self.M or self.N != self.N:
+                if self.__M != self.M or self.__N != self.N:
                     raise ShapeMismatch(&#39;Dimension mismatch.&#39;)
                     
                 cores = []
-                for i in range(len(self.N)):
-                    pad1 = (0,0 if i == len(self.N)-1 else other.R[i+1], 0,0 , 0,0 , 0,0 if i==0 else other.R[i])
-                    pad2 = (0 if i == len(self.N)-1 else self.R[i+1],0 , 0,0 , 0,0 , 0 if i==0 else self.R[i],0)
+                for i in range(len(self.__N)):
+                    pad1 = (0,0 if i == len(self.__N)-1 else other.R[i+1], 0,0 , 0,0 , 0,0 if i==0 else other.R[i])
+                    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0,0 , 0 if i==0 else self.R[i],0)
                     cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(other.cores[i],pad2))
                     
                 result = TT(cores)
                 
-            elif self.is_ttm==False and other.is_ttm==False:
+            elif self.__is_ttm==False and other.is_ttm==False:
                 # normal tensors in TT format.
-                if self.N != self.N:
+                if self.__N != self.N:
                     raise ShapeMismatch(&#39;Dimension mismatch.&#39;)
                     
                 cores = []
-                for i in range(len(self.N)):
-                    pad1 = (0,0 if i == len(self.N)-1 else other.R[i+1] , 0,0 , 0,0 if i==0 else other.R[i])
-                    pad2 = (0 if i == len(self.N)-1 else self.R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
+                for i in range(len(self.__N)):
+                    pad1 = (0,0 if i == len(self.__N)-1 else other.R[i+1] , 0,0 , 0,0 if i==0 else other.R[i])
+                    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
                     cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(other.cores[i],pad2))
                     
                     
@@ -469,42 +506,42 @@ class TT():
             # the second term is a scalar
             cores =  []
             
-            for i in range(len(self.N)):
-                if self.is_ttm:
-                    pad1 = (0,0 if i == len(self.N)-1 else 1 , 0,0 , 0,0 , 0,0 if i==0 else 1)
-                    pad2 = (0 if i == len(self.N)-1 else self.R[i+1],0 , 0,0 , 0,0 , 0 if i==0 else self.R[i],0)
+            for i in range(len(self.__N)):
+                if self.__is_ttm:
+                    pad1 = (0,0 if i == len(self.__N)-1 else 1 , 0,0 , 0,0 , 0,0 if i==0 else 1)
+                    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0,0 , 0 if i==0 else self.R[i],0)
                     othr = tn.ones([1,1,1,1],dtype=self.cores[i].dtype) * (-other if i ==0 else 1)
                 else:
-                    pad1 = (0,0 if i == len(self.N)-1 else 1 , 0,0 , 0,0 if i==0 else 1)
-                    pad2 = (0 if i == len(self.N)-1 else self.R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
+                    pad1 = (0,0 if i == len(self.__N)-1 else 1 , 0,0 , 0,0 if i==0 else 1)
+                    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
                     othr = tn.ones([1,1,1],dtype=self.cores[i].dtype) * (-other if i ==0 else 1)
                 cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(othr,pad2))
             result = TT(cores)
 
         elif isinstance(other,TT):
         #second term is TT object 
-            if self.is_ttm and other.is_ttm:
+            if self.__is_ttm and other.is_ttm:
                 # both are TT-matrices
-                if self.M != self.M or self.N != self.N:
+                if self.__M != self.M or self.__N != self.N:
                     raise ShapeMismatch(&#39;Both dimensions of the TT matrix should be equal.&#39;)
                     
                 cores = []
-                for i in range(len(self.N)):
-                    pad1 = (0,0 if i == len(self.N)-1 else other.R[i+1] , 0,0 , 0,0 , 0,0 if i==0 else other.R[i])
-                    pad2 = (0 if i == len(self.N)-1 else self.R[i+1],0 , 0,0 , 0,0 , 0 if i==0 else self.R[i],0)
+                for i in range(len(self.__N)):
+                    pad1 = (0,0 if i == len(self.__N)-1 else other.R[i+1] , 0,0 , 0,0 , 0,0 if i==0 else other.R[i])
+                    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0,0 , 0 if i==0 else self.R[i],0)
                     cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(-other.cores[i] if i==0 else other.cores[i],pad2))
                     
                 result = TT(cores)
                 
-            elif self.is_ttm==False and other.is_ttm==False:
+            elif self.__is_ttm==False and other.is_ttm==False:
                 # normal tensors in TT format.
-                if self.N != self.N:
+                if self.__N != self.N:
                     raise ShapeMismatch(&#39;Dimension mismatch.&#39;)
                     
                 cores = []
-                for i in range(len(self.N)):
-                    pad1 = (0,0 if i == len(self.N)-1 else other.R[i+1] , 0,0 , 0,0 if i==0 else other.R[i])
-                    pad2 = (0 if i == len(self.N)-1 else self.R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
+                for i in range(len(self.__N)):
+                    pad1 = (0,0 if i == len(self.__N)-1 else other.R[i+1] , 0,0 , 0,0 if i==0 else other.R[i])
+                    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
                     cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(-other.cores[i] if i==0 else other.cores[i],pad2))
                     
                     
@@ -524,9 +561,10 @@ class TT():
         Elementwise multiplication in the TT format.
         This implements the &#34;*&#34; operator when the left operand is not torchtt.TT.
         Following are supported:
-         - TT tensor and TT tensor
-         - TT matrix and TT matrix
-         - TT tensor and scalar(int, float or torch.tensor scalar)
+
+         * TT tensor and TT tensor
+         * TT matrix and TT matrix
+         * TT tensor and scalar(int, float or torch.tensor scalar)
 
         Args:
             other (torchtt.TT or float or int or torch.tensor with 1 element): the second operand.
@@ -565,24 +603,24 @@ class TT():
        
         # elementwise multiplication
         if isinstance(other, TT):
-            if self.is_ttm and other.is_ttm:
-                if self.N != other.N or self.M != other.M:
+            if self.__is_ttm and other.is_ttm:
+                if self.__N != other.N or self.__M != other.M:
                     raise ShapeMismatch(&#39;Shapes must be equal.&#39;) 
                     
                 cores_new = []
                 
                 for i in range(len(self.cores)):
-                    core = tn.reshape(tn.einsum(&#39;aijb,mijn-&gt;amijbn&#39;,self.cores[i],other.cores[i]),[self.R[i]*other.R[i],self.M[i],self.N[i],self.R[i+1]*other.R[i+1]])
+                    core = tn.reshape(tn.einsum(&#39;aijb,mijn-&gt;amijbn&#39;,self.cores[i],other.cores[i]),[self.__R[i]*other.R[i],self.__M[i],self.__N[i],self.R[i+1]*other.R[i+1]])
                     cores_new.append(core)
     
-            elif self.is_ttm == False and other.is_ttm == False:
-                if self.N != other.N:
+            elif self.__is_ttm == False and other.is_ttm == False:
+                if self.__N != other.N:
                     raise ShapeMismatch(&#39;Shapes must be equal.&#39;) 
                     
                 cores_new = []
                 
                 for i in range(len(self.cores)):
-                    core = tn.reshape(tn.einsum(&#39;aib,min-&gt;amibn&#39;,self.cores[i],other.cores[i]),[self.R[i]*other.R[i],self.N[i],self.R[i+1]*other.R[i+1]])
+                    core = tn.reshape(tn.einsum(&#39;aib,min-&gt;amibn&#39;,self.cores[i],other.cores[i]),[self.__R[i]*other.R[i],self.__N[i],self.R[i+1]*other.R[i+1]])
                     cores_new.append(core)
             else:
                 raise IncompatibleTypes(&#39;Second operand must be the same type as the fisrt (both should be either TT matrices or TT tensors).&#39;)
@@ -615,15 +653,15 @@ class TT():
             torchtt.TT or torch.tensor: the result. Can be full tensor if the second operand is full tensor.
         &#34;&#34;&#34;
      
-        if self.is_ttm and tn.is_tensor(other):
-            if self.N != list(other.shape)[-len(self.N):]:
+        if self.__is_ttm and tn.is_tensor(other):
+            if self.__N != list(other.shape)[-len(self.N):]:
                 raise ShapeMismatch(&#34;Shapes do not match.&#34;)
             result = dense_matvec(self.cores,other) 
             return result
 
-        elif self.is_ttm and other.is_ttm == False:
+        elif self.__is_ttm and other.is_ttm == False:
             # matrix-vector multiplication
-            if self.N != other.N:
+            if self.__N != other.N:
                 raise ShapeMismatch(&#34;Shapes do not match.&#34;)
                 
             cores_new = []
@@ -633,9 +671,9 @@ class TT():
                 cores_new.append(core)
             
             
-        elif self.is_ttm and other.is_ttm:
+        elif self.__is_ttm and other.is_ttm:
             # multiplication between 2 TT-matrices
-            if self.N != other.M:
+            if self.__N != other.M:
                 raise ShapeMismatch(&#34;Shapes do not match.&#34;)
                 
             cores_new = []
@@ -643,9 +681,9 @@ class TT():
             for i in range(len(self.cores)):
                 core = tn.reshape(tn.einsum(&#39;ijkl,mknp-&gt;imjnlp&#39;,self.cores[i],other.cores[i]),[self.cores[i].shape[0]*other.cores[i].shape[0],self.cores[i].shape[1],other.cores[i].shape[2],self.cores[i].shape[3]*other.cores[i].shape[3]])
                 cores_new.append(core)
-        elif self.is_ttm == False and other.is_ttm:
+        elif self.__is_ttm == False and other.is_ttm:
             # vector-matrix multiplication
-            if self.N != other.M:
+            if self.__N != other.M:
                 raise ShapeMismatch(&#34;Shapes do not match.&#34;)
                 
             cores_new = []
@@ -679,7 +717,7 @@ class TT():
         
         if not isinstance(other,TT):
             raise InvalidArguments(&#39;Second operand has to be TT object.&#39;)
-        if not self.is_ttm or other.is_ttm:
+        if not self.__is_ttm or other.is_ttm:
             raise IncompatibleTypes(&#39;First operand should be a TT matrix and second a TT vector.&#39;)
             
         return dmrg_matvec(self, other, eps = eps, verb = verb, nswp = nswp)
@@ -702,7 +740,7 @@ class TT():
             torch.tensor: the values of the tensor
 
         &#34;&#34;&#34;
-        result = apply_mask(self.cores,self.R,indices)
+        result = apply_mask(self.cores,self.__R,indices)
         return result
 
     def __truediv__(self,other):
@@ -730,9 +768,9 @@ class TT():
             cores_new[0] /= other
             result = TT(cores_new)
         elif isinstance(other,TT):
-            if self.is_ttm != other.is_ttm:
+            if self.__is_ttm != other.is_ttm:
                 raise IncompatibleTypes(&#39;Operands should be either TT or TTM.&#39;)
-            if self.N != other.N or (self.is_ttm and self.M != other.M):
+            if self.__N != other.N or (self.__is_ttm and self.__M != other.M):
                 raise ShapeMismatch(&#34;Both operands should have the same shape.&#34;)
             result = TT(amen_divide(other,self,50,None,1e-12,500,verbose=False))       
         else:
@@ -763,7 +801,7 @@ class TT():
             torchtt.TT: the result.
         &#34;&#34;&#34;
         if isinstance(other,int) or isinstance(other,float) or ( tn.is_tensor(other) and other.numel()==1):
-            o = ones(self.N,dtype=self.cores[0].dtype,device = self.cores[0].device)
+            o = ones(self.__N,dtype=self.cores[0].dtype,device = self.cores[0].device)
             o.cores[0] *= other
             cores_new = amen_divide(self,o,50,None,1e-12,500,verbose=False)
         else:
@@ -775,15 +813,16 @@ class TT():
     
     def t(self):
         &#34;&#34;&#34;
-        Returns the transpoise of a given TT matrix.
+        Returns the transpose of a given TT matrix.
+                
                     
-        Returns: 
+        Returns:
             torchtt.TT: the transpose.
             
         Raises:
             InvalidArguments: Has to be TT matrix.
         &#34;&#34;&#34; 
-        if not self.is_ttm:
+        if not self.__is_ttm:
             raise InvalidArguments(&#39;Has to be TT matrix.&#39;)
             
         cores_new = [tn.permute(c,[0,2,1,3]) for c in self.cores]
@@ -805,13 +844,13 @@ class TT():
         if any([c.requires_grad or c.grad_fn != None for c in self.cores]):
             norm = tn.tensor([[1.0]],dtype = self.cores[0].dtype, device=self.cores[0].device)
             
-            if self.is_ttm:
-                for i in range(len(self.N)):
+            if self.__is_ttm:
+                for i in range(len(self.__N)):
                     norm = tn.einsum(&#39;ab,aijm,bijn-&gt;mn&#39;,norm, self.cores[i], self.cores[i])
                 norm = tn.squeeze(norm)
             else:
                            
-                for i in range(len(self.N)):
+                for i in range(len(self.__N)):
                     norm = tn.einsum(&#39;ab,aim,bin-&gt;mn&#39;,norm, self.cores[i], self.cores[i])
                 norm = tn.squeeze(norm)
             if squared:
@@ -824,7 +863,7 @@ class TT():
 
             core_now = self.cores[0]
             for i in range(d-1):
-                if self.is_ttm:
+                if self.__is_ttm:
                     mode_shape = [core_now.shape[1],core_now.shape[2]]
                     core_now = tn.reshape(core_now,[core_now.shape[0]*core_now.shape[1]*core_now.shape[2],-1])
                 else:
@@ -880,26 +919,26 @@ class TT():
              
         if index == None: 
             # the case we need to sum over all modes
-            if self.is_ttm:
+            if self.__is_ttm:
                 C = tn.reduce_sum(self.cores[0],[0,1,2])
-                for i in range(1,len(self.N)):
+                for i in range(1,len(self.__N)):
                     C = tn.sum(tn.einsum(&#39;i,ijkl-&gt;jkl&#39;,C,self.cores[i]),[0,1])
                 S = tn.sum(C)
             else:
                 C = tn.sum(self.cores[0],[0,1])
-                for i in range(1,len(self.N)):
+                for i in range(1,len(self.__N)):
                     C = tn.sum(tn.einsum(&#39;i,ijk-&gt;jk&#39;,C,self.cores[i]),0)
                 S = tn.sum(C)
         else:
             # we return the TT-tensor with summed indices
             cores = []
             
-            if self.is_ttm:
+            if self.__is_ttm:
                 tmp = [1,2]
             else:
                 tmp = [1]
                 
-            for i in range(len(self.N)):
+            for i in range(len(self.__N)):
                 if i in index:
                     C = tn.sum(self.cores[i], tmp, keepdim = True)
                     cores.append(C)
@@ -935,19 +974,19 @@ class TT():
         
         # TODO: implement a version that reduces the rank also. by spliting the cores with modes 1 into 2 using the SVD.
         
-        if self.is_ttm:
+        if self.__is_ttm:
             cores_new = []
             
-            for i in range(len(self.N)):
+            for i in range(len(self.__N)):
                 
                 if self.cores[i].shape[1] == 1 and self.cores[i].shape[2] == 1 and not i in exclude:
-                    if self.cores[i].shape[0] &gt; self.cores[i].shape[3] or i == len(self.N)-1:
+                    if self.cores[i].shape[0] &gt; self.cores[i].shape[3] or i == len(self.__N)-1:
                         # multiply to the left
                         if len(cores_new) &gt; 0:
                             cores_new[-1] = tn.einsum(&#39;ijok,kl-&gt;ijol&#39;,cores_new[-1], self.cores[i][:,0,0,:])
                         else: 
                             # there is no core to the left. Multiply right.
-                            if i != len(self.N)-1:
+                            if i != len(self.__N)-1:
                                 self.cores[i+1] = tn.einsum(&#39;ij,jkml-&gt;ikml&#39;, self.cores[i][:,0,0,:],self.cores[i+1])
                             else:
                                 cores_new.append(self.cores[i])
@@ -960,27 +999,27 @@ class TT():
                     cores_new.append(self.cores[i])
                     
             # update the cores and ranks and shape
-            self.N = []
-            self.M = []
-            self.R = [1]
+            self.__N = []
+            self.__M = []
+            self.__R = [1]
             for i in range(len(cores_new)):
-                self.N.append(cores_new[i].shape[2])
-                self.M.append(cores_new[i].shape[1])
-                self.R.append(cores_new[i].shape[3])
+                self.__N.append(cores_new[i].shape[2])
+                self.__M.append(cores_new[i].shape[1])
+                self.__R.append(cores_new[i].shape[3])
             self.cores = cores_new
         else:
             cores_new = []
             
-            for i in range(len(self.N)):
+            for i in range(len(self.__N)):
                 
                 if self.cores[i].shape[1] == 1 and not i in exclude:
-                    if self.cores[i].shape[0] &gt; self.cores[i].shape[2] or i == len(self.N)-1:
+                    if self.cores[i].shape[0] &gt; self.cores[i].shape[2] or i == len(self.__N)-1:
                         # multiply to the left
                         if len(cores_new) &gt; 0:
                             cores_new[-1] = tn.einsum(&#39;ijk,kl-&gt;ijl&#39;,cores_new[-1], self.cores[i][:,0,:])
                         else: 
                             # there is no core to the left. Multiply right.
-                            if i != len(self.N)-1:
+                            if i != len(self.__N)-1:
                                 self.cores[i+1] = tn.einsum(&#39;ij,jkl-&gt;ikl&#39;, self.cores[i][:,0,:],self.cores[i+1])
                             else:
                                 cores_new.append(self.cores[i])
@@ -995,15 +1034,15 @@ class TT():
             
             
             # update the cores and ranks and shape
-            self.N = []
-            self.R = [1]
+            self.__N = []
+            self.__R = [1]
             for i in range(len(cores_new)):
-                self.N.append(cores_new[i].shape[1])
-                self.R.append(cores_new[i].shape[2])
+                self.__N.append(cores_new[i].shape[1])
+                self.__R.append(cores_new[i].shape[2])
             self.cores = cores_new
                     
                     
-        self.shape = [ (m,n) for m,n in zip(self.M,self.N) ] if self.is_ttm else [n for n in self.N] 
+        self.shape = [ (m,n) for m,n in zip(self.__M,self.__N) ] if self.__is_ttm else [n for n in self.N] 
         
     def __getitem__(self,index):
         &#34;&#34;&#34;
@@ -1039,7 +1078,7 @@ class TT():
             # check if more than one Ellipsis are to be found.
             if index.count(Ellipsis) &gt; 0:
                 raise NotImplementedError(&#39;Ellipsis are not supported.&#39;)
-            if self.is_ttm:
+            if self.__is_ttm:
                 
                     
                 cores_new = []
@@ -1056,7 +1095,7 @@ class TT():
                         cores_new.append(tmp)
                         exclude.append(i)
                     elif isinstance(idx1, int) and isinstance(idx2,int):
-                        cores_new.append(tn.reshape(self.cores[k][:,idx1,idx2,:],[self.R[k],1,1,self.R[k+1]]))
+                        cores_new.append(tn.reshape(self.cores[k][:,idx1,idx2,:],[self.__R[k],1,1,self.R[k+1]]))
                         k+=1
                     else:
                         raise InvalidArguments(&#34;Slice carguments not valid. They have to be either int, slice or None.&#34;)
@@ -1064,7 +1103,7 @@ class TT():
                     raise InvalidArguments(&#39;Slice size is invalid.&#39;)
                 
             else:
-                # if len(index) != len(self.N):
+                # if len(index) != len(self.__N):
                 #    raise InvalidArguments(&#39;Slice size is invalid.&#39;)
                     
                 cores_new = []
@@ -1079,7 +1118,7 @@ class TT():
                         cores_new.append(tmp)
                         exclude.append(i)
                     elif isinstance(idx, int):
-                        cores_new.append(tn.reshape(self.cores[k][:,idx,:],[self.R[k],-1,self.R[k+1]]))
+                        cores_new.append(tn.reshape(self.cores[k][:,idx,:],[self.__R[k],-1,self.R[k+1]]))
                         k+=1
                     else:
                         raise InvalidArguments(&#34;Slice carguments not valid. They have to be either int, slice or None.&#34;)
@@ -1098,7 +1137,7 @@ class TT():
             
         elif isinstance(index,int):
             # tensor is 1d and one element is retrived
-            if len(self.N) == 1:
+            if len(self.__N) == 1:
                 sliced = self.cores[0][0,index,0]
             else:
                 raise InvalidArguments(&#39;Invalid slice. Tensor is not 1d.&#39;)
@@ -1110,7 +1149,7 @@ class TT():
             
         elif isinstance(index,slice):
             # tensor is 1d and one slice is extracted
-            if len(self.N) == 1:
+            if len(self.__N) == 1:
                 sliced = TT(self.cores[0][:,index,:])
             else:
                 raise InvalidArguments(&#39;Invalid slice. Tensor is not 1d.&#39;)
@@ -1209,10 +1248,10 @@ class TT():
         
         # rmax is not list
         if not isinstance(rmax,list):
-            rmax = [1] + len(self.N)*[rmax] + [1]
+            rmax = [1] + len(self.__N)*[rmax] + [1]
             
         # call the round function
-        tt_cores, R = round_tt(self.cores, self.R.copy(), eps, rmax,self.is_ttm)
+        tt_cores, R = round_tt(self.cores, self.__R.copy(), eps, rmax,self.__is_ttm)
         # creates a new TT and return it
         T = TT(tt_cores)
                
@@ -1248,13 +1287,13 @@ class TT():
         &#34;&#34;&#34;
        
         cores_new = []
-        if self.is_ttm:
+        if self.__is_ttm:
             shape_new = []
-            for i in range(len(self.N)):
-                if self.N[i]!=self.M[i]:
+            for i in range(len(self.__N)):
+                if self.__N[i]!=self.__M[i]:
                     raise ShapeMismatch(&#39;Only quadratic TTM can be tranformed to QTT.&#39;)
-                if self.N[i]==mode_size**int(math.log(self.N[i],mode_size)):
-                    shape_new += [(mode_size,mode_size)]*int(math.log(self.N[i],mode_size))
+                if self.__N[i]==mode_size**int(math.log(self.N[i],mode_size)):
+                    shape_new += [(mode_size,mode_size)]*int(math.log(self.__N[i],mode_size))
                 else:
                     raise ShapeMismatch(&#39;Reshaping error: check if the dimensions are powers of the desired mode size:\r\ncore size &#39;+str(list(self.cores[i].shape))+&#39; cannot be reshaped.&#39;)
                 
@@ -1298,7 +1337,7 @@ class TT():
         core = None
         cores_new = []
         
-        if self.is_ttm:
+        if self.__is_ttm:
             pass
         else:
             k = 0
@@ -1335,7 +1374,7 @@ class TT():
         Returns:
             torchtt.TT: the result
         &#34;&#34;&#34;
-        if self.is_ttm:
+        if self.__is_ttm:
             raise IncompatibleTypes(&#34;n-model product works only with TT-tensors and not TT matrices.&#34;)
     
         if isinstance(factor_matrices,list) and isinstance(mode, list):
@@ -1343,12 +1382,12 @@ class TT():
             for i in range(len(factor_matrices)):
                 if cores_new[mode[i]].shape[1] != factor_matrices[i].shape[1]:
                     raise ShapeMismatch(&#34;The n-th mode of the tensor must be equal with the 2nd mode of the matrix.&#34;)
-                cores_new[mode[i]] =  tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode[i]],factor_matrices[i]) # if self.is_ttm else tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode[i]],factor_matrices[i]) 
+                cores_new[mode[i]] =  tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode[i]],factor_matrices[i]) # if self.__is_ttm else tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode[i]],factor_matrices[i]) 
         elif isinstance(mode, int) and tn.is_tensor(factor_matrices):
             cores_new = [c.clone() for c in self.cores]
             if cores_new[mode].shape[1] != factor_matrices.shape[1]:
                 raise ShapeMismatch(&#34;The n-th mode of the tensor must be equal with the 2nd mode of the matrix.&#34;)
-            cores_new[mode] =  tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode],factor_matrices) # if self.is_ttm else tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode],factor_matrices) 
+            cores_new[mode] =  tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode],factor_matrices) # if self.__is_ttm else tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode],factor_matrices) 
         else:
             raise InvalidArguments(&#39;Invalid arguments.&#39;)
         
@@ -2821,6 +2860,55 @@ print(Att)
 </summary>
 <pre><code class="python">class TT():
 
+    cores : list[tn.tensor]
+    &#34;&#34;&#34; The TT cores as a list of `torch.tensor` instances.&#34;&#34;&#34;
+    
+    @property
+    def is_ttm(self):
+        &#34;&#34;&#34;
+        Check whether the instance is a TT operator or not.
+
+        Returns:
+            bool: the flag.
+        &#34;&#34;&#34;
+        return self.__is_ttm
+
+    @property 
+    def M(self):
+        &#34;&#34;&#34;
+        Return the &#34;row&#34; shape in case of TT matrices.
+
+        Raises:
+            IncompatibleTypes: The field is_ttm is defined only for TT matrices.
+
+        Returns:
+            list[int]: the shape.
+        &#34;&#34;&#34;
+        if not self.__is_ttm:
+            raise IncompatibleTypes(&#34;The field is_ttm is defined only for TT matrices.&#34;)
+        return self.__M.copy()
+
+    @property 
+    def N(self):
+        &#34;&#34;&#34;
+        Return the shape of a tensor or the &#34;column&#34; shape of a TT operator.
+
+        Returns:
+            list[int]: the shape.
+        &#34;&#34;&#34;
+        return self.__N.copy()
+    
+    @property
+    def R(self):
+        &#34;&#34;&#34;
+        The rank of the TT decomposition.
+        It&#39;s length should be `len(R)==len(N)+1`.
+
+        Returns:
+            list[int]: the rank.
+        &#34;&#34;&#34;
+        return self.__R.copy()
+
     def __init__(self, source, shape=None, eps=1e-10, rmax=10000):
         &#34;&#34;&#34;
         Constructor of the TT class. Can convert full tensor in the TT-format (from `torch.tensor` or `numpy.array`).
@@ -2832,7 +2920,7 @@ print(Att)
         
         \(\\mathsf{x}=\\sum\\limits_{r_1...r_{d-1}=1}^{R_1,...,R_{d-1}} \\mathsf{x}^{(1)}_{1i_1r_1}\\cdots\\mathsf{x}^{(d)}_{r_{d-1}i_d1}\),
         
-        where \(\\{\\mathsf{x}^{(k)}\\}_{k=1}^d\) are the TT cores and \(\mathbf{R}=(1,R_1,...,R_{d-1},1)\) is the TT rank.
+        where \(\\{\\mathsf{x}^{(k)}\\}_{k=1}^d\) are the TT cores and \(\\mathbf{R}=(1,R_1,...,R_{d-1},1)\) is the TT rank.
         Using the constructor, a TT decomposition of a tensor can be computed. The TT cores are stored as a list in `torchtt.TT.cores`.   
         This class implements basic operators such as `+,-,*,/,@,**` (add, subtract, elementwise multiplication, elementwise division, matrix vector product and Kronecker product) between TT instances.
 
@@ -2866,10 +2954,10 @@ print(Att)
         if source is None:
             # empty TT
             self.cores = []
-            self.M = []
-            self.N = []
-            self.R = [1,1]
-            self.is_ttm = False
+            self.__M = []
+            self.__N = []
+            self.__R = [1,1]
+            self.__is_ttm = False
             
         elif isinstance(source, list):
             # tt cores were passed directly
@@ -2899,70 +2987,70 @@ print(Att)
                 raise InvalidArguments(&#34;Check the ranks and the mode size.&#34;)
             
             self.cores = source
-            self.R = R
-            self.N = N
+            self.__R = R
+            self.__N = N
             if len(M) == len(N):
-                self.M = M
-                self.is_ttm = True
+                self.__M = M
+                self.__is_ttm = True
             else:
-                self.is_ttm = False
-            self.shape = [ (m,n) for m,n in zip(self.M,self.N) ] if self.is_ttm else [n for n in self.N]     
+                self.__is_ttm = False
+            self.shape = [ (m,n) for m,n in zip(self.__M,self.__N) ] if self.__is_ttm else [n for n in self.N]     
 
         elif tn.is_tensor(source):
             if shape == None:
                 # no size is given. Deduce it from the tensor. No TT-matrix in this case.
-                self.N = list(source.shape)
-                if len(self.N)&gt;1:
-                    self.cores, self.R = to_tt(source,self.N,eps,rmax,is_sparse=False)
+                self.__N = list(source.shape)
+                if len(self.__N)&gt;1:
+                    self.cores, self.__R = to_tt(source,self.__N,eps,rmax,is_sparse=False)
                 else:    
-                    self.cores = [tn.reshape(source,[1,self.N[0],1])]
-                    self.R = [1,1]
-                self.is_ttm = False
+                    self.cores = [tn.reshape(source,[1,self.__N[0],1])]
+                    self.__R = [1,1]
+                self.__is_ttm = False
             elif isinstance(shape,list) and isinstance(shape[0],tuple):
                 # if the size contains tuples, we have a TT-matrix.
                 if len(shape) &gt; 1:
-                    self.M = [s[0] for s in shape]
-                    self.N = [s[1] for s in shape]
-                    self.cores, self.R = mat_to_tt(source, self.M, self.N, eps, rmax)
-                    self.is_ttm = True
+                    self.__M = [s[0] for s in shape]
+                    self.__N = [s[1] for s in shape]
+                    self.cores, self.__R = mat_to_tt(source, self.__M, self.__N, eps, rmax)
+                    self.__is_ttm = True
                 else:
-                    self.M = [shape[0][0]]
-                    self.N = [shape[0][1]]
-                    self.cores, self.R = [tn.reshape(source,[1,shape[0][0],shape[0][1],1])], [1,1]
-                    self.is_ttm = True
+                    self.__M = [shape[0][0]]
+                    self.__N = [shape[0][1]]
+                    self.cores, self.__R = [tn.reshape(source,[1,shape[0][0],shape[0][1],1])], [1,1]
+                    self.__is_ttm = True
             else:
                 # TT-decomposition with prescribed size
                 # perform reshape first
-                self.N = shape
-                self.cores, self.R = to_tt(tn.reshape(source,shape),self.N,eps,rmax,is_sparse=False)
-                self.is_ttm = False
-            self.shape = [ (m,n) for m,n in zip(self.M,self.N) ] if self.is_ttm else [n for n in self.N]     
+                self.__N = shape
+                self.cores, self.__R = to_tt(tn.reshape(source,shape),self.__N,eps,rmax,is_sparse=False)
+                self.__is_ttm = False
+            self.shape = [ (m,n) for m,n in zip(self.__M,self.__N) ] if self.__is_ttm else [n for n in self.N]     
 
         elif isinstance(source, np.ndarray):
             source = tn.tensor(source) 
                     
             if shape == None:
                 # no size is given. Deduce it from the tensor. No TT-matrix in this case.
-                self.N = list(source.shape)
-                if len(self.N)&gt;1:
-                    self.cores, self.R = to_tt(source,self.N,eps,rmax,is_sparse=False)
+                self.__N = list(source.shape)
+                if len(self.__N)&gt;1:
+                    self.cores, self.__R = to_tt(source,self.__N,eps,rmax,is_sparse=False)
                 else:    
-                    self.cores = [tn.reshape(source,[1,self.N[0],1])]
-                    self.R = [1,1]
-                self.is_ttm = False
+                    self.cores = [tn.reshape(source,[1,self.__N[0],1])]
+                    self.__R = [1,1]
+                self.__is_ttm = False
             elif isinstance(shape,list) and isinstance(shape[0],tuple):
                 # if the size contains tuples, we have a TT-matrix.
-                self.M = [s[0] for s in shape]
-                self.N = [s[1] for s in shape]
-                self.cores, self.R = mat_to_tt(source, self.M, self.N, eps, rmax)
-                self.is_ttm = True
+                self.__M = [s[0] for s in shape]
+                self.__N = [s[1] for s in shape]
+                self.cores, self.__R = mat_to_tt(source, self.__M, self.__N, eps, rmax)
+                self.__is_ttm = True
             else:
                 # TT-decomposition with prescribed size
                 # perform reshape first
-                self.N = shape
-                self.cores, self.R = to_tt(tn.reshape(source,shape),self.N,eps,rmax,is_sparse=False)
-                self.is_ttm = False
-            self.shape = [ (m,n) for m,n in zip(self.M,self.N) ] if self.is_ttm else [n for n in self.N]     
+                self.__N = shape
+                self.cores, self.__R = to_tt(tn.reshape(source,shape),self.__N,eps,rmax,is_sparse=False)
+                self.__is_ttm = False
+            self.shape = [ (m,n) for m,n in zip(self.__M,self.__N) ] if self.__is_ttm else [n for n in self.N]     
         else:
             raise NotImplementedError(&#34;Function only implemented for torch tensors, numpy arrays, list of cores as torch tensors and None.&#34;)
 
@@ -2977,13 +3065,8 @@ print(Att)
             torchtt.TT: The TT-object. The TT-cores are on CUDA.
         &#34;&#34;&#34;
          
-        t = TT(None)
-        t.N = self.N.copy()
-        t.R = self.R.copy()
-        t.is_ttm = self.is_ttm
-        if self.is_ttm:
-            t.M = self.M.copy()
-        t.cores = [ c.cuda(device) for c in self.cores]
+        
+        t = TT([ c.cuda(device) for c in self.cores])
 
         return t
 
@@ -2995,15 +3078,8 @@ print(Att)
             torchtt.TT: The TT-object on CPU.
         &#34;&#34;&#34;
 
-        t = TT(None)
-        t.N = self.N.copy()
-        t.R = self.R.copy()
-        t.is_ttm = self.is_ttm
-        if self.is_ttm:
-            t.M = self.M.copy()
-        t.cores = [ c.cpu() for c in self.cores]
-
-        return t
+        
+        return TT([ c.cpu() for c in self.cores])
 
     def is_cuda(self):
         &#34;&#34;&#34;
@@ -3024,11 +3100,11 @@ print(Att)
             dtype (torch.dtype, optional): The desired dtype (torch.float64, torch.float32,...). If None is provided the dtype is not changed. Defaults to None.
         &#34;&#34;&#34;
         t = TT(None)
-        t.N = self.N.copy()
-        t.R = self.R.copy()
-        t.is_ttm = self.is_ttm
-        if self.is_ttm:
-            t.M = self.M.copy()
+        t.N = self.__N.copy()
+        t.R = self.__R.copy()
+        t.is_ttm = self.__is_ttm
+        if self.__is_ttm:
+            t.M = self.__M.copy()
         t.cores = [ c.to(device=device,dtype=dtype) for c in self.cores]
 
         return t
@@ -3059,14 +3135,14 @@ print(Att)
         Returns:
             torch.tensor: the full tensor.
         &#34;&#34;&#34;
-        if self.is_ttm:
+        if self.__is_ttm:
             # the case of tt-matrix
             tfull = self.cores[0][0,:,:,:]
             for i in  range(1,len(self.cores)-1) :
                 tfull = tn.einsum(&#39;...i,ijkl-&gt;...jkl&#39;,tfull,self.cores[i])
-            if len(self.N) != 1:
+            if len(self.__N) != 1:
                 tfull = tn.einsum(&#39;...i,ijk-&gt;...jk&#39;,tfull,self.cores[-1][:,:,:,0])
-                tfull = tn.permute(tfull,list(np.arange(len(self.N))*2)+list(np.arange(len(self.N))*2+1))
+                tfull = tn.permute(tfull,list(np.arange(len(self.__N))*2)+list(np.arange(len(self.N))*2+1))
             else:
                 tfull = tfull[:,:,0]
         else:
@@ -3074,7 +3150,7 @@ print(Att)
             tfull = self.cores[0][0,:,:]
             for i in  range(1,len(self.cores)-1) :
                 tfull = tn.einsum(&#39;...i,ijk-&gt;...jk&#39;,tfull,self.cores[i])
-            if len(self.N) != 1:
+            if len(self.__N) != 1:
                 tfull = tn.einsum(&#39;...i,ij-&gt;...j&#39;,tfull,self.cores[-1][:,:,0])
             else:
                 tfull = tn.squeeze(tfull)
@@ -3099,22 +3175,22 @@ print(Att)
             string: the string representation of a torchtt.TT
         &#34;&#34;&#34;
         
-        if self.is_ttm:
+        if self.__is_ttm:
             output = &#39;TT-matrix&#39; 
             output += &#39; with sizes and ranks:\n&#39;
-            output += &#39;M = &#39; + str(self.M) + &#39;\nN = &#39; + str(self.N) + &#39;\n&#39;
-            output += &#39;R = &#39; + str(self.R) + &#39;\n&#39;
+            output += &#39;M = &#39; + str(self.__M) + &#39;\nN = &#39; + str(self.__N) + &#39;\n&#39;
+            output += &#39;R = &#39; + str(self.__R) + &#39;\n&#39;
             output += &#39;Device: &#39;+str(self.cores[0].device)+&#39;, dtype: &#39;+str(self.cores[0].dtype)+&#39;\n&#39;
             entries = sum([tn.numel(c)  for c in self.cores])
-            output += &#39;#entries &#39; + str(entries) +&#39; compression &#39; + str(entries/np.prod(np.array(self.N,dtype=np.float64)*np.array(self.M,dtype=np.float64))) +  &#39;\n&#39;
+            output += &#39;#entries &#39; + str(entries) +&#39; compression &#39; + str(entries/np.prod(np.array(self.__N,dtype=np.float64)*np.array(self.__M,dtype=np.float64))) +  &#39;\n&#39;
         else:
             output = &#39;TT&#39;
             output += &#39; with sizes and ranks:\n&#39;
-            output += &#39;N = &#39; + str(self.N) + &#39;\n&#39;
-            output += &#39;R = &#39; + str(self.R) + &#39;\n\n&#39;
+            output += &#39;N = &#39; + str(self.__N) + &#39;\n&#39;
+            output += &#39;R = &#39; + str(self.__R) + &#39;\n\n&#39;
             output += &#39;Device: &#39;+str(self.cores[0].device)+&#39;, dtype: &#39;+str(self.cores[0].dtype)+&#39;\n&#39;
             entries = sum([tn.numel(c) for c in self.cores])
-            output += &#39;#entries &#39; + str(entries) +&#39; compression &#39;  + str(entries/np.prod(np.array(self.N,dtype=np.float64))) + &#39;\n&#39;
+            output += &#39;#entries &#39; + str(entries) +&#39; compression &#39;  + str(entries/np.prod(np.array(self.__N,dtype=np.float64))) + &#39;\n&#39;
         
         return output
     
@@ -3153,14 +3229,14 @@ print(Att)
             # the second term is a scalar
             cores =  []
             
-            for i in range(len(self.N)):
-                if self.is_ttm:
-                    pad1 = (0,0 if i == len(self.N)-1 else 1 , 0,0 , 0,0 , 0,0 if i==0 else 1)
-                    pad2 = (0 if i == len(self.N)-1 else self.R[i+1],0 , 0,0 , 0,0 , 0 if i==0 else self.R[i],0)
+            for i in range(len(self.__N)):
+                if self.__is_ttm:
+                    pad1 = (0,0 if i == len(self.__N)-1 else 1 , 0,0 , 0,0 , 0,0 if i==0 else 1)
+                    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0,0 , 0 if i==0 else self.R[i],0)
                     othr = tn.ones([1,1,1,1],dtype=self.cores[i].dtype) * (other if i ==0 else 1)
                 else:
-                    pad1 = (0,0 if i == len(self.N)-1 else 1 , 0,0 , 0,0 if i==0 else 1)
-                    pad2 = (0 if i == len(self.N)-1 else self.R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
+                    pad1 = (0,0 if i == len(self.__N)-1 else 1 , 0,0 , 0,0 if i==0 else 1)
+                    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
                     othr = tn.ones([1,1,1],dtype=self.cores[i].dtype) * (other if i ==0 else 1)
                 
 
@@ -3170,28 +3246,28 @@ print(Att)
             result = TT(cores)
         elif isinstance(other,TT):
         #second term is TT object 
-            if self.is_ttm and other.is_ttm:
+            if self.__is_ttm and other.is_ttm:
                 # both are TT-matrices
-                if self.M != self.M or self.N != self.N:
+                if self.__M != self.M or self.__N != self.N:
                     raise ShapeMismatch(&#39;Dimension mismatch.&#39;)
                     
                 cores = []
-                for i in range(len(self.N)):
-                    pad1 = (0,0 if i == len(self.N)-1 else other.R[i+1], 0,0 , 0,0 , 0,0 if i==0 else other.R[i])
-                    pad2 = (0 if i == len(self.N)-1 else self.R[i+1],0 , 0,0 , 0,0 , 0 if i==0 else self.R[i],0)
+                for i in range(len(self.__N)):
+                    pad1 = (0,0 if i == len(self.__N)-1 else other.R[i+1], 0,0 , 0,0 , 0,0 if i==0 else other.R[i])
+                    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0,0 , 0 if i==0 else self.R[i],0)
                     cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(other.cores[i],pad2))
                     
                 result = TT(cores)
                 
-            elif self.is_ttm==False and other.is_ttm==False:
+            elif self.__is_ttm==False and other.is_ttm==False:
                 # normal tensors in TT format.
-                if self.N != self.N:
+                if self.__N != self.N:
                     raise ShapeMismatch(&#39;Dimension mismatch.&#39;)
                     
                 cores = []
-                for i in range(len(self.N)):
-                    pad1 = (0,0 if i == len(self.N)-1 else other.R[i+1] , 0,0 , 0,0 if i==0 else other.R[i])
-                    pad2 = (0 if i == len(self.N)-1 else self.R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
+                for i in range(len(self.__N)):
+                    pad1 = (0,0 if i == len(self.__N)-1 else other.R[i+1] , 0,0 , 0,0 if i==0 else other.R[i])
+                    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
                     cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(other.cores[i],pad2))
                     
                     
@@ -3242,42 +3318,42 @@ print(Att)
             # the second term is a scalar
             cores =  []
             
-            for i in range(len(self.N)):
-                if self.is_ttm:
-                    pad1 = (0,0 if i == len(self.N)-1 else 1 , 0,0 , 0,0 , 0,0 if i==0 else 1)
-                    pad2 = (0 if i == len(self.N)-1 else self.R[i+1],0 , 0,0 , 0,0 , 0 if i==0 else self.R[i],0)
+            for i in range(len(self.__N)):
+                if self.__is_ttm:
+                    pad1 = (0,0 if i == len(self.__N)-1 else 1 , 0,0 , 0,0 , 0,0 if i==0 else 1)
+                    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0,0 , 0 if i==0 else self.R[i],0)
                     othr = tn.ones([1,1,1,1],dtype=self.cores[i].dtype) * (-other if i ==0 else 1)
                 else:
-                    pad1 = (0,0 if i == len(self.N)-1 else 1 , 0,0 , 0,0 if i==0 else 1)
-                    pad2 = (0 if i == len(self.N)-1 else self.R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
+                    pad1 = (0,0 if i == len(self.__N)-1 else 1 , 0,0 , 0,0 if i==0 else 1)
+                    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
                     othr = tn.ones([1,1,1],dtype=self.cores[i].dtype) * (-other if i ==0 else 1)
                 cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(othr,pad2))
             result = TT(cores)
 
         elif isinstance(other,TT):
         #second term is TT object 
-            if self.is_ttm and other.is_ttm:
+            if self.__is_ttm and other.is_ttm:
                 # both are TT-matrices
-                if self.M != self.M or self.N != self.N:
+                if self.__M != self.M or self.__N != self.N:
                     raise ShapeMismatch(&#39;Both dimensions of the TT matrix should be equal.&#39;)
                     
                 cores = []
-                for i in range(len(self.N)):
-                    pad1 = (0,0 if i == len(self.N)-1 else other.R[i+1] , 0,0 , 0,0 , 0,0 if i==0 else other.R[i])
-                    pad2 = (0 if i == len(self.N)-1 else self.R[i+1],0 , 0,0 , 0,0 , 0 if i==0 else self.R[i],0)
+                for i in range(len(self.__N)):
+                    pad1 = (0,0 if i == len(self.__N)-1 else other.R[i+1] , 0,0 , 0,0 , 0,0 if i==0 else other.R[i])
+                    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0,0 , 0 if i==0 else self.R[i],0)
                     cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(-other.cores[i] if i==0 else other.cores[i],pad2))
                     
                 result = TT(cores)
                 
-            elif self.is_ttm==False and other.is_ttm==False:
+            elif self.__is_ttm==False and other.is_ttm==False:
                 # normal tensors in TT format.
-                if self.N != self.N:
+                if self.__N != self.N:
                     raise ShapeMismatch(&#39;Dimension mismatch.&#39;)
                     
                 cores = []
-                for i in range(len(self.N)):
-                    pad1 = (0,0 if i == len(self.N)-1 else other.R[i+1] , 0,0 , 0,0 if i==0 else other.R[i])
-                    pad2 = (0 if i == len(self.N)-1 else self.R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
+                for i in range(len(self.__N)):
+                    pad1 = (0,0 if i == len(self.__N)-1 else other.R[i+1] , 0,0 , 0,0 if i==0 else other.R[i])
+                    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
                     cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(-other.cores[i] if i==0 else other.cores[i],pad2))
                     
                     
@@ -3297,9 +3373,10 @@ print(Att)
         Elementwise multiplication in the TT format.
         This implements the &#34;*&#34; operator when the left operand is not torchtt.TT.
         Following are supported:
-         - TT tensor and TT tensor
-         - TT matrix and TT matrix
-         - TT tensor and scalar(int, float or torch.tensor scalar)
+
+         * TT tensor and TT tensor
+         * TT matrix and TT matrix
+         * TT tensor and scalar(int, float or torch.tensor scalar)
 
         Args:
             other (torchtt.TT or float or int or torch.tensor with 1 element): the second operand.
@@ -3338,24 +3415,24 @@ print(Att)
        
         # elementwise multiplication
         if isinstance(other, TT):
-            if self.is_ttm and other.is_ttm:
-                if self.N != other.N or self.M != other.M:
+            if self.__is_ttm and other.is_ttm:
+                if self.__N != other.N or self.__M != other.M:
                     raise ShapeMismatch(&#39;Shapes must be equal.&#39;) 
                     
                 cores_new = []
                 
                 for i in range(len(self.cores)):
-                    core = tn.reshape(tn.einsum(&#39;aijb,mijn-&gt;amijbn&#39;,self.cores[i],other.cores[i]),[self.R[i]*other.R[i],self.M[i],self.N[i],self.R[i+1]*other.R[i+1]])
+                    core = tn.reshape(tn.einsum(&#39;aijb,mijn-&gt;amijbn&#39;,self.cores[i],other.cores[i]),[self.__R[i]*other.R[i],self.__M[i],self.__N[i],self.R[i+1]*other.R[i+1]])
                     cores_new.append(core)
     
-            elif self.is_ttm == False and other.is_ttm == False:
-                if self.N != other.N:
+            elif self.__is_ttm == False and other.is_ttm == False:
+                if self.__N != other.N:
                     raise ShapeMismatch(&#39;Shapes must be equal.&#39;) 
                     
                 cores_new = []
                 
                 for i in range(len(self.cores)):
-                    core = tn.reshape(tn.einsum(&#39;aib,min-&gt;amibn&#39;,self.cores[i],other.cores[i]),[self.R[i]*other.R[i],self.N[i],self.R[i+1]*other.R[i+1]])
+                    core = tn.reshape(tn.einsum(&#39;aib,min-&gt;amibn&#39;,self.cores[i],other.cores[i]),[self.__R[i]*other.R[i],self.__N[i],self.R[i+1]*other.R[i+1]])
                     cores_new.append(core)
             else:
                 raise IncompatibleTypes(&#39;Second operand must be the same type as the fisrt (both should be either TT matrices or TT tensors).&#39;)
@@ -3388,15 +3465,15 @@ print(Att)
             torchtt.TT or torch.tensor: the result. Can be full tensor if the second operand is full tensor.
         &#34;&#34;&#34;
      
-        if self.is_ttm and tn.is_tensor(other):
-            if self.N != list(other.shape)[-len(self.N):]:
+        if self.__is_ttm and tn.is_tensor(other):
+            if self.__N != list(other.shape)[-len(self.N):]:
                 raise ShapeMismatch(&#34;Shapes do not match.&#34;)
             result = dense_matvec(self.cores,other) 
             return result
 
-        elif self.is_ttm and other.is_ttm == False:
+        elif self.__is_ttm and other.is_ttm == False:
             # matrix-vector multiplication
-            if self.N != other.N:
+            if self.__N != other.N:
                 raise ShapeMismatch(&#34;Shapes do not match.&#34;)
                 
             cores_new = []
@@ -3406,9 +3483,9 @@ print(Att)
                 cores_new.append(core)
             
             
-        elif self.is_ttm and other.is_ttm:
+        elif self.__is_ttm and other.is_ttm:
             # multiplication between 2 TT-matrices
-            if self.N != other.M:
+            if self.__N != other.M:
                 raise ShapeMismatch(&#34;Shapes do not match.&#34;)
                 
             cores_new = []
@@ -3416,9 +3493,9 @@ print(Att)
             for i in range(len(self.cores)):
                 core = tn.reshape(tn.einsum(&#39;ijkl,mknp-&gt;imjnlp&#39;,self.cores[i],other.cores[i]),[self.cores[i].shape[0]*other.cores[i].shape[0],self.cores[i].shape[1],other.cores[i].shape[2],self.cores[i].shape[3]*other.cores[i].shape[3]])
                 cores_new.append(core)
-        elif self.is_ttm == False and other.is_ttm:
+        elif self.__is_ttm == False and other.is_ttm:
             # vector-matrix multiplication
-            if self.N != other.M:
+            if self.__N != other.M:
                 raise ShapeMismatch(&#34;Shapes do not match.&#34;)
                 
             cores_new = []
@@ -3452,7 +3529,7 @@ print(Att)
         
         if not isinstance(other,TT):
             raise InvalidArguments(&#39;Second operand has to be TT object.&#39;)
-        if not self.is_ttm or other.is_ttm:
+        if not self.__is_ttm or other.is_ttm:
             raise IncompatibleTypes(&#39;First operand should be a TT matrix and second a TT vector.&#39;)
             
         return dmrg_matvec(self, other, eps = eps, verb = verb, nswp = nswp)
@@ -3475,7 +3552,7 @@ print(Att)
             torch.tensor: the values of the tensor
 
         &#34;&#34;&#34;
-        result = apply_mask(self.cores,self.R,indices)
+        result = apply_mask(self.cores,self.__R,indices)
         return result
 
     def __truediv__(self,other):
@@ -3503,9 +3580,9 @@ print(Att)
             cores_new[0] /= other
             result = TT(cores_new)
         elif isinstance(other,TT):
-            if self.is_ttm != other.is_ttm:
+            if self.__is_ttm != other.is_ttm:
                 raise IncompatibleTypes(&#39;Operands should be either TT or TTM.&#39;)
-            if self.N != other.N or (self.is_ttm and self.M != other.M):
+            if self.__N != other.N or (self.__is_ttm and self.__M != other.M):
                 raise ShapeMismatch(&#34;Both operands should have the same shape.&#34;)
             result = TT(amen_divide(other,self,50,None,1e-12,500,verbose=False))       
         else:
@@ -3536,7 +3613,7 @@ print(Att)
             torchtt.TT: the result.
         &#34;&#34;&#34;
         if isinstance(other,int) or isinstance(other,float) or ( tn.is_tensor(other) and other.numel()==1):
-            o = ones(self.N,dtype=self.cores[0].dtype,device = self.cores[0].device)
+            o = ones(self.__N,dtype=self.cores[0].dtype,device = self.cores[0].device)
             o.cores[0] *= other
             cores_new = amen_divide(self,o,50,None,1e-12,500,verbose=False)
         else:
@@ -3548,15 +3625,16 @@ print(Att)
     
     def t(self):
         &#34;&#34;&#34;
-        Returns the transpoise of a given TT matrix.
+        Returns the transpose of a given TT matrix.
+                
                     
-        Returns: 
+        Returns:
             torchtt.TT: the transpose.
             
         Raises:
             InvalidArguments: Has to be TT matrix.
         &#34;&#34;&#34; 
-        if not self.is_ttm:
+        if not self.__is_ttm:
             raise InvalidArguments(&#39;Has to be TT matrix.&#39;)
             
         cores_new = [tn.permute(c,[0,2,1,3]) for c in self.cores]
@@ -3578,13 +3656,13 @@ print(Att)
         if any([c.requires_grad or c.grad_fn != None for c in self.cores]):
             norm = tn.tensor([[1.0]],dtype = self.cores[0].dtype, device=self.cores[0].device)
             
-            if self.is_ttm:
-                for i in range(len(self.N)):
+            if self.__is_ttm:
+                for i in range(len(self.__N)):
                     norm = tn.einsum(&#39;ab,aijm,bijn-&gt;mn&#39;,norm, self.cores[i], self.cores[i])
                 norm = tn.squeeze(norm)
             else:
                            
-                for i in range(len(self.N)):
+                for i in range(len(self.__N)):
                     norm = tn.einsum(&#39;ab,aim,bin-&gt;mn&#39;,norm, self.cores[i], self.cores[i])
                 norm = tn.squeeze(norm)
             if squared:
@@ -3597,7 +3675,7 @@ print(Att)
 
             core_now = self.cores[0]
             for i in range(d-1):
-                if self.is_ttm:
+                if self.__is_ttm:
                     mode_shape = [core_now.shape[1],core_now.shape[2]]
                     core_now = tn.reshape(core_now,[core_now.shape[0]*core_now.shape[1]*core_now.shape[2],-1])
                 else:
@@ -3653,26 +3731,26 @@ print(Att)
              
         if index == None: 
             # the case we need to sum over all modes
-            if self.is_ttm:
+            if self.__is_ttm:
                 C = tn.reduce_sum(self.cores[0],[0,1,2])
-                for i in range(1,len(self.N)):
+                for i in range(1,len(self.__N)):
                     C = tn.sum(tn.einsum(&#39;i,ijkl-&gt;jkl&#39;,C,self.cores[i]),[0,1])
                 S = tn.sum(C)
             else:
                 C = tn.sum(self.cores[0],[0,1])
-                for i in range(1,len(self.N)):
+                for i in range(1,len(self.__N)):
                     C = tn.sum(tn.einsum(&#39;i,ijk-&gt;jk&#39;,C,self.cores[i]),0)
                 S = tn.sum(C)
         else:
             # we return the TT-tensor with summed indices
             cores = []
             
-            if self.is_ttm:
+            if self.__is_ttm:
                 tmp = [1,2]
             else:
                 tmp = [1]
                 
-            for i in range(len(self.N)):
+            for i in range(len(self.__N)):
                 if i in index:
                     C = tn.sum(self.cores[i], tmp, keepdim = True)
                     cores.append(C)
@@ -3708,19 +3786,19 @@ print(Att)
         
         # TODO: implement a version that reduces the rank also. by spliting the cores with modes 1 into 2 using the SVD.
         
-        if self.is_ttm:
+        if self.__is_ttm:
             cores_new = []
             
-            for i in range(len(self.N)):
+            for i in range(len(self.__N)):
                 
                 if self.cores[i].shape[1] == 1 and self.cores[i].shape[2] == 1 and not i in exclude:
-                    if self.cores[i].shape[0] &gt; self.cores[i].shape[3] or i == len(self.N)-1:
+                    if self.cores[i].shape[0] &gt; self.cores[i].shape[3] or i == len(self.__N)-1:
                         # multiply to the left
                         if len(cores_new) &gt; 0:
                             cores_new[-1] = tn.einsum(&#39;ijok,kl-&gt;ijol&#39;,cores_new[-1], self.cores[i][:,0,0,:])
                         else: 
                             # there is no core to the left. Multiply right.
-                            if i != len(self.N)-1:
+                            if i != len(self.__N)-1:
                                 self.cores[i+1] = tn.einsum(&#39;ij,jkml-&gt;ikml&#39;, self.cores[i][:,0,0,:],self.cores[i+1])
                             else:
                                 cores_new.append(self.cores[i])
@@ -3733,27 +3811,27 @@ print(Att)
                     cores_new.append(self.cores[i])
                     
             # update the cores and ranks and shape
-            self.N = []
-            self.M = []
-            self.R = [1]
+            self.__N = []
+            self.__M = []
+            self.__R = [1]
             for i in range(len(cores_new)):
-                self.N.append(cores_new[i].shape[2])
-                self.M.append(cores_new[i].shape[1])
-                self.R.append(cores_new[i].shape[3])
+                self.__N.append(cores_new[i].shape[2])
+                self.__M.append(cores_new[i].shape[1])
+                self.__R.append(cores_new[i].shape[3])
             self.cores = cores_new
         else:
             cores_new = []
             
-            for i in range(len(self.N)):
+            for i in range(len(self.__N)):
                 
                 if self.cores[i].shape[1] == 1 and not i in exclude:
-                    if self.cores[i].shape[0] &gt; self.cores[i].shape[2] or i == len(self.N)-1:
+                    if self.cores[i].shape[0] &gt; self.cores[i].shape[2] or i == len(self.__N)-1:
                         # multiply to the left
                         if len(cores_new) &gt; 0:
                             cores_new[-1] = tn.einsum(&#39;ijk,kl-&gt;ijl&#39;,cores_new[-1], self.cores[i][:,0,:])
                         else: 
                             # there is no core to the left. Multiply right.
-                            if i != len(self.N)-1:
+                            if i != len(self.__N)-1:
                                 self.cores[i+1] = tn.einsum(&#39;ij,jkl-&gt;ikl&#39;, self.cores[i][:,0,:],self.cores[i+1])
                             else:
                                 cores_new.append(self.cores[i])
@@ -3768,15 +3846,15 @@ print(Att)
             
             
             # update the cores and ranks and shape
-            self.N = []
-            self.R = [1]
+            self.__N = []
+            self.__R = [1]
             for i in range(len(cores_new)):
-                self.N.append(cores_new[i].shape[1])
-                self.R.append(cores_new[i].shape[2])
+                self.__N.append(cores_new[i].shape[1])
+                self.__R.append(cores_new[i].shape[2])
             self.cores = cores_new
                     
                     
-        self.shape = [ (m,n) for m,n in zip(self.M,self.N) ] if self.is_ttm else [n for n in self.N] 
+        self.shape = [ (m,n) for m,n in zip(self.__M,self.__N) ] if self.__is_ttm else [n for n in self.N] 
         
     def __getitem__(self,index):
         &#34;&#34;&#34;
@@ -3812,7 +3890,7 @@ print(Att)
             # check if more than one Ellipsis are to be found.
             if index.count(Ellipsis) &gt; 0:
                 raise NotImplementedError(&#39;Ellipsis are not supported.&#39;)
-            if self.is_ttm:
+            if self.__is_ttm:
                 
                     
                 cores_new = []
@@ -3829,7 +3907,7 @@ print(Att)
                         cores_new.append(tmp)
                         exclude.append(i)
                     elif isinstance(idx1, int) and isinstance(idx2,int):
-                        cores_new.append(tn.reshape(self.cores[k][:,idx1,idx2,:],[self.R[k],1,1,self.R[k+1]]))
+                        cores_new.append(tn.reshape(self.cores[k][:,idx1,idx2,:],[self.__R[k],1,1,self.R[k+1]]))
                         k+=1
                     else:
                         raise InvalidArguments(&#34;Slice carguments not valid. They have to be either int, slice or None.&#34;)
@@ -3837,7 +3915,7 @@ print(Att)
                     raise InvalidArguments(&#39;Slice size is invalid.&#39;)
                 
             else:
-                # if len(index) != len(self.N):
+                # if len(index) != len(self.__N):
                 #    raise InvalidArguments(&#39;Slice size is invalid.&#39;)
                     
                 cores_new = []
@@ -3852,7 +3930,7 @@ print(Att)
                         cores_new.append(tmp)
                         exclude.append(i)
                     elif isinstance(idx, int):
-                        cores_new.append(tn.reshape(self.cores[k][:,idx,:],[self.R[k],-1,self.R[k+1]]))
+                        cores_new.append(tn.reshape(self.cores[k][:,idx,:],[self.__R[k],-1,self.R[k+1]]))
                         k+=1
                     else:
                         raise InvalidArguments(&#34;Slice carguments not valid. They have to be either int, slice or None.&#34;)
@@ -3871,7 +3949,7 @@ print(Att)
             
         elif isinstance(index,int):
             # tensor is 1d and one element is retrived
-            if len(self.N) == 1:
+            if len(self.__N) == 1:
                 sliced = self.cores[0][0,index,0]
             else:
                 raise InvalidArguments(&#39;Invalid slice. Tensor is not 1d.&#39;)
@@ -3883,7 +3961,7 @@ print(Att)
             
         elif isinstance(index,slice):
             # tensor is 1d and one slice is extracted
-            if len(self.N) == 1:
+            if len(self.__N) == 1:
                 sliced = TT(self.cores[0][:,index,:])
             else:
                 raise InvalidArguments(&#39;Invalid slice. Tensor is not 1d.&#39;)
@@ -3982,10 +4060,10 @@ print(Att)
         
         # rmax is not list
         if not isinstance(rmax,list):
-            rmax = [1] + len(self.N)*[rmax] + [1]
+            rmax = [1] + len(self.__N)*[rmax] + [1]
             
         # call the round function
-        tt_cores, R = round_tt(self.cores, self.R.copy(), eps, rmax,self.is_ttm)
+        tt_cores, R = round_tt(self.cores, self.__R.copy(), eps, rmax,self.__is_ttm)
         # creates a new TT and return it
         T = TT(tt_cores)
                
@@ -4021,13 +4099,13 @@ print(Att)
         &#34;&#34;&#34;
        
         cores_new = []
-        if self.is_ttm:
+        if self.__is_ttm:
             shape_new = []
-            for i in range(len(self.N)):
-                if self.N[i]!=self.M[i]:
+            for i in range(len(self.__N)):
+                if self.__N[i]!=self.__M[i]:
                     raise ShapeMismatch(&#39;Only quadratic TTM can be tranformed to QTT.&#39;)
-                if self.N[i]==mode_size**int(math.log(self.N[i],mode_size)):
-                    shape_new += [(mode_size,mode_size)]*int(math.log(self.N[i],mode_size))
+                if self.__N[i]==mode_size**int(math.log(self.N[i],mode_size)):
+                    shape_new += [(mode_size,mode_size)]*int(math.log(self.__N[i],mode_size))
                 else:
                     raise ShapeMismatch(&#39;Reshaping error: check if the dimensions are powers of the desired mode size:\r\ncore size &#39;+str(list(self.cores[i].shape))+&#39; cannot be reshaped.&#39;)
                 
@@ -4071,7 +4149,7 @@ print(Att)
         core = None
         cores_new = []
         
-        if self.is_ttm:
+        if self.__is_ttm:
             pass
         else:
             k = 0
@@ -4108,7 +4186,7 @@ print(Att)
         Returns:
             torchtt.TT: the result
         &#34;&#34;&#34;
-        if self.is_ttm:
+        if self.__is_ttm:
             raise IncompatibleTypes(&#34;n-model product works only with TT-tensors and not TT matrices.&#34;)
     
         if isinstance(factor_matrices,list) and isinstance(mode, list):
@@ -4116,17 +4194,131 @@ print(Att)
             for i in range(len(factor_matrices)):
                 if cores_new[mode[i]].shape[1] != factor_matrices[i].shape[1]:
                     raise ShapeMismatch(&#34;The n-th mode of the tensor must be equal with the 2nd mode of the matrix.&#34;)
-                cores_new[mode[i]] =  tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode[i]],factor_matrices[i]) # if self.is_ttm else tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode[i]],factor_matrices[i]) 
+                cores_new[mode[i]] =  tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode[i]],factor_matrices[i]) # if self.__is_ttm else tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode[i]],factor_matrices[i]) 
         elif isinstance(mode, int) and tn.is_tensor(factor_matrices):
             cores_new = [c.clone() for c in self.cores]
             if cores_new[mode].shape[1] != factor_matrices.shape[1]:
                 raise ShapeMismatch(&#34;The n-th mode of the tensor must be equal with the 2nd mode of the matrix.&#34;)
-            cores_new[mode] =  tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode],factor_matrices) # if self.is_ttm else tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode],factor_matrices) 
+            cores_new[mode] =  tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode],factor_matrices) # if self.__is_ttm else tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode],factor_matrices) 
         else:
             raise InvalidArguments(&#39;Invalid arguments.&#39;)
         
         return TT(cores_new)        </code></pre>
 </details>
+<h3>Class variables</h3>
+<dl>
+<dt id="torchtt.torchtt.TT.cores"><code class="name">var <span class="ident">cores</span> : list</code></dt>
+<dd>
+<div class="desc"><p>The TT cores as a list of <code>torch.tensor</code> instances.</p></div>
+</dd>
+</dl>
+<h3>Instance variables</h3>
+<dl>
+<dt id="torchtt.torchtt.TT.M"><code class="name">var <span class="ident">M</span></code></dt>
+<dd>
+<div class="desc"><p>Return the "row" shape in case of TT matrices.</p>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>IncompatibleTypes</code></dt>
+<dd>The field is_ttm is defined only for TT matrices.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list[int]</code></dt>
+<dd>the shape.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property 
+def M(self):
+    &#34;&#34;&#34;
+    Return the &#34;row&#34; shape in case of TT matrices.
+
+    Raises:
+        IncompatibleTypes: The field is_ttm is defined only for TT matrices.
+
+    Returns:
+        list[int]: the shape.
+    &#34;&#34;&#34;
+    if not self.__is_ttm:
+        raise IncompatibleTypes(&#34;The field is_ttm is defined only for TT matrices.&#34;)
+    return self.__M.copy()</code></pre>
+</details>
+</dd>
+<dt id="torchtt.torchtt.TT.N"><code class="name">var <span class="ident">N</span></code></dt>
+<dd>
+<div class="desc"><p>Return the shape of a tensor or the "column" shape of a TT operator.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list[int]</code></dt>
+<dd>the shape.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property 
+def N(self):
+    &#34;&#34;&#34;
+    Return the shape of a tensor or the &#34;column&#34; shape of a TT operator.
+
+    Returns:
+        list[int]: the shape.
+    &#34;&#34;&#34;
+    return self.__N.copy()</code></pre>
+</details>
+</dd>
+<dt id="torchtt.torchtt.TT.R"><code class="name">var <span class="ident">R</span></code></dt>
+<dd>
+<div class="desc"><p>The rank of the TT decomposition.
+It's length should be <code>len(R)==len(N)+1</code>.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list[int]</code></dt>
+<dd>the rank.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def R(self):
+    &#34;&#34;&#34;
+    The rank of the TT decomposition.
+    It&#39;s length should be `len(R)==len(N)+1`.
+
+    Returns:
+        list[int]: the rank.
+    &#34;&#34;&#34;
+    return self.__R.copy()</code></pre>
+</details>
+</dd>
+<dt id="torchtt.torchtt.TT.is_ttm"><code class="name">var <span class="ident">is_ttm</span></code></dt>
+<dd>
+<div class="desc"><p>Check whether the instance is a TT operator or not.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>bool</code></dt>
+<dd>the flag.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def is_ttm(self):
+    &#34;&#34;&#34;
+    Check whether the instance is a TT operator or not.
+
+    Returns:
+        bool: the flag.
+    &#34;&#34;&#34;
+    return self.__is_ttm</code></pre>
+</details>
+</dd>
+</dl>
 <h3>Methods</h3>
 <dl>
 <dt id="torchtt.torchtt.TT.apply_mask"><code class="name flex">
@@ -4171,7 +4363,7 @@ val = x.apply_mask(indices)
         torch.tensor: the values of the tensor
 
     &#34;&#34;&#34;
-    result = apply_mask(self.cores,self.R,indices)
+    result = apply_mask(self.cores,self.__R,indices)
     return result</code></pre>
 </details>
 </dd>
@@ -4221,15 +4413,8 @@ val = x.apply_mask(indices)
         torchtt.TT: The TT-object on CPU.
     &#34;&#34;&#34;
 
-    t = TT(None)
-    t.N = self.N.copy()
-    t.R = self.R.copy()
-    t.is_ttm = self.is_ttm
-    if self.is_ttm:
-        t.M = self.M.copy()
-    t.cores = [ c.cpu() for c in self.cores]
-
-    return t</code></pre>
+    
+    return TT([ c.cpu() for c in self.cores])</code></pre>
 </details>
 </dd>
 <dt id="torchtt.torchtt.TT.cuda"><code class="name flex">
@@ -4262,13 +4447,8 @@ val = x.apply_mask(indices)
         torchtt.TT: The TT-object. The TT-cores are on CUDA.
     &#34;&#34;&#34;
      
-    t = TT(None)
-    t.N = self.N.copy()
-    t.R = self.R.copy()
-    t.is_ttm = self.is_ttm
-    if self.is_ttm:
-        t.M = self.M.copy()
-    t.cores = [ c.cuda(device) for c in self.cores]
+    
+    t = TT([ c.cuda(device) for c in self.cores])
 
     return t</code></pre>
 </details>
@@ -4349,7 +4529,7 @@ val = x.apply_mask(indices)
     
     if not isinstance(other,TT):
         raise InvalidArguments(&#39;Second operand has to be TT object.&#39;)
-    if not self.is_ttm or other.is_ttm:
+    if not self.__is_ttm or other.is_ttm:
         raise IncompatibleTypes(&#39;First operand should be a TT matrix and second a TT vector.&#39;)
         
     return dmrg_matvec(self, other, eps = eps, verb = verb, nswp = nswp)</code></pre>
@@ -4378,14 +4558,14 @@ In case of a TTM, the result has the shape M1 x M2 x &hellip; x Md x N1 x N2 x &
     Returns:
         torch.tensor: the full tensor.
     &#34;&#34;&#34;
-    if self.is_ttm:
+    if self.__is_ttm:
         # the case of tt-matrix
         tfull = self.cores[0][0,:,:,:]
         for i in  range(1,len(self.cores)-1) :
             tfull = tn.einsum(&#39;...i,ijkl-&gt;...jkl&#39;,tfull,self.cores[i])
-        if len(self.N) != 1:
+        if len(self.__N) != 1:
             tfull = tn.einsum(&#39;...i,ijk-&gt;...jk&#39;,tfull,self.cores[-1][:,:,:,0])
-            tfull = tn.permute(tfull,list(np.arange(len(self.N))*2)+list(np.arange(len(self.N))*2+1))
+            tfull = tn.permute(tfull,list(np.arange(len(self.__N))*2)+list(np.arange(len(self.N))*2+1))
         else:
             tfull = tfull[:,:,0]
     else:
@@ -4393,7 +4573,7 @@ In case of a TTM, the result has the shape M1 x M2 x &hellip; x Md x N1 x N2 x &
         tfull = self.cores[0][0,:,:]
         for i in  range(1,len(self.cores)-1) :
             tfull = tn.einsum(&#39;...i,ijk-&gt;...jk&#39;,tfull,self.cores[i])
-        if len(self.N) != 1:
+        if len(self.__N) != 1:
             tfull = tn.einsum(&#39;...i,ij-&gt;...j&#39;,tfull,self.cores[-1][:,:,0])
         else:
             tfull = tn.squeeze(tfull)
@@ -4472,7 +4652,7 @@ If factor_matrices is a list, the mode has to be list[int] of equal size.</dd>
     Returns:
         torchtt.TT: the result
     &#34;&#34;&#34;
-    if self.is_ttm:
+    if self.__is_ttm:
         raise IncompatibleTypes(&#34;n-model product works only with TT-tensors and not TT matrices.&#34;)
 
     if isinstance(factor_matrices,list) and isinstance(mode, list):
@@ -4480,12 +4660,12 @@ If factor_matrices is a list, the mode has to be list[int] of equal size.</dd>
         for i in range(len(factor_matrices)):
             if cores_new[mode[i]].shape[1] != factor_matrices[i].shape[1]:
                 raise ShapeMismatch(&#34;The n-th mode of the tensor must be equal with the 2nd mode of the matrix.&#34;)
-            cores_new[mode[i]] =  tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode[i]],factor_matrices[i]) # if self.is_ttm else tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode[i]],factor_matrices[i]) 
+            cores_new[mode[i]] =  tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode[i]],factor_matrices[i]) # if self.__is_ttm else tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode[i]],factor_matrices[i]) 
     elif isinstance(mode, int) and tn.is_tensor(factor_matrices):
         cores_new = [c.clone() for c in self.cores]
         if cores_new[mode].shape[1] != factor_matrices.shape[1]:
             raise ShapeMismatch(&#34;The n-th mode of the tensor must be equal with the 2nd mode of the matrix.&#34;)
-        cores_new[mode] =  tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode],factor_matrices) # if self.is_ttm else tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode],factor_matrices) 
+        cores_new[mode] =  tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode],factor_matrices) # if self.__is_ttm else tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode],factor_matrices) 
     else:
         raise InvalidArguments(&#39;Invalid arguments.&#39;)
     
@@ -4525,13 +4705,13 @@ If factor_matrices is a list, the mode has to be list[int] of equal size.</dd>
     if any([c.requires_grad or c.grad_fn != None for c in self.cores]):
         norm = tn.tensor([[1.0]],dtype = self.cores[0].dtype, device=self.cores[0].device)
         
-        if self.is_ttm:
-            for i in range(len(self.N)):
+        if self.__is_ttm:
+            for i in range(len(self.__N)):
                 norm = tn.einsum(&#39;ab,aijm,bijn-&gt;mn&#39;,norm, self.cores[i], self.cores[i])
             norm = tn.squeeze(norm)
         else:
                        
-            for i in range(len(self.N)):
+            for i in range(len(self.__N)):
                 norm = tn.einsum(&#39;ab,aim,bin-&gt;mn&#39;,norm, self.cores[i], self.cores[i])
             norm = tn.squeeze(norm)
         if squared:
@@ -4544,7 +4724,7 @@ If factor_matrices is a list, the mode has to be list[int] of equal size.</dd>
 
         core_now = self.cores[0]
         for i in range(d-1):
-            if self.is_ttm:
+            if self.__is_ttm:
                 mode_shape = [core_now.shape[1],core_now.shape[2]]
                 core_now = tn.reshape(core_now,[core_now.shape[0]*core_now.shape[1]*core_now.shape[2],-1])
             else:
@@ -4645,7 +4825,7 @@ If it is involved in an AD graph, an error will occur.</p>
     core = None
     cores_new = []
     
-    if self.is_ttm:
+    if self.__is_ttm:
         pass
     else:
         k = 0
@@ -4692,19 +4872,19 @@ At least one mode should be larger than 1.</p>
     
     # TODO: implement a version that reduces the rank also. by spliting the cores with modes 1 into 2 using the SVD.
     
-    if self.is_ttm:
+    if self.__is_ttm:
         cores_new = []
         
-        for i in range(len(self.N)):
+        for i in range(len(self.__N)):
             
             if self.cores[i].shape[1] == 1 and self.cores[i].shape[2] == 1 and not i in exclude:
-                if self.cores[i].shape[0] &gt; self.cores[i].shape[3] or i == len(self.N)-1:
+                if self.cores[i].shape[0] &gt; self.cores[i].shape[3] or i == len(self.__N)-1:
                     # multiply to the left
                     if len(cores_new) &gt; 0:
                         cores_new[-1] = tn.einsum(&#39;ijok,kl-&gt;ijol&#39;,cores_new[-1], self.cores[i][:,0,0,:])
                     else: 
                         # there is no core to the left. Multiply right.
-                        if i != len(self.N)-1:
+                        if i != len(self.__N)-1:
                             self.cores[i+1] = tn.einsum(&#39;ij,jkml-&gt;ikml&#39;, self.cores[i][:,0,0,:],self.cores[i+1])
                         else:
                             cores_new.append(self.cores[i])
@@ -4717,27 +4897,27 @@ At least one mode should be larger than 1.</p>
                 cores_new.append(self.cores[i])
                 
         # update the cores and ranks and shape
-        self.N = []
-        self.M = []
-        self.R = [1]
+        self.__N = []
+        self.__M = []
+        self.__R = [1]
         for i in range(len(cores_new)):
-            self.N.append(cores_new[i].shape[2])
-            self.M.append(cores_new[i].shape[1])
-            self.R.append(cores_new[i].shape[3])
+            self.__N.append(cores_new[i].shape[2])
+            self.__M.append(cores_new[i].shape[1])
+            self.__R.append(cores_new[i].shape[3])
         self.cores = cores_new
     else:
         cores_new = []
         
-        for i in range(len(self.N)):
+        for i in range(len(self.__N)):
             
             if self.cores[i].shape[1] == 1 and not i in exclude:
-                if self.cores[i].shape[0] &gt; self.cores[i].shape[2] or i == len(self.N)-1:
+                if self.cores[i].shape[0] &gt; self.cores[i].shape[2] or i == len(self.__N)-1:
                     # multiply to the left
                     if len(cores_new) &gt; 0:
                         cores_new[-1] = tn.einsum(&#39;ijk,kl-&gt;ijl&#39;,cores_new[-1], self.cores[i][:,0,:])
                     else: 
                         # there is no core to the left. Multiply right.
-                        if i != len(self.N)-1:
+                        if i != len(self.__N)-1:
                             self.cores[i+1] = tn.einsum(&#39;ij,jkl-&gt;ikl&#39;, self.cores[i][:,0,:],self.cores[i+1])
                         else:
                             cores_new.append(self.cores[i])
@@ -4752,15 +4932,15 @@ At least one mode should be larger than 1.</p>
         
         
         # update the cores and ranks and shape
-        self.N = []
-        self.R = [1]
+        self.__N = []
+        self.__R = [1]
         for i in range(len(cores_new)):
-            self.N.append(cores_new[i].shape[1])
-            self.R.append(cores_new[i].shape[2])
+            self.__N.append(cores_new[i].shape[1])
+            self.__R.append(cores_new[i].shape[2])
         self.cores = cores_new
                 
                 
-    self.shape = [ (m,n) for m,n in zip(self.M,self.N) ] if self.is_ttm else [n for n in self.N] </code></pre>
+    self.shape = [ (m,n) for m,n in zip(self.__M,self.__N) ] if self.__is_ttm else [n for n in self.N] </code></pre>
 </details>
 </dd>
 <dt id="torchtt.torchtt.TT.round"><code class="name flex">
@@ -4800,10 +4980,10 @@ The maximum rank is also provided.</p>
     
     # rmax is not list
     if not isinstance(rmax,list):
-        rmax = [1] + len(self.N)*[rmax] + [1]
+        rmax = [1] + len(self.__N)*[rmax] + [1]
         
     # call the round function
-    tt_cores, R = round_tt(self.cores, self.R.copy(), eps, rmax,self.is_ttm)
+    tt_cores, R = round_tt(self.cores, self.__R.copy(), eps, rmax,self.__is_ttm)
     # creates a new TT and return it
     T = TT(tt_cores)
            
@@ -4870,26 +5050,26 @@ print(a.sum([0,1,2,3,4]))
          
     if index == None: 
         # the case we need to sum over all modes
-        if self.is_ttm:
+        if self.__is_ttm:
             C = tn.reduce_sum(self.cores[0],[0,1,2])
-            for i in range(1,len(self.N)):
+            for i in range(1,len(self.__N)):
                 C = tn.sum(tn.einsum(&#39;i,ijkl-&gt;jkl&#39;,C,self.cores[i]),[0,1])
             S = tn.sum(C)
         else:
             C = tn.sum(self.cores[0],[0,1])
-            for i in range(1,len(self.N)):
+            for i in range(1,len(self.__N)):
                 C = tn.sum(tn.einsum(&#39;i,ijk-&gt;jk&#39;,C,self.cores[i]),0)
             S = tn.sum(C)
     else:
         # we return the TT-tensor with summed indices
         cores = []
         
-        if self.is_ttm:
+        if self.__is_ttm:
             tmp = [1,2]
         else:
             tmp = [1]
             
-        for i in range(len(self.N)):
+        for i in range(len(self.__N)):
             if i in index:
                 C = tn.sum(self.cores[i], tmp, keepdim = True)
                 cores.append(C)
@@ -4907,9 +5087,12 @@ print(a.sum([0,1,2,3,4]))
 <span>def <span class="ident">t</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Returns the transpoise of a given TT matrix.</p>
-<p>Returns:
-torchtt.TT: the transpose.</p>
+<div class="desc"><p>Returns the transpose of a given TT matrix.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>torchtt.TT</code></dt>
+<dd>the transpose.</dd>
+</dl>
 <h2 id="raises">Raises</h2>
 <dl>
 <dt><code>InvalidArguments</code></dt>
@@ -4921,15 +5104,16 @@ torchtt.TT: the transpose.</p>
 </summary>
 <pre><code class="python">def t(self):
     &#34;&#34;&#34;
-    Returns the transpoise of a given TT matrix.
+    Returns the transpose of a given TT matrix.
+            
                 
-    Returns: 
+    Returns:
         torchtt.TT: the transpose.
         
     Raises:
         InvalidArguments: Has to be TT matrix.
     &#34;&#34;&#34; 
-    if not self.is_ttm:
+    if not self.__is_ttm:
         raise InvalidArguments(&#39;Has to be TT matrix.&#39;)
         
     cores_new = [tn.permute(c,[0,2,1,3]) for c in self.cores]
@@ -4962,11 +5146,11 @@ torchtt.TT: the transpose.</p>
         dtype (torch.dtype, optional): The desired dtype (torch.float64, torch.float32,...). If None is provided the dtype is not changed. Defaults to None.
     &#34;&#34;&#34;
     t = TT(None)
-    t.N = self.N.copy()
-    t.R = self.R.copy()
-    t.is_ttm = self.is_ttm
-    if self.is_ttm:
-        t.M = self.M.copy()
+    t.N = self.__N.copy()
+    t.R = self.__R.copy()
+    t.is_ttm = self.__is_ttm
+    if self.__is_ttm:
+        t.M = self.__M.copy()
     t.cores = [ c.to(device=device,dtype=dtype) for c in self.cores]
 
     return t</code></pre>
@@ -5040,13 +5224,13 @@ xf = x_qtt.qtt_to_tens(x.N) # a TT-rounding is recommended.
     &#34;&#34;&#34;
    
     cores_new = []
-    if self.is_ttm:
+    if self.__is_ttm:
         shape_new = []
-        for i in range(len(self.N)):
-            if self.N[i]!=self.M[i]:
+        for i in range(len(self.__N)):
+            if self.__N[i]!=self.__M[i]:
                 raise ShapeMismatch(&#39;Only quadratic TTM can be tranformed to QTT.&#39;)
-            if self.N[i]==mode_size**int(math.log(self.N[i],mode_size)):
-                shape_new += [(mode_size,mode_size)]*int(math.log(self.N[i],mode_size))
+            if self.__N[i]==mode_size**int(math.log(self.N[i],mode_size)):
+                shape_new += [(mode_size,mode_size)]*int(math.log(self.__N[i],mode_size))
             else:
                 raise ShapeMismatch(&#39;Reshaping error: check if the dimensions are powers of the desired mode size:\r\ncore size &#39;+str(list(self.cores[i].shape))+&#39; cannot be reshaped.&#39;)
             
@@ -5137,14 +5321,19 @@ N1 x &hellip; x Nd x 1 x &hellip; x 1.</p>
 <li>
 <h4><code><a title="torchtt.torchtt.TT" href="#torchtt.torchtt.TT">TT</a></code></h4>
 <ul class="two-column">
+<li><code><a title="torchtt.torchtt.TT.M" href="#torchtt.torchtt.TT.M">M</a></code></li>
+<li><code><a title="torchtt.torchtt.TT.N" href="#torchtt.torchtt.TT.N">N</a></code></li>
+<li><code><a title="torchtt.torchtt.TT.R" href="#torchtt.torchtt.TT.R">R</a></code></li>
 <li><code><a title="torchtt.torchtt.TT.apply_mask" href="#torchtt.torchtt.TT.apply_mask">apply_mask</a></code></li>
 <li><code><a title="torchtt.torchtt.TT.clone" href="#torchtt.torchtt.TT.clone">clone</a></code></li>
+<li><code><a title="torchtt.torchtt.TT.cores" href="#torchtt.torchtt.TT.cores">cores</a></code></li>
 <li><code><a title="torchtt.torchtt.TT.cpu" href="#torchtt.torchtt.TT.cpu">cpu</a></code></li>
 <li><code><a title="torchtt.torchtt.TT.cuda" href="#torchtt.torchtt.TT.cuda">cuda</a></code></li>
 <li><code><a title="torchtt.torchtt.TT.detach" href="#torchtt.torchtt.TT.detach">detach</a></code></li>
 <li><code><a title="torchtt.torchtt.TT.fast_matvec" href="#torchtt.torchtt.TT.fast_matvec">fast_matvec</a></code></li>
 <li><code><a title="torchtt.torchtt.TT.full" href="#torchtt.torchtt.TT.full">full</a></code></li>
 <li><code><a title="torchtt.torchtt.TT.is_cuda" href="#torchtt.torchtt.TT.is_cuda">is_cuda</a></code></li>
+<li><code><a title="torchtt.torchtt.TT.is_ttm" href="#torchtt.torchtt.TT.is_ttm">is_ttm</a></code></li>
 <li><code><a title="torchtt.torchtt.TT.mprod" href="#torchtt.torchtt.TT.mprod">mprod</a></code></li>
 <li><code><a title="torchtt.torchtt.TT.norm" href="#torchtt.torchtt.TT.norm">norm</a></code></li>
 <li><code><a title="torchtt.torchtt.TT.numpy" href="#torchtt.torchtt.TT.numpy">numpy</a></code></li>

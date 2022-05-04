@@ -4,7 +4,7 @@ Adds AD functionality to torchtt.
 """
 
 import torch as tn
-import torchtt 
+from torchtt import TT
 
 def watch(tens, core_indices = None):
     """

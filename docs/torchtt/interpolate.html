@@ -126,7 +126,7 @@ def function_interpolate(function, x, eps = 1e-9, start_tens = None, nswp = 20, 
         ```
     
     Args:
-        function (function): function handle. If the argument `x` is a `torchtt.TT` instance, the the function handle has to be appliable elementwise on torch tensors.
+        function (Callable): function handle. If the argument `x` is a `torchtt.TT` instance, the the function handle has to be appliable elementwise on torch tensors.
                              If a list is passed as `x`, the function handle takes as argument a $M\times d$ torch.tensor and every of the $M$ lines corresponds to an evaluation of the function \(f\) at a certain tensor entry. The function handle returns a torch tensor of length M.
         x (torchtt.TT or list[torchtt.TT]): the argument/arguments of the function.
         eps (float, optional): the relative accuracy. Defaults to 1e-9.
@@ -430,7 +430,7 @@ def dmrg_cross(function, N, eps = 1e-9, nswp = 10, x_start = None, kick = 2, dty
         ```
     
     Args:
-        function (function handle): function handle.
+        function (Callable): function handle.
         N (list[int]): the shape of the tensor.
         eps (float, optional): the relative accuracy. Defaults to 1e-9.
         nswp (int, optional): number of iterations. Defaults to 20.
@@ -711,7 +711,7 @@ x = torchtt.interpolate.dmrg_cross(func, N, eps = 1e-7)
 </code></pre>
 <h2 id="args">Args</h2>
 <dl>
-<dt><strong><code>function</code></strong> :&ensp;<code>function handle</code></dt>
+<dt><strong><code>function</code></strong> :&ensp;<code>Callable</code></dt>
 <dd>function handle.</dd>
 <dt><strong><code>N</code></strong> :&ensp;<code>list[int]</code></dt>
 <dd>the shape of the tensor.</dd>
@@ -754,7 +754,7 @@ x = torchtt.interpolate.dmrg_cross(func, N, eps = 1e-7)
         ```
     
     Args:
-        function (function handle): function handle.
+        function (Callable): function handle.
         N (list[int]): the shape of the tensor.
         eps (float, optional): the relative accuracy. Defaults to 1e-9.
         nswp (int, optional): number of iterations. Defaults to 20.
@@ -1045,7 +1045,7 @@ z = tntt.interpolate.function_interpolate(func, xs)
 </code></pre>
 <h2 id="args">Args</h2>
 <dl>
-<dt><strong><code>function</code></strong> :&ensp;<code>function</code></dt>
+<dt><strong><code>function</code></strong> :&ensp;<code>Callable</code></dt>
 <dd>function handle. If the argument <code>x</code> is a <code>torchtt.TT</code> instance, the the function handle has to be appliable elementwise on torch tensors.
 If a list is passed as <code>x</code>, the function handle takes as argument a $M
 imes d$ torch.tensor and every of the $M$ lines corresponds to an evaluation of the function <span><span class="MathJax_Preview">f</span><script type="math/tex">f</script></span> at a certain tensor entry. The function handle returns a torch tensor of length M.</dd>
@@ -1102,7 +1102,7 @@ imes d$ torch.tensor and every of the $M$ lines corresponds to an evaluation of 
         ```
     
     Args:
-        function (function): function handle. If the argument `x` is a `torchtt.TT` instance, the the function handle has to be appliable elementwise on torch tensors.
+        function (Callable): function handle. If the argument `x` is a `torchtt.TT` instance, the the function handle has to be appliable elementwise on torch tensors.
                              If a list is passed as `x`, the function handle takes as argument a $M\times d$ torch.tensor and every of the $M$ lines corresponds to an evaluation of the function \(f\) at a certain tensor entry. The function handle returns a torch tensor of length M.
         x (torchtt.TT or list[torchtt.TT]): the argument/arguments of the function.
         eps (float, optional): the relative accuracy. Defaults to 1e-9.
