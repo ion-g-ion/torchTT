@@ -255,15 +255,7 @@ class TT():
             device (torch.device, optional): The desired device. If none is provided, the device is the CPU. Defaults to None.
             dtype (torch.dtype, optional): The desired dtype (torch.float64, torch.float32,...). If None is provided the dtype is not changed. Defaults to None.
         """
-        t = TT(None)
-        t.N = self.__N.copy()
-        t.R = self.__R.copy()
-        t.is_ttm = self.__is_ttm
-        if self.__is_ttm:
-            t.M = self.__M.copy()
-        t.cores = [ c.to(device=device,dtype=dtype) for c in self.cores]
-
-        return t
+        return TT( [ c.to(device=device,dtype=dtype) for c in self.cores])
 
     def detach(self):
         """
