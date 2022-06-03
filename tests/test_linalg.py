@@ -245,6 +245,9 @@ class TestLinalg(unittest.TestCase):
         self.assertLess(err_rel(A[1,:,3,4],Att[1,:,3,4].full()), 1e-15, "Tensor slicing error: slice to 1d." )
         self.assertLess(err_rel(A[None,:,2,:,None,4,None],Att[None,:,2,:,None,4,None].full()) , 1e-15 , "Tensor slicing error: add dimensions.")
         self.assertLess(err_rel(A[None,None,1,2,2,None,4,None,None],Att[None,None,1,2,2,None,4,None,None].full()) , 1e-15 , "Tensor slicing error: add more dimensions.")
+        self.assertLess(err_rel(A[...,1,1],Att[...,1,1].full()) , 1e-15 , "Tensor slicing error: Ellipsis in the beginning.")
+        self.assertLess(err_rel(A[1,...],Att[1,...].full()) , 1e-15 , "Tensor slicing error: ellipsis in the end.")
+        self.assertLess(err_rel(A[...],Att[...].full()) , 1e-15 , "Tensor slicing error: ellipsis only.")
         
         # TT-matrix
         cores = [tn.rand([1,9,8,3],dtype=tn.float64),tn.rand([3,10,9,4],dtype=tn.float64),tn.rand([4,15,14,5],dtype=tn.float64),tn.rand([5,15,10,1],dtype=tn.float64)]

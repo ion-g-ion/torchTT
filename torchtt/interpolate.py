@@ -519,9 +519,9 @@ def dmrg_cross(function, N, eps = 1e-9, nswp = 10, x_start = None, kick = 2, dty
             UK = tn.randn((U.shape[0],kick), dtype = dtype, device = device)
             U, Rtemp = QR( tn.cat( (U,UK) , 1) )
             radd = U.shape[1] - rnew
-            if radd>0: V =  tn.cat( (V,tn.zeros((radd,V.shape[1]), dtype = dtype, device = device)) , 0 )
-            V = Rtemp @ V
-            
+            if radd>0: 
+                V =  tn.cat( (V,tn.zeros((radd,V.shape[1]), dtype = dtype, device = device)) , 0 )
+                V = Rtemp @ V
             # print('kkt new',tn.linalg.norm(supercore-U@V))
             # compute err (dx)
             super_prev = tn.einsum('ijk,kmn->ijmn',cores[k],cores[k+1])

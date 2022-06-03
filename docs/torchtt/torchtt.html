@@ -1059,7 +1059,7 @@ class TT():
         
         # slicing function
         
-        ##### TODO: include Ellipsis support.
+        ##### TODO: include Ellipsis support for tensor operators.
         
         # if a slice containg integers is passed, an element is returned
         # if ranged slices are used, a TT-object has to be returned.
@@ -1067,11 +1067,12 @@ class TT():
         exclude = []
         
         if isinstance(index,tuple):
-            # check if more than one Ellipsis are to be found.
-            if index.count(Ellipsis) &gt; 0:
-                raise NotImplementedError(&#39;Ellipsis are not supported.&#39;)
+            # check if more than two Ellipsis are to be found.
+            if index.count(Ellipsis) &gt; 1 or (self.is_ttm and index.count(Ellipsis) &gt; 0):
+                raise NotImplementedError(&#39;Ellipsis are not supported more than once of for tensor operators.&#39;)
+            
             if self.__is_ttm:
-                
+                    
                     
                 cores_new = []
                 k=0
@@ -1097,7 +1098,11 @@ class TT():
             else:
                 # if len(index) != len(self.__N):
                 #    raise InvalidArguments(&#39;Slice size is invalid.&#39;)
-                    
+                if index[0] == Ellipsis:
+                    index = (slice(None, None, None),)*(len(self.__N)-len(index)+1) + index[1:]
+                elif index[-1] == Ellipsis:
+                    index = index[:-1] + (slice(None, None, None),)*(len(self.__N)-len(index)+1)
+
                 cores_new = []
                 k = 0
                 for i,idx in enumerate(index):
@@ -1135,7 +1140,7 @@ class TT():
                 raise InvalidArguments(&#39;Invalid slice. Tensor is not 1d.&#39;)
                 
             ## TODO
-        elif isinstance(index,Ellipsis):
+        elif index == Ellipsis:
             # return a copy of the tensor
             sliced = TT([c.clone() for c in self.cores])
             
@@ -3863,7 +3868,7 @@ print(Att)
         
         # slicing function
         
-        ##### TODO: include Ellipsis support.
+        ##### TODO: include Ellipsis support for tensor operators.
         
         # if a slice containg integers is passed, an element is returned
         # if ranged slices are used, a TT-object has to be returned.
@@ -3871,11 +3876,12 @@ print(Att)
         exclude = []
         
         if isinstance(index,tuple):
-            # check if more than one Ellipsis are to be found.
-            if index.count(Ellipsis) &gt; 0:
-                raise NotImplementedError(&#39;Ellipsis are not supported.&#39;)
+            # check if more than two Ellipsis are to be found.
+            if index.count(Ellipsis) &gt; 1 or (self.is_ttm and index.count(Ellipsis) &gt; 0):
+                raise NotImplementedError(&#39;Ellipsis are not supported more than once of for tensor operators.&#39;)
+            
             if self.__is_ttm:
-                
+                    
                     
                 cores_new = []
                 k=0
@@ -3901,7 +3907,11 @@ print(Att)
             else:
                 # if len(index) != len(self.__N):
                 #    raise InvalidArguments(&#39;Slice size is invalid.&#39;)
-                    
+                if index[0] == Ellipsis:
+                    index = (slice(None, None, None),)*(len(self.__N)-len(index)+1) + index[1:]
+                elif index[-1] == Ellipsis:
+                    index = index[:-1] + (slice(None, None, None),)*(len(self.__N)-len(index)+1)
+
                 cores_new = []
                 k = 0
                 for i,idx in enumerate(index):
@@ -3939,7 +3949,7 @@ print(Att)
                 raise InvalidArguments(&#39;Invalid slice. Tensor is not 1d.&#39;)
                 
             ## TODO
-        elif isinstance(index,Ellipsis):
+        elif index == Ellipsis:
             # return a copy of the tensor
             sliced = TT([c.clone() for c in self.cores])
             
