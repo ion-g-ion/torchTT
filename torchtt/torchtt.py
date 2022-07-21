@@ -1265,7 +1265,7 @@ class TT():
             result = reshape(self, shape_new, eps, rmax)
         else:
             for core in self.cores:
-                if int(math.log(core.shape[1],mode_size))>2:
+                if int(math.log(core.shape[1],mode_size))>1:
                     Nnew = [core.shape[0]*mode_size]+[mode_size]*(int(math.log(core.shape[1],mode_size))-2)+[core.shape[2]*mode_size]
                     try:
                         core = tn.reshape(core,Nnew)
