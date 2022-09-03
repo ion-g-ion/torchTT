@@ -229,7 +229,7 @@ def function_interpolate(function, x, eps = 1e-9, start_tens = None, nswp = 20, 
             V = tn.diag(S) @ V
             UK = tn.randn((U.shape[0],kick), dtype = dtype, device = device)
             U, Rtemp = QR( tn.cat( (U,UK) , 1) )
-            radd = U.shape[1] - rnew
+            radd = Rtemp.shape[1] - rnew
             if radd>0: 
                 V =  tn.cat( (V,tn.zeros((radd,V.shape[1]), dtype = dtype, device = device)) , 0 )
                 V = Rtemp @ V
