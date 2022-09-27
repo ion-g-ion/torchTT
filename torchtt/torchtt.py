@@ -16,8 +16,8 @@ from torchtt.errors import *
 
 class TT():
 
-    cores : list[tn.tensor]
-    """ The TT cores as a list of `torch.tensor` instances."""
+    #cores : list[tn.tensor]
+    #""" The TT cores as a list of `torch.tensor` instances."""
     
     @property
     def is_ttm(self):

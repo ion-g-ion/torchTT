@@ -48,8 +48,8 @@ from torchtt.errors import *
 
 class TT():
 
-    cores : list[tn.tensor]
-    &#34;&#34;&#34; The TT cores as a list of `torch.tensor` instances.&#34;&#34;&#34;
+    #cores : list[tn.tensor]
+    #&#34;&#34;&#34; The TT cores as a list of `torch.tensor` instances.&#34;&#34;&#34;
     
     @property
     def is_ttm(self):
@@ -1297,7 +1297,7 @@ class TT():
             result = reshape(self, shape_new, eps, rmax)
         else:
             for core in self.cores:
-                if int(math.log(core.shape[1],mode_size))&gt;2:
+                if int(math.log(core.shape[1],mode_size))&gt;1:
                     Nnew = [core.shape[0]*mode_size]+[mode_size]*(int(math.log(core.shape[1],mode_size))-2)+[core.shape[2]*mode_size]
                     try:
                         core = tn.reshape(core,Nnew)
@@ -2857,8 +2857,8 @@ print(Att)
 </summary>
 <pre><code class="python">class TT():
 
-    cores : list[tn.tensor]
-    &#34;&#34;&#34; The TT cores as a list of `torch.tensor` instances.&#34;&#34;&#34;
+    #cores : list[tn.tensor]
+    #&#34;&#34;&#34; The TT cores as a list of `torch.tensor` instances.&#34;&#34;&#34;
     
     @property
     def is_ttm(self):
@@ -4106,7 +4106,7 @@ print(Att)
             result = reshape(self, shape_new, eps, rmax)
         else:
             for core in self.cores:
-                if int(math.log(core.shape[1],mode_size))&gt;2:
+                if int(math.log(core.shape[1],mode_size))&gt;1:
                     Nnew = [core.shape[0]*mode_size]+[mode_size]*(int(math.log(core.shape[1],mode_size))-2)+[core.shape[2]*mode_size]
                     try:
                         core = tn.reshape(core,Nnew)
@@ -4199,13 +4199,6 @@ print(Att)
         
         return TT(cores_new)        </code></pre>
 </details>
-<h3>Class variables</h3>
-<dl>
-<dt id="torchtt.torchtt.TT.cores"><code class="name">var <span class="ident">cores</span> : list</code></dt>
-<dd>
-<div class="desc"><p>The TT cores as a list of <code>torch.tensor</code> instances.</p></div>
-</dd>
-</dl>
 <h3>Instance variables</h3>
 <dl>
 <dt id="torchtt.torchtt.TT.M"><code class="name">var <span class="ident">M</span></code></dt>
@@ -5223,7 +5216,7 @@ xf = x_qtt.qtt_to_tens(x.N) # a TT-rounding is recommended.
         result = reshape(self, shape_new, eps, rmax)
     else:
         for core in self.cores:
-            if int(math.log(core.shape[1],mode_size))&gt;2:
+            if int(math.log(core.shape[1],mode_size))&gt;1:
                 Nnew = [core.shape[0]*mode_size]+[mode_size]*(int(math.log(core.shape[1],mode_size))-2)+[core.shape[2]*mode_size]
                 try:
                     core = tn.reshape(core,Nnew)
@@ -5312,7 +5305,6 @@ N1 x &hellip; x Nd x 1 x &hellip; x 1.</p>
 <li><code><a title="torchtt.torchtt.TT.R" href="#torchtt.torchtt.TT.R">R</a></code></li>
 <li><code><a title="torchtt.torchtt.TT.apply_mask" href="#torchtt.torchtt.TT.apply_mask">apply_mask</a></code></li>
 <li><code><a title="torchtt.torchtt.TT.clone" href="#torchtt.torchtt.TT.clone">clone</a></code></li>
-<li><code><a title="torchtt.torchtt.TT.cores" href="#torchtt.torchtt.TT.cores">cores</a></code></li>
 <li><code><a title="torchtt.torchtt.TT.cpu" href="#torchtt.torchtt.TT.cpu">cpu</a></code></li>
 <li><code><a title="torchtt.torchtt.TT.cuda" href="#torchtt.torchtt.TT.cuda">cuda</a></code></li>
 <li><code><a title="torchtt.torchtt.TT.detach" href="#torchtt.torchtt.TT.detach">detach</a></code></li>
