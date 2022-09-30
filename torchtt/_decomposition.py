@@ -29,28 +29,28 @@ def QR(mat):
     
 def SVD(mat):
     """
-    Provides the default SVD function. 
+    Computes the SVD of a matrix
 
-    Parameters
-    ----------
-    mat : jax.numpy
-        the input matrix.
+    Args:
+        mat (torch.tensor): the matrix
 
-    Returns
-    -------
-    Q : jax.numpy
-        the Q matrix.
-    R : jax.numpy
-        the R amtrix.
-
+    Returns:
+        U, S, V: the SVD factors.
     """
     if mat.shape[0] < 10*mat.shape[1]:
-        u, s, v = tn.linalg.svd(mat,full_matrices=False)
-        return u, s, v
+        try:
+            u, s, v = tn.linalg.svd(mat,full_matrices=False)
+            return u, s, v
+        except:
+            u, s, v = np.linalg.svd(mat.numpy(),full_matrices=False)
+            return tn.tensor(u, dtype = mat.dtype, device = mat.device), tn.tensor(s, dtype = mat.dtype, device = mat.device), tn.tensor(v, dtype = mat.dtype, device = mat.device)
     else:
-        u, s, v = tn.linalg.svd(mat.t(),full_matrices=False)
-        return  v.t(), s, u.t()
- 
+        try:    
+            u, s, v = tn.linalg.svd(mat.t(),full_matrices=False)
+            return  v.t(), s, u.t()
+        except:
+            u, s, v = np.linalg.svd((mat.t()).numpy(),full_matrices=False)
+            return  tn.tensor(v.t(), dtype = mat.dtype, device = mat.device), tn.tensor(s, dtype = mat.dtype, device = mat.device), tn.tensor(u.t(), dtype = mat.dtype, device = mat.device)
     # u, s, v = tn.linalg.svd(mat,full_matrices=False)
     # return u, s, v
 
