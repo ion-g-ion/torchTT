@@ -99,7 +99,9 @@ def gmres( LinOp, b, x0, N, max_iterations, threshold):
     err = [error]
     
     r_norm = tn.linalg.norm(r)
-   
+    if not r_norm>0:
+        return x0, True, 0
+
     Q = tn.zeros((N,max_iterations+1), dtype = b.dtype, device = b.device) 
     Q[:,0] = r[:,0] / r_norm
     # Qs = [r/r_norm]
