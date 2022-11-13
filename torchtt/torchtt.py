@@ -100,7 +100,7 @@ class TT():
             rmax (int or list[int], optional): maximum rank (either a list of integer or an integer). Defaults to 10000.
 
         Raises:
-            RankMismatch: Ranks of the given cores do not match (chace the spaes of the cores).
+            RankMismatch: Ranks of the given cores do not match (change the spaces of the cores).
             InvalidArguments: Invalid input: TT-cores have to be either 4d or 3d.
             InvalidArguments: Check the ranks and the mode size.
             NotImplementedError: Function only implemented for torch tensors, numpy arrays, list of cores as torch tensors and None
@@ -128,7 +128,7 @@ class TT():
                 s = source[i].shape
                 
                 if s[0] != R[-1]:
-                    raise RankMismatch("Ranks of the given cores do not match (chace the spaes of the cores).")
+                    raise RankMismatch("Ranks of the given cores do not match (change the spaces of the cores).")
                 if len(s) == 3:
                     R.append(s[2])
                     N.append(s[1])
@@ -268,7 +268,7 @@ class TT():
         
     def clone(self):
         """
-        Clones the torchtt.TT instance. Similat to torch.tensor.clone().
+        Clones the torchtt.TT instance. Similar to torch.tensor.clone().
 
         Returns:
             torchtt.TT: the cloned TT object.
@@ -595,7 +595,7 @@ class TT():
     def __matmul__(self,other):
         """
         Matrix-vector multiplication in TT-format
-        Suported operands:
+        Supported operands:
             - TT-matrix @ TT-tensor -> TT-tensor: y_i = A_ij * x_j
             - TT-tensor @ TT-matrix -> TT-tensor: y_j = x_i * A_ij 
             - TT-matrix @ TT-matrix -> TT-matrix: Y_ij = A_ik * B_kj
@@ -1381,7 +1381,7 @@ def eye(shape, dtype=tn.float64, device = None):
     
 def zeros(shape, dtype=tn.float64, device = None):
     """
-    Construct a tensor that contains only ones.
+    Construct a tensor that contains only zeros.
     the shape can be a list of ints or a list of tuples of ints. The second case creates a TT matrix.
 
     Args:
@@ -1484,6 +1484,129 @@ def ones(shape, dtype=tn.float64, device = None):
     return TT(cores)
 
 
+
+def xfun(shape, dtype = tn.float64, device = None):
+    """
+    Construct a tensor from 0 to tn.prod(shape)-1.
+    the shape must be a list of ints.
+    
+    Args:
+        shape (list[int]): the shape.
+        dtype (torch.dtype, optional): the dtype of the returned tensor. Defaults to tn.float64.
+        device (torch.device, optional): the device where the TT cores are created (None means CPU). Defaults to None.
+
+    Raises:
+        InvalidArguments: Shape must be a list.
+
+    Returns:
+        torchtt.TT: the xfun tensor.
+    """
+
+        
+    if isinstance(shape, list):
+        d = len(shape)
+        if d == 0:
+            return TT(None)
+            
+        if d == 1: 
+            return TT(tn.arange(shape[0], dtype = dtype, device = device))
+            
+        else:
+            cores = []
+            firstcore = tn.ones(1, shape[0], 2, dtype = dtype, device = device)
+            firstcore[0, :, 0] = tn.arange(shape[0], dtype = dtype, device = device)
+            
+            cores.append(firstcore)
+            ni = tn.tensor(shape[0], dtype = tn.float64, device = device)
+            for i in range(1, d - 1):
+                core = tn.zeros((2, shape[i], 2), dtype = dtype, device = device)
+                for j in range(shape[i]):
+                    core[:, j, :] = tn.eye(2, dtype = dtype, device = device)
+                core[1, :, 0] = ni * tn.arange(shape[i], dtype = dtype, device = device)
+                ni *= shape[i]
+                cores.append(core)
+            core = tn.ones((2, shape[d - 1], 1), dtype = dtype, device = device)
+            core[1, :, 0] = ni * tn.arange(shape[d - 1], dtype = dtype, device = device)
+            cores.append(core)
+    else:
+        raise InvalidArguments('Shape must be a list.')
+    
+    return TT(cores)
+
+
+
+def linspace(shape = [1], a = 0.0, b = 0.0, dtype = tn.float64, device = None):
+    """
+    Construct an evenly spaced tensor from a to b with a given shape in TT decomposition.
+    the shape must be a list of ints.
+
+    Args:
+        shape (list[int]): the shape.
+        a (float): start value
+        b (float): end value
+        dtype (torch.dtype, optional): the dtype of the returned tensor. Defaults to tn.float64.
+        device (torch.device, optional): the device where the TT cores are created (None means CPU). Defaults to None.
+
+    Raises:
+        InvalidArguments: Shape must be a list.
+
+    Returns:
+        torchtt.TT: a linspace tensor.
+    """
+    if isinstance(shape,list):
+        d = len(shape)
+        if d == 0:
+            return TT(None)
+            
+        if d == 1: 
+            return TT(tn.linspace(shape[0], a, b, dtype = dtype, device = device))
+            
+        else:
+            x = xfun(shape)
+            oneTensor = ones(shape)
+            N = tn.prod(tn.tensor(shape), dtype = dtype, device = device).numpy()
+            stepsize = (b - a) * 1.0 / (N - 1)
+            T = a * oneTensor + x * stepsize
+    else:
+        raise InvalidArguments('Shape must be a list.')       
+            
+    return T.round(1e-15)
+
+
+
+def arange(shape = [1], a = 0, b = 0, step = 1, dtype = tn.float64, device = None):
+    """
+    Construct a tensor of size (a-b)/step with a given shape, if possible.
+    the shape must be a list of int and the vector has to fit the shape.
+
+    Args:
+        shape (list[int] or list[tuple[int]]): the shape.
+        a (float): start value
+        b (float): end value
+        step = (int): stepsize
+        dtype (torch.dtype, optional): the dtype of the returned tensor. Defaults to tn.float64.
+        device (torch.device, optional): the device where the TT cores are created (None means CPU). Defaults to None.
+
+    Raises:
+        InvalidArguments: Shape must be a list.
+
+    Returns:
+        torchtt.TT: an evenly spaced tensor within a given interval.
+    """
+    if isinstance(shape,list):
+        d = len(shape)
+        if d == 0:
+            return TT(None)
+                
+        if d == 1: 
+            return TT(tn.arange(a, b, step, dtype = dtype, device = device))
+    else:
+        raise InvalidArguments('Shape must be a list.')
+        
+    return reshape(TT(tn.arange(a, b, step, dtype = dtype, device = device)), shape)
+
+
+
 def random(N, R, dtype = tn.float64, device = None):
     """
     Returns a tensor of shape N with random cores of rank R.
@@ -1554,7 +1677,7 @@ def reshape(tens, shape, eps = 1e-16, rmax = 2048):
         rmax (int, optional): maximum rank. Defaults to 2048.
 
     Raises:
-        ShapeMismatch: Tthe product of modes should remain equal. Check the given shape.
+        ShapeMismatch: The product of modes should remain equal. Check the given shape.
 
     Returns:
         torchtt.TT: the resulting tensor.
@@ -1568,7 +1691,7 @@ def reshape(tens, shape, eps = 1e-16, rmax = 2048):
             M.append(t[0])
             N.append(t[1])
         if np.prod(tens.N)!=np.prod(N) or np.prod(tens.M)!=np.prod(M):
-            raise ShapeMismatch('Tthe product of modes should remain equal. Check the given shape.')
+            raise ShapeMismatch('The product of modes should remain equal. Check the given shape.')
         core = tens.cores[0]
         cores_new = []
         
@@ -1611,7 +1734,7 @@ def reshape(tens, shape, eps = 1e-16, rmax = 2048):
                 
     else:
         if np.prod(tens.N)!=np.prod(shape):
-            raise ShapeMismatch('Tthe product of modes should remain equal. Check the given shape.')
+            raise ShapeMismatch('The product of modes should remain equal. Check the given shape.')
             
         core = tens.cores[0]
         cores_new = []
