@@ -13,11 +13,12 @@ Utilities:
 
 """
 
-from .torchtt import TT, eye, zeros, kron, ones, random, randn, reshape, meshgrid , dot, elementwise_divide, numel, rank1TT, bilinear_form, diag 
+from .torchtt import TT, eye, zeros, kron, ones, random, randn, reshape, meshgrid , dot, elementwise_divide, numel, rank1TT, bilinear_form, diag, xfun, linspace, arange 
 from . import solvers
 from . import grad
 # from .grad import grad, watch, unwatch
 from . import manifold
 from . import interpolate
 from . import nn
+from . import finitediff
 # from .errors import *

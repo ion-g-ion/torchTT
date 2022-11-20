@@ -1559,12 +1559,12 @@ def linspace(shape = [1], a = 0.0, b = 0.0, dtype = tn.float64, device = None):
             return TT(None)
             
         if d == 1: 
-            return TT(tn.linspace(shape[0], a, b, dtype = dtype, device = device))
+            return TT(tn.linspace(a, b, shape[0], dtype = dtype, device = device))
             
         else:
             x = xfun(shape)
             oneTensor = ones(shape)
-            N = tn.prod(tn.tensor(shape), dtype = dtype, device = device).numpy()
+            N = tn.prod(tn.tensor(shape, dtype = dtype, device = device), dtype = dtype).numpy()
             stepsize = (b - a) * 1.0 / (N - 1)
             T = a * oneTensor + x * stepsize
     else:
