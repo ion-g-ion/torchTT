@@ -18,6 +18,7 @@ def laplacian(n, d, derivative = None, dtype = tn.float64, device = None):
     Args:
         n (int): the meshpoints.
         d (int): the dimensions.
+        derivative (list[int]): List of ones and zeros. Where every one leads to the derivative in this specific direction.
         dtype (torch.dtype, optional): the dtype of the returned tensor. Defaults to tn.float64.
         device (torch.device, optional): the device where the TT cores are created (None means CPU). Defaults to None.
 
@@ -225,6 +226,7 @@ def centralfd(n, d, derivative = None, dtype = tn.float64, device = None):
     Args:
         n (int): the meshpoints.
         d (int): the dimensions.
+        derivative (list[int]): List of ones and zeros. Where every one leads to the derivative in this specific direction.
         dtype (torch.dtype, optional): the dtype of the returned tensor. Defaults to tn.float64.
         device (torch.device, optional): the device where the TT cores are created (None means CPU). Defaults to None.
 
@@ -287,6 +289,7 @@ def forwardfd(n, d, derivative = None, dtype = tn.float64, device = None):
     Args:
         n (int): the meshpoints.
         d (int): the dimensions.
+        derivative (list[int]): List of ones and zeros. Where every one leads to the derivative in this specific direction.
         dtype (torch.dtype, optional): the dtype of the returned tensor. Defaults to tn.float64.
         device (torch.device, optional): the device where the TT cores are created (None means CPU). Defaults to None.
 
@@ -348,6 +351,7 @@ def backwardfd(n, d, derivative = None, dtype = tn.float64, device = None):
     Args:
         n (int): the meshpoints.
         d (int): the dimensions.
+        derivative (list[int]): List of ones and zeros. Where every one leads to the derivative in this specific direction.
         dtype (torch.dtype, optional): the dtype of the returned tensor. Defaults to tn.float64.
         device (torch.device, optional): the device where the TT cores are created (None means CPU). Defaults to None.
 
@@ -411,6 +415,7 @@ def backward2fd(n, d, derivative = None, order = 1, dtype = tn.float64, device =
     Args:
         n (int): the meshpoints.
         d (int): the dimensions.
+        derivative (list[int]): List of ones and zeros. Where every one leads to the derivative in this specific direction.
         order (int): order of derivative. Choose between 1 and 2
         dtype (torch.dtype, optional): the dtype of the returned tensor. Defaults to tn.float64.
         device (torch.device, optional): the device where the TT cores are created (None means CPU). Defaults to None.
@@ -485,6 +490,7 @@ def forward2fd(n, d, derivative = None, order = 1, dtype = tn.float64, device = 
     Args:
         n (int): the meshpoints.
         d (int): the dimensions.
+        derivative (list[int]): List of ones and zeros. Where every one leads to the derivative in this specific direction.
         order (int): order of derivative. Choose between 1 and 2
         dtype (torch.dtype, optional): the dtype of the returned tensor. Defaults to tn.float64.
         device (torch.device, optional): the device where the TT cores are created (None means CPU). Defaults to None.
