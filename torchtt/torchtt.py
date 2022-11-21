@@ -1484,7 +1484,6 @@ def ones(shape, dtype=tn.float64, device = None):
     return TT(cores)
 
 
-
 def xfun(shape, dtype = tn.float64, device = None):
     """
     Construct a tensor from 0 to tn.prod(shape)-1.
@@ -1500,9 +1499,7 @@ def xfun(shape, dtype = tn.float64, device = None):
 
     Returns:
         torchtt.TT: the xfun tensor.
-    """
-
-        
+    """       
     if isinstance(shape, list):
         d = len(shape)
         if d == 0:
@@ -1515,24 +1512,27 @@ def xfun(shape, dtype = tn.float64, device = None):
             cores = []
             firstcore = tn.ones(1, shape[0], 2, dtype = dtype, device = device)
             firstcore[0, :, 0] = tn.arange(shape[0], dtype = dtype, device = device)
-            
             cores.append(firstcore)
             ni = tn.tensor(shape[0], dtype = tn.float64, device = device)
+            
             for i in range(1, d - 1):
                 core = tn.zeros((2, shape[i], 2), dtype = dtype, device = device)
+                
                 for j in range(shape[i]):
                     core[:, j, :] = tn.eye(2, dtype = dtype, device = device)
+                    
                 core[1, :, 0] = ni * tn.arange(shape[i], dtype = dtype, device = device)
                 ni *= shape[i]
                 cores.append(core)
+                
             core = tn.ones((2, shape[d - 1], 1), dtype = dtype, device = device)
             core[1, :, 0] = ni * tn.arange(shape[d - 1], dtype = dtype, device = device)
             cores.append(core)
+            
     else:
         raise InvalidArguments('Shape must be a list.')
     
     return TT(cores)
-
 
 
 def linspace(shape = [1], a = 0.0, b = 0.0, dtype = tn.float64, device = None):
@@ -1567,11 +1567,11 @@ def linspace(shape = [1], a = 0.0, b = 0.0, dtype = tn.float64, device = None):
             N = tn.prod(tn.tensor(shape, dtype = dtype, device = device), dtype = dtype).numpy()
             stepsize = (b - a) * 1.0 / (N - 1)
             T = a * oneTensor + x * stepsize
+            
     else:
         raise InvalidArguments('Shape must be a list.')       
             
     return T.round(1e-15)
-
 
 
 def arange(shape = [1], a = 0, b = 0, step = 1, dtype = tn.float64, device = None):
@@ -1600,11 +1600,11 @@ def arange(shape = [1], a = 0, b = 0, step = 1, dtype = tn.float64, device = Non
                 
         if d == 1: 
             return TT(tn.arange(a, b, step, dtype = dtype, device = device))
+        
     else:
         raise InvalidArguments('Shape must be a list.')
         
     return reshape(TT(tn.arange(a, b, step, dtype = dtype, device = device)), shape)
-
 
 
 def random(N, R, dtype = tn.float64, device = None):
