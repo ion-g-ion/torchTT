@@ -1513,8 +1513,9 @@ def xfun(shape, dtype = tn.float64, device = None):
             firstcore = tn.ones(1, shape[0], 2, dtype = dtype, device = device)
             firstcore[0, :, 0] = tn.arange(shape[0], dtype = dtype, device = device)
             cores.append(firstcore)
-            ni = tn.tensor(shape[0], dtype = tn.float64, device = device)
-            
+
+            ni = tn.tensor(shape[0], dtype = dtype, device = device)
+
             for i in range(1, d - 1):
                 core = tn.zeros((2, shape[i], 2), dtype = dtype, device = device)
                 
@@ -1583,7 +1584,7 @@ def arange(shape = [1], a = 0, b = 0, step = 1, dtype = tn.float64, device = Non
         shape (list[int] or list[tuple[int]]): the shape.
         a (float): start value
         b (float): end value
-        step = (int): stepsize
+        step (int): stepsize
         dtype (torch.dtype, optional): the dtype of the returned tensor. Defaults to tn.float64.
         device (torch.device, optional): the device where the TT cores are created (None means CPU). Defaults to None.
 
