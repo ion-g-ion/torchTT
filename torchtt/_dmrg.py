@@ -11,7 +11,6 @@ import datetime
 import opt_einsum as oe
 
 def dmrg_matvec(A,x,y0 = None,nswp = 20, eps = 1e-12, rmax = 1024, kickrank = 4, verb = False):
-
     if y0 == None:
         y0 = torchtt.random(x.N,2, dtype=A.cores[0].dtype, device = A.cores[0].device)
     y_cores = y0.cores
@@ -39,15 +38,15 @@ def dmrg_matvec(A,x,y0 = None,nswp = 20, eps = 1e-12, rmax = 1024, kickrank = 4,
             Q, R = QR(core)
             rnew = min([core.shape[0],core.shape[1]])
             # update current core
-            y_cores[k] = tn.reshape(Q.T,[rnew,N[k],-1])
+            y_cores[k] = tn.conj(tn.reshape(Q.T,[rnew,N[k],-1]))
             Ry[k] = rnew
             # and the k-1 one
             core_next = tn.reshape(y_cores[k-1],[y_cores[k-1].shape[0]*y_cores[k-1].shape[1],y_cores[k-1].shape[2]]) @ R.T
-            y_cores[k-1] = tn.reshape(core_next,[-1,N[k-1],rnew])
+            y_cores[k-1] = tn.conj(tn.reshape(core_next,[-1,N[k-1],rnew]))
             
             # update Phi
-            Phi = tn.einsum('ijk,mnk->ijmn',Phis[k+1],x.cores[k]) # shape  rk x rAk x rxk-a x Nk
-            Phi = tn.einsum('ijkl,mlnk->ijmn',A.cores[k],Phi) # shape  rAk-a x Nk x rk x rxk-1
+            Phi = tn.einsum('ijk,mnk->ijmn',Phis[k+1],tn.conj(x.cores[k])) # shape  rk x rAk x rxk-a x Nk
+            Phi = tn.einsum('ijkl,mlnk->ijmn',tn.conj(A.cores[k]),Phi) # shape  rAk-a x Nk x rk x rxk-1
             Phi = tn.einsum('ijkl,mjk->mil',Phi,y_cores[k]) # shape  rk-1 x rAk-1 x rxk-1
             Phis[k] = Phi
         # TME = datetime.datetime.now()-TME    
@@ -61,12 +60,12 @@ def dmrg_matvec(A,x,y0 = None,nswp = 20, eps = 1e-12, rmax = 1024, kickrank = 4,
               # TME = datetime.datetime.now()
               if not last:
                   # from left
-                  W1 = tn.einsum('ijk,klm->ijlm',Phis[k],x.cores[k]) # shape rk-1 x rAk-1 x Nk x rxk
-                  W1 = tn.einsum('ijkl,mikn->mjln',A.cores[k],W1) # shape rk-1 x Mk x rAk x rxk 
+                  W1 = tn.einsum('ijk,klm->ijlm',Phis[k],tn.conj(x.cores[k])) # shape rk-1 x rAk-1 x Nk x rxk
+                  W1 = tn.einsum('ijkl,mikn->mjln',tn.conj(A.cores[k]),W1) # shape rk-1 x Mk x rAk x rxk 
                   
                   # from right
-                  W2 = tn.einsum('ijk,mnk->njmi',Phis[k+2],x.cores[k+1]) # shape Nk+1 x rAk+1 x rxk x rk+1
-                  W2 = tn.einsum('ijkl,klmn->ijmn',A.cores[k+1],W2) # shape rAk x Mk+1 x rxk x rk+1
+                  W2 = tn.einsum('ijk,mnk->njmi',Phis[k+2],tn.conj(x.cores[k+1])) # shape Nk+1 x rAk+1 x rxk x rk+1
+                  W2 = tn.einsum('ijkl,klmn->ijmn',tn.conj(A.cores[k+1]),W2) # shape rAk x Mk+1 x rxk x rk+1
                   
                   # new supercore
                   W = tn.einsum('ijkl,kmln->ijmn',W1,W2)
@@ -121,14 +120,14 @@ def dmrg_matvec(A,x,y0 = None,nswp = 20, eps = 1e-12, rmax = 1024, kickrank = 4,
               if verb: print('\tcore ',k,': delta ',delta_cores[k],' rank ',Ry[k+1],' ->',r_new)
               Ry[k+1] = r_new 
               # print(k,W1.shape,W2.shape,Ry,N)
-              y_cores[k] = tn.reshape(W1,[Ry[k],N[k],r_new])
-              y_cores[k+1] = tn.reshape(W2,[r_new,N[k+1],Ry[k+2]])
+              y_cores[k] = tn.conj(tn.reshape(W1,[Ry[k],N[k],r_new]))
+              y_cores[k+1] = tn.conj(tn.reshape(W2,[r_new,N[k+1],Ry[k+2]]))
               
               Wc = tn.einsum('ijk,klm->ijlm', y_cores[k], y_cores[k+1])
               
               # print('decomposition ',tf.linalg.norm(Wc-W)/tf.linalg.norm(W))
-              Phi_next = tn.einsum('ijk,kmn->ijmn',Phis[k],x.cores[k]) # shape rk-1 x rAk-1 x Nk x rxk
-              Phi_next = tn.einsum('ijkl,jmkn->imnl',Phi_next,A.cores[k]) # shape  rk-1 x Mk x rAk x rxk
+              Phi_next = tn.einsum('ijk,kmn->ijmn',Phis[k],tn.conj(x.cores[k])) # shape rk-1 x rAk-1 x Nk x rxk
+              Phi_next = tn.einsum('ijkl,jmkn->imnl',Phi_next,tn.conj(A.cores[k])) # shape  rk-1 x Mk x rAk x rxk
               Phi_next = tn.einsum('ijm,ijkl->mkl',y_cores[k],Phi_next) # shape rk x rAk x rxk
               
               Phis[k+1] = Phi_next+0

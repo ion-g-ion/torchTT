@@ -12,15 +12,17 @@ err_rel = lambda t, ref :  tn.linalg.norm(t-ref).numpy() / tn.linalg.norm(ref).n
             
 class TestLinalgAdvanced(unittest.TestCase):
     
+    basic_dtype = tn.float64
+    
     def test_dmrg_matvec(self):
         """
         Test the fast matrix vector product using DMRG iterations.
         """
         n = 32
-        A = tntt.random([(n,n)]*8,[1]+7*[3]+[1])
+        A = tntt.random([(n,n)]*8,[1]+7*[3]+[1], dtype = tn.complex128)
         A = A + A 
         
-        x = tntt.random([n]*8,[1]+7*[5]+[1])
+        x = tntt.random([n]*8,[1]+7*[5]+[1], dtype = tn.complex128)
         x = x + x
         x = x + x
  
@@ -39,10 +41,10 @@ class TestLinalgAdvanced(unittest.TestCase):
         Test the division between tensors performed with AMEN optimization.
         """
         N = [7,8,9,10]
-        xs = tntt.meshgrid([tn.linspace(0,1,n, dtype = tn.float64) for n in N])
+        xs = tntt.meshgrid([tn.linspace(0,1,n, dtype = self.basic_dtype) for n in N])
         x = xs[0]+xs[1]+xs[2]+xs[3]+xs[1]*xs[2]+(1-xs[3])*xs[2]+1
         x = x.round(0)
-        y = tntt.ones(x.N)
+        y = tntt.ones(x.N, dtype = self.basic_dtype)
         
         a = y/x
         b = 1/x
@@ -57,7 +59,7 @@ class TestLinalgAdvanced(unittest.TestCase):
         Test the elemntwise division using AMEN (use preconditioner for the local subsystem).
         """
         N = [7,8,9,10]
-        xs = tntt.meshgrid([tn.linspace(0,1,n, dtype = tn.float64) for n in N])
+        xs = tntt.meshgrid([tn.linspace(0,1,n, dtype = self.basic_dtype) for n in N])
         x = xs[0]+xs[1]+xs[2]+xs[3]+xs[1]*xs[2]+(1-xs[3])*xs[2]+1
         x = x.round(0)
         y = tntt.ones(x.N)

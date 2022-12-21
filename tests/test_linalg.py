@@ -11,15 +11,17 @@ err_rel = lambda t, ref :  tn.linalg.norm(t-ref).numpy() / tn.linalg.norm(ref).n
             
 class TestLinalg(unittest.TestCase):
 
+    basic_dtype = tn.complex128
+     
     def test_add(self):
         '''
         Test the addition operator 
         '''
         N = [10,8,6,9,12]
        
-        x = tntt.random(N,[1,3,4,5,6,1])
-        y = tntt.random(N,[1,2,4,5,4,1])
-        z = tntt.random(N,[1,2,2,2,2,1])
+        x = tntt.random(N,[1,3,4,5,6,1], dtype = self.basic_dtype)
+        y = tntt.random(N,[1,2,4,5,4,1], dtype = self.basic_dtype)
+        z = tntt.random(N,[1,2,2,2,2,1], dtype = self.basic_dtype)
         const = 3.1415926535
       
         X = x.full()
@@ -49,9 +51,9 @@ class TestLinalg(unittest.TestCase):
         '''
         N = [10,8,6,9,12]
        
-        x = tntt.random(N,[1,3,4,5,6,1])
-        y = tntt.random(N,[1,2,4,5,4,1])
-        z = tntt.random(N,[1,2,2,2,2,1])
+        x = tntt.random(N,[1,3,4,5,6,1], dtype = self.basic_dtype)
+        y = tntt.random(N,[1,2,4,5,4,1], dtype = self.basic_dtype)
+        z = tntt.random(N,[1,2,2,2,2,1], dtype = self.basic_dtype)
         const = 3.1415926535
       
         X = x.full()
@@ -79,12 +81,12 @@ class TestLinalg(unittest.TestCase):
         """
         Test the pointwise multiplication between TT-objects.
         """
-        A = tntt.random([(5,6),(7,8),(9,10),(4,5)],[1,5,5,3,1])
-        B = tntt.random([(5,6),(7,8),(9,10),(4,5)],[1,5,5,3,1])
+        A = tntt.random([(5,6),(7,8),(9,10),(4,5)],[1,5,5,3,1], dtype = self.basic_dtype)
+        B = tntt.random([(5,6),(7,8),(9,10),(4,5)],[1,5,5,3,1], dtype = self.basic_dtype)
         Ar = A.full()
         Br = B.full()
-        x = tntt.random([2,3,4,5,6],[1,2,4,8,4,1])
-        y = tntt.random([2,3,4,5,6],[1,2,5,6,2,1])
+        x = tntt.random([2,3,4,5,6],[1,2,4,8,4,1], dtype = self.basic_dtype)
+        y = tntt.random([2,3,4,5,6],[1,2,5,6,2,1], dtype = self.basic_dtype)
         xr = x.full()
         yr = y.full()
         c = 2.5
@@ -104,10 +106,10 @@ class TestLinalg(unittest.TestCase):
         Test the matrix multiplication operations.
         """
 
-        A = tntt.random([(5,6),(7,8),(4,5)],[1,5,3,1])
-        B = tntt.random([(5,6),(7,8),(4,5)],[1,5,3,1]).t()
-        x = tntt.randn([5,7,4],[1,3,2,1])
-        y = tntt.randn([6,8,5],[1,1,2,1])
+        A = tntt.random([(5,6),(7,8),(4,5)],[1,5,3,1], dtype = self.basic_dtype)
+        B = tntt.random([(5,6),(7,8),(4,5)],[1,5,3,1], dtype = self.basic_dtype).t()
+        x = tntt.randn([5,7,4],[1,3,2,1], dtype = self.basic_dtype)
+        y = tntt.randn([6,8,5],[1,1,2,1], dtype = self.basic_dtype)
 
         A_ref = A.full()
         B_ref = B.full()
@@ -131,20 +133,20 @@ class TestLinalg(unittest.TestCase):
 
         """
 
-        A = tntt.random([(5,6),(7,8),(9,10),(4,5)],[1,5,5,3,1])
+        A = tntt.random([(5,6),(7,8),(9,10),(4,5)],[1,5,5,3,1], dtype = self.basic_dtype)
 
-        x = tn.rand([6,8,10,5], dtype = tn.float64)
+        x = tn.rand([6,8,10,5], dtype = self.basic_dtype)
         y = A @ x
         yr = tn.einsum('abcdijkl,ijkl->abcd', A.full(), x)
         self.assertLess(err_rel(y,yr),1e-14,'Dense matvec error 1.')
 
-        x = tn.rand([32,4,33,6,8,10,5], dtype = tn.float64)
+        x = tn.rand([32,4,33,6,8,10,5], dtype = self.basic_dtype)
         y = A @ x
         yr = tn.einsum('abcdijkl,mnoijkl->mnoabcd',A.full(), x)
         self.assertEqual(y.shape,yr.shape,'Dense matvec shape mismatch.')
         self.assertLess(err_rel(y,yr),1e-14,'Dense matvec error 2.')
 
-        x = tn.rand([1,22,6,8,10,5], dtype = tn.float64)
+        x = tn.rand([1,22,6,8,10,5], dtype = self.basic_dtype)
         y = A @ x
         yr = tn.einsum('abcdijkl,nmijkl->nmabcd',A.full(), x)
         self.assertEqual(y.shape,yr.shape,'Dense matvec shape mismatch.')
@@ -155,10 +157,10 @@ class TestLinalg(unittest.TestCase):
         Test the n-mode tensor product.
         """
 
-        x = tntt.randn([2,3,4,5,6], [1,3,3,3,3,1])
-        M1 = tn.rand((8,3), dtype = tn.float64)
-        M2 = tn.rand((7,2), dtype = tn.float64)
-        M3 = tn.rand((10,5), dtype = tn.float64)
+        x = tntt.randn([2,3,4,5,6], [1,3,3,3,3,1], dtype = self.basic_dtype)
+        M1 = tn.rand((8,3), dtype = self.basic_dtype)
+        M2 = tn.rand((7,2), dtype = self.basic_dtype)
+        M3 = tn.rand((10,5), dtype = self.basic_dtype)
         
         y = x.mprod(M1, 1)
         yr = tn.einsum('ijklm,aj->iaklm',x.full(),M1)
@@ -174,32 +176,32 @@ class TestLinalg(unittest.TestCase):
         Test the dot product between TT tensors.
         '''
 
-        a = tntt.random([4,5,6,7,8,9],[1,2,10,16,20,7,1])
-        b = tntt.random([4,5,6,7,8,9],[1,3,4,10,10,4,1])
-        c = tntt.random([5,7,9],[1,2,7,1])
-        d = tntt.random([4,5,9],[1,2,2,1])
+        a = tntt.random([4,5,6,7,8,9],[1,2,10,16,20,7,1], dtype = self.basic_dtype)
+        b = tntt.random([4,5,6,7,8,9],[1,3,4,10,10,4,1], dtype = self.basic_dtype)
+        c = tntt.random([5,7,9],[1,2,7,1], dtype = self.basic_dtype)
+        d = tntt.random([4,5,9],[1,2,2,1], dtype = self.basic_dtype)
 
         x = tntt.dot(a,b)
         y = tntt.dot(a,c,[1,3,5])
         z = tntt.dot(b,d,[0,1,5])
         
-        self.assertLess(err_rel(x,tn.einsum('abcdef,abcdef->',a.full(),b.full())), 1e-12, 'Dot product error. Test: equal sized tensors.')
-        self.assertLess(err_rel(y.full(),tn.einsum('abcdef,bdf->ace',a.full(),c.full())), 1e-12, 'Dot product error. Test: different sizes 1.')
-        self.assertLess(err_rel(z.full(),tn.einsum('abcdef,abf->cde',b.full(),d.full())), 1e-12, 'Dot product error. Test: different sizes 2.')
+        self.assertLess(err_rel(x,tn.einsum('abcdef,abcdef->',a.full(),tn.conj(b.full()))), 1e-12, 'Dot product error. Test: equal sized tensors.')
+        self.assertLess(err_rel(y.full(),tn.einsum('abcdef,bdf->ace',a.full(),tn.conj(c.full()))), 1e-12, 'Dot product error. Test: different sizes 1.')
+        self.assertLess(err_rel(z.full(),tn.einsum('abcdef,abf->cde',b.full(),tn.conj(d.full()))), 1e-12, 'Dot product error. Test: different sizes 2.')
         
 
     def test_kron(self):
         '''
         Test the Kronecker product.
         ''' 
-        a = tntt.random([5,7,9],[1,2,7,1])
-        b = tntt.random([4,5,9],[1,2,2,1])
+        a = tntt.random([5,7,9],[1,2,7,1], dtype = self.basic_dtype)
+        b = tntt.random([4,5,9],[1,2,2,1], dtype = self.basic_dtype)
         
         c = a**b
         self.assertLess(err_rel(c.full(),tn.einsum('abc,def->abcdef',a.full(),b.full())), 1e-12, 'Kronecker product error: 2 tensors.')
 
-        A = tntt.random([(2,3),(4,5)],[1,2,1])
-        B = tntt.random([(3,3),(4,2)],[1,3,1])
+        A = tntt.random([(2,3),(4,5)],[1,2,1], dtype = self.basic_dtype)
+        B = tntt.random([(3,3),(4,2)],[1,3,1], dtype = self.basic_dtype)
         
         C = A**B
         self.assertLess(err_rel(C.full(),tn.einsum('abcd,mnop->abmncdop',A.full(),B.full())), 1e-12, 'Kronecker product error: 2 tensor operators.')
@@ -216,8 +218,8 @@ class TestLinalg(unittest.TestCase):
         Test sequence of linear algebra operations.
         '''
       
-        x = tntt.random([4,7,13,14,19],[1,2,10,13,10,1])
-        y = tntt.random([4,7,13,14,19],[1,2,4,2,4,1])
+        x = tntt.random([4,7,13,14,19],[1,2,10,13,10,1], dtype = self.basic_dtype)
+        y = tntt.random([4,7,13,14,19],[1,2,4,2,4,1], dtype = self.basic_dtype)
        
         x = x/x.norm()
         y = y/y.norm()
@@ -236,7 +238,7 @@ class TestLinalg(unittest.TestCase):
         # print('Testing: Slicing of a tensor.')
       
         # TT-tensor
-        cores = [tn.rand([1,9,3],dtype=tn.float64),tn.rand([3,10,4],dtype=tn.float64),tn.rand([4,15,5],dtype=tn.float64),tn.rand([5,15,1],dtype=tn.float64)]
+        cores = [tn.rand([1,9,3], dtype = self.basic_dtype),tn.rand([3,10,4], dtype = self.basic_dtype),tn.rand([4,15,5], dtype = self.basic_dtype),tn.rand([5,15,1], dtype = self.basic_dtype)]
         Att = tntt.TT(cores)
         A = Att.full()
       
@@ -250,7 +252,7 @@ class TestLinalg(unittest.TestCase):
         self.assertLess(err_rel(A[...],Att[...].full()) , 1e-15 , "Tensor slicing error: ellipsis only.")
         
         # TT-matrix
-        cores = [tn.rand([1,9,8,3],dtype=tn.float64),tn.rand([3,10,9,4],dtype=tn.float64),tn.rand([4,15,14,5],dtype=tn.float64),tn.rand([5,15,10,1],dtype=tn.float64)]
+        cores = [tn.rand([1,9,8,3], dtype = self.basic_dtype),tn.rand([3,10,9,4], dtype = self.basic_dtype),tn.rand([4,15,14,5], dtype = self.basic_dtype),tn.rand([5,15,10,1], dtype = self.basic_dtype)]
         Att = tntt.TT(cores)
         A = Att.full()
       
@@ -268,14 +270,14 @@ class TestLinalg(unittest.TestCase):
         '''
         N = [16,8,64,128]
         R = [1,2,10,12,1]
-        x = tntt.random(N,R) 
+        x = tntt.random(N,R, dtype = self.basic_dtype) 
         x_qtt = x.to_qtt()
         x_full = x.full()
       
         self.assertTrue(err_rel(tn.reshape(x_qtt.full(),x.N),x_full)<1e-12,'Tensor to QTT failed.')
       
-        x = tntt.random([256,128,1024,128],[1,40,50,20,1])
-        # x = tntt.random([16,8,4,16],[1,10,12,4,1])
+        x = tntt.random([256,128,1024,128],[1,40,50,20,1], dtype = self.basic_dtype)
+        # x = tntt.random([16,8,4,16],[1,10,12,4,1], dtype = self.basic_dtype)
         N = x.N
         xq = x.to_qtt()
         xx = xq.qtt_to_tens(N)
@@ -287,27 +289,27 @@ class TestLinalg(unittest.TestCase):
         Test the reshape function.
         '''
       
-        T = tntt.ones([3,2])
+        T = tntt.ones([3,2], dtype = self.basic_dtype)
         Tf = T.full()
         Tr = tntt.reshape(T,[6])
 
         self.assertLess(tn.linalg.norm(tn.reshape(Tf,Tr.N)-Tr.full()).numpy(),1e-12,'TT-tensor reshape fail: test 1')
 
 
-        T = tntt.random([6,8,9],[1,4,5,1])
+        T = tntt.random([6,8,9],[1,4,5,1], dtype = self.basic_dtype)
         Tf = T.full()
         Tr = tntt.reshape(T,[2,6,12,3])
 
         self.assertLess(tn.linalg.norm(tn.reshape(Tf,Tr.N)-Tr.full()).numpy(),1e-12,'TT-tensor reshape fail: test 2')
 
-        T = tntt.random([6,8,9],[1,4,5,1])
+        T = tntt.random([6,8,9],[1,4,5,1], dtype = self.basic_dtype)
         Tf = T.full()
         Tr = tntt.reshape(T,[2,3,4,2,3,3])
 
         self.assertLess(tn.linalg.norm(tn.reshape(Tf,Tr.N)-Tr.full()).numpy(),1e-12,'TT-tensor reshape fail: test 3')
 
 
-        T = tntt.random([2,3,4,2,3,2,5],[1,2,3,4,4,5,2,1])
+        T = tntt.random([2,3,4,2,3,2,5],[1,2,3,4,4,5,2,1], dtype = self.basic_dtype)
         Tf = T.full()
         Tr = tntt.reshape(T,[6,24,10])
 
@@ -315,20 +317,20 @@ class TestLinalg(unittest.TestCase):
       
         # test TT-matrix
       
-        A = tntt.random([(9,4),(16,6)],[1,4,1])
+        A = tntt.random([(9,4),(16,6)],[1,4,1], dtype = self.basic_dtype)
         Af = A.full()
         Ar = tntt.reshape(A,[(3,2),(3,2),(4,2),(4,3)])
 
         self.assertLess(tn.linalg.norm(tn.reshape(Af,Ar.M+Ar.N)-Ar.full()).numpy(),1e-12,'TT-matrix reshape fail: test 1')
 
-        A = tntt.random([(9,4),(16,6),(3,5)],[1,4,5,1])
+        A = tntt.random([(9,4),(16,6),(3,5)],[1,4,5,1], dtype = self.basic_dtype)
         Af = A.full()
         Ar = tntt.reshape(A,[(3,2),(6,6),(24,10)])
 
         self.assertLess(err_rel(Ar.full(),tn.reshape(Af,Ar.M+Ar.N)),1e-13,'TT-matrix reshape fail: test 2')
       
-        A = tntt.random([(4,8),(16,12),(2,8),(6,4)],[1,4,7,2,1])
-        T = tntt.random([8,12,8,4],[1,3,9,3,1])
+        A = tntt.random([(4,8),(16,12),(2,8),(6,4)],[1,4,7,2,1], dtype = self.basic_dtype)
+        T = tntt.random([8,12,8,4],[1,3,9,3,1], dtype = self.basic_dtype)
         Ar = tntt.reshape(A,[(2,4),(4,6),(4,2),(8,32),(3,2)])
         Tr = tntt.reshape(T,[4,6,2,32,2])
         Af = A.full()
@@ -343,7 +345,7 @@ class TestLinalg(unittest.TestCase):
         """
         indices = tn.randint(0,20,(1000,4))
 
-        x = tntt.random([21,22,23,21],[1,10,10,10,1])
+        x = tntt.random([21,22,23,21],[1,10,10,10,1], dtype = self.basic_dtype)
         xf = x.full()
 
         vals = x.apply_mask(indices)
@@ -357,14 +359,25 @@ class TestLinalg(unittest.TestCase):
         """
         Test the method torchtt.bilinear_form()
         """
-        A = tntt.random([(5,6),(7,8),(2,3),(4,5)],[1,5,5,3,1])
-        x = tntt.randn([5,7,2,4],[1,2,3,4,1])
-        y = tntt.randn([6,8,3,5],[1,6,5,4,1])
+        A = tntt.random([(5,6),(7,8),(2,3),(4,5)],[1,5,5,3,1], dtype = self.basic_dtype)
+        x = tntt.randn([5,7,2,4],[1,2,3,4,1], dtype = self.basic_dtype)
+        y = tntt.randn([6,8,3,5],[1,6,5,4,1], dtype = self.basic_dtype)
         
         res = tntt.bilinear_form(x,A,y)
-        res_ref = tn.einsum('abcd,abcdijkl,ijkl->',x.full(),A.full(),y.full())
+        res_ref = tn.einsum('abcd,abcdijkl,ijkl->',tn.conj(x.full()),A.full(),y.full())
 
         self.assertLess(err_rel(res,res_ref),5e-13,"torchtt.bilinear_form() failed.")
+        
+    def test_conj(self):
+        """
+        Test the conjugate.
+        """
+        
+        A = tntt.random([(5,6),(7,8),(2,3),(4,5)],[1,5,5,3,1], dtype = self.basic_dtype)
+        x = tntt.randn([5,7,2,4],[1,2,3,4,1], dtype = self.basic_dtype)
+        
+        self.assertLess(err_rel(x.conj().full(),tn.conj(x.full())),5e-13,"torchtt.TT.conj() failed.")
+        self.assertLess(err_rel(A.conj().full(),tn.conj(A.full())),5e-13,"torchtt.TT.conj() failed fpr TT matrix.")
         
 if __name__ == '__main__':
     unittest.main()

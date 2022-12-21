@@ -806,12 +806,12 @@ class TT():
             
             if self.__is_ttm:
                 for i in range(len(self.__N)):
-                    norm = tn.einsum('ab,aijm,bijn->mn',norm, self.cores[i], self.cores[i])
+                    norm = tn.einsum('ab,aijm,bijn->mn',norm, self.cores[i], tn.conj(self.cores[i]))
                 norm = tn.squeeze(norm)
             else:
                            
                 for i in range(len(self.__N)):
-                    norm = tn.einsum('ab,aim,bin->mn',norm, self.cores[i], self.cores[i])
+                    norm = tn.einsum('ab,aim,bin->mn',norm, self.cores[i], tn.conj(self.cores[i]))
                 norm = tn.squeeze(norm)
             if squared:
                 return norm
@@ -1358,6 +1358,14 @@ class TT():
         
         return TT(cores_new)        
         
+    def conj(self):
+        """
+        Return the complex conjugate of a tensor in TT format.
+
+        Returns:
+            torchtt.TT: the complex conjugated tensor.
+        """
+        return TT([tn.conj(c) for c in self.cores])
     
 def eye(shape, dtype=tn.float64, device = None):
     """
@@ -1804,6 +1812,7 @@ def dot(a,b,axis=None):
     If a and b have inequal mode sizes, the function perform index contraction. 
     The number of dimensions of a must be greater or equal as b.
     The modes of the tensor a along which the index contraction with b is performed are given in axis.
+    For the compelx case (a,b) = b^H . a.
 
     Examples:
         ```
@@ -1844,7 +1853,7 @@ def dot(a,b,axis=None):
         result = tn.tensor([[1.0]],dtype = a.cores[0].dtype, device=a.cores[0].device)
         
         for i in range(len(a.N)):
-            result = tn.einsum('ab,aim,bin->mn',result, a.cores[i], b.cores[i])
+            result = tn.einsum('ab,aim,bin->mn',result, a.cores[i], tn.conj(b.cores[i]))
         result = tn.squeeze(result)
     else:
         # partial case
@@ -1860,12 +1869,12 @@ def dot(a,b,axis=None):
         rank_left = 1
         for i in range(len(a.N)):
             if i in axis:
-                cores_new.append(b.cores[k])
+                cores_new.append(tn.conj(b.cores[k]))
                 rank_left = b.cores[k].shape[2]
                 k+=1
             else:
                 rank_right = b.cores[k].shape[0] if i+1 in axis else rank_left                
-                cores_new.append(tn.einsum('ik,j->ijk',tn.eye(rank_left,rank_right,dtype=a.cores[0].dtype),tn.ones([a.N[i]],dtype=a.cores[0].dtype)))
+                cores_new.append(tn.conj(tn.einsum('ik,j->ijk',tn.eye(rank_left,rank_right,dtype=a.cores[0].dtype),tn.ones([a.N[i]],dtype=a.cores[0].dtype))))
         
         result = (a*TT(cores_new)).sum(axis)
     return result

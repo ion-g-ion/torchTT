@@ -40,6 +40,7 @@ def SVD(mat):
     if mat.shape[0] < 10*mat.shape[1]:
         try:
             u, s, v = tn.linalg.svd(mat,full_matrices=False)
+            s = s.to(v.dtype)
             return u, s, v
         except:
             u, s, v = np.linalg.svd(mat.numpy(),full_matrices=False)
@@ -47,6 +48,7 @@ def SVD(mat):
     else:
         try:    
             u, s, v = tn.linalg.svd(mat.t(),full_matrices=False)
+            s = s.to(v.dtype)
             return  v.t(), s, u.t()
         except:
             u, s, v = np.linalg.svd((mat.t()).numpy(),full_matrices=False)
@@ -374,7 +376,7 @@ def to_tt(A,N=None,eps=1e-14,rmax=100,is_sparse=False):
         # perform svd 
         
         u, s, v = SVD(C)
-            
+        
         # tme = datetime.datetime.now()-tme
         # print('time1',tme)
       

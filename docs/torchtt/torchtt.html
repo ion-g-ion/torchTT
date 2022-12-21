@@ -838,12 +838,12 @@ class TT():
             
             if self.__is_ttm:
                 for i in range(len(self.__N)):
-                    norm = tn.einsum(&#39;ab,aijm,bijn-&gt;mn&#39;,norm, self.cores[i], self.cores[i])
+                    norm = tn.einsum(&#39;ab,aijm,bijn-&gt;mn&#39;,norm, self.cores[i], tn.conj(self.cores[i]))
                 norm = tn.squeeze(norm)
             else:
                            
                 for i in range(len(self.__N)):
-                    norm = tn.einsum(&#39;ab,aim,bin-&gt;mn&#39;,norm, self.cores[i], self.cores[i])
+                    norm = tn.einsum(&#39;ab,aim,bin-&gt;mn&#39;,norm, self.cores[i], tn.conj(self.cores[i]))
                 norm = tn.squeeze(norm)
             if squared:
                 return norm
@@ -1390,6 +1390,14 @@ class TT():
         
         return TT(cores_new)        
         
+    def conj(self):
+        &#34;&#34;&#34;
+        Return the complex conjugate of a tensor in TT format.
+
+        Returns:
+            torchtt.TT: the complex conjugated tensor.
+        &#34;&#34;&#34;
+        return TT([tn.conj(c) for c in self.cores])
     
 def eye(shape, dtype=tn.float64, device = None):
     &#34;&#34;&#34;
@@ -1836,6 +1844,7 @@ def dot(a,b,axis=None):
     If a and b have inequal mode sizes, the function perform index contraction. 
     The number of dimensions of a must be greater or equal as b.
     The modes of the tensor a along which the index contraction with b is performed are given in axis.
+    For the compelx case (a,b) = b^H . a.
 
     Examples:
         ```
@@ -1876,7 +1885,7 @@ def dot(a,b,axis=None):
         result = tn.tensor([[1.0]],dtype = a.cores[0].dtype, device=a.cores[0].device)
         
         for i in range(len(a.N)):
-            result = tn.einsum(&#39;ab,aim,bin-&gt;mn&#39;,result, a.cores[i], b.cores[i])
+            result = tn.einsum(&#39;ab,aim,bin-&gt;mn&#39;,result, a.cores[i], tn.conj(b.cores[i]))
         result = tn.squeeze(result)
     else:
         # partial case
@@ -1892,12 +1901,12 @@ def dot(a,b,axis=None):
         rank_left = 1
         for i in range(len(a.N)):
             if i in axis:
-                cores_new.append(b.cores[k])
+                cores_new.append(tn.conj(b.cores[k]))
                 rank_left = b.cores[k].shape[2]
                 k+=1
             else:
                 rank_right = b.cores[k].shape[0] if i+1 in axis else rank_left                
-                cores_new.append(tn.einsum(&#39;ik,j-&gt;ijk&#39;,tn.eye(rank_left,rank_right,dtype=a.cores[0].dtype),tn.ones([a.N[i]],dtype=a.cores[0].dtype)))
+                cores_new.append(tn.conj(tn.einsum(&#39;ik,j-&gt;ijk&#39;,tn.eye(rank_left,rank_right,dtype=a.cores[0].dtype),tn.ones([a.N[i]],dtype=a.cores[0].dtype))))
         
         result = (a*TT(cores_new)).sum(axis)
     return result
@@ -2206,7 +2215,8 @@ the shape must be a list of int and the vector has to fit the shape.</p>
 If both a and b have identical mode sizes the result is the dot product.
 If a and b have inequal mode sizes, the function perform index contraction.
 The number of dimensions of a must be greater or equal as b.
-The modes of the tensor a along which the index contraction with b is performed are given in axis.</p>
+The modes of the tensor a along which the index contraction with b is performed are given in axis.
+For the compelx case (a,b) = b^H . a.</p>
 <h2 id="examples">Examples</h2>
 <pre><code>a = torchtt.randn([3,4,5,6,7],[1,2,2,2,2,1])
 b = torchtt.randn([3,4,5,6,7],[1,2,2,2,2,1])
@@ -2250,6 +2260,7 @@ print(torchtt.dot(a,c,[0,2,3]))
     If a and b have inequal mode sizes, the function perform index contraction. 
     The number of dimensions of a must be greater or equal as b.
     The modes of the tensor a along which the index contraction with b is performed are given in axis.
+    For the compelx case (a,b) = b^H . a.
 
     Examples:
         ```
@@ -2290,7 +2301,7 @@ print(torchtt.dot(a,c,[0,2,3]))
         result = tn.tensor([[1.0]],dtype = a.cores[0].dtype, device=a.cores[0].device)
         
         for i in range(len(a.N)):
-            result = tn.einsum(&#39;ab,aim,bin-&gt;mn&#39;,result, a.cores[i], b.cores[i])
+            result = tn.einsum(&#39;ab,aim,bin-&gt;mn&#39;,result, a.cores[i], tn.conj(b.cores[i]))
         result = tn.squeeze(result)
     else:
         # partial case
@@ -2306,12 +2317,12 @@ print(torchtt.dot(a,c,[0,2,3]))
         rank_left = 1
         for i in range(len(a.N)):
             if i in axis:
-                cores_new.append(b.cores[k])
+                cores_new.append(tn.conj(b.cores[k]))
                 rank_left = b.cores[k].shape[2]
                 k+=1
             else:
                 rank_right = b.cores[k].shape[0] if i+1 in axis else rank_left                
-                cores_new.append(tn.einsum(&#39;ik,j-&gt;ijk&#39;,tn.eye(rank_left,rank_right,dtype=a.cores[0].dtype),tn.ones([a.N[i]],dtype=a.cores[0].dtype)))
+                cores_new.append(tn.conj(tn.einsum(&#39;ik,j-&gt;ijk&#39;,tn.eye(rank_left,rank_right,dtype=a.cores[0].dtype),tn.ones([a.N[i]],dtype=a.cores[0].dtype))))
         
         result = (a*TT(cores_new)).sum(axis)
     return result</code></pre>
@@ -3986,12 +3997,12 @@ print(Att)
             
             if self.__is_ttm:
                 for i in range(len(self.__N)):
-                    norm = tn.einsum(&#39;ab,aijm,bijn-&gt;mn&#39;,norm, self.cores[i], self.cores[i])
+                    norm = tn.einsum(&#39;ab,aijm,bijn-&gt;mn&#39;,norm, self.cores[i], tn.conj(self.cores[i]))
                 norm = tn.squeeze(norm)
             else:
                            
                 for i in range(len(self.__N)):
-                    norm = tn.einsum(&#39;ab,aim,bin-&gt;mn&#39;,norm, self.cores[i], self.cores[i])
+                    norm = tn.einsum(&#39;ab,aim,bin-&gt;mn&#39;,norm, self.cores[i], tn.conj(self.cores[i]))
                 norm = tn.squeeze(norm)
             if squared:
                 return norm
@@ -4536,7 +4547,16 @@ print(Att)
         else:
             raise InvalidArguments(&#39;Invalid arguments.&#39;)
         
-        return TT(cores_new)        </code></pre>
+        return TT(cores_new)        
+        
+    def conj(self):
+        &#34;&#34;&#34;
+        Return the complex conjugate of a tensor in TT format.
+
+        Returns:
+            torchtt.TT: the complex conjugated tensor.
+        &#34;&#34;&#34;
+        return TT([tn.conj(c) for c in self.cores])</code></pre>
 </details>
 <h3>Instance variables</h3>
 <dl>
@@ -4715,6 +4735,30 @@ val = x.apply_mask(indices)
         torchtt.TT: the cloned TT object.
     &#34;&#34;&#34;
     return TT([c.clone() for c in self.cores]) </code></pre>
+</details>
+</dd>
+<dt id="torchtt.torchtt.TT.conj"><code class="name flex">
+<span>def <span class="ident">conj</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return the complex conjugate of a tensor in TT format.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>torchtt.TT</code></dt>
+<dd>the complex conjugated tensor.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def conj(self):
+    &#34;&#34;&#34;
+    Return the complex conjugate of a tensor in TT format.
+
+    Returns:
+        torchtt.TT: the complex conjugated tensor.
+    &#34;&#34;&#34;
+    return TT([tn.conj(c) for c in self.cores])</code></pre>
 </details>
 </dd>
 <dt id="torchtt.torchtt.TT.cpu"><code class="name flex">
@@ -5033,12 +5077,12 @@ If factor_matrices is a list, the mode has to be list[int] of equal size.</dd>
         
         if self.__is_ttm:
             for i in range(len(self.__N)):
-                norm = tn.einsum(&#39;ab,aijm,bijn-&gt;mn&#39;,norm, self.cores[i], self.cores[i])
+                norm = tn.einsum(&#39;ab,aijm,bijn-&gt;mn&#39;,norm, self.cores[i], tn.conj(self.cores[i]))
             norm = tn.squeeze(norm)
         else:
                        
             for i in range(len(self.__N)):
-                norm = tn.einsum(&#39;ab,aim,bin-&gt;mn&#39;,norm, self.cores[i], self.cores[i])
+                norm = tn.einsum(&#39;ab,aim,bin-&gt;mn&#39;,norm, self.cores[i], tn.conj(self.cores[i]))
             norm = tn.squeeze(norm)
         if squared:
             return norm
@@ -5647,6 +5691,7 @@ N1 x &hellip; x Nd x 1 x &hellip; x 1.</p>
 <li><code><a title="torchtt.torchtt.TT.R" href="#torchtt.torchtt.TT.R">R</a></code></li>
 <li><code><a title="torchtt.torchtt.TT.apply_mask" href="#torchtt.torchtt.TT.apply_mask">apply_mask</a></code></li>
 <li><code><a title="torchtt.torchtt.TT.clone" href="#torchtt.torchtt.TT.clone">clone</a></code></li>
+<li><code><a title="torchtt.torchtt.TT.conj" href="#torchtt.torchtt.TT.conj">conj</a></code></li>
 <li><code><a title="torchtt.torchtt.TT.cpu" href="#torchtt.torchtt.TT.cpu">cpu</a></code></li>
 <li><code><a title="torchtt.torchtt.TT.cuda" href="#torchtt.torchtt.TT.cuda">cuda</a></code></li>
 <li><code><a title="torchtt.torchtt.TT.detach" href="#torchtt.torchtt.TT.detach">detach</a></code></li>

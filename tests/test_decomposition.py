@@ -8,6 +8,8 @@ err_rel = lambda t, ref :  tn.linalg.norm(t-ref).numpy() / tn.linalg.norm(ref).n
 
 class TestDecomposition(unittest.TestCase):
 
+    basic_dtype = tn.complex128
+
     def test_init(self):
         """
         Checks the constructor and the TT.full() function. 
@@ -21,7 +23,7 @@ class TestDecomposition(unittest.TestCase):
         """
         
         # print('Testing: Initialization from list of cores.')
-        cores = [tn.rand([1,20,3],dtype=tn.float64),tn.rand([3,10,4],dtype=tn.float64),tn.rand([4,5,1],dtype=tn.float64)]
+        cores = [tn.rand([1,20,3],dtype = self.basic_dtype),tn.rand([3,10,4], dtype = self.basic_dtype),tn.rand([4,5,1], dtype = self.basic_dtype)]
         
         T = tntt.TT(cores)
         
@@ -41,7 +43,7 @@ class TestDecomposition(unittest.TestCase):
 
         '''
         # print('Testing: TT-decomposition from full (random tensor).')
-        T_ref = tn.rand([10,20,30,5],dtype=tn.float64)
+        T_ref = tn.rand([10,20,30,5], dtype = self.basic_dtype)
         
         T = tntt.TT(T_ref,eps = 1e-19,rmax = 1000)
         
@@ -60,7 +62,7 @@ class TestDecomposition(unittest.TestCase):
         
         """
         # print('Testing: TT-decomposition from full (already low-rank).')
-        cores = [tn.rand([1,200,30],dtype=tn.float64), tn.rand([30,100,4],dtype=tn.float64), tn.rand([4,50,1],dtype=tn.float64)]
+        cores = [tn.rand([1,200,30], dtype = self.basic_dtype), tn.rand([30,100,4], dtype = self.basic_dtype), tn.rand([4,50,1], dtype = self.basic_dtype)]
         T_ref = tn.squeeze(tn.einsum('ijk,klm,mno->ijlno',cores[0],cores[1],cores[2]))
         
         T = tntt.TT(T_ref,eps = 1e-19)
@@ -81,7 +83,7 @@ class TestDecomposition(unittest.TestCase):
     
         """
         # print('Testing: TT-decomposition from full (long  20d TT).')
-        cores = [tn.rand([1,2,16],dtype=tn.float64)] + [tn.rand([16,2,16],dtype=tn.float64) for i in range(18)] + [tn.rand([16,2,1],dtype=tn.float64)]
+        cores = [tn.rand([1,2,16], dtype = self.basic_dtype)] + [tn.rand([16,2,16], dtype = self.basic_dtype) for i in range(18)] + [tn.rand([16,2,1], dtype = self.basic_dtype)]
         T_ref = tntt.TT(cores).full()
         
         T = tntt.TT(T_ref,eps = 1e-12)
@@ -101,7 +103,7 @@ class TestDecomposition(unittest.TestCase):
     
         """
         
-        T_ref = tn.rand([10,11,12,15,17,19],dtype=tn.float64)
+        T_ref = tn.rand([10,11,12,15,17,19], dtype = self.basic_dtype)
         
         T = tntt.TT(T_ref, shape = [(10,15),(11,17),(12,19)], eps = 1e-19, rmax = 1000)
         Tfull = T.full()
@@ -114,9 +116,9 @@ class TestDecomposition(unittest.TestCase):
         Checks the lr_orthogonal function. The reconstructed tensor should remain the same.
         """
         # print('Testing: TT-orthogonalization.')
-        cores = [tn.rand([1,20,3],dtype=tn.float64), tn.rand([3,10,4],dtype=tn.float64), tn.rand([4,5,20],dtype=tn.float64), tn.rand([20,5,2],dtype=tn.float64), tn.rand([2,10,1],dtype=tn.float64)]
+        cores = [tn.rand([1,20,3], dtype = self.basic_dtype), tn.rand([3,10,4], dtype = self.basic_dtype), tn.rand([4,5,20], dtype = self.basic_dtype), tn.rand([20,5,2], dtype = self.basic_dtype), tn.rand([2,10,1], dtype = self.basic_dtype)]
         T = tntt.TT(cores)
-        T = tntt.random([3,4,5,3,8,7,10,3,5,6],[1,20,12,34,3,50,100,12,2,80,1])
+        T = tntt.random([3,4,5,3,8,7,10,3,5,6],[1,20,12,34,3,50,100,12,2,80,1], dtype = self.basic_dtype)
         T_ref = T.full()
         
         cores, R = tntt._decomposition.lr_orthogonal(T.cores, T.R, T.is_ttm)
@@ -127,7 +129,7 @@ class TestDecomposition(unittest.TestCase):
         for i in range(len(cores)):
             c = cores[i]
             L = tn.reshape(c,[-1,c.shape[-1]]).numpy()
-            self.assertTrue(np.linalg.norm(L.T @ L - np.eye(L.shape[1])) < 1e-12 or i==len(cores)-1,'Cores are not left orthogonal after LR orthogonalization.')
+            self.assertTrue(np.linalg.norm(L.T @ np.conj(L) - np.eye(L.shape[1])) < 1e-12 or i==len(cores)-1,'Cores are not left orthogonal after LR orthogonalization.')
                 
         
         cores, R = tntt._decomposition.rl_orthogonal(T.cores, T.R, T.is_ttm)
@@ -139,13 +141,13 @@ class TestDecomposition(unittest.TestCase):
         for i in range(len(cores)):
             c = cores[i]
             R = tn.reshape(c,[c.shape[0],-1]).numpy()
-            self.assertTrue(np.linalg.norm(R @ R.T - np.eye(R.shape[0])) < 1e-12 or i==0)
+            self.assertTrue(np.linalg.norm(np.conj(R) @ R.T - np.eye(R.shape[0])) < 1e-12 or i==0)
           
     def test_decomposition_orthogonal_ttm(self):
         """
         Test the lr and rt orthogonal functions for a TT matrix.
         """
-        T = tntt.random([(3,4),(5,6),(7,8),(9,4)],[1,2,3,4,1])
+        T = tntt.random([(3,4),(5,6),(7,8),(9,4)],[1,2,3,4,1], dtype = self.basic_dtype)
         T_ref = T.full()
         
         cores, R = tntt._decomposition.lr_orthogonal(T.cores, T.R, T.is_ttm)
@@ -156,7 +158,7 @@ class TestDecomposition(unittest.TestCase):
         for i in range(len(cores)):
             c = cores[i]
             L = tn.reshape(c,[-1,c.shape[-1]]).numpy()
-            self.assertTrue(np.linalg.norm(L.T @ L - np.eye(L.shape[1])) < 1e-12 or i==len(cores)-1,'Cores are not left orthogonal after LR orthogonalization.')
+            self.assertTrue(np.linalg.norm(L.T @ np.conj(L) - np.eye(L.shape[1])) < 1e-12 or i==len(cores)-1,'Cores are not left orthogonal after LR orthogonalization.')
                 
         
         cores, R = tntt._decomposition.rl_orthogonal(T.cores, T.R, T.is_ttm)
@@ -168,7 +170,7 @@ class TestDecomposition(unittest.TestCase):
         for i in range(len(cores)):
             c = cores[i]
             R = tn.reshape(c,[c.shape[0],-1]).numpy()
-            self.assertTrue(np.linalg.norm(R @ R.T - np.eye(R.shape[0])) < 1e-12 or i==0)
+            self.assertTrue(np.linalg.norm(np.conj(R) @ R.T - np.eye(R.shape[0])) < 1e-12 or i==0)
     
     def test_decomposition_rounding(self):
         """
@@ -177,10 +179,10 @@ class TestDecomposition(unittest.TestCase):
         """
         # print('Testing: TT-rounding.')
         
-        T1 = tn.einsum('i,j,k->ijk',tn.rand([20],dtype=tn.float64),tn.rand([30],dtype=tn.float64),tn.rand([32],dtype=tn.float64))
-        T2 = tn.einsum('i,j,k->ijk',tn.rand([20],dtype=tn.float64),tn.rand([30],dtype=tn.float64),tn.rand([32],dtype=tn.float64))
-        T3 = tn.einsum('i,j,k->ijk',tn.rand([20],dtype=tn.float64),tn.rand([30],dtype=tn.float64),tn.rand([32],dtype=tn.float64))
-        T4 = tn.einsum('i,j,k->ijk',tn.rand([20],dtype=tn.float64),tn.rand([30],dtype=tn.float64),tn.rand([32],dtype=tn.float64))
+        T1 = tn.einsum('i,j,k->ijk',tn.rand([20], dtype = self.basic_dtype),tn.rand([30], dtype = self.basic_dtype),tn.rand([32], dtype = self.basic_dtype))
+        T2 = tn.einsum('i,j,k->ijk',tn.rand([20], dtype = self.basic_dtype),tn.rand([30], dtype = self.basic_dtype),tn.rand([32], dtype = self.basic_dtype))
+        T3 = tn.einsum('i,j,k->ijk',tn.rand([20], dtype = self.basic_dtype),tn.rand([30], dtype = self.basic_dtype),tn.rand([32], dtype = self.basic_dtype))
+        T4 = tn.einsum('i,j,k->ijk',tn.rand([20], dtype = self.basic_dtype),tn.rand([30], dtype = self.basic_dtype),tn.rand([32], dtype = self.basic_dtype))
         
         T_ref = T1 / tn.linalg.norm(T1) + 1e-3*T2 / tn.linalg.norm(T2) + 1e-6*T3 / tn.linalg.norm(T3) + 1e-9*T4 / tn.linalg.norm(T4)
         T3 = T1 / tn.linalg.norm(T1) + 1e-3*T2 / tn.linalg.norm(T2) + 1e-6*T3 / tn.linalg.norm(T3) 
