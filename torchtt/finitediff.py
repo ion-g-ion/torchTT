@@ -25,7 +25,7 @@ def isEquidistant(xn, dtype = tn.float64, device = None):
             stepsize[0]=stepsize[1]
         
             stepsize= np.abs(stepsize)
-            #stepsize = np.round(stepsize,14)
+            stepsize = np.round(stepsize,14)
     
             # Prüfe, ob alle Entfernungen gleich sind
             if np.all(stepsize == stepsize[0])==False:
