@@ -310,7 +310,7 @@ def rank_chop(s,eps):
     
     R = s.size - 1
    
-    sc = np.cumsum(s[::-1]**2)[::-1]
+    sc = np.cumsum(np.abs(s[::-1])**2)[::-1]
     R = np.argmax(sc<eps**2)
    #  print(sc,eps**2,sc<eps**2,R)
    #  while R>0:

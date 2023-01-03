@@ -38,11 +38,11 @@ def dmrg_matvec(A,x,y0 = None,nswp = 20, eps = 1e-12, rmax = 1024, kickrank = 4,
             Q, R = QR(core)
             rnew = min([core.shape[0],core.shape[1]])
             # update current core
-            y_cores[k] = tn.conj(tn.reshape(Q.T,[rnew,N[k],-1]))
+            y_cores[k] = (tn.reshape(Q.T,[rnew,N[k],-1]))
             Ry[k] = rnew
             # and the k-1 one
             core_next = tn.reshape(y_cores[k-1],[y_cores[k-1].shape[0]*y_cores[k-1].shape[1],y_cores[k-1].shape[2]]) @ R.T
-            y_cores[k-1] = tn.conj(tn.reshape(core_next,[-1,N[k-1],rnew]))
+            y_cores[k-1] = (tn.reshape(core_next,[-1,N[k-1],rnew]))
             
             # update Phi
             Phi = tn.einsum('ijk,mnk->ijmn',Phis[k+1],tn.conj(x.cores[k])) # shape  rk x rAk x rxk-a x Nk
@@ -70,11 +70,11 @@ def dmrg_matvec(A,x,y0 = None,nswp = 20, eps = 1e-12, rmax = 1024, kickrank = 4,
                   # new supercore
                   W = tn.einsum('ijkl,kmln->ijmn',W1,W2)
               else:
-                  W = W_prev
+                  W = tn.conj(W_prev)
                   
               b = tn.linalg.norm(W)
               if b != 0:
-                  a = tn.linalg.norm(W-W_prev)
+                  a = tn.linalg.norm(W-tn.conj(W_prev))
                   delta_cores[k] = (a/b).cpu().numpy()
               else:
                   delta_cores[k] = 0
@@ -123,9 +123,9 @@ def dmrg_matvec(A,x,y0 = None,nswp = 20, eps = 1e-12, rmax = 1024, kickrank = 4,
               y_cores[k] = tn.conj(tn.reshape(W1,[Ry[k],N[k],r_new]))
               y_cores[k+1] = tn.conj(tn.reshape(W2,[r_new,N[k+1],Ry[k+2]]))
               
-              Wc = tn.einsum('ijk,klm->ijlm', y_cores[k], y_cores[k+1])
+              Wc = tn.einsum('ijk,klm->ijlm', tn.conj(y_cores[k]), tn.conj(y_cores[k+1]))
               
-              # print('decomposition ',tf.linalg.norm(Wc-W)/tf.linalg.norm(W))
+              # print('decomposition ',tn.linalg.norm(Wc-W)/tn.linalg.norm(W))
               Phi_next = tn.einsum('ijk,kmn->ijmn',Phis[k],tn.conj(x.cores[k])) # shape rk-1 x rAk-1 x Nk x rxk
               Phi_next = tn.einsum('ijkl,jmkn->imnl',Phi_next,tn.conj(A.cores[k])) # shape  rk-1 x Mk x rAk x rxk
               Phi_next = tn.einsum('ijm,ijkl->mkl',y_cores[k],Phi_next) # shape rk x rAk x rxk

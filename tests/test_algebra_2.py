@@ -20,17 +20,17 @@ class TestLinalgAdvanced(unittest.TestCase):
         """
         n = 32
         A = tntt.random([(n,n)]*8,[1]+7*[3]+[1], dtype = tn.complex128)
-        A = A + A 
+        Am = A + A 
         
         x = tntt.random([n]*8,[1]+7*[5]+[1], dtype = tn.complex128)
-        x = x + x
-        x = x + x
+        xm = x + x
+        xm = xm + xm
  
         # conventional method 
-        y = (A @ x).round(1e-12)
+        y = 8 * (A @ x).round(1e-12)
 
         # dmrg matvec
-        yf = A.fast_matvec(x)
+        yf = Am.fast_matvec(xm)
 
         rel_error = (y-yf).norm().numpy()/y.norm().numpy()
         
