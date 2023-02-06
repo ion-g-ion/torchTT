@@ -584,12 +584,17 @@ class TT():
                     cores_new.append(core)
             else:
                 raise IncompatibleTypes('Second operand must be the same type as the fisrt (both should be either TT matrices or TT tensors).')
+            result = TT(cores_new)
         elif isinstance(other,int) or isinstance(other,float) or isinstance(other,tn.tensor):
-            cores_new = [c+0 for c in self.cores]
-            cores_new[0] *= other
+            if other != 0:
+                cores_new = [c+0 for c in self.cores]
+                cores_new[0] *= other
+                result = TT(cores_new)
+            else:
+                result = zeros([(m,n) for m,n in zip(self.M,self.N)] if self.is_ttm else self.N, device=self.cores[0].device)
         else:
             raise InvalidArguments('Second operand must be of type: TT, float, int of tensorflow Tensor.')
-        result = TT(cores_new)            
+                    
         return result
         
     def __matmul__(self,other):
