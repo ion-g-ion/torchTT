@@ -6,7 +6,7 @@ It contains the base TT class as well as additional functions.
 
 import torch as tn
 import torch.nn.functional as tnf
-from torchtt._decomposition import mat_to_tt, to_tt, lr_orthogonal, round_tt, rl_orthogonal, QR
+from torchtt._decomposition import mat_to_tt, to_tt, lr_orthogonal, round_tt, rl_orthogonal, QR, SVD, rank_chop
 from  torchtt._division import amen_divide
 import numpy as np
 import math 
@@ -1986,3 +1986,93 @@ def diag(input):
         return TT([tn.diagonal(c, dim1 = 1, dim2 = 2) for c in input.cores])
     else:
         return TT([tn.einsum('ijk,jm->ijmk',c,tn.eye(c.shape[1])) for c in input.cores])
+
+
+def permute(input, dims, eps = 1e-12):
+    """
+    Permutes the dimensions of the tensor. Works similarily to `torch.permute`.
+    Works like a bubble sort.
+    
+    Examples:
+    ```
+    x_tt = torchtt.random([5,6,7,8,9],[1,2,3,4,2,1])
+    xp_tt = torchtt.permute(x_tt, [4,3,2,1,0], 1e-10)
+    print(xp_tt) # the shape of this tensor should be [9,8,7,6,5]
+    ```
+    
+    Args:
+        input (TT): the input tensor.
+        dims (list[int]): the order of the indices in the new tensor.
+        eps (flaot, optional): the relative accuracy of the decomposition. Defaults to 1e-12.
+
+    Raises:
+        InvalidArguments: The input must be a TT tensor dims must be a list of integers or a tple of integers.
+        ShapeMismatch: dims must be the length of the number of dimensions.
+
+    Returns:
+        TT: the resulting tensor.
+    """
+    if not isinstance(input, TT) :
+        raise InvalidArguments("The input must be a TT tensor dims must be a list of integers or a tple of integers.")
+    if len(dims) != len(input.N):
+        raise ShapeMismatch("dims must be the length of the number of dimensions.")
+    
+    cores, R  = rl_orthogonal(input.cores, input.R, input.is_ttm)
+    d = len(cores)
+    eps = eps/(d**1.5) 
+    indices = list(range(d))
+    
+    last_idx = 0
+    
+    inversions = True 
+    while inversions:
+        inversions = False 
+        
+        
+        
+        for i in range(d-1):
+            i1 = indices[i]
+            i2 = indices[i+1]
+            if dims.index(i1)>dims.index(i2):
+                # inverion in the index permutation => the cores must be swapped.
+                inversions = True
+            
+                indices[i] = i2
+                indices[i+1] = i1
+                
+                
+                # print(indices,' permute ', i1, i2)
+        
+        
+
+                last_idx = i
+                if input.is_ttm:
+                    pass
+                else:
+                    
+                    #reorthonormalize
+                    for k in range(last_idx, i):
+                        Q, R = QR(tn.reshape(cores[k],[cores[k].shape[0]*cores[k].shape[1], cores[k].shape[2]]))
+                        R[k+1] = Q.shape[1]
+                        cores[k] = tn.reshape(Q, [cores[k].shape[0], cores[k].shape[1],-1])
+                        cores[k+1] = tn.einsum('ij,jkl->ikl',R,cores[k+1])
+                    
+                    n2 = cores[i].shape[1]
+                    core = tn.einsum('ijk,klm->ijlm',cores[i],cores[i+1])
+                    core = tn.permute(core, [0,2,1,3])
+                    U,S,V = SVD(tn.reshape(core, [core.shape[0]*core.shape[1],-1]))
+                    if S.is_cuda:
+                        r_now = min([99999999999,rank_chop(S.cpu().numpy(),tn.linalg.norm(S).cpu().numpy()*eps)])
+                    else:
+                        r_now = min([99999999999,rank_chop(S.numpy(),tn.linalg.norm(S).numpy()*eps)])
+                
+                    US = U[:,:r_now]@tn.diag(S[:r_now])
+                    V = V[:r_now,:]
+                    
+                    cores[i] = tn.reshape(US,[cores[i].shape[0],cores[i+1].shape[1],-1])
+                    R[i+1] = cores[i].shape[2]
+                    cores[i+1] = tn.reshape(V, [-1, n2, cores[i+1].shape[2]])
+                    
+                
+    return TT(cores)
+    

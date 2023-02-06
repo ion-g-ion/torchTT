@@ -208,7 +208,20 @@ class TestDecomposition(unittest.TestCase):
         Tfull = T.full()
         self.assertEqual(T.R,[1,1,1,1],'Case 3: Ranks not equal')
         self.assertTrue(err_rel(Tfull,T_ref) < 1e-3,'Case 1: error too high')
-
+        
+    def test_dimension_permute(self):
+        """
+        Test the permute function.
+        """
+        x_tt = tntt.random([5,6,7,8,9],[1,2,3,4,2,1])
+        x_ref = x_tt.full()
+        xp_tt = tntt.permute(x_tt, [4,3,2,1,0], 1e-10)
+        xp_ref = tn.permute(x_ref, [4,3,2,1,0])
+        
+        self.assertEqual(tuple(xp_tt.N), tuple(xp_ref.shape), 'Permute modex of a TT tensor: shape mismatch.')
+        self.assertTrue(err_rel(xp_tt.full(), xp_ref) < 1e-10,'Permute modex of a TT tensor: error too high.')
+        
+        
 if __name__ == '__main__':
     unittest.main()
 
