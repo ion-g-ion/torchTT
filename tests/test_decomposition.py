@@ -221,6 +221,7 @@ class TestDecomposition(unittest.TestCase):
         self.assertEqual(tuple(xp_tt.N), tuple(xp_ref.shape), 'Permute modex of a TT tensor: shape mismatch.')
         self.assertTrue(err_rel(xp_tt.full(), xp_ref) < 1e-10,'Permute modex of a TT tensor: error too high.')
         
+        # Test for TT matrices
         A_tt = tntt.random([(2,3),(4,5),(3,2),(6,7),(5,3)], [1,2,3,4,2,1])
         A_ref = A_tt.full()
         Ap_tt = tntt.permute(A_tt, [3,2,4,0,1])
@@ -229,6 +230,7 @@ class TestDecomposition(unittest.TestCase):
         self.assertEqual(Ap_tt.M, [6,3,5,2,4], 'Permute modex of a TT matrix: shape mismatch.')
         self.assertEqual(Ap_tt.N, [7,2,3,3,5], 'Permute modex of a TT matrix: shape mismatch.')
         self.assertTrue(err_rel(Ap_tt.full(), Ap_ref) < 1e-10,'Permute modex of a TT tensor: error too high.')
+
         
 if __name__ == '__main__':
     unittest.main()

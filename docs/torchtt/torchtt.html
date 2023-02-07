@@ -2044,6 +2044,7 @@ def permute(input, dims, eps = 1e-12):
     Returns:
         torch.TT: the resulting tensor.
     &#34;&#34;&#34;
+    
     if not isinstance(input, TT) :
         raise InvalidArguments(&#34;The input must be a TT tensor dims must be a list of integers or a tple of integers.&#34;)
     if len(dims) != len(input.N):
@@ -2102,6 +2103,7 @@ def permute(input, dims, eps = 1e-12):
                     R[i+1] = cores[i].shape[2]
                     cores[i+1] = tn.reshape(V, [-1]+ n2 +[cores[i+1].shape[3]])
                     
+
                 else:
                     
                     #reorthonormalize
@@ -2119,6 +2121,7 @@ def permute(input, dims, eps = 1e-12):
                         r_now = min([rank_chop(S.cpu().numpy(),tn.linalg.norm(S).cpu().numpy()*eps)])
                     else:
                         r_now = min([rank_chop(S.numpy(),tn.linalg.norm(S).numpy()*eps)])
+
                 
                     US = U[:,:r_now]@tn.diag(S[:r_now])
                     V = V[:r_now,:]

@@ -2087,6 +2087,7 @@ def permute(input, dims, eps = 1e-12):
                         r_now = min([rank_chop(S.cpu().numpy(),tn.linalg.norm(S).cpu().numpy()*eps)])
                     else:
                         r_now = min([rank_chop(S.numpy(),tn.linalg.norm(S).numpy()*eps)])
+
                 
                     US = U[:,:r_now]@tn.diag(S[:r_now])
                     V = V[:r_now,:]
