@@ -2001,9 +2001,9 @@ def permute(input, dims, eps = 1e-12):
     ```
     
     Args:
-        input (TT): the input tensor.
+        input (torchtt.TT): the input tensor.
         dims (list[int]): the order of the indices in the new tensor.
-        eps (flaot, optional): the relative accuracy of the decomposition. Defaults to 1e-12.
+        eps (float, optional): the relative accuracy of the decomposition. Defaults to 1e-12.
 
     Raises:
         InvalidArguments: The input must be a TT tensor dims must be a list of integers or a tple of integers.
