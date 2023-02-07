@@ -2023,7 +2023,7 @@ def diag(input):
 def permute(input, dims, eps = 1e-12):
     &#34;&#34;&#34;
     Permutes the dimensions of the tensor. Works similarily to `torch.permute`.
-    Works like a bubble sort.
+    Works like a bubble sort for both TT tensors and TT matrices.
     
     Examples:
     ```
@@ -2042,8 +2042,9 @@ def permute(input, dims, eps = 1e-12):
         ShapeMismatch: dims must be the length of the number of dimensions.
 
     Returns:
-        TT: the resulting tensor.
+        torch.TT: the resulting tensor.
     &#34;&#34;&#34;
+    
     if not isinstance(input, TT) :
         raise InvalidArguments(&#34;The input must be a TT tensor dims must be a list of integers or a tple of integers.&#34;)
     if len(dims) != len(input.N):
@@ -2079,7 +2080,30 @@ def permute(input, dims, eps = 1e-12):
 
                 last_idx = i
                 if input.is_ttm:
-                    pass
+                    #reorthonormalize
+                    for k in range(last_idx, i):
+                        Q, R = QR(tn.reshape(cores[k],[cores[k].shape[0]*cores[k].shape[1]*cores[k].shape[2], cores[k].shape[3]]))
+                        R[k+1] = Q.shape[1]
+                        cores[k] = tn.reshape(Q, [cores[k].shape[0], cores[k].shape[1], cores[k].shape[2], -1])
+                        cores[k+1] = tn.einsum(&#39;ij,jkl-&gt;ikl&#39;,R,cores[k+1])
+                    
+                    n2 = [cores[i].shape[1], cores[i].shape[2]]
+                    core = tn.einsum(&#39;ijkl,lmno-&gt;ijkmno&#39;,cores[i],cores[i+1])
+                    core = tn.permute(core, [0,3,4,1,2,5])
+                    U,S,V = SVD(tn.reshape(core, [core.shape[0]*core.shape[1]*core.shape[2],-1]))
+                    if S.is_cuda:
+                        r_now = min([rank_chop(S.cpu().numpy(),tn.linalg.norm(S).cpu().numpy()*eps)])
+                    else:
+                        r_now = min([rank_chop(S.numpy(),tn.linalg.norm(S).numpy()*eps)])
+                
+                    US = U[:,:r_now]@tn.diag(S[:r_now])
+                    V = V[:r_now,:]
+                    
+                    cores[i] = tn.reshape(US,[cores[i].shape[0],cores[i+1].shape[1],cores[i+1].shape[2],-1])
+                    R[i+1] = cores[i].shape[2]
+                    cores[i+1] = tn.reshape(V, [-1]+ n2 +[cores[i+1].shape[3]])
+                    
+
                 else:
                     
                     #reorthonormalize
@@ -2094,9 +2118,10 @@ def permute(input, dims, eps = 1e-12):
                     core = tn.permute(core, [0,2,1,3])
                     U,S,V = SVD(tn.reshape(core, [core.shape[0]*core.shape[1],-1]))
                     if S.is_cuda:
-                        r_now = min([99999999999,rank_chop(S.cpu().numpy(),tn.linalg.norm(S).cpu().numpy()*eps)])
+                        r_now = min([rank_chop(S.cpu().numpy(),tn.linalg.norm(S).cpu().numpy()*eps)])
                     else:
-                        r_now = min([99999999999,rank_chop(S.numpy(),tn.linalg.norm(S).numpy()*eps)])
+                        r_now = min([rank_chop(S.numpy(),tn.linalg.norm(S).numpy()*eps)])
+
                 
                     US = U[:,:r_now]@tn.diag(S[:r_now])
                     V = V[:r_now,:]
@@ -2815,7 +2840,7 @@ the shape can be a list of ints or a list of tuples of ints. The second case cre
 </code></dt>
 <dd>
 <div class="desc"><p>Permutes the dimensions of the tensor. Works similarily to <code>torch.permute</code>.
-Works like a bubble sort.</p>
+Works like a bubble sort for both TT tensors and TT matrices.</p>
 <p>Examples:</p>
 <pre><code>x_tt = torchtt.random([5,6,7,8,9],[1,2,3,4,2,1])
 xp_tt = torchtt.permute(x_tt, [4,3,2,1,0], 1e-10)
@@ -2839,7 +2864,7 @@ print(xp_tt) # the shape of this tensor should be [9,8,7,6,5]
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code><a title="torchtt.torchtt.TT" href="#torchtt.torchtt.TT">TT</a></code></dt>
+<dt><code>torch.TT</code></dt>
 <dd>the resulting tensor.</dd>
 </dl></div>
 <details class="source">
@@ -2849,7 +2874,7 @@ print(xp_tt) # the shape of this tensor should be [9,8,7,6,5]
 <pre><code class="python">def permute(input, dims, eps = 1e-12):
     &#34;&#34;&#34;
     Permutes the dimensions of the tensor. Works similarily to `torch.permute`.
-    Works like a bubble sort.
+    Works like a bubble sort for both TT tensors and TT matrices.
     
     Examples:
     ```
@@ -2868,7 +2893,7 @@ print(xp_tt) # the shape of this tensor should be [9,8,7,6,5]
         ShapeMismatch: dims must be the length of the number of dimensions.
 
     Returns:
-        TT: the resulting tensor.
+        torch.TT: the resulting tensor.
     &#34;&#34;&#34;
     if not isinstance(input, TT) :
         raise InvalidArguments(&#34;The input must be a TT tensor dims must be a list of integers or a tple of integers.&#34;)
@@ -2905,7 +2930,29 @@ print(xp_tt) # the shape of this tensor should be [9,8,7,6,5]
 
                 last_idx = i
                 if input.is_ttm:
-                    pass
+                    #reorthonormalize
+                    for k in range(last_idx, i):
+                        Q, R = QR(tn.reshape(cores[k],[cores[k].shape[0]*cores[k].shape[1]*cores[k].shape[2], cores[k].shape[3]]))
+                        R[k+1] = Q.shape[1]
+                        cores[k] = tn.reshape(Q, [cores[k].shape[0], cores[k].shape[1], cores[k].shape[2], -1])
+                        cores[k+1] = tn.einsum(&#39;ij,jkl-&gt;ikl&#39;,R,cores[k+1])
+                    
+                    n2 = [cores[i].shape[1], cores[i].shape[2]]
+                    core = tn.einsum(&#39;ijkl,lmno-&gt;ijkmno&#39;,cores[i],cores[i+1])
+                    core = tn.permute(core, [0,3,4,1,2,5])
+                    U,S,V = SVD(tn.reshape(core, [core.shape[0]*core.shape[1]*core.shape[2],-1]))
+                    if S.is_cuda:
+                        r_now = min([rank_chop(S.cpu().numpy(),tn.linalg.norm(S).cpu().numpy()*eps)])
+                    else:
+                        r_now = min([rank_chop(S.numpy(),tn.linalg.norm(S).numpy()*eps)])
+                
+                    US = U[:,:r_now]@tn.diag(S[:r_now])
+                    V = V[:r_now,:]
+                    
+                    cores[i] = tn.reshape(US,[cores[i].shape[0],cores[i+1].shape[1],cores[i+1].shape[2],-1])
+                    R[i+1] = cores[i].shape[2]
+                    cores[i+1] = tn.reshape(V, [-1]+ n2 +[cores[i+1].shape[3]])
+                    
                 else:
                     
                     #reorthonormalize
@@ -2920,9 +2967,9 @@ print(xp_tt) # the shape of this tensor should be [9,8,7,6,5]
                     core = tn.permute(core, [0,2,1,3])
                     U,S,V = SVD(tn.reshape(core, [core.shape[0]*core.shape[1],-1]))
                     if S.is_cuda:
-                        r_now = min([99999999999,rank_chop(S.cpu().numpy(),tn.linalg.norm(S).cpu().numpy()*eps)])
+                        r_now = min([rank_chop(S.cpu().numpy(),tn.linalg.norm(S).cpu().numpy()*eps)])
                     else:
-                        r_now = min([99999999999,rank_chop(S.numpy(),tn.linalg.norm(S).numpy()*eps)])
+                        r_now = min([rank_chop(S.numpy(),tn.linalg.norm(S).numpy()*eps)])
                 
                     US = U[:,:r_now]@tn.diag(S[:r_now])
                     V = V[:r_now,:]
