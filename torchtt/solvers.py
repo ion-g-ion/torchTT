@@ -158,7 +158,7 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 50
     # perform checks of the input data
     if not (isinstance(A,torchtt.TT) and isinstance(b,torchtt.TT)):
         raise InvalidArguments('A and b must be TT instances.')
-    if not ( A.is_ttm and not b.is_ttm ) :
+    if not (A.is_ttm and not b.is_ttm) :
         raise IncompatibleTypes('A must be TT-matrix and b must be vector.')
     if A.M != A.N:
         raise ShapeMismatch('A is not quadratic.')
@@ -536,7 +536,7 @@ def _compute_phi_fwd_A(Phi_now, core_left, core_A, core_right):
     # Psipp = tn.einsum('ijkl,aijd->klad', core_A, Psip)  # shape is nk x Rk x rk-1 x rk
     # Phi_next= tn.einsum('ijk,jbid->kbd',core_right,Psipp) # shape is rk x  Rk x rk
     # tme1 = datetime.datetime.now()
-   #  Phi_next = tn.einsum('lsr,lML,sMNS,rNR->LSR',Phi_now,core_left,core_A,core_right)
+    # Phi_next = tn.einsum('lsr,lML,sMNS,rNR->LSR',Phi_now,core_left,core_A,core_right)
     # tme1 = datetime.datetime.now() - tme1 
     # tme2 = datetime.datetime.now()
     Phi_next = oe.contract('lsr,lML,sMNS,rNR->LSR',Phi_now,core_left,core_A,core_right)
@@ -574,6 +574,6 @@ def _compute_phi_fwd_rhs(Phi_now,core_rhs,core):
         torch.tensor: The forward computer phi for the rhs. Has shape rb_k+1 x r_k+1
     """
     # tmp = tn.einsum('ij,jbc->ibc',Phi_now,core_rhs) # shape rk-1 x Nk x rbk
-    # Phi_next = tn.einsum('ijk,ijc->kc',core,tmp) 
-    Phi_next = oe.contract('br,bnB,rnR->BR',Phi_now,core_rhs,core)
+    # Phi_next = tn.einsum('ijk,ijc->kc',core,tmp)
+    Phi_next = oe.contract('br,bnB,rnR->BR', Phi_now, core_rhs, core)
     return Phi_next

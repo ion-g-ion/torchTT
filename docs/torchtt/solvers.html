@@ -188,7 +188,7 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 50
     # perform checks of the input data
     if not (isinstance(A,torchtt.TT) and isinstance(b,torchtt.TT)):
         raise InvalidArguments(&#39;A and b must be TT instances.&#39;)
-    if not ( A.is_ttm and not b.is_ttm ) :
+    if not (A.is_ttm and not b.is_ttm) :
         raise IncompatibleTypes(&#39;A must be TT-matrix and b must be vector.&#39;)
     if A.M != A.N:
         raise ShapeMismatch(&#39;A is not quadratic.&#39;)
@@ -566,7 +566,7 @@ def _compute_phi_fwd_A(Phi_now, core_left, core_A, core_right):
     # Psipp = tn.einsum(&#39;ijkl,aijd-&gt;klad&#39;, core_A, Psip)  # shape is nk x Rk x rk-1 x rk
     # Phi_next= tn.einsum(&#39;ijk,jbid-&gt;kbd&#39;,core_right,Psipp) # shape is rk x  Rk x rk
     # tme1 = datetime.datetime.now()
-   #  Phi_next = tn.einsum(&#39;lsr,lML,sMNS,rNR-&gt;LSR&#39;,Phi_now,core_left,core_A,core_right)
+    # Phi_next = tn.einsum(&#39;lsr,lML,sMNS,rNR-&gt;LSR&#39;,Phi_now,core_left,core_A,core_right)
     # tme1 = datetime.datetime.now() - tme1 
     # tme2 = datetime.datetime.now()
     Phi_next = oe.contract(&#39;lsr,lML,sMNS,rNR-&gt;LSR&#39;,Phi_now,core_left,core_A,core_right)
@@ -604,8 +604,8 @@ def _compute_phi_fwd_rhs(Phi_now,core_rhs,core):
         torch.tensor: The forward computer phi for the rhs. Has shape rb_k+1 x r_k+1
     &#34;&#34;&#34;
     # tmp = tn.einsum(&#39;ij,jbc-&gt;ibc&#39;,Phi_now,core_rhs) # shape rk-1 x Nk x rbk
-    # Phi_next = tn.einsum(&#39;ijk,ijc-&gt;kc&#39;,core,tmp) 
-    Phi_next = oe.contract(&#39;br,bnB,rnR-&gt;BR&#39;,Phi_now,core_rhs,core)
+    # Phi_next = tn.einsum(&#39;ijk,ijc-&gt;kc&#39;,core,tmp)
+    Phi_next = oe.contract(&#39;br,bnB,rnR-&gt;BR&#39;, Phi_now, core_rhs, core)
     return Phi_next</code></pre>
 </details>
 </section>
@@ -728,7 +728,7 @@ print((xx-x).norm()/x.norm()) # error
     # perform checks of the input data
     if not (isinstance(A,torchtt.TT) and isinstance(b,torchtt.TT)):
         raise InvalidArguments(&#39;A and b must be TT instances.&#39;)
-    if not ( A.is_ttm and not b.is_ttm ) :
+    if not (A.is_ttm and not b.is_ttm) :
         raise IncompatibleTypes(&#39;A must be TT-matrix and b must be vector.&#39;)
     if A.M != A.N:
         raise ShapeMismatch(&#39;A is not quadratic.&#39;)

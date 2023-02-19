@@ -80,7 +80,8 @@ class TT():
         where \(\\{\\mathsf{x}^{(k)}\\}_{k=1}^d\) are the TT cores and \(\\mathbf{R}=(1,R_1,...,R_{d-1},1)\) is the TT rank.
         Using the constructor, a TT decomposition of a tensor can be computed. The TT cores are stored as a list in `torchtt.TT.cores`.   
         This class implements basic operators such as `+,-,*,/,@,**` (add, subtract, elementwise multiplication, elementwise division, matrix vector product and Kronecker product) between TT instances.
-
+        The `examples\` folder server as a tutorial for all the possibilities of the toolbox.
+        
         Examples:
             ```
             import torchtt
@@ -129,7 +130,7 @@ class TT():
                 s = source[i].shape
                 
                 if s[0] != R[-1]:
-                    raise RankMismatch("Ranks of the given cores do not match (change the spaces of the cores).")
+                    raise RankMismatch("Ranks of the given cores do not match: for core number %d previous rank is %d and and current rank is %d."%(i,R[-1],s[0]))
                 if len(s) == 3:
                     R.append(s[2])
                     N.append(s[1])
@@ -362,7 +363,8 @@ class TT():
             - both operands are TT-tensors.
             - both operands are TT-matrices.
             - first operand is a TT-tensor or a TT-matrix and the second is a scalar (either torch.tensor scalar or int or float).
-
+        The broadcasting rules from `torch` apply here.
+        
         Args:
             other (torchtt.TT or float or int or torch.tensor with 1 element): second operand.
             
@@ -398,7 +400,7 @@ class TT():
             if self.__is_ttm and other.is_ttm:
                 # both are TT-matrices
                 if self.__M != self.M or self.__N != self.N:
-                    raise ShapeMismatch('Dimension mismatch.')
+                    raise ShapeMismatch("Shapes are incompatible: first operand is %s x %s, second operand is %s x %s."%(str(self.M), str(self.N), str(other.M), str(other.N)))
                     
                 cores = []
                 for i in range(len(self.__N)):
@@ -410,15 +412,35 @@ class TT():
                 
             elif self.__is_ttm==False and other.is_ttm==False:
                 # normal tensors in TT format.
-                if self.__N != self.N:
-                    raise ShapeMismatch('Dimension mismatch.')
-                    
-                cores = []
-                for i in range(len(self.__N)):
-                    pad1 = (0,0 if i == len(self.__N)-1 else other.R[i+1] , 0,0 , 0,0 if i==0 else other.R[i])
-                    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
-                    cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(other.cores[i],pad2))
-                    
+                if self.__N == other.N:                  
+                    cores = []
+                    for i in range(len(self.__N)):
+                        pad1 = (0,0 if i == len(self.__N)-1 else other.R[i+1] , 0,0 , 0,0 if i==0 else other.R[i])
+                        pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
+                        cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(other.cores[i],pad2))
+                else:
+                    if len(self.__N) < len(other.N):
+                        raise ShapeMismatch("Shapes are incompatible: first operand is %s, second operand is %s."%(str(self.N), str(other.N)))
+
+                    cores = []
+                    for i in range(len(self.cores)-len(other.cores)):
+                        pad1 = (0,0 if i == len(self.__N)-1 else 1 , 0,0 , 0,0 if i==0 else 1)
+                        pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
+                        cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(tn.ones((1,self.__N[i],1), device = self.cores[i].device),pad2))
+                        
+                    for k,i in zip(range(len(other.cores)), range(len(self.cores)-len(other.cores), len(self.cores))):
+                        if other.N[k] == self.__N[i]:
+                            pad1 = (0,0 if i == len(self.__N)-1 else other.R[k+1] , 0,0 , 0,0 if i==0 else other.R[k])
+                            pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
+                            cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(other.cores[k],pad2))
+                            
+                        elif other.N[k] == 1:
+                            pad1 = (0,0 if i == len(self.__N)-1 else other.R[k+1] , 0,0 , 0,0 if i==0 else other.R[k])
+                            pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
+                            cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(tn.tile(other.cores[k],(1,self.__N[i],1)),pad2))
+                        else:
+                            raise ShapeMismatch("Shapes are incompatible: first operand is %s, second operand is %s."%(str(self.N), str(other.N)))
+                            
                     
                 result = TT(cores)
                 
@@ -450,7 +472,8 @@ class TT():
         """
         Subtract 2 tensors in the TT format. Implements the "-" operator.
         Possible second operands are: torchtt.TT, float, int, torch.tensor with 1 element.
-
+        Broadcasting rules from `torch` apply for this operation as well.
+        
         Args:
             other (torchtt.TT or float or int or torch.tensor with 1 element): the second operand.
 
@@ -484,8 +507,8 @@ class TT():
             if self.__is_ttm and other.is_ttm:
                 # both are TT-matrices
                 if self.__M != self.M or self.__N != self.N:
-                    raise ShapeMismatch('Both dimensions of the TT matrix should be equal.')
-                    
+                    raise ShapeMismatch("Shapes are incompatible: first operand is %s x %s, second operand is %s x %s."%(str(self.M), str(self.N), str(other.M), str(other.N)))
+                
                 cores = []
                 for i in range(len(self.__N)):
                     pad1 = (0,0 if i == len(self.__N)-1 else other.R[i+1] , 0,0 , 0,0 , 0,0 if i==0 else other.R[i])
@@ -496,15 +519,35 @@ class TT():
                 
             elif self.__is_ttm==False and other.is_ttm==False:
                 # normal tensors in TT format.
-                if self.__N != self.N:
-                    raise ShapeMismatch('Dimension mismatch.')
-                    
-                cores = []
-                for i in range(len(self.__N)):
-                    pad1 = (0,0 if i == len(self.__N)-1 else other.R[i+1] , 0,0 , 0,0 if i==0 else other.R[i])
-                    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
-                    cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(-other.cores[i] if i==0 else other.cores[i],pad2))
-                    
+                if self.__N == other.N:                  
+                    cores = []
+                    for i in range(len(self.__N)):
+                        pad1 = (0,0 if i == len(self.__N)-1 else other.R[i+1] , 0,0 , 0,0 if i==0 else other.R[i])
+                        pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
+                        cores.append(tnf.pad(self.cores[i], pad1)+tnf.pad(-other.cores[i] if i==0 else other.cores[i],pad2))
+                else:
+                    if len(self.__N) < len(other.N):
+                        raise ShapeMismatch("Shapes are incompatible: first operand is %s, second operand is %s."%(str(self.N), str(other.N)))
+
+                    cores = []
+                    for i in range(len(self.cores)-len(other.cores)):
+                        pad1 = (0,0 if i == len(self.__N)-1 else 1 , 0,0 , 0,0 if i==0 else 1)
+                        pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
+                        cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad((-1 if i==0 else 1)*tn.ones((1,self.__N[i],1), device = self.cores[i].device),pad2))
+                        
+                    for k,i in zip(range(len(other.cores)), range(len(self.cores)-len(other.cores), len(self.cores))):
+                        if other.N[k] == self.__N[i]:
+                            pad1 = (0,0 if i == len(self.__N)-1 else other.R[k+1] , 0,0 , 0,0 if i==0 else other.R[k])
+                            pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
+                            cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(-other.cores[k] if i==0 else other.cores[k],pad2))
+                            
+                        elif other.N[k] == 1:
+                            pad1 = (0,0 if i == len(self.__N)-1 else other.R[k+1] , 0,0 , 0,0 if i==0 else other.R[k])
+                            pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
+                            cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(tn.tile(-other.cores[k] if i==0 else other.cores[k],(1,self.__N[i],1)),pad2))
+                        else:
+                            raise ShapeMismatch("Shapes are incompatible: first operand is %s, second operand is %s."%(str(self.N), str(other.N)))
+                            
                     
                 result = TT(cores)
                 
@@ -549,43 +592,70 @@ class TT():
          - TT tensor and TT tensor
          - TT matrix and TT matrix
          - TT tensor and scalar(int, float or torch.tensor scalar)
-
+        The broadcasting rules are the same as in torch (see [here](https://pytorch.org/docs/stable/notes/broadcasting.html)).
+        
         Args:
             other (torchtt.TT or float or int or torch.tensor with 1 element): the second operand.
 
         Raises:
-            ShapeMismatch: Shapes must be equal.
+            ShapeMismatch: Shapes are incompatible (see the broadcasting rules).
             IncompatibleTypes: Second operand must be the same type as the fisrt (both should be either TT matrices or TT tensors).
             InvalidArguments: Second operand must be of type: torchtt.TT, float, int of torch.tensor.
 
         Returns:
-            torchtt.TT: [description]
+            torchtt.TT: the result.
         """
        
         # elementwise multiplication
         if isinstance(other, TT):
             if self.__is_ttm and other.is_ttm:
-                if self.__N != other.N or self.__M != other.M:
-                    raise ShapeMismatch('Shapes must be equal.') 
+                if self.__N == other.N and self.__M == other.M:
+                    # raise ShapeMismatch('Shapes must be equal.') 
                     
-                cores_new = []
-                
-                for i in range(len(self.cores)):
-                    core = tn.reshape(tn.einsum('aijb,mijn->amijbn',self.cores[i],other.cores[i]),[self.__R[i]*other.R[i],self.__M[i],self.__N[i],self.R[i+1]*other.R[i+1]])
-                    cores_new.append(core)
-    
+                    cores_new = []
+                    
+                    for i in range(len(self.cores)):
+                        core = tn.reshape(tn.einsum('aijb,mijn->amijbn',self.cores[i],other.cores[i]),[self.__R[i]*other.R[i],self.__M[i],self.__N[i],self.R[i+1]*other.R[i+1]])
+                        cores_new.append(core)
+                        
+                else:
+                    raise ShapeMismatch("Shapes are incompatible: first operand is %s x %s, second operand is %s x %s."%(str(self.M), str(self.N), str(other.M), str(other.N)))
+                    # if len(self.__N) < len(other.N):
+                    #     raise ShapeMismatch("Shapes are incompatible: first operand is %s x %s, second operand is %s x %s."%(str(self.M), str(self.N), str(other.M), str(other.N)))
+                    
+                    # cores_new = []
+                    # raise NotImplementedError("Not yet implemented.")
+                    
             elif self.__is_ttm == False and other.is_ttm == False:
-                if self.__N != other.N:
-                    raise ShapeMismatch('Shapes must be equal.') 
+                # broadcasting rul;es have to be applied. Sperate if else to make the non-broadcasting case the fastest.
+                if self.__N == other.N:  
+                    cores_new = []
                     
-                cores_new = []
-                
-                for i in range(len(self.cores)):
-                    core = tn.reshape(tn.einsum('aib,min->amibn',self.cores[i],other.cores[i]),[self.__R[i]*other.R[i],self.__N[i],self.R[i+1]*other.R[i+1]])
-                    cores_new.append(core)
+                    for i in range(len(self.cores)):
+                        core = tn.reshape(tn.einsum('aib,min->amibn',self.cores[i],other.cores[i]),[self.__R[i]*other.R[i],self.__N[i],self.R[i+1]*other.R[i+1]])
+                        cores_new.append(core)
+                else:
+                    if len(self.__N) < len(other.N):
+                        raise ShapeMismatch("Shapes are incompatible: first operand is %s, second operand is %s."%(str(self.N), str(other.N)))
+
+                    cores_new = []
+                    for i in range(len(self.cores)-len(other.cores)):
+                        cores_new.append(self.cores[i]*1)
+                        
+                    for k,i in zip(range(len(other.cores)), range(len(self.cores)-len(other.cores), len(self.cores))):
+                        if other.N[k] == self.__N[i]:
+                            core = tn.reshape(tn.einsum('aib,min->amibn',self.cores[i],other.cores[k]),[self.__R[i]*other.R[k],self.__N[i],self.R[i+1]*other.R[k+1]])
+                        elif other.N[k] == 1:
+                            core = tn.reshape(tn.einsum('aib,mn->amibn',self.cores[i],other.cores[k][:,0,:]),[self.__R[i]*other.R[k],self.__N[i],self.R[i+1]*other.R[k+1]])
+                        else:
+                            raise ShapeMismatch("Shapes are incompatible: first operand is %s, second operand is %s."%(str(self.N), str(other.N)))
+                            
+                        cores_new.append(core)
+                    
             else:
                 raise IncompatibleTypes('Second operand must be the same type as the fisrt (both should be either TT matrices or TT tensors).')
             result = TT(cores_new)
+
         elif isinstance(other,int) or isinstance(other,float) or isinstance(other,tn.tensor):
             if other != 0:
                 cores_new = [c+0 for c in self.cores]
@@ -2104,6 +2174,19 @@ def save(tensor, path):
     """
     Save a `torchtt.TT` object in a file.
 
+    Examples:
+        ```
+        import torchtt
+        #generate a TT object
+        A = torchtt.randn([10,20,30,40,4,5],[1,6,5,4,3,2,1])
+        # save the TT object
+        torchtt.save(A,"./test.TT")
+        # load the TT object
+        B = torchtt.load("./test.TT")
+        # the loaded should be the same
+        print((A-B).norm()/A.norm())
+        ```
+    
     Args:
         tensor (torchtt.TT): the tensor to be saved.
         path (str): the file name.
@@ -2125,6 +2208,19 @@ def load(path):
     """
     Load a torchtt.TT object from a file.
 
+    Examples:
+        ```
+        import torchtt
+        #generate a TT object
+        A = torchtt.randn([10,20,30,40,4,5],[1,6,5,4,3,2,1])
+        # save the TT object
+        torchtt.save(A,"./test.TT")
+        # load the TT object
+        B = torchtt.load("./test.TT")
+        # the loaded should be the same
+        print((A-B).norm()/A.norm())
+        ```
+        
     Args:
         path (str): the file name.
 

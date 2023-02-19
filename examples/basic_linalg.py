@@ -34,6 +34,16 @@ z = z+tn.tensor(1.0)
 M = A+A+1 
 print(M)
 
+# Broadcasting is also available and is similar to the `PyTorch` [broadcasting](https://pytorch.org/docs/stable/notes/broadcasting.html). 
+# Tensors in the TT-format can be added even if their shapes are different. The rule is that the number of dimensions of the first operand must be greater or equal to the number of dimensions of the second operand. 
+# In the following example a `(4,5)` tensor is added to a `(2,3,4,5)` tensor:
+xx = tntt.random([2,3,4,5],[1,2,3,4,1])
+yy = tntt.random([4,5],[1,2,1])
+print(xx+yy)
+#The mode sizes should match starting from the end or the mode size of the second tensor can be 1:
+xx = tntt.random([2,3,4,5],[1,2,3,4,1])
+yy = tntt.random([1,1,4,5],[1,2,2,2,1])
+print(xx+yy)
 
 #%% Subtraction
 # The "-" operator is also implemented in  the `torchtt.TT` class. It can be used similarily to "+" between 2 `torchtt.TT` objects and between a `torchtt.TT` and a scalar.
@@ -42,7 +52,7 @@ v = x-y-1-0.5
 C = A-B-3.14
 w = -x+x
 print(tn.linalg.norm(w.full()))
-
+# Broadcasting is available for the "-" operation as well.
 
 #%% Multiplication (elementwise)¶
 # One can perform the elementwise multiplication $\mathsf{u}_{i_1...i_d} = \mathsf{x}_{i_1...i_d} \mathsf{y}_{i_1...i_d}$ between 2 tensors in the TT format without goin to full format. 
@@ -50,6 +60,7 @@ print(tn.linalg.norm(w.full()))
 u = x*y
 print(u)
 M2 = A*A
+# Broadcasting is available for the "*" operation as well.
 
 
 #%% Matrix vector product and matrix matrix product

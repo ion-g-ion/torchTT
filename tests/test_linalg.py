@@ -44,6 +44,45 @@ class TestLinalg(unittest.TestCase):
         Qr = M.full()+P.full()+P.full()+M.full()
       
         self.assertTrue(err_rel(Q.full(),Qr)<1e-14,'Addition error 2: TT-matrix')
+        
+        # test broadcasting
+        
+        x = tntt.random([2,3,4,5,6],[1,2,4,8,4,1], dtype = self.basic_dtype)
+        y = tntt.random([    4,5,6],[1,2,2,1], dtype = self.basic_dtype)
+        xr = x.full()
+        yr = y.full()
+        
+        z = x+y
+        zr = xr+yr
+        self.assertLess(err_rel(z.full(),zr),1e-13,"Addition broadcasting error 1: TT-tensors.")
+        
+        x = tntt.random([2,3,4,5,6],[1,2,4,8,4,1], dtype = self.basic_dtype)
+        y = tntt.random([    1,1,6],[1,2,2,1], dtype = self.basic_dtype)
+        xr = x.full()
+        yr = y.full()
+        
+        z = x+y
+        zr = xr+yr
+        self.assertLess(err_rel(z.full(),zr),1e-13,"Addition broadcasting error 2: TT-tensors.")
+
+        x = tntt.random([2,3,4,5,6],[1,2,4,8,4,1], dtype = self.basic_dtype)
+        y = tntt.random([        1],[1,1], dtype = self.basic_dtype)
+        xr = x.full()
+        yr = y.full()
+        
+        z = x+y
+        zr = xr+yr
+        self.assertLess(err_rel(z.full(),zr),1e-13,"Addition broadcasting error 3: TT-tensors.")
+        
+        
+        x = tntt.random([2,3,4,5,6],[1,2,4,8,4,1], dtype = self.basic_dtype)
+        y = tntt.random([1,1,4,5,6],[1,2,4,8,4,1], dtype = self.basic_dtype)
+        xr = x.full()
+        yr = y.full()
+        
+        z = x+y
+        zr = xr+yr
+        self.assertLess(err_rel(z.full(),zr),1e-13,"Addition broadcasting error 4: TT-tensors.")
       
     def test_sub(self):
         '''
@@ -77,6 +116,45 @@ class TestLinalg(unittest.TestCase):
       
         self.assertTrue(err_rel(Q.full(),Qr)<1e-14,'Subtraction error 2: TT-matrix')
 
+        # test broadcasting
+        
+        x = tntt.random([2,3,4,5,6],[1,2,4,8,4,1], dtype = self.basic_dtype)
+        y = tntt.random([    4,5,6],[1,2,2,1], dtype = self.basic_dtype)
+        xr = x.full()
+        yr = y.full()
+        
+        z = x-y
+        zr = xr-yr
+        self.assertLess(err_rel(z.full(),zr),1e-13,"Subtraction broadcasting error 1: TT-tensors.")
+        
+        x = tntt.random([2,3,4,5,6],[1,2,4,8,4,1], dtype = self.basic_dtype)
+        y = tntt.random([    1,1,6],[1,2,2,1], dtype = self.basic_dtype)
+        xr = x.full()
+        yr = y.full()
+        
+        z = x-y
+        zr = xr-yr
+        self.assertLess(err_rel(z.full(),zr),1e-13,"Subtraction broadcasting error 2: TT-tensors.")
+
+        x = tntt.random([2,3,4,5,6],[1,2,4,8,4,1], dtype = self.basic_dtype)
+        y = tntt.random([        1],[1,1], dtype = self.basic_dtype)
+        xr = x.full()
+        yr = y.full()
+        
+        z = x-y
+        zr = xr-yr
+        self.assertLess(err_rel(z.full(),zr),1e-13,"Subtraction broadcasting error 3: TT-tensors.")
+        
+        
+        x = tntt.random([2,3,4,5,6],[1,2,4,8,4,1], dtype = self.basic_dtype)
+        y = tntt.random([1,1,4,5,6],[1,2,4,8,4,1], dtype = self.basic_dtype)
+        xr = x.full()
+        yr = y.full()
+        
+        z = x-y
+        zr = xr-yr
+        self.assertLess(err_rel(z.full(),zr),1e-13,"Subtraction broadcasting error 4: TT-tensors.")
+
     def test_mult(self):
         """
         Test the pointwise multiplication between TT-objects.
@@ -99,8 +177,47 @@ class TestLinalg(unittest.TestCase):
         C = c*A*(B*c)
         Cr = c*Ar*(Br*c)
 
-        self.assertLess(err_rel(C.full(),Cr),1e-13,"Multiplication error: Tt-matrices.")
+        self.assertLess(err_rel(C.full(),Cr),1e-13,"Multiplication error: TT-matrices.")
           
+        # test broadcasting
+        
+        x = tntt.random([2,3,4,5,6],[1,2,4,8,4,1], dtype = self.basic_dtype)
+        y = tntt.random([    4,5,6],[1,2,2,1], dtype = self.basic_dtype)
+        xr = x.full()
+        yr = y.full()
+        
+        z = x*y
+        zr = xr*yr
+        self.assertLess(err_rel(z.full(),zr),1e-13,"Multiplication broadcasting error 1: TT-tensors.")
+        
+        x = tntt.random([2,3,4,5,6],[1,2,4,8,4,1], dtype = self.basic_dtype)
+        y = tntt.random([    1,1,6],[1,2,2,1], dtype = self.basic_dtype)
+        xr = x.full()
+        yr = y.full()
+        
+        z = x*y
+        zr = xr*yr
+        self.assertLess(err_rel(z.full(),zr),1e-13,"Multiplication broadcasting error 2: TT-tensors.")
+
+        x = tntt.random([2,3,4,5,6],[1,2,4,8,4,1], dtype = self.basic_dtype)
+        y = tntt.random([        1],[1,1], dtype = self.basic_dtype)
+        xr = x.full()
+        yr = y.full()
+        
+        z = x*y
+        zr = xr*yr
+        self.assertLess(err_rel(z.full(),zr),1e-13,"Multiplication broadcasting error 3: TT-tensors.")
+        
+        
+        x = tntt.random([2,3,4,5,6],[1,2,4,8,4,1], dtype = self.basic_dtype)
+        y = tntt.random([1,1,4,5,6],[1,2,4,8,4,1], dtype = self.basic_dtype)
+        xr = x.full()
+        yr = y.full()
+        
+        z = x*y
+        zr = xr*yr
+        self.assertLess(err_rel(z.full(),zr),1e-13,"Multiplication broadcasting error 4: TT-tensors.")
+        
     def test_matmult(self):
         """
         Test the matrix multiplication operations.
