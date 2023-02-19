@@ -45,6 +45,7 @@ import math
 from torchtt._dmrg import dmrg_matvec
 from torchtt._aux_ops import apply_mask, dense_matvec, bilinear_form_aux
 from torchtt.errors import *
+# from torchtt._aux_ops import save, load
 
 class TT():
 
@@ -2130,6 +2131,41 @@ def permute(input, dims, eps = 1e-12):
                     
                 
     return TT(cores)
+    
+def save(tensor, path):
+    &#34;&#34;&#34;
+    Save a `torchtt.TT` object in a file.
+
+    Args:
+        tensor (torchtt.TT): the tensor to be saved.
+        path (str): the file name.
+
+    Raises:
+        InvalidArguments: First argument must be a torchtt.TT instance.
+    &#34;&#34;&#34;
+    if not isinstance(tensor, TT):
+        raise InvalidArguments(&#34;First argument must be a torchtt.TT instance.&#34;)
+    
+    if tensor.is_ttm:
+        dct = {&#34;is_ttm&#34;: tensor.is_ttm, &#34;R&#34;: tensor.R, &#34;M&#34;: tensor.M, &#34;N&#34;: tensor.N, &#34;cores&#34;: tensor.cores}
+        tn.save(dct, path)
+    else:
+        dct = {&#34;is_ttm&#34;: tensor.is_ttm, &#34;R&#34;: tensor.R, &#34;N&#34;: tensor.N, &#34;cores&#34;: tensor.cores}
+        tn.save(dct, path)
+        
+def load(path):
+    &#34;&#34;&#34;
+    Load a torchtt.TT object from a file.
+
+    Args:
+        path (str): the file name.
+
+    Returns:
+        torchtt.TT: the tensor.
+    &#34;&#34;&#34;
+    dct = tn.load(path)
+    
+    return TT(dct[&#39;cores&#39;])
     </code></pre>
 </details>
 </section>
@@ -2691,6 +2727,40 @@ the shape must be a list of ints.</p>
         raise InvalidArguments(&#39;Shape must be a list.&#39;)       
             
     return T.round(1e-15)</code></pre>
+</details>
+</dd>
+<dt id="torchtt.torchtt.load"><code class="name flex">
+<span>def <span class="ident">load</span></span>(<span>path)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Load a torchtt.TT object from a file.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>path</code></strong> :&ensp;<code>str</code></dt>
+<dd>the file name.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>torchtt.TT</code></dt>
+<dd>the tensor.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def load(path):
+    &#34;&#34;&#34;
+    Load a torchtt.TT object from a file.
+
+    Args:
+        path (str): the file name.
+
+    Returns:
+        torchtt.TT: the tensor.
+    &#34;&#34;&#34;
+    dct = tn.load(path)
+    
+    return TT(dct[&#39;cores&#39;])</code></pre>
 </details>
 </dd>
 <dt id="torchtt.torchtt.meshgrid"><code class="name flex">
@@ -3274,6 +3344,49 @@ A rounding is also performed.</p>
                 core = tn.reshape(core,[core.shape[0],-1,core.shape[-1]])
                 
     return TT(cores_new).round(eps)</code></pre>
+</details>
+</dd>
+<dt id="torchtt.torchtt.save"><code class="name flex">
+<span>def <span class="ident">save</span></span>(<span>tensor, path)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Save a <code>torchtt.TT</code> object in a file.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>tensor</code></strong> :&ensp;<code>torchtt.TT</code></dt>
+<dd>the tensor to be saved.</dd>
+<dt><strong><code>path</code></strong> :&ensp;<code>str</code></dt>
+<dd>the file name.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>InvalidArguments</code></dt>
+<dd>First argument must be a torchtt.TT instance.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def save(tensor, path):
+    &#34;&#34;&#34;
+    Save a `torchtt.TT` object in a file.
+
+    Args:
+        tensor (torchtt.TT): the tensor to be saved.
+        path (str): the file name.
+
+    Raises:
+        InvalidArguments: First argument must be a torchtt.TT instance.
+    &#34;&#34;&#34;
+    if not isinstance(tensor, TT):
+        raise InvalidArguments(&#34;First argument must be a torchtt.TT instance.&#34;)
+    
+    if tensor.is_ttm:
+        dct = {&#34;is_ttm&#34;: tensor.is_ttm, &#34;R&#34;: tensor.R, &#34;M&#34;: tensor.M, &#34;N&#34;: tensor.N, &#34;cores&#34;: tensor.cores}
+        tn.save(dct, path)
+    else:
+        dct = {&#34;is_ttm&#34;: tensor.is_ttm, &#34;R&#34;: tensor.R, &#34;N&#34;: tensor.N, &#34;cores&#34;: tensor.cores}
+        tn.save(dct, path)</code></pre>
 </details>
 </dd>
 <dt id="torchtt.torchtt.xfun"><code class="name flex">
@@ -5941,6 +6054,7 @@ N1 x &hellip; x Nd x 1 x &hellip; x 1.</p>
 <li><code><a title="torchtt.torchtt.eye" href="#torchtt.torchtt.eye">eye</a></code></li>
 <li><code><a title="torchtt.torchtt.kron" href="#torchtt.torchtt.kron">kron</a></code></li>
 <li><code><a title="torchtt.torchtt.linspace" href="#torchtt.torchtt.linspace">linspace</a></code></li>
+<li><code><a title="torchtt.torchtt.load" href="#torchtt.torchtt.load">load</a></code></li>
 <li><code><a title="torchtt.torchtt.meshgrid" href="#torchtt.torchtt.meshgrid">meshgrid</a></code></li>
 <li><code><a title="torchtt.torchtt.numel" href="#torchtt.torchtt.numel">numel</a></code></li>
 <li><code><a title="torchtt.torchtt.ones" href="#torchtt.torchtt.ones">ones</a></code></li>
@@ -5949,6 +6063,7 @@ N1 x &hellip; x Nd x 1 x &hellip; x 1.</p>
 <li><code><a title="torchtt.torchtt.random" href="#torchtt.torchtt.random">random</a></code></li>
 <li><code><a title="torchtt.torchtt.rank1TT" href="#torchtt.torchtt.rank1TT">rank1TT</a></code></li>
 <li><code><a title="torchtt.torchtt.reshape" href="#torchtt.torchtt.reshape">reshape</a></code></li>
+<li><code><a title="torchtt.torchtt.save" href="#torchtt.torchtt.save">save</a></code></li>
 <li><code><a title="torchtt.torchtt.xfun" href="#torchtt.torchtt.xfun">xfun</a></code></li>
 <li><code><a title="torchtt.torchtt.zeros" href="#torchtt.torchtt.zeros">zeros</a></code></li>
 </ul>

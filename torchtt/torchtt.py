@@ -13,6 +13,7 @@ import math
 from torchtt._dmrg import dmrg_matvec
 from torchtt._aux_ops import apply_mask, dense_matvec, bilinear_form_aux
 from torchtt.errors import *
+# from torchtt._aux_ops import save, load
 
 class TT():
 
@@ -2098,4 +2099,39 @@ def permute(input, dims, eps = 1e-12):
                     
                 
     return TT(cores)
+    
+def save(tensor, path):
+    """
+    Save a `torchtt.TT` object in a file.
+
+    Args:
+        tensor (torchtt.TT): the tensor to be saved.
+        path (str): the file name.
+
+    Raises:
+        InvalidArguments: First argument must be a torchtt.TT instance.
+    """
+    if not isinstance(tensor, TT):
+        raise InvalidArguments("First argument must be a torchtt.TT instance.")
+    
+    if tensor.is_ttm:
+        dct = {"is_ttm": tensor.is_ttm, "R": tensor.R, "M": tensor.M, "N": tensor.N, "cores": tensor.cores}
+        tn.save(dct, path)
+    else:
+        dct = {"is_ttm": tensor.is_ttm, "R": tensor.R, "N": tensor.N, "cores": tensor.cores}
+        tn.save(dct, path)
+        
+def load(path):
+    """
+    Load a torchtt.TT object from a file.
+
+    Args:
+        path (str): the file name.
+
+    Returns:
+        torchtt.TT: the tensor.
+    """
+    dct = tn.load(path)
+    
+    return TT(dct['cores'])
     
