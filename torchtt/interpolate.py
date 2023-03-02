@@ -91,7 +91,7 @@ def function_interpolate(function, x, eps = 1e-9, start_tens = None, nswp = 20, 
         * Multivariate interpolation:
         ```
         xs = tntt.meshgrid([tn.arange(0,n,dtype=torch.float64) for n in N])
-        func = lambda x: 1/(2+tn.sum(I+x,1).to(dtype=torch.float64))
+        func = lambda x: 1/(2+tn.sum(x,1).to(dtype=torch.float64))
         z = tntt.interpolate.function_interpolate(func, xs)
         ```
     
@@ -119,6 +119,12 @@ def function_interpolate(function, x, eps = 1e-9, start_tens = None, nswp = 20, 
         N = x.N
     device = None
     
+    if not eval_mv and len(N)==1:
+        return torchtt.TT(function(x.full())).to(device)
+
+    if eval_mv and len(N)==1:
+        return torchtt.TT(function(x[0].full())).to(device)
+                 
     d = len(N)
     
     #random init of the tensor
