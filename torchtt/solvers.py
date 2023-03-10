@@ -11,6 +11,7 @@ from torchtt._decomposition import QR, SVD, lr_orthogonal, rl_orthogonal
 from torchtt._iterative_solvers import BiCGSTAB_reset, gmres_restart
 import opt_einsum as oe
 from .errors import *
+import torchttcpp 
 
 def _local_product(Phi_right, Phi_left, coreA, core, shape):
     """
@@ -113,7 +114,7 @@ class _LinearOp():
             raise Exception('Preconditioner '+str(self.prec)+' not defined.')
         return tn.reshape(w,[-1,1])
 
-def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = 'res', local_solver = 1, local_iterations = 40, resets = 2, verbose = False, preconditioner = None):
+def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = 'res', local_solver = 1, local_iterations = 40, resets = 2, verbose = False, preconditioner = None):
     """
     Solve a multilinear system \(\\mathsf{Ax} = \\mathsf{b}\) in the Tensor Train format.
     
@@ -177,6 +178,7 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 50
     else:
         x = x0
     
+    kkt = torchttcpp.amen_solve(A.cores, b.cores, x.cores, b.N, A.R, b.R, x.R, nswp, eps, rmax, max_full, kickrank, kick2, local_iterations, resets, verbose, 0)
     rA = A.R
     N = b.N
     d = len(N)
@@ -207,7 +209,6 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 50
     nrmsc = 1.0
 
     for swp in range(nswp):
-        tme_sweep = datetime.datetime.now()
         # right to left orthogonalization
 
         if verbose:
