@@ -113,7 +113,7 @@ class _LinearOp():
             raise Exception('Preconditioner '+str(self.prec)+' not defined.')
         return tn.reshape(w,[-1,1])
 
-def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = 'res', local_solver = 1, local_iterations = 40, resets = 2, verbose = False, preconditioner = None):
+def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100000, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = 'res', local_solver = 1, local_iterations = 40, resets = 2, verbose = False, preconditioner = None):
     """
     Solve a multilinear system \(\\mathsf{Ax} = \\mathsf{b}\) in the Tensor Train format.
     
@@ -135,7 +135,7 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100, max_full = 50
         nswp (int, optional): number of sweeps. Defaults to 22.
         x0 (torchtt.TT, optional): initial guess. In None is provided the initial guess is a ones tensor. Defaults to None.
         eps (float, optional): relative residual. Defaults to 1e-10.
-        rmax (int, optional): maximum rank. Defaults to 100.
+        rmax (int, optional): maximum rank. Defaults to 100000.
         max_full (int, optional): the maximum size of the core until direct solver is used for the local subproblem. Defaults to 500.
         kickrank (int, optional): rank enrichment. Defaults to 4.
         kick2 (int, optional): [description]. Defaults to 0.

@@ -46,6 +46,7 @@ from torchtt._dmrg import dmrg_matvec
 from torchtt._aux_ops import apply_mask, dense_matvec, bilinear_form_aux
 from torchtt.errors import *
 # from torchtt._aux_ops import save, load
+import sys
 
 class TT():
 
@@ -98,7 +99,7 @@ class TT():
         &#34;&#34;&#34;
         return self.__R.copy()
 
-    def __init__(self, source, shape=None, eps=1e-10, rmax=10000):
+    def __init__(self, source, shape=None, eps=1e-10, rmax=sys.maxsize):
         &#34;&#34;&#34;
         Constructor of the TT class. Can convert full tensor in the TT-format (from `torch.tensor` or `numpy.array`).
         In the case of tensor operators of full shape `M1 x ... Md x N1 x ... x Nd`, the shape must be specified as a list of tuples `[(M1,N1),...,(Md,Nd)]`.
@@ -131,7 +132,7 @@ class TT():
             source (torch.tensor ot list[torch.tensor] or numpy.array or None): the input tensor in full format or the cores. If a `torch.tensor` or `numpy.array` is provided
             shape (list[int] or list[tuple[int]], optional): the shape (if it differs from the one provided). For the TT-matrix case is mandatory. Defaults to None.
             eps (float, optional): tolerance of the TT approximation. Defaults to 1e-10.
-            rmax (int or list[int], optional): maximum rank (either a list of integer or an integer). Defaults to 10000.
+            rmax (int or list[int], optional): maximum rank (either a list of integer or an integer). Defaults to the maximum possible integer.
 
         Raises:
             RankMismatch: Ranks of the given cores do not match (change the spaces of the cores).
@@ -1306,14 +1307,14 @@ class TT():
 
         return TT(cores_new)
     
-    def round(self, eps=1e-12, rmax = 2048): 
+    def round(self, eps=1e-12, rmax = sys.maxsize): 
         &#34;&#34;&#34;
         Implements the rounding operations within a given tolerance epsilon.
         The maximum rank is also provided.
 
         Args:
             eps (float, optional): the relative accuracy. Defaults to 1e-12.
-            rmax (int, optional): the maximum rank. Defaults to 2048.
+            rmax (int, optional): the maximum rank. Defaults to the maximum possible integer.
 
         Returns:
             torchtt.TT: the result.
@@ -1330,7 +1331,7 @@ class TT():
                
         return T
     
-    def to_qtt(self, eps = 1e-12, mode_size = 2, rmax = 2048):
+    def to_qtt(self, eps = 1e-12, mode_size = 2, rmax = sys.maxsize):
         &#34;&#34;&#34;
         Converts a tensor to the QTT format: N1 x N2 x ... x Nd -&gt; mode_size x mode_size x ... x mode_size.
         The product of the mode sizes should be a power of mode_size.
@@ -1347,7 +1348,7 @@ class TT():
         Args:
             eps (float,optional): the accuracy. Defaults to 1e-12.
             mode_size (int, optional): the size of the modes. Defaults to 2.
-            rmax (int): the maximum rank. Defaults to 2048.
+            rmax (int): the maximum rank. Defaults to the maximum possible integer.
             
 
         Raises:
@@ -1781,7 +1782,7 @@ def randn(N, R, var = 1.0, dtype = tn.float64, device = None):
 
     return TT(cores)
 
-def reshape(tens, shape, eps = 1e-16, rmax = 2048):
+def reshape(tens, shape, eps = 1e-16, rmax = sys.maxsize):
     &#34;&#34;&#34;
     Reshapes a torchtt.TT tensor in the TT format.
     A rounding is also performed.
@@ -1790,7 +1791,7 @@ def reshape(tens, shape, eps = 1e-16, rmax = 2048):
         tens (torchtt.TT): the input tensor.
         shape (list[int] or list[tuple[int]]): the desired shape. In the case of a TT operator the shape has to be given as list of tuples of ints [(M1,N1),...,(Md,Nd)].
         eps (float, optional): relative accuracy. Defaults to 1e-16.
-        rmax (int, optional): maximum rank. Defaults to 2048.
+        rmax (int, optional): maximum rank. Defaults to the maximum possible integer.
 
     Raises:
         ShapeMismatch: The product of modes should remain equal. Check the given shape.
@@ -3325,7 +3326,7 @@ Check also the method torchtt.randn()for better random tensors in the TT format.
 </details>
 </dd>
 <dt id="torchtt.torchtt.reshape"><code class="name flex">
-<span>def <span class="ident">reshape</span></span>(<span>tens, shape, eps=1e-16, rmax=2048)</span>
+<span>def <span class="ident">reshape</span></span>(<span>tens, shape, eps=1e-16, rmax=9223372036854775807)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Reshapes a torchtt.TT tensor in the TT format.
@@ -3339,7 +3340,7 @@ A rounding is also performed.</p>
 <dt><strong><code>eps</code></strong> :&ensp;<code>float</code>, optional</dt>
 <dd>relative accuracy. Defaults to 1e-16.</dd>
 <dt><strong><code>rmax</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>maximum rank. Defaults to 2048.</dd>
+<dd>maximum rank. Defaults to the maximum possible integer.</dd>
 </dl>
 <h2 id="raises">Raises</h2>
 <dl>
@@ -3355,7 +3356,7 @@ A rounding is also performed.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def reshape(tens, shape, eps = 1e-16, rmax = 2048):
+<pre><code class="python">def reshape(tens, shape, eps = 1e-16, rmax = sys.maxsize):
     &#34;&#34;&#34;
     Reshapes a torchtt.TT tensor in the TT format.
     A rounding is also performed.
@@ -3364,7 +3365,7 @@ A rounding is also performed.</p>
         tens (torchtt.TT): the input tensor.
         shape (list[int] or list[tuple[int]]): the desired shape. In the case of a TT operator the shape has to be given as list of tuples of ints [(M1,N1),...,(Md,Nd)].
         eps (float, optional): relative accuracy. Defaults to 1e-16.
-        rmax (int, optional): maximum rank. Defaults to 2048.
+        rmax (int, optional): maximum rank. Defaults to the maximum possible integer.
 
     Raises:
         ShapeMismatch: The product of modes should remain equal. Check the given shape.
@@ -3679,7 +3680,7 @@ the shape can be a list of ints or a list of tuples of ints. The second case cre
 <dl>
 <dt id="torchtt.torchtt.TT"><code class="flex name class">
 <span>class <span class="ident">TT</span></span>
-<span>(</span><span>source, shape=None, eps=1e-10, rmax=10000)</span>
+<span>(</span><span>source, shape=None, eps=1e-10, rmax=9223372036854775807)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Constructor of the TT class. Can convert full tensor in the TT-format (from <code>torch.tensor</code> or <code>numpy.array</code>).
@@ -3712,7 +3713,7 @@ print(Att)
 <dt><strong><code>eps</code></strong> :&ensp;<code>float</code>, optional</dt>
 <dd>tolerance of the TT approximation. Defaults to 1e-10.</dd>
 <dt><strong><code>rmax</code></strong> :&ensp;<code>int</code> or <code>list[int]</code>, optional</dt>
-<dd>maximum rank (either a list of integer or an integer). Defaults to 10000.</dd>
+<dd>maximum rank (either a list of integer or an integer). Defaults to the maximum possible integer.</dd>
 </dl>
 <h2 id="raises">Raises</h2>
 <dl>
@@ -3780,7 +3781,7 @@ print(Att)
         &#34;&#34;&#34;
         return self.__R.copy()
 
-    def __init__(self, source, shape=None, eps=1e-10, rmax=10000):
+    def __init__(self, source, shape=None, eps=1e-10, rmax=sys.maxsize):
         &#34;&#34;&#34;
         Constructor of the TT class. Can convert full tensor in the TT-format (from `torch.tensor` or `numpy.array`).
         In the case of tensor operators of full shape `M1 x ... Md x N1 x ... x Nd`, the shape must be specified as a list of tuples `[(M1,N1),...,(Md,Nd)]`.
@@ -3813,7 +3814,7 @@ print(Att)
             source (torch.tensor ot list[torch.tensor] or numpy.array or None): the input tensor in full format or the cores. If a `torch.tensor` or `numpy.array` is provided
             shape (list[int] or list[tuple[int]], optional): the shape (if it differs from the one provided). For the TT-matrix case is mandatory. Defaults to None.
             eps (float, optional): tolerance of the TT approximation. Defaults to 1e-10.
-            rmax (int or list[int], optional): maximum rank (either a list of integer or an integer). Defaults to 10000.
+            rmax (int or list[int], optional): maximum rank (either a list of integer or an integer). Defaults to the maximum possible integer.
 
         Raises:
             RankMismatch: Ranks of the given cores do not match (change the spaces of the cores).
@@ -4988,14 +4989,14 @@ print(Att)
 
         return TT(cores_new)
     
-    def round(self, eps=1e-12, rmax = 2048): 
+    def round(self, eps=1e-12, rmax = sys.maxsize): 
         &#34;&#34;&#34;
         Implements the rounding operations within a given tolerance epsilon.
         The maximum rank is also provided.
 
         Args:
             eps (float, optional): the relative accuracy. Defaults to 1e-12.
-            rmax (int, optional): the maximum rank. Defaults to 2048.
+            rmax (int, optional): the maximum rank. Defaults to the maximum possible integer.
 
         Returns:
             torchtt.TT: the result.
@@ -5012,7 +5013,7 @@ print(Att)
                
         return T
     
-    def to_qtt(self, eps = 1e-12, mode_size = 2, rmax = 2048):
+    def to_qtt(self, eps = 1e-12, mode_size = 2, rmax = sys.maxsize):
         &#34;&#34;&#34;
         Converts a tensor to the QTT format: N1 x N2 x ... x Nd -&gt; mode_size x mode_size x ... x mode_size.
         The product of the mode sizes should be a power of mode_size.
@@ -5029,7 +5030,7 @@ print(Att)
         Args:
             eps (float,optional): the accuracy. Defaults to 1e-12.
             mode_size (int, optional): the size of the modes. Defaults to 2.
-            rmax (int): the maximum rank. Defaults to 2048.
+            rmax (int): the maximum rank. Defaults to the maximum possible integer.
             
 
         Raises:
@@ -5913,7 +5914,7 @@ At least one mode should be larger than 1.</p>
 </details>
 </dd>
 <dt id="torchtt.torchtt.TT.round"><code class="name flex">
-<span>def <span class="ident">round</span></span>(<span>self, eps=1e-12, rmax=2048)</span>
+<span>def <span class="ident">round</span></span>(<span>self, eps=1e-12, rmax=9223372036854775807)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Implements the rounding operations within a given tolerance epsilon.
@@ -5923,7 +5924,7 @@ The maximum rank is also provided.</p>
 <dt><strong><code>eps</code></strong> :&ensp;<code>float</code>, optional</dt>
 <dd>the relative accuracy. Defaults to 1e-12.</dd>
 <dt><strong><code>rmax</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>the maximum rank. Defaults to 2048.</dd>
+<dd>the maximum rank. Defaults to the maximum possible integer.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -5934,14 +5935,14 @@ The maximum rank is also provided.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def round(self, eps=1e-12, rmax = 2048): 
+<pre><code class="python">def round(self, eps=1e-12, rmax = sys.maxsize): 
     &#34;&#34;&#34;
     Implements the rounding operations within a given tolerance epsilon.
     The maximum rank is also provided.
 
     Args:
         eps (float, optional): the relative accuracy. Defaults to 1e-12.
-        rmax (int, optional): the maximum rank. Defaults to 2048.
+        rmax (int, optional): the maximum rank. Defaults to the maximum possible integer.
 
     Returns:
         torchtt.TT: the result.
@@ -6118,7 +6119,7 @@ print(a.sum([0,1,2,3,4]))
 </details>
 </dd>
 <dt id="torchtt.torchtt.TT.to_qtt"><code class="name flex">
-<span>def <span class="ident">to_qtt</span></span>(<span>self, eps=1e-12, mode_size=2, rmax=2048)</span>
+<span>def <span class="ident">to_qtt</span></span>(<span>self, eps=1e-12, mode_size=2, rmax=9223372036854775807)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Converts a tensor to the QTT format: N1 x N2 x &hellip; x Nd -&gt; mode_size x mode_size x &hellip; x mode_size.
@@ -6137,7 +6138,7 @@ xf = x_qtt.qtt_to_tens(x.N) # a TT-rounding is recommended.
 <dt><strong><code>mode_size</code></strong> :&ensp;<code>int</code>, optional</dt>
 <dd>the size of the modes. Defaults to 2.</dd>
 <dt><strong><code>rmax</code></strong> :&ensp;<code>int</code></dt>
-<dd>the maximum rank. Defaults to 2048.</dd>
+<dd>the maximum rank. Defaults to the maximum possible integer.</dd>
 </dl>
 <h2 id="raises">Raises</h2>
 <dl>
@@ -6155,7 +6156,7 @@ xf = x_qtt.qtt_to_tens(x.N) # a TT-rounding is recommended.
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def to_qtt(self, eps = 1e-12, mode_size = 2, rmax = 2048):
+<pre><code class="python">def to_qtt(self, eps = 1e-12, mode_size = 2, rmax = sys.maxsize):
     &#34;&#34;&#34;
     Converts a tensor to the QTT format: N1 x N2 x ... x Nd -&gt; mode_size x mode_size x ... x mode_size.
     The product of the mode sizes should be a power of mode_size.
@@ -6172,7 +6173,7 @@ xf = x_qtt.qtt_to_tens(x.N) # a TT-rounding is recommended.
     Args:
         eps (float,optional): the accuracy. Defaults to 1e-12.
         mode_size (int, optional): the size of the modes. Defaults to 2.
-        rmax (int): the maximum rank. Defaults to 2048.
+        rmax (int): the maximum rank. Defaults to the maximum possible integer.
         
 
     Raises:
