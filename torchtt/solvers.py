@@ -178,7 +178,7 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 5
     else:
         x = x0
     
-    kkt = torchttcpp.amen_solve(A.cores, b.cores, x.cores, b.N, A.R, b.R, x.R, nswp, eps, rmax, max_full, kickrank, kick2, local_iterations, resets, verbose, 0)
+    # kkt = torchttcpp.amen_solve(A.cores, b.cores, x.cores, b.N, A.R, b.R, x.R, nswp, eps, rmax, max_full, kickrank, kick2, local_iterations, resets, verbose, 0)
     rA = A.R
     N = b.N
     d = len(N)
@@ -304,7 +304,6 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 5
                 # solve the full system
                 if verbose: print('\t\tChoosing direct solver (local size %d)....'%(rx[k]*N[k]*rx[k+1]))  
                 Bp = tn.einsum('smnS,LSR->smnRL',A.cores[k],Phis[k+1]) # shape is Rp x N x N x r x r
-                #B = tn.einsum('lsr,smnRL->rmRlnL',Phis[k],Bp)
                 B = tn.einsum('lsr,smnRL->lmLrnR',Phis[k],Bp) 
                 B = tn.reshape(B,[rx[k]*N[k]*rx[k+1],rx[k]*N[k]*rx[k+1]])
 
@@ -361,7 +360,6 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 5
             # truncation
             if k<d-1:
                 u, s, v = SVD(solution_now)
-                # print('\t\tTruncation of solution of shape',[rx[k]*N[k],rx[k+1]],' into u', u.shape, ' and v ',v.shape)
                 if trunc_norm == 'fro':
                     pass
                 else:
@@ -396,10 +394,6 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 5
                 czA = _local_product(Phiz[k+1], Phiz[k], A.cores[k], tn.reshape(u@v.t(),[rx[k],N[k],rx[k+1]]), [rx[k],N[k],rx[k+1]]) # shape rzp x N x rz
                 czy = tn.einsum('br,bnB,BR->rnR',Phiz_b[k],b.cores[k]*nrmsc,Phiz_b[k+1]) # shape is rzp x N x rz
                 cz_new = czy - czA
-                # print('Phiz_b',[plm.shape for plm in Phiz_b])
-                # print('czA',czA.shape,' czy',czy.shape)
-                # print('rz',rz)
-                # print('rx',rx)
 
                 uz,_,_ = SVD(tn.reshape(cz_new, [rz[k]*N[k],rz[k+1]]))
                 cz_new = uz[:,:min(kickrank,uz.shape[1])] # truncate to kickrank
@@ -415,21 +409,12 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 5
                     left_res = _local_product(Phiz[k+1],Phis[k],A.cores[k],tn.reshape(u@v.t(),[rx[k],N[k],rx[k+1]]),[rx[k],N[k],rx[k+1]])
                     left_b = tn.einsum('br,bmB,BR->rmR',Phis_b[k],b.cores[k]*nrmsc,Phiz_b[k+1])
                     uk = left_b - left_res # rx_k x N_k x rz_k+1
-                    # print('u',u.shape,' uk',uk.shape)
-                    # print('rx',rx,'rz',rz)
-                    # print(Phis_b[k].shape,Phiz_b[k+1].shape, left_res.shape)
-                    # uk = tn.reshape(uk,[-1,rz[k+1]])
                     u, Rmat = QR(tn.cat((u,tn.reshape(uk,[u.shape[0],-1])),1))
-                    # print('Q',u.shape,' R', Rmat.shape)
                     r_add = uk.shape[2]
-                    # print('v before',v.shape,' solution shape ',solution_now.shape)
-                    # print('adding ',[rx[k+1],r_add])
                     v = tn.cat((v,tn.zeros([rx[k+1],r_add],  dtype = dtype, device = device)), 1)
-                    # print('v after ',v.shape)
                     v = v @ Rmat.t()
                  
                 r = u.shape[1]
-                # print(u.shape,v.shape,x_cores[k+1].shape)
                 v = tn.einsum('ji,jkl->ikl',v,x_cores[k+1])
                 # remove norm correction
                 nrmsc = nrmsc * normA[k] * normx[k] / normb[k]  
@@ -518,6 +503,7 @@ def _compute_phi_bck_A(Phi_now,core_left,core_A,core_right):
     # Phipp = tn.einsum('ijkl,abjk->ilba',Phip,core_A)
     # Phi = tn.einsum('ijkl,akj->ila',Phipp,core_left)
     Phi = oe.contract('LSR,lML,sMNS,rNR->lsr',Phi_now,core_left,core_A,core_right)
+    print(oe.contract_path('LSR,lML,sMNS,rNR->lsr',Phi_now,core_left,core_A,core_right))
     return Phi
 
 def _compute_phi_fwd_A(Phi_now, core_left, core_A, core_right):
@@ -541,6 +527,7 @@ def _compute_phi_fwd_A(Phi_now, core_left, core_A, core_right):
     # tme1 = datetime.datetime.now() - tme1 
     # tme2 = datetime.datetime.now()
     Phi_next = oe.contract('lsr,lML,sMNS,rNR->LSR',Phi_now,core_left,core_A,core_right)
+    # print(oe.contract_path('lsr,lML,sMNS,rNR->LSR',Phi_now,core_left,core_A,core_right))
     # tme2 = datetime.datetime.now() - tme2 
     # print('\n>>>>>>>>>>>>>>>>>>>>>>>>>>Time1 ',tme1,' time 2', tme2) 
     return Phi_next
