@@ -334,7 +334,6 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 5
                 # solve the full system
                 if verbose: print(&#39;\t\tChoosing direct solver (local size %d)....&#39;%(rx[k]*N[k]*rx[k+1]))  
                 Bp = tn.einsum(&#39;smnS,LSR-&gt;smnRL&#39;,A.cores[k],Phis[k+1]) # shape is Rp x N x N x r x r
-                #B = tn.einsum(&#39;lsr,smnRL-&gt;rmRlnL&#39;,Phis[k],Bp)
                 B = tn.einsum(&#39;lsr,smnRL-&gt;lmLrnR&#39;,Phis[k],Bp) 
                 B = tn.reshape(B,[rx[k]*N[k]*rx[k+1],rx[k]*N[k]*rx[k+1]])
 
@@ -391,7 +390,6 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 5
             # truncation
             if k&lt;d-1:
                 u, s, v = SVD(solution_now)
-                # print(&#39;\t\tTruncation of solution of shape&#39;,[rx[k]*N[k],rx[k+1]],&#39; into u&#39;, u.shape, &#39; and v &#39;,v.shape)
                 if trunc_norm == &#39;fro&#39;:
                     pass
                 else:
@@ -426,10 +424,6 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 5
                 czA = _local_product(Phiz[k+1], Phiz[k], A.cores[k], tn.reshape(u@v.t(),[rx[k],N[k],rx[k+1]]), [rx[k],N[k],rx[k+1]]) # shape rzp x N x rz
                 czy = tn.einsum(&#39;br,bnB,BR-&gt;rnR&#39;,Phiz_b[k],b.cores[k]*nrmsc,Phiz_b[k+1]) # shape is rzp x N x rz
                 cz_new = czy - czA
-                # print(&#39;Phiz_b&#39;,[plm.shape for plm in Phiz_b])
-                # print(&#39;czA&#39;,czA.shape,&#39; czy&#39;,czy.shape)
-                # print(&#39;rz&#39;,rz)
-                # print(&#39;rx&#39;,rx)
 
                 uz,_,_ = SVD(tn.reshape(cz_new, [rz[k]*N[k],rz[k+1]]))
                 cz_new = uz[:,:min(kickrank,uz.shape[1])] # truncate to kickrank
@@ -445,21 +439,12 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 5
                     left_res = _local_product(Phiz[k+1],Phis[k],A.cores[k],tn.reshape(u@v.t(),[rx[k],N[k],rx[k+1]]),[rx[k],N[k],rx[k+1]])
                     left_b = tn.einsum(&#39;br,bmB,BR-&gt;rmR&#39;,Phis_b[k],b.cores[k]*nrmsc,Phiz_b[k+1])
                     uk = left_b - left_res # rx_k x N_k x rz_k+1
-                    # print(&#39;u&#39;,u.shape,&#39; uk&#39;,uk.shape)
-                    # print(&#39;rx&#39;,rx,&#39;rz&#39;,rz)
-                    # print(Phis_b[k].shape,Phiz_b[k+1].shape, left_res.shape)
-                    # uk = tn.reshape(uk,[-1,rz[k+1]])
                     u, Rmat = QR(tn.cat((u,tn.reshape(uk,[u.shape[0],-1])),1))
-                    # print(&#39;Q&#39;,u.shape,&#39; R&#39;, Rmat.shape)
                     r_add = uk.shape[2]
-                    # print(&#39;v before&#39;,v.shape,&#39; solution shape &#39;,solution_now.shape)
-                    # print(&#39;adding &#39;,[rx[k+1],r_add])
                     v = tn.cat((v,tn.zeros([rx[k+1],r_add],  dtype = dtype, device = device)), 1)
-                    # print(&#39;v after &#39;,v.shape)
                     v = v @ Rmat.t()
                  
                 r = u.shape[1]
-                # print(u.shape,v.shape,x_cores[k+1].shape)
                 v = tn.einsum(&#39;ji,jkl-&gt;ikl&#39;,v,x_cores[k+1])
                 # remove norm correction
                 nrmsc = nrmsc * normA[k] * normx[k] / normb[k]  
@@ -876,7 +861,6 @@ print((xx-x).norm()/x.norm()) # error
                 # solve the full system
                 if verbose: print(&#39;\t\tChoosing direct solver (local size %d)....&#39;%(rx[k]*N[k]*rx[k+1]))  
                 Bp = tn.einsum(&#39;smnS,LSR-&gt;smnRL&#39;,A.cores[k],Phis[k+1]) # shape is Rp x N x N x r x r
-                #B = tn.einsum(&#39;lsr,smnRL-&gt;rmRlnL&#39;,Phis[k],Bp)
                 B = tn.einsum(&#39;lsr,smnRL-&gt;lmLrnR&#39;,Phis[k],Bp) 
                 B = tn.reshape(B,[rx[k]*N[k]*rx[k+1],rx[k]*N[k]*rx[k+1]])
 
@@ -933,7 +917,6 @@ print((xx-x).norm()/x.norm()) # error
             # truncation
             if k&lt;d-1:
                 u, s, v = SVD(solution_now)
-                # print(&#39;\t\tTruncation of solution of shape&#39;,[rx[k]*N[k],rx[k+1]],&#39; into u&#39;, u.shape, &#39; and v &#39;,v.shape)
                 if trunc_norm == &#39;fro&#39;:
                     pass
                 else:
@@ -968,10 +951,6 @@ print((xx-x).norm()/x.norm()) # error
                 czA = _local_product(Phiz[k+1], Phiz[k], A.cores[k], tn.reshape(u@v.t(),[rx[k],N[k],rx[k+1]]), [rx[k],N[k],rx[k+1]]) # shape rzp x N x rz
                 czy = tn.einsum(&#39;br,bnB,BR-&gt;rnR&#39;,Phiz_b[k],b.cores[k]*nrmsc,Phiz_b[k+1]) # shape is rzp x N x rz
                 cz_new = czy - czA
-                # print(&#39;Phiz_b&#39;,[plm.shape for plm in Phiz_b])
-                # print(&#39;czA&#39;,czA.shape,&#39; czy&#39;,czy.shape)
-                # print(&#39;rz&#39;,rz)
-                # print(&#39;rx&#39;,rx)
 
                 uz,_,_ = SVD(tn.reshape(cz_new, [rz[k]*N[k],rz[k+1]]))
                 cz_new = uz[:,:min(kickrank,uz.shape[1])] # truncate to kickrank
@@ -987,21 +966,12 @@ print((xx-x).norm()/x.norm()) # error
                     left_res = _local_product(Phiz[k+1],Phis[k],A.cores[k],tn.reshape(u@v.t(),[rx[k],N[k],rx[k+1]]),[rx[k],N[k],rx[k+1]])
                     left_b = tn.einsum(&#39;br,bmB,BR-&gt;rmR&#39;,Phis_b[k],b.cores[k]*nrmsc,Phiz_b[k+1])
                     uk = left_b - left_res # rx_k x N_k x rz_k+1
-                    # print(&#39;u&#39;,u.shape,&#39; uk&#39;,uk.shape)
-                    # print(&#39;rx&#39;,rx,&#39;rz&#39;,rz)
-                    # print(Phis_b[k].shape,Phiz_b[k+1].shape, left_res.shape)
-                    # uk = tn.reshape(uk,[-1,rz[k+1]])
                     u, Rmat = QR(tn.cat((u,tn.reshape(uk,[u.shape[0],-1])),1))
-                    # print(&#39;Q&#39;,u.shape,&#39; R&#39;, Rmat.shape)
                     r_add = uk.shape[2]
-                    # print(&#39;v before&#39;,v.shape,&#39; solution shape &#39;,solution_now.shape)
-                    # print(&#39;adding &#39;,[rx[k+1],r_add])
                     v = tn.cat((v,tn.zeros([rx[k+1],r_add],  dtype = dtype, device = device)), 1)
-                    # print(&#39;v after &#39;,v.shape)
                     v = v @ Rmat.t()
                  
                 r = u.shape[1]
-                # print(u.shape,v.shape,x_cores[k+1].shape)
                 v = tn.einsum(&#39;ji,jkl-&gt;ikl&#39;,v,x_cores[k+1])
                 # remove norm correction
                 nrmsc = nrmsc * normA[k] * normx[k] / normb[k]  

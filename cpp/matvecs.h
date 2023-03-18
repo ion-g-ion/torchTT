@@ -11,7 +11,11 @@ private:
     at::IntArrayRef shape;
     at::TensorOptions options;
 public:
-    AMENsolveMV(at::Tensor &Phi_left, at::Tensor &Phi_right, at::Tensor & coreA, at::IntArrayRef shape, int prec, at::TensorOptions options){
+    AMENsolveMV(){
+        ;
+    }
+    
+    void setter(at::Tensor &Phi_left, at::Tensor &Phi_right, at::Tensor & coreA, at::IntArrayRef shape, int prec, at::TensorOptions options){
         this->prec = prec;
         this->options = options;
         this->shape = shape;
@@ -24,6 +28,10 @@ public:
             auto Jr = at::diagonal(Phi_right, 0, 0, 2);
             this->J = at::linalg_inv(at::tensordot(Jl,Jr,{3},{0}).permute({0,3,1,2}));
         }
+    }
+
+    at::Tensor apply_prec(at::Tensor sol){
+        return sol;
     }
 
     at::Tensor matvec(at::Tensor &x, bool apply_prec){

@@ -1,7 +1,7 @@
 from setuptools import setup, Extension
 from torch.utils.cpp_extension import BuildExtension, CppExtension
 setup(name='torchTT',
-version='1.0',
+version='2.0',
 description='Tensor-Train decomposition in pytorch',
 url='https://github.com/ion-g-ion/torchTT',
 author='Ion Gabriel Ion',
@@ -16,5 +16,11 @@ cmdclass={
     'build_ext': BuildExtension
 },
 test_suite='tests',
-zip_safe=False) 
+zip_safe=False,
+classifiers=[
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]) 
+
 

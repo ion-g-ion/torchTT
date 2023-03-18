@@ -1,5 +1,9 @@
 
 r"""
+Provides Tensor-Train (TT) decomposition using `pytorch` as backend.
+
+Contains routines for computing the TT decomposition and all the basisc linear algebra in the TT format. Additionally, GPU support can be used thanks to the `pytorch` backend.   
+It also has linear solvers in TT and cross approximation as well as automatic differentiation.
 
 .. include:: INTRO.md 
 

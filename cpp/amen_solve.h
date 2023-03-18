@@ -2,6 +2,7 @@
 #include "ortho.h"
 #include <cmath>
 #include "matvecs.h"
+#include "gmres.h"
 
 /**
  * @brief Compute thelocal matvec product in the AMEn: lsr,smnS,LSR,rnR->lmL
@@ -262,7 +263,7 @@ std::vector<at::Tensor> amen_solve(
 
             // assemble rhs
             at::Tensor rhs = at::tensordot(Phis_b[k], b_cores[k] * nrmsc, {0}, {0});
-            rhs = at::tensordot(rhs, Phis_b[k+1], {2}, {0}).rehshape({-1,1});
+            rhs = at::tensordot(rhs, Phis_b[k+1], {2}, {0}).reshape({-1,1});
 
             double norm_rhs = torch::norm(rhs).item<double>();
 
@@ -274,12 +275,15 @@ std::vector<at::Tensor> amen_solve(
             at::Tensor solution_now;
             double res_old, res_new;
 
+            at::Tensor B;
+            auto Op = AMENsolveMV<double>();
+
             if(use_full){
                 if(verbose) 
                     std::cout << "\t\tChoosing direct solver (local size " << rx[k]*N[k]*rx[k+1] << ")..." << std::endl;
                 auto Bp = at::tensordot(A_cores[k], Phis[k+1], {3}, {1}); // smnS,LSR->smnLR
                 Bp = at::tensordot(Phis[k], Bp, {1}, {0}); // lsr,smnLR->lrmnLR
-                auto B = Bp.permute({0,2,4,1,3,5}).reshape({rx[k]*N[k]*rx[k+1], rx[k]*N[k]*rx[k+1]});
+                B = Bp.permute({0,2,4,1,3,5}).reshape({rx[k]*N[k]*rx[k+1], rx[k]*N[k]*rx[k+1]});
 
                 at::linalg_solve_out(solution_now, B, rhs);
 
@@ -293,7 +297,7 @@ std::vector<at::Tensor> amen_solve(
                     tme_local = std::chrono::high_resolution_clock::now();
                 }
                 at::IntArrayRef shape_now = c10::IntArrayRef(*(new std::vector<int64_t>({rx[k], N[k], rx[k+1]})));
-                auto Op = AMENsolveMV(Phis[k], Phis[k+1], A_cores[k],shape_now, preconditioner, options);
+                Op.setter(Phis[k], Phis[k+1], A_cores[k],shape_now, preconditioner, options);
                 
                 double eps_local = real_tol * norm_rhs;
 
@@ -303,7 +307,7 @@ std::vector<at::Tensor> amen_solve(
                 int flag;
                 int nit;
 
-                gmres(solution_now, flag, nit, Op, drhs, previous_solution, drhs.sizes()[0], local_iterations+1, eps_local, resets );
+                gmres<double>(solution_now, flag, nit, Op, drhs, previous_solution, drhs.sizes()[0], local_iterations+1, eps_local, resets );
 
                 if(preconditioner!=NO_PREC){
                     solution_now = Op.apply_prec(solution_now.view(shape_now));
@@ -312,45 +316,97 @@ std::vector<at::Tensor> amen_solve(
 
                 solution_now += previous_solution;
 
-                res_old = torch::norm(Op.matvec(previous_solution, False)-rhs).item<double>/norm_rhs;
-                res_new = torch::norm(Op.matvec(solution_now, False)-rhs).item<double>/norm_rhs;
+                res_old = torch::norm(Op.matvec(previous_solution, false)-rhs).item<double>()/norm_rhs;
+                res_new = torch::norm(Op.matvec(solution_now, false)-rhs).item<double>()/norm_rhs;
 
                 if(verbose){
                     std::cout<<"\t\tFinished with flag " << flag << " after " << nit << "with relres " << res_new << " (from " << eps_local << ")" << std::endl;
                     auto duration = (double)(std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now()-tme_local)).count() ;
                     std::cout<<"\t\tTime needed " << duration << " s" << std::endl;
                 }
-                if(verbose && res_old/res_new < damp && res_new > real_tol)
-                    std::cout << "WARNING: residual increase. res_old " << res_old << ", res_new " << res_new << ", " << real_tol << std::endl;
+            }
+            if(verbose && res_old/res_new < damp && res_new > real_tol)
+                std::cout << "WARNING: residual increase. res_old " << res_old << ", res_new " << res_new << ", " << real_tol << std::endl;
 
-                auto dx = torch::norm(solution_new - previous_solution).item<double> / torch::norm(solution_new).item<double>;
+            auto dx = torch::norm(solution_now - previous_solution).item<double>() / torch::norm(solution_now).item<double>();
 
-                if(verbose) 
-                    std::cout << "\t\tdx = " << dx << ", res_now = " << res_new << ", res_old = " << res_old << std::endl;
+            if(verbose) 
+                std::cout << "\t\tdx = " << dx << ", res_now = " << res_new << ", res_old = " << res_old << std::endl;
 
-                max_dx = dx < max_dx ? max_dx : dx;
-                max_res = max_res < res_old ? res_old : max_res;
+            max_dx = dx < max_dx ? max_dx : dx;
+            max_res = max_res < res_old ? res_old : max_res;
 
-                solution_now = solution_now.rashape({rx[k]*N[k], rx[k+1]});
+            solution_now = solution_now.reshape({rx[k]*N[k], rx[k+1]});
 
-                if(k<d-1){
-                    auto USV = at::linalg_svd(solution_new, false);
+            at::Tensor u,s,v;
+            uint64_t r;
 
-                    uint64_t r = std::get<0>(USV).sizes()[1];
-                    while(r>0){
-                        auto solution = std::get<0>(USV)
+            if(k<d-1){
+                std::tie(u,s,v) = at::linalg_svd(solution_now, false);
 
-                        --r;
+                r = u.sizes()[1];
+                while(r>0){
+                    auto solution = at::linalg_matmul(u.index({torch::indexing::Ellipsis, torch::indexing::Slice(0,r,1)}) * s.index({torch::indexing::Slice(0,r,1)}), v.index({torch::indexing::Slice(0,r,1), torch::indexing::Ellipsis}));
+
+                    double res; 
+                    if(use_full)
+                        torch::norm(at::linalg_matmul(B, solution) - rhs).item<double>() / norm_rhs;
+                    else{
+                        auto tmp_tens = solution.view({-1,1});
+                        torch::norm(Op.matvec(tmp_tens, false)-rhs).item<double>()/norm_rhs;
                     }
-                    ++r;
 
-                    r = r<std::get<0>(USV).sizes()[1] && r<rmax[k+1] ? r : (std::get<0>(USV).sizes()[1] < rmax[k+1] ? std::get<0>(USV).sizes()[1] : rmax[k+1]);
-
+                    if(res>(res_new > real_tol*damp ? res_new : real_tol*damp))
+                        break;
+                    --r;
                 }
+                ++r;
 
-                
+                r = r<u.sizes()[1] && r<rmax ? r : (u.sizes()[1] < rmax ? u.sizes()[1] : rmax);
 
             }
+            else{
+                std::tie(u,v) = at::linalg_qr(solution_now);
+                r = u.sizes()[1];
+                s = torch::ones(r, options);
+            }
+
+            u = u.index({torch::indexing::Ellipsis, torch::indexing::Slice(0,r,1)});
+            auto tmp1 = torch::diag(s.index({torch::indexing::Slice(0,r,1)}));
+            auto tmp2 = v.index({torch::indexing::Slice(0,r,1), torch::indexing::Ellipsis});
+            v = at::linalg_matmul(tmp1, tmp2).t();
+
+            if(!last){
+                at::Tensor czA, czy;
+                at::Tensor tmp = at::linalg_matmul(u, v.t()).reshape({rx[k], N[k], rx[k+1]});
+                czA = local_product(Phiz[k+1], Phiz[k], A_cores[k], tmp);
+                czy = at::tensordot(Phiz_b[k], b_cores[k], {0}, {1});
+                czy = at::tensordot(czy, Phiz_b[k+1], {2}, {0});
+                czy *= nrmsc;
+                tmp = (czy - czA).reshape({rz[k]*N[k], rz[k+1]});
+                
+                at::Tensor uz;
+                std::tie(uz, std::ignore, std::ignore) = at::linalg_svd(tmp, false);
+                auto rtmp = kickrank < uz.sizes()[1] ? kickrank : uz.sizes()[1];
+                tmp = uz.index({torch::indexing::Ellipsis, torch::indexing::Slice(0,rtmp,1)});
+                if(k < d-1)
+                    tmp = at::cat({tmp,torch::randn({tmp.sizes()[0],  kick2}, options)}, 1);
+                
+                at::Tensor qz;
+                std::tie(qz, std::ignore) = at::linalg_qr(tmp);
+
+                rz[k+1] = qz.sizes()[1];
+
+                z_cores[k] = qz.reshape({rz[k], N[k], rz[k+1]});
+            }
+            if(k<d-1){
+                if(!last){
+                    at::Tensor tmp = at::linalg_matmul(u, v.t()).reshape({rx[k], N[k], rx[k+1]});
+                    at::Tensor left_res = local_product(Phiz[k+1], Phis[k], A_cores[k], tmp);
+
+                }
+            }   
+
             // >>>>>>>>>>>>>>>>>>
 
 

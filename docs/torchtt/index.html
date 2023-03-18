@@ -28,7 +28,9 @@
 It also has linear solvers in TT and cross approximation as well as automatic differentiation.</p>
 <p>What is the Tensor-Train format?</p>
 <hr>
-<p>The Tensor-Train (TT) format is a low-rank tensor decomposition format used to fight the curse of dimensionality. A d-dimensional tensor <span><span class="MathJax_Preview">\mathsf{x} \in \mathbb{R} ^{n_1 \times n_2 \times \cdots \times n_d}</span><script type="math/tex">\mathsf{x} \in \mathbb{R} ^{n_1 \times n_2 \times \cdots \times n_d}</script></span> can be expressed as </p>
+<p>The Tensor-Train (TT) format is a low-rank tensor decomposition format used to fight the curse of dimensionality. A d-dimensional tensor <span><span class="MathJax_Preview">\mathsf{x} \in \mathbb{R} ^{n_1 \times n_2 \times \cdots \times n_d}</span><script type="math/tex">\mathsf{x} \in \mathbb{R} ^{n_1 \times n_2 \times \cdots \times n_d}</script></span> can be expressed using algebraic operations between d smaller tensors:</p>
+<p><span><span class="MathJax_Preview"> \mathsf{x}_{i_1i_2...i_d} = \sum\limits_{s_0=1}^{r_0} \sum\limits_{s_1=1}^{r_1} \cdots \sum\limits_{s_{d-1}=1}^{r_{d-1}} \sum\limits_{s_d=1}^{r_d} \mathsf{g}^{(1)}_{s_0 i_1 s_1} \cdots \mathsf{g}^{(d)}_{s_{d-1} i_d s_d}, </span><script type="math/tex; mode=display"> \mathsf{x}_{i_1i_2...i_d} = \sum\limits_{s_0=1}^{r_0} \sum\limits_{s_1=1}^{r_1} \cdots \sum\limits_{s_{d-1}=1}^{r_{d-1}} \sum\limits_{s_d=1}^{r_d} \mathsf{g}^{(1)}_{s_0 i_1 s_1} \cdots \mathsf{g}^{(d)}_{s_{d-1} i_d s_d}, </script></span>
+where </p>
 <p>Utilities</p>
 <hr>
 <ul>
@@ -40,6 +42,10 @@ It also has linear solvers in TT and cross approximation as well as automatic di
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">r&#34;&#34;&#34;
+Provides Tensor-Train (TT) decomposition using `pytorch` as backend.
+
+Contains routines for computing the TT decomposition and all the basisc linear algebra in the TT format. Additionally, GPU support can be used thanks to the `pytorch` backend.   
+It also has linear solvers in TT and cross approximation as well as automatic differentiation.
 
 .. include:: INTRO.md 
 
