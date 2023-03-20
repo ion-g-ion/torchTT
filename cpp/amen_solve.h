@@ -183,7 +183,9 @@ std::vector<at::Tensor> amen_solve(
 
     bool last = false;
 
-    std::chrono::time_point<std::chrono::high_resolution_clock> tme_swp;
+    std::chrono::time_point<std::chrono::high_resolution_clock> tme_swp, tme_total;
+    if(verbose)
+        tme_total = std::chrono::high_resolution_clock::now();
     int swp;
     for(swp=0;swp<nswp;swp++){
 
@@ -196,13 +198,11 @@ std::vector<at::Tensor> amen_solve(
         }
 
         for(int k=d-1;k>0;k--){
-            std::cout << "k " << k <<std::endl;
             if(!last){
                 at::Tensor cz_new;
                 if(swp>0){
                     at::Tensor czA = local_product(Phiz[k+1], Phiz[k], A_cores[k], x_cores[k]);
-                    // >>>>>>>>>>>>>>>>>>>
-                    at::Tensor czy = at::tensordot(Phiz_b[k], b_cores[k], {0}, {1});
+                    at::Tensor czy = at::tensordot(Phiz_b[k], b_cores[k], {0}, {0});
                     czy = at::tensordot(czy, Phiz_b[k+1], {2}, {0});
                     czy *= nrmsc;
                     czy -= czA;
@@ -216,16 +216,19 @@ std::vector<at::Tensor> amen_solve(
                     cz_new = z_cores[k].reshape({rz[k],-1}).t();
                 }
 
-                at::Tensor Qz = std::get<0>(at::linalg_qr(cz_new));
+                at::Tensor Qz;
+                std::tie(Qz, std::ignore) = at::linalg_qr(cz_new);
                 rz[k] = Qz.sizes()[1];
                 z_cores[k] = (Qz.t()).reshape({rz[k], N[k], rz[k+1]});
             }
-            
+
+
             
             if(swp>0)
                 nrmsc = nrmsc * normA[k-1] * normx[k-1] / normb[k-1];
 
             auto core = x_cores[k].reshape({rx[k],N[k]*rx[k+1]}).t();
+
             std::tuple<at::Tensor, at::Tensor> QR = at::linalg_qr(core);
             
             auto core_prev = at::tensordot(x_cores[k-1], std::get<1>(QR).t(), {2}, {0});
@@ -238,7 +241,7 @@ std::vector<at::Tensor> amen_solve(
                 current_norm = 1.0;
             normx[k-1] = normx[k-1] * current_norm;
 
-            x_cores[k] = std::get<0>(QR).t().reshape({rx[k], N[k], rx[k+1]}).clone();
+            x_cores[k] = (std::get<0>(QR).t()).reshape({rx[k], N[k], rx[k+1]}).clone();
             x_cores[k-1] = core_prev.clone();
 
             
@@ -253,7 +256,7 @@ std::vector<at::Tensor> amen_solve(
 
             norm = torch::norm(Phis_b[k]).item<double>();
             norm = norm>0 ? norm : 0.0;
-            normA[k-1] = norm;
+            normb[k-1] = norm;
             Phis_b[k] = Phis_b[k] / norm;
             
             // norm correction
@@ -265,7 +268,6 @@ std::vector<at::Tensor> amen_solve(
                 Phiz_b[k] = compute_phi_bck_rhs(Phiz_b[k+1], b_cores[k], z_cores[k]) / normb[k-1];
             }
         }
-        std::cout << "READY ORTHO\n";
         double max_res = 0;
         double max_dx = 0;
 
@@ -321,22 +323,23 @@ std::vector<at::Tensor> amen_solve(
                 int flag;
                 int nit;
 
-                gmres<double>(solution_now, flag, nit, Op, drhs, previous_solution, drhs.sizes()[0], local_iterations+1, eps_local, resets );
+                gmres<double>(solution_now, flag, nit, Op, drhs, previous_solution, drhs.sizes()[0], local_iterations, eps_local, resets );
 
                 if(preconditioner!=NO_PREC){
-                    solution_now = Op.apply_prec(solution_now.view(shape_now));
-                    solution_now = solution_now.view({-1,1});
+                    solution_now = Op.apply_prec(solution_now.reshape(shape_now));
+                    
                 }
 
-                solution_now += previous_solution;
+                solution_now = solution_now.reshape({-1,1});
 
+                solution_now += previous_solution;
                 res_old = torch::norm(Op.matvec(previous_solution, false)-rhs).item<double>()/norm_rhs;
                 res_new = torch::norm(Op.matvec(solution_now, false)-rhs).item<double>()/norm_rhs;
 
                 if(verbose){
-                    std::cout<<"\t\tFinished with flag " << flag << " after " << nit << "with relres " << res_new << " (from " << eps_local << ")" << std::endl;
-                    auto duration = (double)(std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now()-tme_local)).count() ;
-                    std::cout<<"\t\tTime needed " << duration << " s" << std::endl;
+                    std::cout<<"\t\tFinished with flag " << flag << " after " << nit << " iterations with relres " << res_new << " (from " << eps_local << ")" << std::endl;
+                    auto duration = (double)(std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now()-tme_local)).count() /1000.0 ;
+                    std::cout<<"\t\tTime needed " << duration << " ms" << std::endl;
                 }
             }
             if(verbose && res_old/res_new < damp && res_new > real_tol)
@@ -364,10 +367,10 @@ std::vector<at::Tensor> amen_solve(
 
                     double res; 
                     if(use_full)
-                        torch::norm(at::linalg_matmul(B, solution.view({-1,1})) - rhs).item<double>() / norm_rhs;
+                        res = torch::norm(at::linalg_matmul(B, solution.view({-1,1})) - rhs).item<double>() / norm_rhs;
                     else{
                         auto tmp_tens = solution.view({-1,1});
-                        torch::norm(Op.matvec(tmp_tens, false)-rhs).item<double>()/norm_rhs;
+                        res = torch::norm(Op.matvec(tmp_tens, false)-rhs).item<double>()/norm_rhs;
                     }
 
                     if(res>(res_new > real_tol*damp ? res_new : real_tol*damp))
@@ -376,7 +379,7 @@ std::vector<at::Tensor> amen_solve(
                 }
                 ++r;
 
-                r = r<u.sizes()[1] && r<rmax ? r : (u.sizes()[1] < rmax ? u.sizes()[1] : rmax);
+                r = (r<u.sizes()[1] && r<rmax) ? r : (u.sizes()[1] < rmax ? u.sizes()[1] : rmax);
 
             }
             else{
@@ -386,9 +389,9 @@ std::vector<at::Tensor> amen_solve(
             }
 
 
-            u = u.index({torch::indexing::Ellipsis, torch::indexing::Slice(0,r,1)});
-            auto tmp1 = torch::diag(s.index({torch::indexing::Slice(0,r,1)}));
-            auto tmp2 = v.index({torch::indexing::Slice(0,r,1), torch::indexing::Ellipsis});
+            u = u.index({torch::indexing::Ellipsis, torch::indexing::Slice(0,r)});
+            auto tmp1 = torch::diag(s.index({torch::indexing::Slice(0,r)}));
+            auto tmp2 = v.index({torch::indexing::Slice(0,r), torch::indexing::Ellipsis});
             v = at::linalg_matmul(tmp1, tmp2).t();
             
             if(!last){
@@ -490,7 +493,7 @@ std::vector<at::Tensor> amen_solve(
             std::cout << "Solution rank [ ";
             for(auto rr: rx) std::cout << rr << " ";
             std::cout << "]" << std::endl;
-            std::cout << "Maxres " << max_res;
+            std::cout << "Maxres " << max_res << std::endl;
             auto diff_time = std::chrono::high_resolution_clock::now() - tme_swp;
             std::cout << "Time " << (double)(std::chrono::duration_cast<std::chrono::microseconds>(diff_time)).count()/1000.0 << " ms"<<std::endl;
         }
@@ -503,8 +506,8 @@ std::vector<at::Tensor> amen_solve(
     }
 
     if(verbose){
-        std::cout << std::endl << "Finished after " << swp <<" sweeps" << std::endl << std::endl;
-
+        auto diff_time = std::chrono::high_resolution_clock::now() - tme_total;
+        std::cout << std::endl << "Finished after " << (swp < nswp ? swp+1 : swp) <<" sweeps and "<< (double)(std::chrono::duration_cast<std::chrono::microseconds>(diff_time)).count()/1000000.0 << " seconds"  << std::endl << std::endl;
     }
 
     double norm_x = 0.0;

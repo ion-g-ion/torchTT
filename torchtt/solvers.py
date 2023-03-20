@@ -178,7 +178,7 @@ def amen_solve_cpp(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full
     else:
         x = x0
     
-    cores = torchttcpp.amen_solve(A.cores, b.cores, x.cores, b.N, A.R, b.R, x.R, nswp, eps, rmax, max_full, kickrank, kick2, local_iterations, resets, verbose, 0)
+    cores = torchttcpp.amen_solve(A.cores, b.cores, x.cores, b.N, A.R, b.R, x.R, nswp, eps, rmax, max_full, kickrank, kick2, local_iterations, resets, verbose, 0 if preconditioner == None else 1)
 
     return torchtt.TT(list(cores))
 
@@ -282,7 +282,7 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 5
 
         if verbose:
             print()
-            print('Starting sweep %d %s...'%(swp,"(last one) " if last else ""))
+            print('Starting sweep %d %s...'%(swp+1,"(last one) " if last else ""))
             tme_sweep = datetime.datetime.now() 
         
 
@@ -541,7 +541,7 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 5
     if verbose:
         time_total = datetime.datetime.now() - time_total
         print()
-        print('Finished after' ,swp,' sweeps and ',time_total)
+        print('Finished after' ,swp+1,' sweeps and ',time_total)
         print()
     normx = np.exp(np.sum(np.log(normx))/d)
 
