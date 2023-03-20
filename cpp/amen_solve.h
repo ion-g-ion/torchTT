@@ -21,7 +21,7 @@ at::Tensor local_product(at::Tensor &Phi_right, at::Tensor &Phi_left, at::Tensor
     // nRls,smnS->RlmS
     auto tmp2 = at::tensordot(tmp1, coreA, {0,3},{2,0});
     // RlmS,LSR->lmL 
-    return at::tensordot(tmp2, Phi_right, {3}, {1});
+    return at::tensordot(tmp2, Phi_right, {0,3}, {2,1});
 
 } 
 
@@ -42,8 +42,7 @@ at::Tensor compute_phi_bck_A(at::Tensor &Phi_now, at::Tensor &core_left, at::Ten
     //Phi = oe.contract('LSR,lML,sMNS,rNR->lsr',Phi_now,core_left,core_A,core_right)
     Phi = at::tensordot(core_left, Phi_now, {2}, {0});
     Phi = at::tensordot(Phi, core_A, {1,2}, {1,3}); // lRsN
-    Phi = at::tensordot(Phi, core_right, {1,3}, {2,1});
-    return Phi;
+    return at::tensordot(Phi, core_right, {1,3}, {2,1});
 }
 
 /**
@@ -62,7 +61,7 @@ at::Tensor compute_phi_fwd_A(at::Tensor &Phi_now, at::Tensor &core_left, at::Ten
 //    5           TDOT          LrNS,rNR->LSR                              LSR->LSR
     //Phi_next = oe.contract('lsr,lML,sMNS,rNR->LSR',Phi_now,core_left,core_A,core_right)
     Phi_next = at::tensordot(core_left, Phi_now, {0}, {0}); // MLsr
-    Phi_next = at::tensordot(Phi_now, core_A, {0,2}, {1,0}); // LrNS
+    Phi_next = at::tensordot(Phi_next, core_A, {0,2}, {1,0}); // LrNS
     Phi_next = at::tensordot(Phi_next, core_right, {1,2}, {0,1});
     return Phi_next;
 }
@@ -152,7 +151,7 @@ std::vector<at::Tensor> amen_solve(
         rz[i] = kickrank+kick2;
     std::vector<at::Tensor> z_cores(d);
     for(int i=0;i<d;i++) 
-        z_cores[i] = at::randn({rz[i], N[i], rz[i + 1]}, options);
+        z_cores[i] = torch::randn({rz[i], N[i], rz[i + 1]}, options);
 
     rl_orthogonal_this(z_cores, N, rz);
     //std::cout<<"\n\n\nINSIDE "<<b_cores[0]<<"\n\n\n";
@@ -166,27 +165,38 @@ std::vector<at::Tensor> amen_solve(
     Phiz_b[0] = at::ones({1,1}, options);
     Phis[0] = at::ones({1,1,1}, options);
     Phis_b[0] = at::ones({1,1}, options);
+    Phiz[d] = at::ones({1,1,1}, options);
+    Phiz_b[d] = at::ones({1,1}, options);
+    Phis[d] = at::ones({1,1,1}, options);
+    Phis_b[d] = at::ones({1,1}, options);
 
     double *normA = new double[d-1];
     double *normb = new double[d-1];
     double *normx = new double[d-1];
+    for(int k=0;k<d-1;++k){
+        normA[k] = 1.0;
+        normb[k] = 1.0;
+        normx[k] = 1.0;
+    }
     double nrmsc = 1.0;
     double damp = 2.0;
 
     bool last = false;
 
     std::chrono::time_point<std::chrono::high_resolution_clock> tme_swp;
-    for(int swp=0;swp<nswp;swp++){
+    int swp;
+    for(swp=0;swp<nswp;swp++){
 
         if(verbose){
             if(last)
-                std::cout<<"Starting sweep " << swp << " (last one)" << std::endl;
+                std::cout<<std::endl<<"Starting sweep " << swp+1 << " (last one)" << std::endl;
             else
-                std::cout<<"Starting sweep " << swp <<  std::endl;
+                std::cout<<std::endl<<"Starting sweep " << swp+1 <<  std::endl;
             tme_swp = std::chrono::high_resolution_clock::now();
         }
 
         for(int k=d-1;k>0;k--){
+            std::cout << "k " << k <<std::endl;
             if(!last){
                 at::Tensor cz_new;
                 if(swp>0){
@@ -210,6 +220,8 @@ std::vector<at::Tensor> amen_solve(
                 rz[k] = Qz.sizes()[1];
                 z_cores[k] = (Qz.t()).reshape({rz[k], N[k], rz[k+1]});
             }
+            
+            
             if(swp>0)
                 nrmsc = nrmsc * normA[k-1] * normx[k-1] / normb[k-1];
 
@@ -217,22 +229,24 @@ std::vector<at::Tensor> amen_solve(
             std::tuple<at::Tensor, at::Tensor> QR = at::linalg_qr(core);
             
             auto core_prev = at::tensordot(x_cores[k-1], std::get<1>(QR).t(), {2}, {0});
-            rx[k] = std::get<0>(QR).sizes()[0];
+            rx[k] = std::get<0>(QR).sizes()[1];
 
-            auto current_norm = torch::norm(core_prev).item<double>();
+            double current_norm = torch::norm(core_prev).item<double>();
             if(current_norm > 0)
                 core_prev /= current_norm;
             else
                 current_norm = 1.0;
             normx[k-1] = normx[k-1] * current_norm;
 
-            x_cores[k] = std::get<0>(QR).t().reshape({rx[k], N[k], rx[k+1]});
-            x_cores[k-1] = core_prev;
+            x_cores[k] = std::get<0>(QR).t().reshape({rx[k], N[k], rx[k+1]}).clone();
+            x_cores[k-1] = core_prev.clone();
 
+            
             Phis[k] = compute_phi_bck_A(Phis[k+1],x_cores[k],A_cores[k],x_cores[k]);
             Phis_b[k] = compute_phi_bck_rhs(Phis_b[k+1],b_cores[k],x_cores[k]);
 
-            auto norm = torch::norm(Phis[k]).item<double>();
+
+            double norm = torch::norm(Phis[k]).item<double>();
             norm = norm>0 ? norm : 0.0;
             normA[k-1] = norm;
             Phis[k] = Phis[k] / norm;
@@ -251,7 +265,7 @@ std::vector<at::Tensor> amen_solve(
                 Phiz_b[k] = compute_phi_bck_rhs(Phiz_b[k+1], b_cores[k], z_cores[k]) / normb[k-1];
             }
         }
-
+        std::cout << "READY ORTHO\n";
         double max_res = 0;
         double max_dx = 0;
 
@@ -259,7 +273,7 @@ std::vector<at::Tensor> amen_solve(
             if(verbose)
                 std::cout<<"\tCore "<<k<<std::endl;
 
-            auto previous_solution = x_cores[k].reshape({-1,1});
+            at::Tensor previous_solution = x_cores[k].reshape({-1,1});
 
             // assemble rhs
             at::Tensor rhs = at::tensordot(Phis_b[k], b_cores[k] * nrmsc, {0}, {0});
@@ -285,7 +299,7 @@ std::vector<at::Tensor> amen_solve(
                 Bp = at::tensordot(Phis[k], Bp, {1}, {0}); // lsr,smnLR->lrmnLR
                 B = Bp.permute({0,2,4,1,3,5}).reshape({rx[k]*N[k]*rx[k+1], rx[k]*N[k]*rx[k+1]});
 
-                at::linalg_solve_out(solution_now, B, rhs);
+                solution_now = at::linalg_solve(B, rhs);
 
                 res_old = torch::norm(at::linalg_matmul(B, previous_solution) - rhs).item<double>() / norm_rhs;
                 res_new = torch::norm(at::linalg_matmul(B, solution_now) - rhs).item<double>() / norm_rhs;
@@ -350,7 +364,7 @@ std::vector<at::Tensor> amen_solve(
 
                     double res; 
                     if(use_full)
-                        torch::norm(at::linalg_matmul(B, solution) - rhs).item<double>() / norm_rhs;
+                        torch::norm(at::linalg_matmul(B, solution.view({-1,1})) - rhs).item<double>() / norm_rhs;
                     else{
                         auto tmp_tens = solution.view({-1,1});
                         torch::norm(Op.matvec(tmp_tens, false)-rhs).item<double>()/norm_rhs;
@@ -371,19 +385,22 @@ std::vector<at::Tensor> amen_solve(
                 s = torch::ones(r, options);
             }
 
+
             u = u.index({torch::indexing::Ellipsis, torch::indexing::Slice(0,r,1)});
             auto tmp1 = torch::diag(s.index({torch::indexing::Slice(0,r,1)}));
             auto tmp2 = v.index({torch::indexing::Slice(0,r,1), torch::indexing::Ellipsis});
             v = at::linalg_matmul(tmp1, tmp2).t();
-
+            
             if(!last){
                 at::Tensor czA, czy;
                 at::Tensor tmp = at::linalg_matmul(u, v.t()).reshape({rx[k], N[k], rx[k+1]});
+                //std::cout << Phiz[k+1].sizes() << "  ---  "<<Phiz[k].sizes()<< "    -----    "<<A_cores[k].sizes() << "   ---   " << tmp.sizes() <<"\n";
                 czA = local_product(Phiz[k+1], Phiz[k], A_cores[k], tmp);
-                czy = at::tensordot(Phiz_b[k], b_cores[k], {0}, {1});
+                czy = at::tensordot(Phiz_b[k], nrmsc * b_cores[k], {0}, {0});
                 czy = at::tensordot(czy, Phiz_b[k+1], {2}, {0});
-                czy *= nrmsc;
+                //czy *= nrmsc;
                 tmp = (czy - czA).reshape({rz[k]*N[k], rz[k+1]});
+                
                 
                 at::Tensor uz;
                 std::tie(uz, std::ignore, std::ignore) = at::linalg_svd(tmp, false);
@@ -397,27 +414,112 @@ std::vector<at::Tensor> amen_solve(
 
                 rz[k+1] = qz.sizes()[1];
 
-                z_cores[k] = qz.reshape({rz[k], N[k], rz[k+1]});
+                z_cores[k] = qz.reshape({rz[k], N[k], rz[k+1]}).clone();
             }
             if(k<d-1){
                 if(!last){
                     at::Tensor tmp = at::linalg_matmul(u, v.t()).reshape({rx[k], N[k], rx[k+1]});
                     at::Tensor left_res = local_product(Phiz[k+1], Phis[k], A_cores[k], tmp);
+                    at::Tensor left_b = at::tensordot(Phis_b[k], b_cores[k]*nrmsc, {0}, {0});
+                    left_b = at::tensordot(left_b, Phiz_b[k+1], {2}, {0});
 
+                    at::Tensor uk = (left_b - left_res).reshape({u.sizes()[0],-1});
+                    uk = at::cat({u, uk},1);
+                    auto r_add = left_res.sizes()[2];
+                    at::Tensor Rmat;
+                    std::tie(u, Rmat) = at::linalg_qr(uk);
+
+                    at::Tensor toadd = torch::zeros({rx[k+1], r_add}, options);
+                    v = at::cat({v, toadd}, 1);
+                    
+                    v = at::linalg_matmul(v, Rmat.t());
+                }
+
+                r = u.sizes()[1];
+                v = at::tensordot(v, x_cores[k+1], {0}, {0});
+
+                nrmsc = nrmsc * normA[k] * normx[k] / normb[k];
+
+                auto norm_now = torch::norm(v).item<double>();
+
+                if(norm_now>0)
+                    v = v / norm_now;
+                else    
+                    norm_now = 1.0;
+                
+                normx[k] = normx[k] * norm_now;
+
+                x_cores[k] = u.reshape({rx[k], N[k], r}).clone();
+                x_cores[k+1] = v.reshape({r, N[k+1], rx[k+2]}).clone();
+                rx[k+1] = r;
+
+                
+
+                Phis[k+1] = compute_phi_fwd_A(Phis[k], x_cores[k], A_cores[k], x_cores[k]);
+                Phis_b[k+1] = compute_phi_fwd_rhs(Phis_b[k], b_cores[k],x_cores[k]);
+
+                // ... and norms 
+                auto norm = torch::norm(Phis[k+1]).item<double>();
+                norm =  norm>0 ? norm : 1.0;
+                normA[k] = norm;
+                Phis[k+1] /= norm;
+                norm = torch::norm(Phis_b[k+1]).item<double>();
+                norm = norm>0 ? norm : 1.0;
+                normb[k] = norm;
+                Phis_b[k+1] /= norm;
+                
+                // norm correction
+                nrmsc = nrmsc * normb[k] / ( normA[k] * normx[k] );
+
+
+                // next phiz
+                if(!last){
+                    Phiz[k+1] = compute_phi_fwd_A(Phiz[k], z_cores[k], A_cores[k], x_cores[k]) / normA[k];
+                    Phiz_b[k+1] = compute_phi_fwd_rhs(Phiz_b[k], b_cores[k],z_cores[k]) / normb[k];
                 }
             }   
-
-            // >>>>>>>>>>>>>>>>>>
+            else{
+                auto usv = at::linalg_matmul(u * s.index({torch::indexing::Slice(0,r,1)}), v.index({torch::indexing::Slice(0,r,1), torch::indexing::Ellipsis}).t());
+                x_cores[k] = usv.reshape({rx[k],N[k],rx[k+1]});
+            }
 
 
 
         }
+        if(verbose){
+            std::cout << "Solution rank [ ";
+            for(auto rr: rx) std::cout << rr << " ";
+            std::cout << "]" << std::endl;
+            std::cout << "Maxres " << max_res;
+            auto diff_time = std::chrono::high_resolution_clock::now() - tme_swp;
+            std::cout << "Time " << (double)(std::chrono::duration_cast<std::chrono::microseconds>(diff_time)).count()/1000.0 << " ms"<<std::endl;
+        }
+
+        if(last)
+            break;
+
+        if(max_res<eps)
+            last = true;
     }
+
+    if(verbose){
+        std::cout << std::endl << "Finished after " << swp <<" sweeps" << std::endl << std::endl;
+
+    }
+
+    double norm_x = 0.0;
+    for(int i=0;i<d-1;i++)
+        norm_x += std::log(normx[i]);
+
+    norm_x = std::exp(norm_x/d);
+
+    for(int i = 0;i<d;i++)
+        x_cores[i] = x_cores[i] * norm_x;
 
     // release memory
     delete [] normA;
     delete [] normb;
     delete [] normx;
 
-    return A_cores;
+    return x_cores;
 }
