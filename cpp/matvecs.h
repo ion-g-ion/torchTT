@@ -20,9 +20,9 @@ public:
         this->options = options;
         this->shape = shape;
 
-        this->Phi_left = torch::from_blob(Phi_left.data_ptr<T>(), Phi_left.sizes(), options);
-        this->Phi_right = torch::from_blob(Phi_right.data_ptr<T>(), Phi_right.sizes(), options);
-        this->coreA = torch::from_blob(coreA.data_ptr<T>(), coreA.sizes(), options);
+        this->Phi_left = torch::from_blob(Phi_left.contiguous().data_ptr<T>(), Phi_left.sizes(), options);
+        this->Phi_right = torch::from_blob(Phi_right.contiguous().data_ptr<T>(), Phi_right.sizes(), options);
+        this->coreA = torch::from_blob(coreA.contiguous().data_ptr<T>(), coreA.sizes(), options);
         if(this->prec == C_PREC){
             auto Jl = at::tensordot(at::diagonal(Phi_left,0,0,2), coreA, {0}, {0});
             auto Jr = at::diagonal(Phi_right, 0, 0, 2);

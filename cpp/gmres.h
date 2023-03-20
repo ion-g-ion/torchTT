@@ -115,7 +115,7 @@ void gmres_single(at::Tensor &solution, int &flag, int &nit, AMENsolveMV<T> &Op,
         sn[k] = s;
 
         betaA[k+1] = -sn[k]*betaA[k];
-        beta[k] = cs[k]*betaA[k];
+        betaA[k] = cs[k]*betaA[k];
         error = std::abs(betaA[k+1])/b_norm;
        // diff_time = std::chrono::high_resolution_clock::now() - ts;
      // std::cout << " REST " << (double)(std::chrono::duration_cast<std::chrono::microseconds>(diff_time)).count()/1000 << std::endl;
@@ -132,6 +132,7 @@ void gmres_single(at::Tensor &solution, int &flag, int &nit, AMENsolveMV<T> &Op,
     for(int i=0;i<k+1;++i)
         solution += Q[i] * y.index({i,0}).item<T>();  
 
+    nit = k;
     // free memory
     delete [] sn;
     delete [] cs;
@@ -147,7 +148,9 @@ void gmres(at::Tensor &solution, int &flag, int &nit, AMENsolveMV<T> &Op, at::Te
 
     auto xs = x0;
     for(int r =0;r<resets;r++){
-        gmres_single<T>(solution, flag, nit, Op, rhs, xs, size, max_iters, threshold);
+        uint64_t nowit;
+        gmres_single<T>(solution, flag, nowit, Op, rhs, xs, size, max_iters, threshold);
+        nit+=nowit;
         if(flag==1){
             break;
         }
