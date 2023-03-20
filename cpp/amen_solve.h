@@ -323,13 +323,12 @@ std::vector<at::Tensor> amen_solve(
                 int flag;
                 int nit;
 
-                gmres<double>(solution_now, flag, nit, Op, drhs, previous_solution, drhs.sizes()[0], local_iterations, eps_local, resets );
+                at::Tensor ps = 0.0 * previous_solution;
+                gmres<double>(solution_now, flag, nit, Op, drhs, ps, drhs.sizes()[0], local_iterations, eps_local, resets );
 
                 if(preconditioner!=NO_PREC){
                     solution_now = Op.apply_prec(solution_now.reshape(shape_now));
-                    
                 }
-
                 solution_now = solution_now.reshape({-1,1});
 
                 solution_now += previous_solution;
@@ -367,9 +366,9 @@ std::vector<at::Tensor> amen_solve(
 
                     double res; 
                     if(use_full)
-                        res = torch::norm(at::linalg_matmul(B, solution.view({-1,1})) - rhs).item<double>() / norm_rhs;
+                        res = torch::norm(at::linalg_matmul(B, solution.reshape({-1,1})) - rhs).item<double>() / norm_rhs;
                     else{
-                        auto tmp_tens = solution.view({-1,1});
+                        auto tmp_tens = solution.reshape({-1,1});
                         res = torch::norm(Op.matvec(tmp_tens, false)-rhs).item<double>()/norm_rhs;
                     }
 
@@ -465,11 +464,11 @@ std::vector<at::Tensor> amen_solve(
                 auto norm = torch::norm(Phis[k+1]).item<double>();
                 norm =  norm>0 ? norm : 1.0;
                 normA[k] = norm;
-                Phis[k+1] /= norm;
+                Phis[k+1] = Phis[k+1] / norm;
                 norm = torch::norm(Phis_b[k+1]).item<double>();
                 norm = norm>0 ? norm : 1.0;
                 normb[k] = norm;
-                Phis_b[k+1] /= norm;
+                Phis_b[k+1] = Phis_b[k+1] / norm;
                 
                 // norm correction
                 nrmsc = nrmsc * normb[k] / ( normA[k] * normx[k] );
@@ -495,7 +494,7 @@ std::vector<at::Tensor> amen_solve(
             std::cout << "]" << std::endl;
             std::cout << "Maxres " << max_res << std::endl;
             auto diff_time = std::chrono::high_resolution_clock::now() - tme_swp;
-            std::cout << "Time " << (double)(std::chrono::duration_cast<std::chrono::microseconds>(diff_time)).count()/1000.0 << " ms"<<std::endl;
+            std::cout << "Time " << (double)(std::chrono::duration_cast<std::chrono::microseconds>(diff_time)).count()/1000.0 << " ms"<<std::endl<<std::flush;
         }
 
         if(last)

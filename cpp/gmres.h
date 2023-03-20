@@ -62,7 +62,7 @@ void gmres_single(at::Tensor &solution, int &flag, int &nit, AMENsolveMV<T> &Op,
     }
 
     std::vector<at::Tensor> Q;
-    Q.push_back(r.view({-1}) / r_norm);
+    Q.push_back(r.squeeze() / r_norm);
 
     at::Tensor H, beta;
     if(std::is_same<T,float>::value){
@@ -90,11 +90,11 @@ void gmres_single(at::Tensor &solution, int &flag, int &nit, AMENsolveMV<T> &Op,
       //  std::cout << " MV   " << (double)(std::chrono::duration_cast<std::chrono::microseconds>(diff_time)).count()/1000 << std::endl;
 
       //  ts = std::chrono::high_resolution_clock::now();
-        auto qc = q.clone();
+        
        // #pragma omp parallel for num_threads(32)
         for(int i=0;i<k+1;i++){
-            HA[i][k] = at::dot(qc.squeeze(), Q[i]).item<T>();
-            q -= (HA[i][k] * Q[i]).view({-1,1});
+            HA[i][k] = at::dot(q.squeeze(), Q[i]).item<T>();
+            q -= (HA[i][k] * Q[i]).reshape({-1,1});
         }
       //  diff_time = std::chrono::high_resolution_clock::now() - ts;
       //  std::cout << " PROJ " << (double)(std::chrono::duration_cast<std::chrono::microseconds>(diff_time)).count()/1000 << std::endl;
@@ -126,7 +126,7 @@ void gmres_single(at::Tensor &solution, int &flag, int &nit, AMENsolveMV<T> &Op,
         }
     }
     k = k<iters ? k : iters-1;
-    at::Tensor y = at::linalg_solve(H.index({torch::indexing::Slice(0,k+1), torch::indexing::Slice(0,k+1)}), beta.index({torch::indexing::Slice(0, k+1)}).view({-1,1}));
+    at::Tensor y = at::linalg_solve(H.index({torch::indexing::Slice(0,k+1), torch::indexing::Slice(0,k+1)}), beta.index({torch::indexing::Slice(0, k+1)}).reshape({-1,1}));
     
     solution = x0.clone().squeeze();
     for(int i=0;i<k+1;++i)
@@ -148,7 +148,7 @@ void gmres(at::Tensor &solution, int &flag, int &nit, AMENsolveMV<T> &Op, at::Te
 
     auto xs = x0;
     for(int r =0;r<resets;r++){
-        uint64_t nowit;
+        int nowit;
         gmres_single<T>(solution, flag, nowit, Op, rhs, xs, size, max_iters, threshold);
         nit+=nowit;
         if(flag==1){
