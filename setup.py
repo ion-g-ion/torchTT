@@ -10,7 +10,7 @@ license='MIT',
 packages=['torchtt'],
 install_requires=['numpy>=1.18','torch>=1.7','opt_einsum'],
 ext_modules=[
-    CppExtension('torchttcpp', ['cpp/cpp_ext.cpp'], extra_compile_args=['-g', '-O3', '-w']),
+    CppExtension('torchttcpp', ['cpp/cpp_ext.cpp'], extra_compile_args=['-std=c++14', '-Wno-c++11-narrowing', '-g', '-O3', '-w']),
 ],
 cmdclass={
     'build_ext': BuildExtension
