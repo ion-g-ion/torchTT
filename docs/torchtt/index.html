@@ -26,16 +26,25 @@
 <p>Provides Tensor-Train (TT) decomposition using <code>pytorch</code> as backend.</p>
 <p>Contains routines for computing the TT decomposition and all the basisc linear algebra in the TT format. Additionally, GPU support can be used thanks to the <code>pytorch</code> backend. <br>
 It also has linear solvers in TT and cross approximation as well as automatic differentiation.</p>
-<p>What is the Tensor-Train format?</p>
-<hr>
+<h2 id="what-is-the-tensor-train-format">What is the Tensor-Train format?</h2>
 <p>The Tensor-Train (TT) format is a low-rank tensor decomposition format used to fight the curse of dimensionality. A d-dimensional tensor <span><span class="MathJax_Preview">\mathsf{x} \in \mathbb{R} ^{n_1 \times n_2 \times \cdots \times n_d}</span><script type="math/tex">\mathsf{x} \in \mathbb{R} ^{n_1 \times n_2 \times \cdots \times n_d}</script></span> can be expressed using algebraic operations between d smaller tensors:</p>
 <p><span><span class="MathJax_Preview"> \mathsf{x}_{i_1i_2...i_d} = \sum\limits_{s_0=1}^{r_0} \sum\limits_{s_1=1}^{r_1} \cdots \sum\limits_{s_{d-1}=1}^{r_{d-1}} \sum\limits_{s_d=1}^{r_d} \mathsf{g}^{(1)}_{s_0 i_1 s_1} \cdots \mathsf{g}^{(d)}_{s_{d-1} i_d s_d}, </span><script type="math/tex; mode=display"> \mathsf{x}_{i_1i_2...i_d} = \sum\limits_{s_0=1}^{r_0} \sum\limits_{s_1=1}^{r_1} \cdots \sum\limits_{s_{d-1}=1}^{r_{d-1}} \sum\limits_{s_d=1}^{r_d} \mathsf{g}^{(1)}_{s_0 i_1 s_1} \cdots \mathsf{g}^{(d)}_{s_{d-1} i_d s_d}, </script></span>
 where <span><span class="MathJax_Preview">\mathbf{r} = (r_0,r_1,...,r_d), r_0 = r_d = 1</span><script type="math/tex">\mathbf{r} = (r_0,r_1,...,r_d), r_0 = r_d = 1</script></span> is the TT rank and
 <span><span class="MathJax_Preview">\mathsf{g}^{(k)} \in \mathbb{R}^{r_{k-1} \times n_k \times r_k}</span><script type="math/tex">\mathsf{g}^{(k)} \in \mathbb{R}^{r_{k-1} \times n_k \times r_k}</script></span> are the TT cores.
-The storage complexity is <span><span class="MathJax_Preview">\mathcal{O}(nr^2d)</span><script type="math/tex">\mathcal{O}(nr^2d)</script></span> instead of <span><span class="MathJax_Preview">\mathcal{O}(n^d)</span><script type="math/tex">\mathcal{O}(n^d)</script></span> if the rank remains bounded.
-The class <code><a title="torchtt.torchtt.TT" href="torchtt.html#torchtt.torchtt.TT">TT</a></code> is used to create tensors in the TT format.</p>
-<p>Utilities</p>
-<hr>
+The storage complexity is <span><span class="MathJax_Preview">\mathcal{O}(nr^2d)</span><script type="math/tex">\mathcal{O}(nr^2d)</script></span> instead of <span><span class="MathJax_Preview">\mathcal{O}(n^d)</span><script type="math/tex">\mathcal{O}(n^d)</script></span> if the rank remains bounded. Tensor operators <span><span class="MathJax_Preview">\mathsf{A} \in \mathbb{R} ^{(m_1 \times m_2 \times \cdots \times m_d) \times (n_1 \times n_2 \times \cdots \times n_d)}</span><script type="math/tex">\mathsf{A} \in \mathbb{R} ^{(m_1 \times m_2 \times \cdots \times m_d) \times (n_1 \times n_2 \times \cdots \times n_d)}</script></span> can be similarly expressed in the TT format as:</p>
+<p><span><span class="MathJax_Preview"> \mathsf{A}_{i_1i_2...i_d,j_1j_2...j_d} = \sum\limits_{s_0=1}^{r_0} \sum\limits_{s_1=1}^{r_1} \cdots \sum\limits_{s_{d-1}=1}^{r_{d-1}} \sum\limits_{s_d=1}^{r_d} \mathsf{h}^{(1)}_{s_0 i_1 j_1 s_1} \cdots \mathsf{h}^{(d)}_{s_{d-1} i_d j_d s_d}, \\ j_k = 1,...,m_k, \: i_k=1,...,n_k, \; \; k=1,...,d.</span><script type="math/tex; mode=display"> \mathsf{A}_{i_1i_2...i_d,j_1j_2...j_d} = \sum\limits_{s_0=1}^{r_0} \sum\limits_{s_1=1}^{r_1} \cdots \sum\limits_{s_{d-1}=1}^{r_{d-1}} \sum\limits_{s_d=1}^{r_d} \mathsf{h}^{(1)}_{s_0 i_1 j_1 s_1} \cdots \mathsf{h}^{(d)}_{s_{d-1} i_d j_d s_d}, \\ j_k = 1,...,m_k, \: i_k=1,...,n_k, \; \; k=1,...,d.</script></span></p>
+<h2 id="about-the-package">About The Package</h2>
+<p>The class <code><a title="torchtt.torchtt.TT" href="torchtt.html#torchtt.torchtt.TT">TT</a></code> is used to create tensors in the TT format. Passing a <code>torch.Tensor</code> to the constructor computes a TT decomposition. The accuracy <code>eps</code> can be provided as an additional argument. In order to recover the original tensor (also called full tensor), the <code><a title="torchtt.torchtt.TT.full" href="torchtt.html#torchtt.torchtt.TT.full">TT.full()</a></code> method can be used. Tensors can be further compressed using the <code><a title="torchtt.torchtt.TT.round" href="torchtt.html#torchtt.torchtt.TT.round">TT.round()</a></code> method.</p>
+<p>Once in the TT format, linear algebra operations can be performed between compressed tensors without going to the full format. The implemented operations are:</p>
+<ul>
+<li>Sum and difference between TT objects. Two <code><a title="torchtt.torchtt.TT" href="torchtt.html#torchtt.torchtt.TT">TT</a></code> instances can be summed using the <code>+</code> operator. The difference can be implemented using the <code>-</code> operator.</li>
+<li>Elementwise product (also called Hadamard product is performed using) the <code>*</code> operator. The same operator also implements the scalar multiplication.</li>
+<li>The operator <code>@</code> implements the generalization of the matrix product. It can also be used between a tensor operator and a tensor.</li>
+<li>The operator <code>/</code> implements the elementwise division of two TT objects. The algorithm is AMEn.</li>
+<li>The operator <code>**</code> implements the Kronecker product.</li>
+</ul>
+<p>The package also includes more features such as solving multilinear systems, cross approximation and automatic differentiation (with the possibility to define TT layers for neural networks`torchtt.TT.full()). </p>
+<h2 id="utilities">Utilities</h2>
 <ul>
 <li>Example scripts (and ipy notebooks) can be found in the <a href="https://github.com/ion-g-ion/torchTT/tree/main/examples">examples/</a> folder.</li>
 <li>Tests can be found in the <a href="https://github.com/ion-g-ion/torchTT/tree/main/tests">tests/</a> folder.</li>
@@ -108,7 +117,11 @@ It contains the base TT class as well as additional functions.</p></div>
 <nav id="sidebar">
 <h1>Index</h1>
 <div class="toc">
-<ul></ul>
+<ul>
+<li><a href="#what-is-the-tensor-train-format">What is the Tensor-Train format?</a></li>
+<li><a href="#about-the-package">About the package</a></li>
+<li><a href="#utilities">Utilities</a></li>
+</ul>
 </div>
 <ul id="index">
 <li><h3><a href="#header-submodules">Sub-modules</a></h3>
