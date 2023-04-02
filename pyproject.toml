@@ -1,3 +1,20 @@
 [build-system]
 requires = ["setuptools", "wheel", "torch>=1.7", "numpy>=1.18", "opt_einsum"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "torchTT"
+version = "2.0"
+authors = [
+    {name = "Ion Gabriel Ion", email = "ion.ion.gabriel@gmail.com"},
+]
+description = "Tensor-Train decomposition in pytorch."
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3"
+]
