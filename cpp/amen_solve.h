@@ -141,7 +141,14 @@ std::vector<at::Tensor> amen_solve(
     //at::TensorBase::device dtype = A_cores[0].dtype;
     auto options = A_cores[0].options();
     uint64_t d = N.size();
-    std::vector<at::Tensor> x_cores = x0_cores;
+    std::vector<at::Tensor> x_cores;
+    
+    if(x0_cores.size() == 0){
+        for(int i = 0; i < d; i++)
+            x_cores.push_back(torch::ones({1,N[i],1}, options));
+    }
+    else
+        x_cores = x0_cores;
     std::vector<uint64_t> rx = r_x0;
 
     std::vector<uint64_t> rz(d+1);

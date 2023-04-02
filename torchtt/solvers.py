@@ -11,7 +11,14 @@ from torchtt._decomposition import QR, SVD, lr_orthogonal, rl_orthogonal
 from torchtt._iterative_solvers import BiCGSTAB_reset, gmres_restart
 import opt_einsum as oe
 from .errors import *
-import torchttcpp 
+
+try:
+    import torchttcpp 
+    _flag_use_cpp = True
+except:
+    import warnings
+    warnings.warn("C++ implementation not available. Using pure Python.", ImportWarning)
+    _flag_use_cpp = False
 
 def _local_product(Phi_right, Phi_left, coreA, core, shape):
     """
@@ -114,76 +121,10 @@ class _LinearOp():
             raise Exception('Preconditioner '+str(self.prec)+' not defined.')
         return tn.reshape(w,[-1,1])
 
-def amen_solve_cpp(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = 'res', local_solver = 1, local_iterations = 40, resets = 2, verbose = False, preconditioner = None):
-    """
-    Solve a multilinear system \(\\mathsf{Ax} = \\mathsf{b}\) in the Tensor Train format (yuse C++ implementation).
-    
-    This method implements the algorithm from [Sergey V Dolgov, Dmitry V Savostyanov, Alternating minimal energy methods for linear systems in higher dimensions](https://epubs.siam.org/doi/abs/10.1137/140953289).
-
-    Example:
-        ```
-        import torchtt
-        A = torchtt.random([(4,4),(5,5),(6,6)],[1,2,3,1]) # create random matrix
-        x = torchtt.random([4,5,6],[1,2,3,1]) # invent a random solution
-        b = A @ x # compute the rhs
-        xx = torchtt.solvers.amen_solve(A,b) # solve
-        print((xx-x).norm()/x.norm()) # error
-        ```
-    
-    Args:
-        A (torchtt.TT): the system matrix in TT.
-        b (torchtt.TT): the right hand side in TT.
-        nswp (int, optional): number of sweeps. Defaults to 22.
-        x0 (torchtt.TT, optional): initial guess. In None is provided the initial guess is a ones tensor. Defaults to None.
-        eps (float, optional): relative residual. Defaults to 1e-10.
-        rmax (int, optional): maximum rank. Defaults to 100.
-        max_full (int, optional): the maximum size of the core until direct solver is used for the local subproblem. Defaults to 500.
-        kickrank (int, optional): rank enrichment. Defaults to 4.
-        kick2 (int, optional): [description]. Defaults to 0.
-        trunc_norm (str, optional): [description]. Defaults to 'res'.
-        local_solver (int, optional): choose local iterative solver: 1 for GMRES and 2 for BiCGSTAB. Defaults to 1.
-        local_iterations (int, optional): number of GMRES iterations for the local subproblems. Defaults to 40.
-        resets (int, optional): number of resets in the GMRES. Defaults to 2.
-        verbose (bool, optional): choose whether to display or not additional information during the runtime. Defaults to True.
-        preconditioner (string, optional): Choose the preconditioner for the local system. Possible values are None, 'c' (central Jacobi preconditioner). No preconditioner is used if None is provided. Defaults to None.
-
-    Raises:
-        InvalidArguments: A and b must be TT instances.
-        IncompatibleTypes: A must be TT-matrix and b must be vector.
-        ShapeMismatch: A is not quadratic.
-        ShapeMismatch: Dimension mismatch.
-
-    Returns:
-        torchtt.TT: the approximation of the solution in TT format.
-    """
-    # perform checks of the input data
-    if not (isinstance(A,torchtt.TT) and isinstance(b,torchtt.TT)):
-        raise InvalidArguments('A and b must be TT instances.')
-    if not (A.is_ttm and not b.is_ttm) :
-        raise IncompatibleTypes('A must be TT-matrix and b must be vector.')
-    if A.M != A.N:
-        raise ShapeMismatch('A is not quadratic.')
-    if A.N != b.N:
-        raise ShapeMismatch('Dimension mismatch.')
-
-    if verbose: time_total = datetime.datetime.now()
-    
-    dtype = A.cores[0].dtype 
-    device = A.cores[0].device
-    rank_search = 1 # binary rank search
-    damp = 2
-
-    if x0 == None:
-        x = torchtt.ones(b.N, dtype = dtype, device = device)
-    else:
-        x = x0
-    
-    cores = torchttcpp.amen_solve(A.cores, b.cores, x.cores, b.N, A.R, b.R, x.R, nswp, eps, rmax, max_full, kickrank, kick2, local_iterations, resets, verbose, 0 if preconditioner == None else 1)
-
-    return torchtt.TT(list(cores))
 
 
-def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = 'res', local_solver = 1, local_iterations = 40, resets = 2, verbose = False, preconditioner = None):
+
+def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = 'res', local_solver = 1, local_iterations = 40, resets = 2, verbose = False, preconditioner = None, use_cpp = True):
     """
     Solve a multilinear system \(\\mathsf{Ax} = \\mathsf{b}\) in the Tensor Train format.
     
@@ -215,6 +156,7 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 5
         resets (int, optional): number of resets in the GMRES. Defaults to 2.
         verbose (bool, optional): choose whether to display or not additional information during the runtime. Defaults to True.
         preconditioner (string, optional): Choose the preconditioner for the local system. Possible values are None, 'c' (central Jacobi preconditioner). No preconditioner is used if None is provided. Defaults to None.
+        use_cpp (bool, optional): use the C++ implementation of AMEn. Defaults to True.
 
     Raises:
         InvalidArguments: A and b must be TT instances.
@@ -235,6 +177,20 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 5
     if A.N != b.N:
         raise ShapeMismatch('Dimension mismatch.')
 
+    if use_cpp and _flag_use_cpp:
+        if x0 == None:
+            x_cores = []
+            x_R = [1]*(1+len(A.N))
+        else:
+            x_cores = x0.cores 
+            x_R = x0.R
+        cores = torchttcpp.amen_solve(A.cores, b.cores, x_cores, b.N, A.R, b.R, x_R, nswp, eps, rmax, max_full, kickrank, kick2, local_iterations, resets, verbose, 0 if preconditioner == None else 1)
+        return torchtt.TT(list(cores))
+    else:
+        return _amen_solve_python(A, b, nswp, x0, eps,rmax, max_full, kickrank, kick2, trunc_norm, local_solver, local_iterations, resets, verbose, preconditioner)
+
+
+def _amen_solve_python(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = 'res', local_solver = 1, local_iterations = 40, resets = 2, verbose = False, preconditioner = None):
     if verbose: time_total = datetime.datetime.now()
     
     dtype = A.cores[0].dtype 

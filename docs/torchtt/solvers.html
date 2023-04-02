@@ -41,7 +41,14 @@ from torchtt._decomposition import QR, SVD, lr_orthogonal, rl_orthogonal
 from torchtt._iterative_solvers import BiCGSTAB_reset, gmres_restart
 import opt_einsum as oe
 from .errors import *
-import torchttcpp 
+
+try:
+    import torchttcpp 
+    _flag_use_cpp = True
+except:
+    import warnings
+    warnings.warn(&#34;C++ implementation not available. Using pure Python.&#34;, ImportWarning)
+    _flag_use_cpp = False
 
 def _local_product(Phi_right, Phi_left, coreA, core, shape):
     &#34;&#34;&#34;
@@ -144,76 +151,10 @@ class _LinearOp():
             raise Exception(&#39;Preconditioner &#39;+str(self.prec)+&#39; not defined.&#39;)
         return tn.reshape(w,[-1,1])
 
-def amen_solve_cpp(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = &#39;res&#39;, local_solver = 1, local_iterations = 40, resets = 2, verbose = False, preconditioner = None):
-    &#34;&#34;&#34;
-    Solve a multilinear system \(\\mathsf{Ax} = \\mathsf{b}\) in the Tensor Train format (yuse C++ implementation).
-    
-    This method implements the algorithm from [Sergey V Dolgov, Dmitry V Savostyanov, Alternating minimal energy methods for linear systems in higher dimensions](https://epubs.siam.org/doi/abs/10.1137/140953289).
-
-    Example:
-        ```
-        import torchtt
-        A = torchtt.random([(4,4),(5,5),(6,6)],[1,2,3,1]) # create random matrix
-        x = torchtt.random([4,5,6],[1,2,3,1]) # invent a random solution
-        b = A @ x # compute the rhs
-        xx = torchtt.solvers.amen_solve(A,b) # solve
-        print((xx-x).norm()/x.norm()) # error
-        ```
-    
-    Args:
-        A (torchtt.TT): the system matrix in TT.
-        b (torchtt.TT): the right hand side in TT.
-        nswp (int, optional): number of sweeps. Defaults to 22.
-        x0 (torchtt.TT, optional): initial guess. In None is provided the initial guess is a ones tensor. Defaults to None.
-        eps (float, optional): relative residual. Defaults to 1e-10.
-        rmax (int, optional): maximum rank. Defaults to 100.
-        max_full (int, optional): the maximum size of the core until direct solver is used for the local subproblem. Defaults to 500.
-        kickrank (int, optional): rank enrichment. Defaults to 4.
-        kick2 (int, optional): [description]. Defaults to 0.
-        trunc_norm (str, optional): [description]. Defaults to &#39;res&#39;.
-        local_solver (int, optional): choose local iterative solver: 1 for GMRES and 2 for BiCGSTAB. Defaults to 1.
-        local_iterations (int, optional): number of GMRES iterations for the local subproblems. Defaults to 40.
-        resets (int, optional): number of resets in the GMRES. Defaults to 2.
-        verbose (bool, optional): choose whether to display or not additional information during the runtime. Defaults to True.
-        preconditioner (string, optional): Choose the preconditioner for the local system. Possible values are None, &#39;c&#39; (central Jacobi preconditioner). No preconditioner is used if None is provided. Defaults to None.
-
-    Raises:
-        InvalidArguments: A and b must be TT instances.
-        IncompatibleTypes: A must be TT-matrix and b must be vector.
-        ShapeMismatch: A is not quadratic.
-        ShapeMismatch: Dimension mismatch.
-
-    Returns:
-        torchtt.TT: the approximation of the solution in TT format.
-    &#34;&#34;&#34;
-    # perform checks of the input data
-    if not (isinstance(A,torchtt.TT) and isinstance(b,torchtt.TT)):
-        raise InvalidArguments(&#39;A and b must be TT instances.&#39;)
-    if not (A.is_ttm and not b.is_ttm) :
-        raise IncompatibleTypes(&#39;A must be TT-matrix and b must be vector.&#39;)
-    if A.M != A.N:
-        raise ShapeMismatch(&#39;A is not quadratic.&#39;)
-    if A.N != b.N:
-        raise ShapeMismatch(&#39;Dimension mismatch.&#39;)
-
-    if verbose: time_total = datetime.datetime.now()
-    
-    dtype = A.cores[0].dtype 
-    device = A.cores[0].device
-    rank_search = 1 # binary rank search
-    damp = 2
-
-    if x0 == None:
-        x = torchtt.ones(b.N, dtype = dtype, device = device)
-    else:
-        x = x0
-    
-    cores = torchttcpp.amen_solve(A.cores, b.cores, x.cores, b.N, A.R, b.R, x.R, nswp, eps, rmax, max_full, kickrank, kick2, local_iterations, resets, verbose, 0 if preconditioner == None else 1)
-
-    return torchtt.TT(list(cores))
 
 
-def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = &#39;res&#39;, local_solver = 1, local_iterations = 40, resets = 2, verbose = False, preconditioner = None):
+
+def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = &#39;res&#39;, local_solver = 1, local_iterations = 40, resets = 2, verbose = False, preconditioner = None, use_cpp = True):
     &#34;&#34;&#34;
     Solve a multilinear system \(\\mathsf{Ax} = \\mathsf{b}\) in the Tensor Train format.
     
@@ -245,6 +186,7 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 5
         resets (int, optional): number of resets in the GMRES. Defaults to 2.
         verbose (bool, optional): choose whether to display or not additional information during the runtime. Defaults to True.
         preconditioner (string, optional): Choose the preconditioner for the local system. Possible values are None, &#39;c&#39; (central Jacobi preconditioner). No preconditioner is used if None is provided. Defaults to None.
+        use_cpp (bool, optional): use the C++ implementation of AMEn. Defaults to True.
 
     Raises:
         InvalidArguments: A and b must be TT instances.
@@ -265,6 +207,20 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 5
     if A.N != b.N:
         raise ShapeMismatch(&#39;Dimension mismatch.&#39;)
 
+    if use_cpp and _flag_use_cpp:
+        if x0 == None:
+            x_cores = []
+            x_R = [1]*(1+len(A.N))
+        else:
+            x_cores = x0.cores 
+            x_R = x0.R
+        cores = torchttcpp.amen_solve(A.cores, b.cores, x_cores, b.N, A.R, b.R, x_R, nswp, eps, rmax, max_full, kickrank, kick2, local_iterations, resets, verbose, 0 if preconditioner == None else 1)
+        return torchtt.TT(list(cores))
+    else:
+        return _amen_solve_python(A, b, nswp, x0, eps,rmax, max_full, kickrank, kick2, trunc_norm, local_solver, local_iterations, resets, verbose, preconditioner)
+
+
+def _amen_solve_python(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = &#39;res&#39;, local_solver = 1, local_iterations = 40, resets = 2, verbose = False, preconditioner = None):
     if verbose: time_total = datetime.datetime.now()
     
     dtype = A.cores[0].dtype 
@@ -674,7 +630,7 @@ def _compute_phi_fwd_rhs(Phi_now,core_rhs,core):
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="torchtt.solvers.amen_solve"><code class="name flex">
-<span>def <span class="ident">amen_solve</span></span>(<span>A, b, nswp=22, x0=None, eps=1e-10, rmax=1024, max_full=500, kickrank=4, kick2=0, trunc_norm='res', local_solver=1, local_iterations=40, resets=2, verbose=False, preconditioner=None)</span>
+<span>def <span class="ident">amen_solve</span></span>(<span>A, b, nswp=22, x0=None, eps=1e-10, rmax=1024, max_full=500, kickrank=4, kick2=0, trunc_norm='res', local_solver=1, local_iterations=40, resets=2, verbose=False, preconditioner=None, use_cpp=True)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Solve a multilinear system <span><span class="MathJax_Preview">\mathsf{Ax} = \mathsf{b}</span><script type="math/tex">\mathsf{Ax} = \mathsf{b}</script></span> in the Tensor Train format.</p>
@@ -719,6 +675,8 @@ print((xx-x).norm()/x.norm()) # error
 <dd>choose whether to display or not additional information during the runtime. Defaults to True.</dd>
 <dt><strong><code>preconditioner</code></strong> :&ensp;<code>string</code>, optional</dt>
 <dd>Choose the preconditioner for the local system. Possible values are None, 'c' (central Jacobi preconditioner). No preconditioner is used if None is provided. Defaults to None.</dd>
+<dt><strong><code>use_cpp</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>use the C++ implementation of AMEn. Defaults to True.</dd>
 </dl>
 <h2 id="raises">Raises</h2>
 <dl>
@@ -740,7 +698,7 @@ print((xx-x).norm()/x.norm()) # error
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = &#39;res&#39;, local_solver = 1, local_iterations = 40, resets = 2, verbose = False, preconditioner = None):
+<pre><code class="python">def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = &#39;res&#39;, local_solver = 1, local_iterations = 40, resets = 2, verbose = False, preconditioner = None, use_cpp = True):
     &#34;&#34;&#34;
     Solve a multilinear system \(\\mathsf{Ax} = \\mathsf{b}\) in the Tensor Train format.
     
@@ -772,6 +730,7 @@ print((xx-x).norm()/x.norm()) # error
         resets (int, optional): number of resets in the GMRES. Defaults to 2.
         verbose (bool, optional): choose whether to display or not additional information during the runtime. Defaults to True.
         preconditioner (string, optional): Choose the preconditioner for the local system. Possible values are None, &#39;c&#39; (central Jacobi preconditioner). No preconditioner is used if None is provided. Defaults to None.
+        use_cpp (bool, optional): use the C++ implementation of AMEn. Defaults to True.
 
     Raises:
         InvalidArguments: A and b must be TT instances.
@@ -792,458 +751,17 @@ print((xx-x).norm()/x.norm()) # error
     if A.N != b.N:
         raise ShapeMismatch(&#39;Dimension mismatch.&#39;)
 
-    if verbose: time_total = datetime.datetime.now()
-    
-    dtype = A.cores[0].dtype 
-    device = A.cores[0].device
-    rank_search = 1 # binary rank search
-    damp = 2
-
-    if x0 == None:
-        x = torchtt.ones(b.N, dtype = dtype, device = device)
+    if use_cpp and _flag_use_cpp:
+        if x0 == None:
+            x_cores = []
+            x_R = [1]*(1+len(A.N))
+        else:
+            x_cores = x0.cores 
+            x_R = x0.R
+        cores = torchttcpp.amen_solve(A.cores, b.cores, x_cores, b.N, A.R, b.R, x_R, nswp, eps, rmax, max_full, kickrank, kick2, local_iterations, resets, verbose, 0 if preconditioner == None else 1)
+        return torchtt.TT(list(cores))
     else:
-        x = x0
-    
-    # kkt = torchttcpp.amen_solve(A.cores, b.cores, x.cores, b.N, A.R, b.R, x.R, nswp, eps, rmax, max_full, kickrank, kick2, local_iterations, resets, verbose, 0)
-    rA = A.R
-    N = b.N
-    d = len(N)
-    x_cores = x.cores.copy()
-    rx = x.R.copy()
-    # check if rmax is a list
-    if isinstance(rmax, int):
-        rmax = [1] + (d-1) * [rmax] + [1]
-
-    # z cores
-    rz = [1]+(d-1)*[kickrank+kick2]+[1]
-    z_tt = torchtt.random(N,rz,dtype,device = device)
-    z_cores = z_tt.cores
-    z_cores, rz = rl_orthogonal(z_cores, rz, False)
-    
-    norms = np.zeros(d)
-    Phiz = [tn.ones((1,1,1), dtype = dtype, device = device)] + [None] * (d-1) + [tn.ones((1,1,1), dtype = dtype, device = device)] # size is rzk x Rk x rxk
-    Phiz_b = [tn.ones((1,1), dtype = dtype, device = device)] + [None] * (d-1) + [tn.ones((1,1), dtype = dtype, device = device)]   # size is rzk x rzbk
-    
-    Phis = [tn.ones((1,1,1), dtype = dtype, device = device)] + [None] * (d-1) + [tn.ones((1,1,1), dtype = dtype, device = device)] # size is rk x Rk x rk
-    Phis_b = [tn.ones((1,1), dtype = dtype, device = device)] + [None] * (d-1) + [tn.ones((1,1), dtype = dtype, device = device)] # size is rk x rbk
-
-    last = False
-
-    normA = np.ones((d-1))
-    normb = np.ones((d-1))
-    normx = np.ones((d-1))
-    nrmsc = 1.0
-
-    for swp in range(nswp):
-        # right to left orthogonalization
-
-        if verbose:
-            print()
-            print(&#39;Starting sweep %d %s...&#39;%(swp+1,&#34;(last one) &#34; if last else &#34;&#34;))
-            tme_sweep = datetime.datetime.now() 
-        
-
-        tme = datetime.datetime.now()
-        for k in range(d-1,0,-1):
-            
-            # update the z part (ALS) update
-            if not last:
-                if swp &gt; 0:
-                    czA = _local_product(Phiz[k+1],Phiz[k],A.cores[k],x_cores[k],x_cores[k].shape) # shape rzp x N x rz
-                    czy = tn.einsum(&#39;br,bnB,BR-&gt;rnR&#39;,Phiz_b[k],b.cores[k],Phiz_b[k+1]) # shape is rzp x N x rz
-                    cz_new = czy*nrmsc - czA
-                    _,_,vz = SVD(tn.reshape(cz_new,[cz_new.shape[0],-1]))
-                    cz_new = vz[:min(kickrank,vz.shape[0]),:].t() # truncate to kickrank
-                    if k &lt; d-1: # extend cz_new with random elements
-                        cz_new = tn.cat((cz_new,tn.randn((cz_new.shape[0],kick2),  dtype = dtype, device = device)),1)
-                else:
-                    cz_new = tn.reshape(z_cores[k],[rz[k],-1]).t()
-
-                qz, _ = QR(cz_new)
-                rz[k] = qz.shape[1]
-                z_cores[k] = tn.reshape(qz.t(),[rz[k],N[k],rz[k+1]]) 
-            
-            # norm correction ?
-            if swp &gt; 0: nrmsc = nrmsc * normA[k-1] * normx[k-1] / normb[k-1] 
-        
-            
-            core = tn.reshape(x_cores[k],[rx[k],N[k]*rx[k+1]]).t()
-            Qmat, Rmat = QR(core)
-            
-            core_prev = tn.einsum(&#39;ijk,km-&gt;ijm&#39;,x_cores[k-1],Rmat.T)
-            rx[k] = Qmat.shape[1]
-            
-            current_norm = tn.linalg.norm(core_prev)
-            if current_norm&gt;0:
-                core_prev = core_prev /  current_norm
-            else:
-                current_norm = 1.0
-            normx[k-1] = normx[k-1]*current_norm
-             
-            x_cores[k] = tn.reshape(Qmat.t(),[rx[k],N[k],rx[k+1]]) 
-            x_cores[k-1] = core_prev[:]
-            
-            # update phis (einsum)
-            # print(x_cores[k].shape,A.cores[k].shape,x_cores[k].shape)
-            Phis[k] = _compute_phi_bck_A(Phis[k+1],x_cores[k],A.cores[k],x_cores[k])
-            Phis_b[k] = _compute_phi_bck_rhs(Phis_b[k+1],b.cores[k],x_cores[k])
-            
-            # ... and norms 
-            norm = tn.linalg.norm(Phis[k])
-            norm = norm if norm&gt;0 else 1.0
-            normA[k-1] = norm 
-            Phis[k] =  Phis[k] / norm
-            norm = tn.linalg.norm(Phis_b[k])
-            norm = norm if norm&gt;0 else 1.0
-            normb[k-1] = norm 
-            Phis_b[k] = Phis_b[k]/norm
-            
-            # norm correction
-            nrmsc = nrmsc * normb[k-1]/ (normA[k-1] * normx[k-1])      
-
-            # compute phis_z
-            if not last:
-                Phiz[k] = _compute_phi_bck_A(Phiz[k+1], z_cores[k], A.cores[k], x_cores[k]) / normA[k-1]
-                Phiz_b[k] = _compute_phi_bck_rhs(Phiz_b[k+1], b.cores[k], z_cores[k]) / normb[k-1]
-
-
-        # start loop
-        max_res = 0
-        max_dx = 0
-
-        for k in range(d):
-            if verbose: print(&#39;\tCore&#39;,k) 
-            previous_solution = tn.reshape(x_cores[k],[-1,1])
-            
-        
-            # assemble rhs 
-            rhs = tn.einsum(&#39;br,bmB,BR-&gt;rmR&#39;,Phis_b[k] , b.cores[k] * nrmsc, Phis_b[k+1])
-            rhs = tn.reshape(rhs,[-1,1])
-            norm_rhs = tn.linalg.norm(rhs)
-            
-            #residuals
-            real_tol = (eps/np.sqrt(d))/damp
-        
-            # solve the local system
-            use_full = rx[k]*N[k]*rx[k+1] &lt; max_full
-            if use_full: 
-                # solve the full system
-                if verbose: print(&#39;\t\tChoosing direct solver (local size %d)....&#39;%(rx[k]*N[k]*rx[k+1]))  
-                Bp = tn.einsum(&#39;smnS,LSR-&gt;smnRL&#39;,A.cores[k],Phis[k+1]) # shape is Rp x N x N x r x r
-                B = tn.einsum(&#39;lsr,smnRL-&gt;lmLrnR&#39;,Phis[k],Bp) 
-                B = tn.reshape(B,[rx[k]*N[k]*rx[k+1],rx[k]*N[k]*rx[k+1]])
-
-                solution_now = tn.linalg.solve(B,rhs)   
-                
-                res_old = tn.linalg.norm(B@previous_solution-rhs)/norm_rhs
-                res_new = tn.linalg.norm(B@solution_now-rhs)/norm_rhs
-            else:
-                # iterative solver
-                if verbose: 
-                    print(&#39;\t\tChoosing iterative solver %s (local size %d)....&#39;%(&#39;GMRES&#39; if local_solver==1 else &#39;BiCGSTAB_reset&#39;, rx[k]*N[k]*rx[k+1])) 
-                    time_local = datetime.datetime.now()
-                shape_now = [rx[k],N[k],rx[k+1]]
-                Op = _LinearOp(Phis[k],Phis[k+1],A.cores[k],shape_now, preconditioner)
-                
-                # solution_now, flag, nit, res_new = BiCGSTAB_reset(Op, rhs,previous_solution[:], eps_local, local_iterations) 
-                eps_local = real_tol * norm_rhs
-                drhs = Op.matvec(previous_solution, False)
-                drhs = rhs-drhs
-                eps_local = eps_local / tn.linalg.norm(drhs)
-                if local_solver == 1: 
-                    solution_now, flag, nit = gmres_restart(Op, drhs, previous_solution*0, rhs.shape[0], local_iterations+1, eps_local, resets)
-                elif local_solver == 2:
-                    solution_now, flag, nit, _ = BiCGSTAB_reset(Op, drhs, previous_solution*0, eps_local, local_iterations)
-                else:
-                    raise InvalidArguments(&#39;Solver not implemented.&#39;)
-                    
-                
-                if preconditioner != None:
-                    solution_now = Op.apply_prec(tn.reshape(solution_now,shape_now))
-                    solution_now = tn.reshape(solution_now,[-1,1])
-                
-                solution_now = previous_solution + solution_now
-                res_old = tn.linalg.norm(Op.matvec(previous_solution, False)-rhs)/norm_rhs
-                res_new = tn.linalg.norm(Op.matvec(solution_now, False)-rhs)/norm_rhs
-                if verbose:
-                    print(&#39;\t\tFinished with flag %d after %d iterations with relres %g (from %g)&#39;%(flag,nit,res_new,eps_local)) 
-                    time_local = datetime.datetime.now() - time_local
-                    print(&#39;\t\tTime needed &#39;,time_local)
-            # residual damp check
-            if res_old/res_new &lt; damp and res_new &gt; real_tol:
-                if verbose: print(&#39;WARNING: residual increases. res_old %g, res_new %g, real_tol %g&#39;%(res_old,res_new,real_tol)) # warning (from tt toolbox)
-
-            # compute residual and step size
-            dx = tn.linalg.norm(solution_now-previous_solution)/tn.linalg.norm(solution_now)
-            if verbose: 
-                print(&#39;\t\tdx = %g, res_now = %g, res_old = %g&#39;%(dx,res_new,res_old))
-                
-
-            max_dx = max(dx,max_dx)
-            max_res = max(max_res,res_old)
-            
-            solution_now = tn.reshape(solution_now,[rx[k]*N[k],rx[k+1]])
-            # truncation
-            if k&lt;d-1:
-                u, s, v = SVD(solution_now)
-                if trunc_norm == &#39;fro&#39;:
-                    pass
-                else:
-                    # search for a rank such that offeres small enough residuum
-                    # TODO: binary search?
-                    r = 0
-                    for r in range(u.shape[1]-1,0,-1):
-                        solution = u[:,:r] @ tn.diag(s[:r]) @ v[:r,:] # solution has the same size
-                        # res = tn.linalg.norm(tn.reshape(local_product(Phis[k+1],Phis[k],A.cores[k],tn.reshape(solution,[rx[k],N[k],rx[k+1]]),solution_now.shape),[-1,1]) - rhs)/norm_rhs
-                        
-                        if use_full:
-                            res = tn.linalg.norm(B@tn.reshape(solution,[-1,1])-rhs)/norm_rhs
-                        else:
-                            # res = tn.linalg.norm(tn.reshape(local_product(Phis[k+1],Phis[k],A.cores[k],tn.reshape(solution,[rx[k],N[k],rx[k+1]]),solution_now.shape),[-1,1]) - rhs)/norm_rhs
-                            res = tn.linalg.norm(Op.matvec(solution)-rhs)/norm_rhs
-                        if res &gt; max(real_tol*damp,res_new):
-                            break
-                    r += 1
-
-                    r = min([r,tn.numel(s),rmax[k+1]])
-            else:
-                u, v = QR(solution_now)
-                # v = v.t()
-                r = u.shape[1]
-                s = tn.ones(r,  dtype = dtype, device = device)
-
-            u = u[:,:r]
-            v = tn.diag(s[:r]) @ v[:r,:]
-            v = v.t()
-
-            if not last:
-                czA = _local_product(Phiz[k+1], Phiz[k], A.cores[k], tn.reshape(u@v.t(),[rx[k],N[k],rx[k+1]]), [rx[k],N[k],rx[k+1]]) # shape rzp x N x rz
-                czy = tn.einsum(&#39;br,bnB,BR-&gt;rnR&#39;,Phiz_b[k],b.cores[k]*nrmsc,Phiz_b[k+1]) # shape is rzp x N x rz
-                cz_new = czy - czA
-
-                uz,_,_ = SVD(tn.reshape(cz_new, [rz[k]*N[k],rz[k+1]]))
-                cz_new = uz[:,:min(kickrank,uz.shape[1])] # truncate to kickrank
-                if k &lt; d-1: # extend cz_new with random elements
-                    cz_new = tn.cat((cz_new,tn.randn((cz_new.shape[0],kick2),  dtype = dtype, device = device)),1)
-                
-                qz,_ = QR(cz_new)
-                rz[k+1] = qz.shape[1]
-                z_cores[k] = tn.reshape(qz,[rz[k],N[k],rz[k+1]])
-
-            if k &lt; d-1:
-                if not last:
-                    left_res = _local_product(Phiz[k+1],Phis[k],A.cores[k],tn.reshape(u@v.t(),[rx[k],N[k],rx[k+1]]),[rx[k],N[k],rx[k+1]])
-                    left_b = tn.einsum(&#39;br,bmB,BR-&gt;rmR&#39;,Phis_b[k],b.cores[k]*nrmsc,Phiz_b[k+1])
-                    uk = left_b - left_res # rx_k x N_k x rz_k+1
-                    u, Rmat = QR(tn.cat((u,tn.reshape(uk,[u.shape[0],-1])),1))
-                    r_add = uk.shape[2]
-                    v = tn.cat((v,tn.zeros([rx[k+1],r_add],  dtype = dtype, device = device)), 1)
-                    v = v @ Rmat.t()
-                 
-                r = u.shape[1]
-                v = tn.einsum(&#39;ji,jkl-&gt;ikl&#39;,v,x_cores[k+1])
-                # remove norm correction
-                nrmsc = nrmsc * normA[k] * normx[k] / normb[k]  
-
-                norm_now = tn.linalg.norm(v)
-
-                if norm_now&gt;0:
-                    v = v / norm_now
-                else:
-                    norm_now = 1.0
-                normx[k] = normx[k] * norm_now
-
-                x_cores[k] = tn.reshape(u, [rx[k],N[k],r])
-                x_cores[k+1] = tn.reshape(v, [r,N[k+1],rx[k+2]])
-                rx[k+1] = r
-
-                # next phis with norm correction
-                Phis[k+1] = _compute_phi_fwd_A(Phis[k], x_cores[k], A.cores[k], x_cores[k]) 
-                Phis_b[k+1] = _compute_phi_fwd_rhs(Phis_b[k], b.cores[k],x_cores[k])
-                
-                # ... and norms 
-                norm = tn.linalg.norm(Phis[k+1])
-                norm = norm if norm&gt;0 else 1.0
-                normA[k] = norm 
-                Phis[k+1] = Phis[k+1] / norm
-                norm = tn.linalg.norm(Phis_b[k+1])
-                norm = norm if norm&gt;0 else 1.0
-                normb[k] = norm 
-                Phis_b[k+1] = Phis_b[k+1] / norm
-                
-                # norm correction
-                nrmsc = nrmsc * normb[k] / ( normA[k] * normx[k] )
-
-
-                # next phiz
-                if not last:
-                    Phiz[k+1] = _compute_phi_fwd_A(Phiz[k], z_cores[k], A.cores[k], x_cores[k]) / normA[k]
-                    Phiz_b[k+1] = _compute_phi_fwd_rhs(Phiz_b[k], b.cores[k],z_cores[k]) / normb[k]
-            else:
-                x_cores[k] = tn.reshape(u@tn.diag(s[:r]) @ v[:r,:].t(),[rx[k],N[k],rx[k+1]])
-
-        if verbose:
-            print(&#39;Solution rank is&#39;,rx)
-            print(&#39;Maxres &#39;,max_res)
-            tme_sweep = datetime.datetime.now()-tme_sweep
-            print(&#39;Time &#39;,tme_sweep)
-              
-                
-        if last:
-            break
-
-        if max_res &lt; eps:
-            last = True
-
-    if verbose:
-        time_total = datetime.datetime.now() - time_total
-        print()
-        print(&#39;Finished after&#39; ,swp+1,&#39; sweeps and &#39;,time_total)
-        print()
-    normx = np.exp(np.sum(np.log(normx))/d)
-
-    for k in range(d):
-        x_cores[k] = x_cores[k] * normx
-
-    x = torchtt.TT(x_cores)
-
-    return x</code></pre>
-</details>
-</dd>
-<dt id="torchtt.solvers.amen_solve_cpp"><code class="name flex">
-<span>def <span class="ident">amen_solve_cpp</span></span>(<span>A, b, nswp=22, x0=None, eps=1e-10, rmax=1024, max_full=500, kickrank=4, kick2=0, trunc_norm='res', local_solver=1, local_iterations=40, resets=2, verbose=False, preconditioner=None)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Solve a multilinear system <span><span class="MathJax_Preview">\mathsf{Ax} = \mathsf{b}</span><script type="math/tex">\mathsf{Ax} = \mathsf{b}</script></span> in the Tensor Train format (yuse C++ implementation).</p>
-<p>This method implements the algorithm from <a href="https://epubs.siam.org/doi/abs/10.1137/140953289">Sergey V Dolgov, Dmitry V Savostyanov, Alternating minimal energy methods for linear systems in higher dimensions</a>.</p>
-<h2 id="example">Example</h2>
-<pre><code>import torchtt
-A = torchtt.random([(4,4),(5,5),(6,6)],[1,2,3,1]) # create random matrix
-x = torchtt.random([4,5,6],[1,2,3,1]) # invent a random solution
-b = A @ x # compute the rhs
-xx = torchtt.solvers.amen_solve(A,b) # solve
-print((xx-x).norm()/x.norm()) # error
-</code></pre>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>A</code></strong> :&ensp;<code>torchtt.TT</code></dt>
-<dd>the system matrix in TT.</dd>
-<dt><strong><code>b</code></strong> :&ensp;<code>torchtt.TT</code></dt>
-<dd>the right hand side in TT.</dd>
-<dt><strong><code>nswp</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>number of sweeps. Defaults to 22.</dd>
-<dt><strong><code>x0</code></strong> :&ensp;<code>torchtt.TT</code>, optional</dt>
-<dd>initial guess. In None is provided the initial guess is a ones tensor. Defaults to None.</dd>
-<dt><strong><code>eps</code></strong> :&ensp;<code>float</code>, optional</dt>
-<dd>relative residual. Defaults to 1e-10.</dd>
-<dt><strong><code>rmax</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>maximum rank. Defaults to 100.</dd>
-<dt><strong><code>max_full</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>the maximum size of the core until direct solver is used for the local subproblem. Defaults to 500.</dd>
-<dt><strong><code>kickrank</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>rank enrichment. Defaults to 4.</dd>
-<dt><strong><code>kick2</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>[description]. Defaults to 0.</dd>
-<dt><strong><code>trunc_norm</code></strong> :&ensp;<code>str</code>, optional</dt>
-<dd>[description]. Defaults to 'res'.</dd>
-<dt><strong><code>local_solver</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>choose local iterative solver: 1 for GMRES and 2 for BiCGSTAB. Defaults to 1.</dd>
-<dt><strong><code>local_iterations</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>number of GMRES iterations for the local subproblems. Defaults to 40.</dd>
-<dt><strong><code>resets</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>number of resets in the GMRES. Defaults to 2.</dd>
-<dt><strong><code>verbose</code></strong> :&ensp;<code>bool</code>, optional</dt>
-<dd>choose whether to display or not additional information during the runtime. Defaults to True.</dd>
-<dt><strong><code>preconditioner</code></strong> :&ensp;<code>string</code>, optional</dt>
-<dd>Choose the preconditioner for the local system. Possible values are None, 'c' (central Jacobi preconditioner). No preconditioner is used if None is provided. Defaults to None.</dd>
-</dl>
-<h2 id="raises">Raises</h2>
-<dl>
-<dt><code>InvalidArguments</code></dt>
-<dd>A and b must be TT instances.</dd>
-<dt><code>IncompatibleTypes</code></dt>
-<dd>A must be TT-matrix and b must be vector.</dd>
-<dt><code>ShapeMismatch</code></dt>
-<dd>A is not quadratic.</dd>
-<dt><code>ShapeMismatch</code></dt>
-<dd>Dimension mismatch.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>torchtt.TT</code></dt>
-<dd>the approximation of the solution in TT format.</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def amen_solve_cpp(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = &#39;res&#39;, local_solver = 1, local_iterations = 40, resets = 2, verbose = False, preconditioner = None):
-    &#34;&#34;&#34;
-    Solve a multilinear system \(\\mathsf{Ax} = \\mathsf{b}\) in the Tensor Train format (yuse C++ implementation).
-    
-    This method implements the algorithm from [Sergey V Dolgov, Dmitry V Savostyanov, Alternating minimal energy methods for linear systems in higher dimensions](https://epubs.siam.org/doi/abs/10.1137/140953289).
-
-    Example:
-        ```
-        import torchtt
-        A = torchtt.random([(4,4),(5,5),(6,6)],[1,2,3,1]) # create random matrix
-        x = torchtt.random([4,5,6],[1,2,3,1]) # invent a random solution
-        b = A @ x # compute the rhs
-        xx = torchtt.solvers.amen_solve(A,b) # solve
-        print((xx-x).norm()/x.norm()) # error
-        ```
-    
-    Args:
-        A (torchtt.TT): the system matrix in TT.
-        b (torchtt.TT): the right hand side in TT.
-        nswp (int, optional): number of sweeps. Defaults to 22.
-        x0 (torchtt.TT, optional): initial guess. In None is provided the initial guess is a ones tensor. Defaults to None.
-        eps (float, optional): relative residual. Defaults to 1e-10.
-        rmax (int, optional): maximum rank. Defaults to 100.
-        max_full (int, optional): the maximum size of the core until direct solver is used for the local subproblem. Defaults to 500.
-        kickrank (int, optional): rank enrichment. Defaults to 4.
-        kick2 (int, optional): [description]. Defaults to 0.
-        trunc_norm (str, optional): [description]. Defaults to &#39;res&#39;.
-        local_solver (int, optional): choose local iterative solver: 1 for GMRES and 2 for BiCGSTAB. Defaults to 1.
-        local_iterations (int, optional): number of GMRES iterations for the local subproblems. Defaults to 40.
-        resets (int, optional): number of resets in the GMRES. Defaults to 2.
-        verbose (bool, optional): choose whether to display or not additional information during the runtime. Defaults to True.
-        preconditioner (string, optional): Choose the preconditioner for the local system. Possible values are None, &#39;c&#39; (central Jacobi preconditioner). No preconditioner is used if None is provided. Defaults to None.
-
-    Raises:
-        InvalidArguments: A and b must be TT instances.
-        IncompatibleTypes: A must be TT-matrix and b must be vector.
-        ShapeMismatch: A is not quadratic.
-        ShapeMismatch: Dimension mismatch.
-
-    Returns:
-        torchtt.TT: the approximation of the solution in TT format.
-    &#34;&#34;&#34;
-    # perform checks of the input data
-    if not (isinstance(A,torchtt.TT) and isinstance(b,torchtt.TT)):
-        raise InvalidArguments(&#39;A and b must be TT instances.&#39;)
-    if not (A.is_ttm and not b.is_ttm) :
-        raise IncompatibleTypes(&#39;A must be TT-matrix and b must be vector.&#39;)
-    if A.M != A.N:
-        raise ShapeMismatch(&#39;A is not quadratic.&#39;)
-    if A.N != b.N:
-        raise ShapeMismatch(&#39;Dimension mismatch.&#39;)
-
-    if verbose: time_total = datetime.datetime.now()
-    
-    dtype = A.cores[0].dtype 
-    device = A.cores[0].device
-    rank_search = 1 # binary rank search
-    damp = 2
-
-    if x0 == None:
-        x = torchtt.ones(b.N, dtype = dtype, device = device)
-    else:
-        x = x0
-    
-    cores = torchttcpp.amen_solve(A.cores, b.cores, x.cores, b.N, A.R, b.R, x.R, nswp, eps, rmax, max_full, kickrank, kick2, local_iterations, resets, verbose, 0 if preconditioner == None else 1)
-
-    return torchtt.TT(list(cores))</code></pre>
+        return _amen_solve_python(A, b, nswp, x0, eps,rmax, max_full, kickrank, kick2, trunc_norm, local_solver, local_iterations, resets, verbose, preconditioner)</code></pre>
 </details>
 </dd>
 </dl>
@@ -1265,7 +783,6 @@ print((xx-x).norm()/x.norm()) # error
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
 <li><code><a title="torchtt.solvers.amen_solve" href="#torchtt.solvers.amen_solve">amen_solve</a></code></li>
-<li><code><a title="torchtt.solvers.amen_solve_cpp" href="#torchtt.solvers.amen_solve_cpp">amen_solve_cpp</a></code></li>
 </ul>
 </li>
 </ul>
