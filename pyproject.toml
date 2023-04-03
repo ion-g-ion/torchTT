@@ -11,10 +11,3 @@ authors = [
 description = "Tensor-Train decomposition in pytorch."
 readme = "README.md"
 requires-python = ">=3.7"
-classifiers = [
-    "License :: OSI Approved :: MIT License",
-    "Natural Language :: English",
-    "Operating System :: OS Independent",
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3"
-]

@@ -33,7 +33,7 @@ if os_name == 'Linux' or os_name == 'Darwin':
     ]) 
 else: 
     import warnings
-    warnings.warn("C++ cannot be installed. Might be an environment related issue.")
+    warnings.warn("\x1B[33m\nC++ implementation not available. Using pure Python.\n\033[0m")
     
     setup(name='torchTT',
     version='2.0',

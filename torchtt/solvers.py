@@ -17,7 +17,7 @@ try:
     _flag_use_cpp = True
 except:
     import warnings
-    warnings.warn("C++ implementation not available. Using pure Python.", ImportWarning)
+    warnings.warn("\x1B[33m\nC++ implementation not available. Using pure Python.\n\033[0m")
     _flag_use_cpp = False
 
 def _local_product(Phi_right, Phi_left, coreA, core, shape):
