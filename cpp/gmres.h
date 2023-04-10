@@ -1,6 +1,6 @@
 #include "define.h"
 #include <omp.h>
-
+#include <functional>
 /**
  * @brief givensrotation.
  * 
@@ -157,3 +157,72 @@ void gmres(at::Tensor &solution, int &flag, int &nit, AMENsolveMV<T> &Op, at::Te
         xs = solution.clone();
     }
 }
+/*
+void gmres_double_cpu(double *solution, 
+                      int &flag, 
+                      int &nit, 
+                      std::function<double*(double*)> matvec,
+                      double *rns, 
+                      uint64_t size, 
+                      uint64_t max_iters, 
+                      double threshold, 
+                      uint64_t resets)
+{
+
+    nit = 0;
+    flag = 0;
+
+    double *sn = new double[iters];
+    double *cs = new double[iters];
+    double *e1 = new double[iters+1];
+
+    double *Q = new double[size*(iters+1)];
+    double *q = new double[size];
+
+
+    for(uint64_t r=0; r<resets; r++)
+    {
+        int k;
+
+        for(k = 0; k<iters; k++)
+        {
+        
+            at::Tensor q = Op.matvec(Q[k]);
+
+            for(int i=0;i<k+1;i++){
+                HA[i][k] = at::dot(q.squeeze(), Q[i]).item<T>();
+                q -= (HA[i][k] * Q[i]).reshape({-1,1});
+            }
+
+            T h = torch::norm(q).item<T>();
+
+            q /= h;
+
+            HA[k+1][k] = h;
+            Q.push_back(q.clone().squeeze());
+
+            T c,s;
+            at::Tensor htemp = H.index({torch::indexing::Slice(0,k+2), k}).contiguous();
+            apply_givens_rotation_cpu(htemp.data_ptr<T>(), cs, sn, k+1, c, s);
+            H.index_put_({torch::indexing::Slice(0,k+2), k}, htemp);
+            cs[k] = c;
+            sn[k] = s;
+
+            betaA[k+1] = -sn[k]*betaA[k];
+            betaA[k] = cs[k]*betaA[k];
+            error = std::abs(betaA[k+1])/b_norm;
+
+            if(error<=threshold)
+            {
+                flag = 1;
+                break;
+            }
+        }
+    }
+
+    delete [] sn;
+    delete [] cs;
+    delete [] e1;
+    delete [] Q;
+    delete [] q;
+}*/
