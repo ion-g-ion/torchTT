@@ -47,7 +47,8 @@ public:
         if(!use_prec || this->prec == NO_PREC){
             tmp = x.reshape(this->shape);            
         }
-        else{
+        else
+        {
             tmp = apply_prec(x.reshape(this->shape));
         }
 
@@ -58,4 +59,8 @@ public:
 
     }
 
+    void matvec_cpu(T *in, T *out){
+
+        
+    }
 };

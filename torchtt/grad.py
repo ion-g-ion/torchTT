@@ -58,6 +58,7 @@ def grad(val, tens, core_indices = None):
     Returns:
         list[torch.tensor]: the list of cores representing the derivative of the expression w.r.t the tensor.
     """
+    val.retain_grad()
     val.backward()
     if core_indices == None:
         cores = [ c.grad for c in tens.cores]

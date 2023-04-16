@@ -66,6 +66,9 @@ print('Solver time: ',time)
 # Display the structure of the TT
 print(x)
 
+import sys
+sys.exit()
+
 #%% Try one more time on the GPU (if available).
 if tn.cuda.is_available():
     time = datetime.datetime.now()

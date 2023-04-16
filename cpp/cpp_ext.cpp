@@ -1,4 +1,3 @@
-
 #include "full.h"
 #include "amen_solve.h"
 #include "compression.h"

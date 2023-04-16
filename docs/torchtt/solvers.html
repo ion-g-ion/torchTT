@@ -47,8 +47,17 @@ try:
     _flag_use_cpp = True
 except:
     import warnings
-    warnings.warn(&#34;C++ implementation not available. Using pure Python.&#34;, ImportWarning)
+    warnings.warn(&#34;\x1B[33m\nC++ implementation not available. Using pure Python.\n\033[0m&#34;)
     _flag_use_cpp = False
+
+def cpp_enabled():
+    &#34;&#34;&#34;
+    Is the C++ backend enabled?
+
+    Returns:
+        bool: the flag
+    &#34;&#34;&#34;
+    return _flag_use_cpp
 
 def _local_product(Phi_right, Phi_left, coreA, core, shape):
     &#34;&#34;&#34;
@@ -95,12 +104,22 @@ class _LinearOp():
             # J = oe.contract(&#39;dmnS,SD-&gt;dDmn&#39;,Jl,Jr)
             J = tn.einsum(&#39;dmnS,SD-&gt;dDmn&#39;,Jl,Jr)
             self.J = tn.linalg.inv(J)
+        if prec == &#39;r&#39;:
+            Jl = tn.einsum(&#39;sd,smnS-&gt;dmnS&#39;,tn.diagonal(Phi_left,0,0,2),coreA)
+            J = tn.einsum(&#39;dmnS,LSR-&gt;dmLnR&#39;,Jl,Phi_right)
+            sh = J.shape
+            J = tn.reshape(J, [-1,J.shape[1]*J.shape[2], J.shape[3]*J.shape[4]])
+            self.J = tn.reshape(tn.linalg.inv(J), sh)
+            
         # tme = datetime.datetime.now() - tme 
         # print(&#39;contr   &#39;,tme)
     def apply_prec(self,x):
         
         if self.prec == &#39;c&#39;:
             y = tn.einsum(&#39;rnR,rRmn-&gt;rmR&#39;,x,self.J) # no improvement using opt_einsum
+            return y
+        elif self.prec == &#39;r&#39;:
+            y = tn.einsum(&#39;rnR,rmLnR-&gt;rmL&#39;, x, self.J)
             return y
         
     def matvec(self, x, apply_prec = True):
@@ -764,6 +783,30 @@ print((xx-x).norm()/x.norm()) # error
         return _amen_solve_python(A, b, nswp, x0, eps,rmax, max_full, kickrank, kick2, trunc_norm, local_solver, local_iterations, resets, verbose, preconditioner)</code></pre>
 </details>
 </dd>
+<dt id="torchtt.solvers.cpp_enabled"><code class="name flex">
+<span>def <span class="ident">cpp_enabled</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Is the C++ backend enabled?</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>bool</code></dt>
+<dd>the flag</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cpp_enabled():
+    &#34;&#34;&#34;
+    Is the C++ backend enabled?
+
+    Returns:
+        bool: the flag
+    &#34;&#34;&#34;
+    return _flag_use_cpp</code></pre>
+</details>
+</dd>
 </dl>
 </section>
 <section>
@@ -783,6 +826,7 @@ print((xx-x).norm()/x.norm()) # error
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
 <li><code><a title="torchtt.solvers.amen_solve" href="#torchtt.solvers.amen_solve">amen_solve</a></code></li>
+<li><code><a title="torchtt.solvers.cpp_enabled" href="#torchtt.solvers.cpp_enabled">cpp_enabled</a></code></li>
 </ul>
 </li>
 </ul>

@@ -4,6 +4,7 @@
 #include "matvecs.h"
 #include "gmres.h"
 
+//torch::NoGradGuard no_grad;
 /**
  * @brief Compute thelocal matvec product in the AMEn: lsr,smnS,LSR,rnR->lmL
  * 

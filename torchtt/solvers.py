@@ -20,6 +20,15 @@ except:
     warnings.warn("\x1B[33m\nC++ implementation not available. Using pure Python.\n\033[0m")
     _flag_use_cpp = False
 
+def cpp_enabled():
+    """
+    Is the C++ backend enabled?
+
+    Returns:
+        bool: the flag
+    """
+    return _flag_use_cpp
+
 def _local_product(Phi_right, Phi_left, coreA, core, shape):
     """
     Compute local matvec product
@@ -65,12 +74,22 @@ class _LinearOp():
             # J = oe.contract('dmnS,SD->dDmn',Jl,Jr)
             J = tn.einsum('dmnS,SD->dDmn',Jl,Jr)
             self.J = tn.linalg.inv(J)
+        if prec == 'r':
+            Jl = tn.einsum('sd,smnS->dmnS',tn.diagonal(Phi_left,0,0,2),coreA)
+            J = tn.einsum('dmnS,LSR->dmLnR',Jl,Phi_right)
+            sh = J.shape
+            J = tn.reshape(J, [-1,J.shape[1]*J.shape[2], J.shape[3]*J.shape[4]])
+            self.J = tn.reshape(tn.linalg.inv(J), sh)
+            
         # tme = datetime.datetime.now() - tme 
         # print('contr   ',tme)
     def apply_prec(self,x):
         
         if self.prec == 'c':
             y = tn.einsum('rnR,rRmn->rmR',x,self.J) # no improvement using opt_einsum
+            return y
+        elif self.prec == 'r':
+            y = tn.einsum('rnR,rmLnR->rmL', x, self.J)
             return y
         
     def matvec(self, x, apply_prec = True):

@@ -1,6 +1,9 @@
 #include "define.h"
 #include <omp.h>
 #include <functional>
+
+
+
 /**
  * @brief givensrotation.
  * 
@@ -138,7 +141,6 @@ void gmres_single(at::Tensor &solution, int &flag, int &nit, AMENsolveMV<T> &Op,
     delete [] cs;
     delete [] e1;
 
-
 }
 
 template <typename T>
@@ -157,20 +159,24 @@ void gmres(at::Tensor &solution, int &flag, int &nit, AMENsolveMV<T> &Op, at::Te
         xs = solution.clone();
     }
 }
+
 /*
 void gmres_double_cpu(double *solution, 
                       int &flag, 
                       int &nit, 
-                      std::function<double*(double*)> matvec,
+                      std::function<void(double*,double*)> matvec,
                       double *rns, 
-                      uint64_t size, 
-                      uint64_t max_iters, 
+                      int64_t size, 
+                      int64_t max_iters, 
                       double threshold, 
-                      uint64_t resets)
+                      int64_t resets)
 {
 
     nit = 0;
     flag = 0;
+
+    int64_t inc1 = 1;
+    char transN = 'N';
 
     double *sn = new double[iters];
     double *cs = new double[iters];
@@ -178,33 +184,38 @@ void gmres_double_cpu(double *solution,
 
     double *Q = new double[size*(iters+1)];
     double *q = new double[size];
-
-
+    double *H = new double[iters*(iters+1)];
+    double *beta = new double[iters+1];
+    double *work1 = new double [iters+1];
+    
     for(uint64_t r=0; r<resets; r++)
     {
         int k;
+        // fill with 0
+        std::fill_n(beta, iters+1, 0);
+        std::fill_n(H, (iters+1)*iters, 0);
 
         for(k = 0; k<iters; k++)
         {
         
-            at::Tensor q = Op.matvec(Q[k]);
+            // matvec 
+            matvec(Q+k*size, Q+(k+1)*size);
 
+            // 
             for(int i=0;i<k+1;i++){
-                HA[i][k] = at::dot(q.squeeze(), Q[i]).item<T>();
-                q -= (HA[i][k] * Q[i]).reshape({-1,1});
+                H[i+(iters+1)*k] = BLAS::dot(&size, Q+(k+1)*size, &inc1, Q+i*size, &inc1);
+                BLAS::axpy(&size, H+i+(iters+1)*k, Q+i*size, &inc1, Q+(k+1)*size, &inc1);
             }
 
-            T h = torch::norm(q).item<T>();
+            T h = 1/BLAS::nrm2(&size, Q+(k+1)*size, &inc1);
 
-            q /= h;
+            BLAS::scal(&size, &h, Q+(k+1)*size, &inc1);
 
-            HA[k+1][k] = h;
-            Q.push_back(q.clone().squeeze());
+            H[k+1+(iters+1)*k] = h;
 
+            // >>>
             T c,s;
-            at::Tensor htemp = H.index({torch::indexing::Slice(0,k+2), k}).contiguous();
-            apply_givens_rotation_cpu(htemp.data_ptr<T>(), cs, sn, k+1, c, s);
-            H.index_put_({torch::indexing::Slice(0,k+2), k}, htemp);
+            apply_givens_rotation_cpu(H+k*(iters+1), cs, sn, k+1, c, s);
             cs[k] = c;
             sn[k] = s;
 
@@ -218,6 +229,20 @@ void gmres_double_cpu(double *solution,
                 break;
             }
         }
+
+        k = k<iters ? k : iters-1;
+
+    at::Tensor y = at::linalg_solve(H.index({torch::indexing::Slice(0,k+1), torch::indexing::Slice(0,k+1)}), beta.index({torch::indexing::Slice(0, k+1)}).reshape({-1,1}));
+    
+    solution = x0.clone().squeeze();
+    for(int i=0;i<k+1;++i)
+        solution += Q[i] * y.index({i,0}).item<T>();  
+
+        nit += k+1;
+
+        if(flag==1){
+            break;
+        }
     }
 
     delete [] sn;
@@ -225,4 +250,5 @@ void gmres_double_cpu(double *solution,
     delete [] e1;
     delete [] Q;
     delete [] q;
+    delete [] H;
 }*/
