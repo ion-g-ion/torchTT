@@ -1,8 +1,11 @@
-#include "define.h"
+#include "BLAS.h"
+#include <chrono>
+#include <iostream>
+#include<functional>
+#include <math.h>
 #include <omp.h>
-#include <functional>
 
-
+#define N 20000
 
 /**
  * @brief givensrotation.
@@ -28,136 +31,6 @@ template <typename T> void apply_givens_rotation_cpu(T *h, T *cs, T *sn, uint64_
 
     h[k-1] = cs_k * h[k-1] + sn_k * h[k];
     h[k] = 0.0;
-}
-
-
-template <typename T>
-void gmres_single(at::Tensor &solution, int &flag, int &nit, AMENsolveMV<T> &Op, at::Tensor &rhs,  at::Tensor &x0, uint64_t size, uint64_t iters, T threshold){
-
-    bool converged = false;
-
-    at::Tensor r = rhs - Op.matvec(x0);
-
-    T b_norm = torch::norm(rhs).item<T>();
-    T error = torch::norm(r).item<T>() / b_norm;
-
-    T * sn = new T[iters];
-    T * cs = new T[iters];
-    T * e1 = new T[iters+1];
-    for (int i=0; i<iters;++i){
-        sn[i] = 0;
-        cs[i] = 0;
-        e1[i+1] = 0;
-    }
-    e1[0] = 1.0;
-
-    T r_norm = torch::norm(r).item<T>();
-
-    if(r_norm<=0){
-        flag = 1;
-        nit = 0;
-        solution = x0.clone();
-        // free memory
-        delete [] sn;
-        delete [] cs;
-        delete [] e1;
-        return;
-    }
-
-    std::vector<at::Tensor> Q;
-    Q.push_back(r.squeeze() / r_norm);
-
-    at::Tensor H, beta;
-    if(std::is_same<T,float>::value){
-        auto options = torch::TensorOptions().dtype(torch::kFloat32);
-        beta = torch::zeros(iters+1, options);
-        H = torch::zeros({iters+1, iters}, options);
-    }
-    else{
-        auto options = torch::TensorOptions().dtype(torch::kFloat64);
-        beta = torch::zeros(iters+1, options);
-        H = torch::zeros({iters+1, iters}, options); 
-    }
-
-    auto betaA = beta.accessor<T,1>();
-    auto HA = H.accessor<T,2>();
-    betaA[0] = r_norm;
-
-    int k;
-    for(k = 0; k<iters; k++){
-        
-       // std::cout <<"\n";
-      //  auto ts = std::chrono::high_resolution_clock::now();
-        at::Tensor q = Op.matvec(Q[k]);
-     //   auto diff_time = std::chrono::high_resolution_clock::now() - ts;
-      //  std::cout << " MV   " << (double)(std::chrono::duration_cast<std::chrono::microseconds>(diff_time)).count()/1000 << std::endl;
-
-      //  ts = std::chrono::high_resolution_clock::now();
-        
-       // #pragma omp parallel for num_threads(32)
-        for(int i=0;i<k+1;i++){
-            HA[i][k] = at::dot(q.squeeze(), Q[i]).item<T>();
-            q -= (HA[i][k] * Q[i]).reshape({-1,1});
-        }
-      //  diff_time = std::chrono::high_resolution_clock::now() - ts;
-      //  std::cout << " PROJ " << (double)(std::chrono::duration_cast<std::chrono::microseconds>(diff_time)).count()/1000 << std::endl;
-
-     //   ts = std::chrono::high_resolution_clock::now();
-        T h = torch::norm(q).item<T>();
-
-        q /= h;
-
-        HA[k+1][k] = h;
-        Q.push_back(q.clone().squeeze());
-
-        T c,s;
-        at::Tensor htemp = H.index({torch::indexing::Slice(0,k+2), k}).contiguous();
-        apply_givens_rotation_cpu(htemp.data_ptr<T>(), cs, sn, k+1, c, s);
-        H.index_put_({torch::indexing::Slice(0,k+2), k}, htemp);
-        cs[k] = c;
-        sn[k] = s;
-
-        betaA[k+1] = -sn[k]*betaA[k];
-        betaA[k] = cs[k]*betaA[k];
-        error = std::abs(betaA[k+1])/b_norm;
-       // diff_time = std::chrono::high_resolution_clock::now() - ts;
-     // std::cout << " REST " << (double)(std::chrono::duration_cast<std::chrono::microseconds>(diff_time)).count()/1000 << std::endl;
-        if(error<=threshold)
-        {
-            flag = 1;
-            break;
-        }
-    }
-    k = k<iters ? k : iters-1;
-    at::Tensor y = at::linalg_solve(H.index({torch::indexing::Slice(0,k+1), torch::indexing::Slice(0,k+1)}), beta.index({torch::indexing::Slice(0, k+1)}).reshape({-1,1}));
-    
-    solution = x0.clone().squeeze();
-    for(int i=0;i<k+1;++i)
-        solution += Q[i] * y.index({i,0}).item<T>();  
-
-    nit = k;
-    // free memory
-    delete [] sn;
-    delete [] cs;
-    delete [] e1;
-
-}
-
-template <typename T>
-void gmres(at::Tensor &solution, int &flag, int &nit, AMENsolveMV<T> &Op, at::Tensor &rhs,  at::Tensor &x0, uint64_t size, uint64_t max_iters, T threshold, uint64_t resets ){
-    nit = 0;
-    flag = 0;
-
-    auto xs = x0;
-    for(int r =0;r<resets;r++){
-        int nowit;
-        gmres_single<T>(solution, flag, nowit, Op, rhs, xs, size, max_iters, threshold);
-        nit+=nowit;
-        if(flag==1){
-            break;
-        }
-        xs = solution.clone();
-    }
 }
 
 
@@ -307,4 +180,74 @@ void gmres_double_cpu(double *solution,
     delete [] work1;
     delete [] H;
     delete [] piv_tmp;
+}
+
+
+
+void mv(double *in, double *out){
+
+#pragma omp parallel for
+    for(int i=1;i<N-1;++i)
+        out[i] = (-2*in[i] + in[i+1] + in[i-1])*(N-1)*(N-1);
+    out[0] = -in[0]*N*N;
+    out[N-1] = -in[N-1]*N*N;
+}
+
+
+int main(){
+    uint64_t n = 1024;
+
+    double *rhs = new double[N];
+    double *tmp = new double[N];
+    double *solution = new double[N];
+
+    rhs[0] = 0;
+    rhs[N-1] = 0;
+    for(int i=1;i<N-1;++i)
+    {
+        solution[i] = 0;
+        rhs[i] = 1;
+    }
+
+    std::chrono::time_point<std::chrono::system_clock> start, end;
+ 
+    start = std::chrono::system_clock::now();
+    
+    int nit, flag;
+    gmres_double_cpu(solution, 
+                      flag, 
+                      nit, 
+                      mv,
+                      rhs, 
+                      N, 
+                      100, 
+                      1e-8, 
+                      20,
+                      false);
+
+    end = std::chrono::system_clock::now();
+ 
+    std::chrono::duration<double> elapsed_seconds = end - start;
+    std::time_t end_time = std::chrono::system_clock::to_time_t(end);
+ 
+    mv(solution, tmp);
+
+    int64_t sz = N;
+    int64_t inc1 = 1;
+    double m1 = -1;
+
+    BLAS::axpy(&sz, &m1, rhs, &inc1, tmp, &inc1);
+    double nrm = BLAS::nrm2(&sz, tmp, &inc1) / N;
+
+    std::cout << "Elapsed time: " << elapsed_seconds.count() << "s\n";
+    std::cout << "Flag " << flag << " number of iterations " << nit <<std::endl;
+    std::cout << "Residual " << nrm << std::endl;
+
+    //for(int i = 0 ; i < N ; i++) std::cout << solution[i] << " ";
+
+    delete [] rhs;
+    delete [] tmp;
+    delete [] solution;
+
+    return 0;
 }

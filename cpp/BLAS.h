@@ -19,8 +19,8 @@ extern "C"{
     void dcopy_(int64_t*, double*, int64_t*, double*, int64_t*);
     void scopy_(int64_t*, float*, int64_t*, float*, int64_t*);
 
-    int  dgesv_(int64_t *, int64_t *, double *, int64_t *, int64_t *, double *, int64_t *, int64_t *);
-    int  sgesv_(int64_t *, int64_t *, float *, int64_t *, int64_t *, float *, int64_t *, int64_t *);
+    void dgesv_(int64_t *, int64_t *, double *, int64_t *, int64_t *, double *, int64_t *, int64_t *);
+    void sgesv_(int64_t *, int64_t *, float *, int64_t *, int64_t *, float *, int64_t *, int64_t *);
 } 
 
 namespace BLAS{
@@ -193,4 +193,43 @@ namespace BLAS{
     }
 
 
+}
+
+namespace LAPACK{
+
+    template<typename T>
+    int64_t gesv(int64_t n, int64_t nrhs,  T * A, int64_t lda, int64_t *ipiv, T *B, int64_t ldb);
+
+
+    template <>
+    int64_t gesv(int64_t n, int64_t nrhs,  double * A, int64_t lda, int64_t *ipiv, double *B, int64_t ldb){
+        int64_t info;
+        
+        if(ipiv != nullptr)
+            dgesv_(&n, &nrhs, A, &lda, ipiv, B, &ldb, &info);
+        else
+        {
+            int64_t *IPIV = new int64_t[n];
+            dgesv_(&n, &nrhs, A, &lda, IPIV, B, &ldb, &info);
+            delete [] IPIV;
+        }
+
+        return info;
+    }
+
+    template <>
+    int64_t gesv(int64_t n, int64_t nrhs,  float * A, int64_t lda, int64_t *ipiv, float *B, int64_t ldb){
+        int64_t info;
+        
+        if(ipiv != nullptr)
+            sgesv_(&n, &nrhs, A, &lda, ipiv, B, &ldb, &info);
+        else
+        {
+            int64_t *IPIV = new int64_t[n];
+            sgesv_(&n, &nrhs, A, &lda, IPIV, B, &ldb, &info);
+            delete [] IPIV;
+        }
+
+        return info;
+    }
 }

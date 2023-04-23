@@ -19,7 +19,7 @@ if os_name == 'Linux' or os_name == 'Darwin':
     packages=['torchtt'],
     install_requires=['numpy>=1.18','torch>=1.7','opt_einsum'],
     ext_modules=[
-        CppExtension('torchttcpp', ['cpp/cpp_ext.cpp'], extra_compile_args=['-std=c++14', '-Wno-c++11-narrowing', '-g', '-w', '-O3']),
+        CppExtension('torchttcpp', ['cpp/cpp_ext.cpp'], extra_compile_args=['-lblas', '-llapack', '-std=c++14', '-Wno-c++11-narrowing', '-g', '-w', '-O3']),
     ],
     cmdclass={
         'build_ext': BuildExtension
