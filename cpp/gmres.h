@@ -135,7 +135,7 @@ void gmres_single(at::Tensor &solution, int &flag, int &nit, AMENsolveMV<T> &Op,
     for(int i=0;i<k+1;++i)
         solution += Q[i] * y.index({i,0}).item<T>();  
 
-    nit = k;
+    nit = k+1;
     // free memory
     delete [] sn;
     delete [] cs;

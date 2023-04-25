@@ -139,6 +139,8 @@ std::vector<at::Tensor> amen_solve(
                         int preconditioner)
 {
 
+    torch::NoGradGuard no_grad;
+    
     //at::TensorBase::device dtype = A_cores[0].dtype;
     auto options = A_cores[0].options();
     uint64_t d = N.size();

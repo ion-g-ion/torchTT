@@ -48,9 +48,9 @@ class TestSolvers(unittest.TestCase):
         A = torchtt.random([(4,4),(5,5),(6,6)],[1,2,3,1], dtype = tn.float64) 
         x = torchtt.random([4,5,6],[1,2,3,1], dtype = tn.float64) 
         b = A @ x 
-        # xx = torchtt.solvers.amen_solve(A,b,verbose = False, eps=1e-10, preconditioner='r', use_cpp=True) 
-        # err = (A@xx-b).norm()/b.norm() # error residual
-        # self.assertLess(err.numpy(),5*1e-8,"AMEN solve failed (right preconditioner).") 
+        xx = torchtt.solvers.amen_solve(A,b,verbose = False, eps=1e-10, preconditioner='r', use_cpp=True) 
+        err = (A@xx-b).norm()/b.norm() # error residual
+        self.assertLess(err.numpy(),5*1e-8,"AMEN solve failed (right preconditioner).") 
     
     def test_amen_solve_cprec_nocpp(self):
         """
