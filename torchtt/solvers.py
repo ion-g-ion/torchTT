@@ -179,6 +179,7 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 5
 
     Raises:
         InvalidArguments: A and b must be TT instances.
+        InvalidArguments: Invalid preconditioner.
         IncompatibleTypes: A must be TT-matrix and b must be vector.
         ShapeMismatch: A is not quadratic.
         ShapeMismatch: Dimension mismatch.
@@ -203,7 +204,15 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 5
         else:
             x_cores = x0.cores 
             x_R = x0.R
-        cores = torchttcpp.amen_solve(A.cores, b.cores, x_cores, b.N, A.R, b.R, x_R, nswp, eps, rmax, max_full, kickrank, kick2, local_iterations, resets, verbose, 0 if preconditioner == None else 1)
+        if preconditioner == None:
+            prec = 0
+        elif preconditioner == 'c':
+            prec = 1
+        elif preconditioner == 'r':
+            prec = 2
+        else:
+            raise InvalidArguments("Invalid preconditioner.")
+        cores = torchttcpp.amen_solve(A.cores, b.cores, x_cores, b.N, A.R, b.R, x_R, nswp, eps, rmax, max_full, kickrank, kick2, local_iterations, resets, verbose, prec)
         return torchtt.TT(list(cores))
     else:
         return _amen_solve_python(A, b, nswp, x0, eps,rmax, max_full, kickrank, kick2, trunc_norm, local_solver, local_iterations, resets, verbose, preconditioner)

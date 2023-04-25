@@ -31,7 +31,7 @@ print('Relative error of the solution  ',(xs-x).norm()/x.norm())
 # We now solve the problem $\Delta u = 1$ in $[0,1]^d$ with $ u = 0 $ on the entire boundary using finite differences.
 # First, set the size of the problem (n is the mode size and d is the number of dimensions):
 dtype = tn.float64 
-n =  256
+n =  128
 d = 8
 
 # Create the finite differences matrix corresponding to the problem. The operator is constructed directly in the TT format as it follows
