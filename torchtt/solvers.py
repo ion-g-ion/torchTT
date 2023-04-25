@@ -112,7 +112,7 @@ class _LinearOp():
             # w = self.contraction(self.Phi_left,self.coreA,self.Phi_right,x)
             # tme = datetime.datetime.now() - tme
             # # print('time 2 ',tme)
-        elif self.prec == 'c':
+        elif self.prec == 'c' or self.prec == 'r':
             # tme = datetime.datetime.now()
             x = tn.reshape(x,self.shape)
             # tme = datetime.datetime.now() - tme 
