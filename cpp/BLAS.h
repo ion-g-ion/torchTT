@@ -21,6 +21,9 @@ extern "C"{
 
     void dgesv_(int64_t *, int64_t *, double *, int64_t *, int64_t *, double *, int64_t *, int64_t *);
     void sgesv_(int64_t *, int64_t *, float *, int64_t *, int64_t *, float *, int64_t *, int64_t *);
+
+    void domatcopy_(int64_t *m, int64_t *n, double *alpha, double *a, int64_t *lda, double *b, int64_t *ldb);
+    void somatcopy_(int64_t *m, int64_t *n, float *alpha, float *a, int64_t *lda, float *b, int64_t *ldb);
 } 
 
 namespace BLAS{
@@ -121,7 +124,7 @@ namespace BLAS{
     template <typename T>
     int gesv(int64_t *, int64_t *, T *, int64_t *, int64_t *, T *, int64_t *, int64_t *);
 
-
+    
     /// matrix multiplication
     //specialized for double
     template <>
