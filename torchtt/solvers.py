@@ -74,6 +74,12 @@ class _LinearOp():
             # J = oe.contract('dmnS,SD->dDmn',Jl,Jr)
             J = tn.einsum('dmnS,SD->dDmn',Jl,Jr)
             self.J = tn.linalg.inv(J)
+
+            if shape[0]*shape[1]*shape[2] > 1e5:
+                self.contraction = oe.contract_expression('lsr,smnS,LSR,raR,rRna->lmL', Phi_left.shape, coreA.shape, Phi_right.shape, shape, self.J.shape)
+            else:
+                self.contraction = None
+                
         if prec == 'r':
             Jl = tn.einsum('sd,smnS->dmnS',tn.diagonal(Phi_left,0,0,2),coreA)
             J = tn.einsum('dmnS,LSR->dmLnR',Jl,Phi_right)
@@ -112,29 +118,33 @@ class _LinearOp():
             # w = self.contraction(self.Phi_left,self.coreA,self.Phi_right,x)
             # tme = datetime.datetime.now() - tme
             # # print('time 2 ',tme)
+        #elif self.prec == 'c':
+        #    
+        #    x = tn.reshape(x,self.shape)
+        #    w = self.contraction(self.Phi_left, self.coreA, self.Phi_right, x, self.J)
         elif self.prec == 'c' or self.prec == 'r':
             # tme = datetime.datetime.now()
             x = tn.reshape(x,self.shape)
             # tme = datetime.datetime.now() - tme 
             # print('reshape  ',tme)
             
-            # tme = datetime.datetime.now()
-            x = self.apply_prec(x)
-            # tme = datetime.datetime.now() - tme 
-            # print('prec     ',tme)
             
-            # tme = datetime.datetime.now()
-            # w = self.contraction(self.Phi_left,self.coreA,self.Phi_right,x)
-            # tme = datetime.datetime.now() - tme 
-            # print('mv       ',tme)
             
-            # tme = datetime.datetime.now()
-            w = tn.tensordot(x,self.Phi_left,([0],[2])) # shape rnR,lsr->nRls
-            w = tn.tensordot(w,self.coreA,([0,3],[2,0])) # nRls,smnS->RlmS
-            w = tn.tensordot(w,self.Phi_right,([0,3],[2,1])) # RlmS,LSR->lmL 
-            # tme = datetime.datetime.now() - tme 
-            # print('mv2      ',tme)
+            if not self.contraction is None:
+            #tme = datetime.datetime.now()
+                w = self.contraction(self.Phi_left, self.coreA, self.Phi_right, x, self.J)
+            #tme = datetime.datetime.now() - tme 
+            #print('optimized      ',tme)
             
+            #tme = datetime.datetime.now()
+            else:
+                x = self.apply_prec(x)
+                w = tn.tensordot(x,self.Phi_left,([0],[2])) # shape rnR,lsr->nRls
+                w = tn.tensordot(w,self.coreA,([0,3],[2,0])) # nRls,smnS->RlmS
+                w = tn.tensordot(w,self.Phi_right,([0,3],[2,1])) # RlmS,LSR->lmL 
+            #tme = datetime.datetime.now() - tme 
+            #print('custom      ',tme)
+             
             
         else:
             raise Exception('Preconditioner '+str(self.prec)+' not defined.')
@@ -231,6 +241,7 @@ def _amen_solve_python(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_
     else:
         x = x0
     
+    
     # kkt = torchttcpp.amen_solve(A.cores, b.cores, x.cores, b.N, A.R, b.R, x.R, nswp, eps, rmax, max_full, kickrank, kick2, local_iterations, resets, verbose, 0)
     rA = A.R
     N = b.N
@@ -260,6 +271,10 @@ def _amen_solve_python(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_
     normb = np.ones((d-1))
     normx = np.ones((d-1))
     nrmsc = 1.0
+    
+    if verbose:
+        print('Starting AMEn solve with:\n\tepsilon: %g\n\tsweeps: %d\n\tlocal iterations: %d\n\tresets: %d\n\tpreconditioner: %s'%(eps, nswp, local_iterations, resets, str(preconditioner)))
+        print()
 
     for swp in range(nswp):
         # right to left orthogonalization

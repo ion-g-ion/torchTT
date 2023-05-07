@@ -104,6 +104,12 @@ class _LinearOp():
             # J = oe.contract(&#39;dmnS,SD-&gt;dDmn&#39;,Jl,Jr)
             J = tn.einsum(&#39;dmnS,SD-&gt;dDmn&#39;,Jl,Jr)
             self.J = tn.linalg.inv(J)
+
+            if shape[0]*shape[1]*shape[2] &gt; 1e5:
+                self.contraction = oe.contract_expression(&#39;lsr,smnS,LSR,raR,rRna-&gt;lmL&#39;, Phi_left.shape, coreA.shape, Phi_right.shape, shape, self.J.shape)
+            else:
+                self.contraction = None
+                
         if prec == &#39;r&#39;:
             Jl = tn.einsum(&#39;sd,smnS-&gt;dmnS&#39;,tn.diagonal(Phi_left,0,0,2),coreA)
             J = tn.einsum(&#39;dmnS,LSR-&gt;dmLnR&#39;,Jl,Phi_right)
@@ -142,29 +148,33 @@ class _LinearOp():
             # w = self.contraction(self.Phi_left,self.coreA,self.Phi_right,x)
             # tme = datetime.datetime.now() - tme
             # # print(&#39;time 2 &#39;,tme)
-        elif self.prec == &#39;c&#39;:
+        #elif self.prec == &#39;c&#39;:
+        #    
+        #    x = tn.reshape(x,self.shape)
+        #    w = self.contraction(self.Phi_left, self.coreA, self.Phi_right, x, self.J)
+        elif self.prec == &#39;c&#39; or self.prec == &#39;r&#39;:
             # tme = datetime.datetime.now()
             x = tn.reshape(x,self.shape)
             # tme = datetime.datetime.now() - tme 
             # print(&#39;reshape  &#39;,tme)
             
-            # tme = datetime.datetime.now()
-            x = self.apply_prec(x)
-            # tme = datetime.datetime.now() - tme 
-            # print(&#39;prec     &#39;,tme)
             
-            # tme = datetime.datetime.now()
-            # w = self.contraction(self.Phi_left,self.coreA,self.Phi_right,x)
-            # tme = datetime.datetime.now() - tme 
-            # print(&#39;mv       &#39;,tme)
             
-            # tme = datetime.datetime.now()
-            w = tn.tensordot(x,self.Phi_left,([0],[2])) # shape rnR,lsr-&gt;nRls
-            w = tn.tensordot(w,self.coreA,([0,3],[2,0])) # nRls,smnS-&gt;RlmS
-            w = tn.tensordot(w,self.Phi_right,([0,3],[2,1])) # RlmS,LSR-&gt;lmL 
-            # tme = datetime.datetime.now() - tme 
-            # print(&#39;mv2      &#39;,tme)
+            if not self.contraction is None:
+            #tme = datetime.datetime.now()
+                w = self.contraction(self.Phi_left, self.coreA, self.Phi_right, x, self.J)
+            #tme = datetime.datetime.now() - tme 
+            #print(&#39;optimized      &#39;,tme)
             
+            #tme = datetime.datetime.now()
+            else:
+                x = self.apply_prec(x)
+                w = tn.tensordot(x,self.Phi_left,([0],[2])) # shape rnR,lsr-&gt;nRls
+                w = tn.tensordot(w,self.coreA,([0,3],[2,0])) # nRls,smnS-&gt;RlmS
+                w = tn.tensordot(w,self.Phi_right,([0,3],[2,1])) # RlmS,LSR-&gt;lmL 
+            #tme = datetime.datetime.now() - tme 
+            #print(&#39;custom      &#39;,tme)
+             
             
         else:
             raise Exception(&#39;Preconditioner &#39;+str(self.prec)+&#39; not defined.&#39;)
@@ -209,6 +219,7 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 5
 
     Raises:
         InvalidArguments: A and b must be TT instances.
+        InvalidArguments: Invalid preconditioner.
         IncompatibleTypes: A must be TT-matrix and b must be vector.
         ShapeMismatch: A is not quadratic.
         ShapeMismatch: Dimension mismatch.
@@ -233,7 +244,15 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 5
         else:
             x_cores = x0.cores 
             x_R = x0.R
-        cores = torchttcpp.amen_solve(A.cores, b.cores, x_cores, b.N, A.R, b.R, x_R, nswp, eps, rmax, max_full, kickrank, kick2, local_iterations, resets, verbose, 0 if preconditioner == None else 1)
+        if preconditioner == None:
+            prec = 0
+        elif preconditioner == &#39;c&#39;:
+            prec = 1
+        elif preconditioner == &#39;r&#39;:
+            prec = 2
+        else:
+            raise InvalidArguments(&#34;Invalid preconditioner.&#34;)
+        cores = torchttcpp.amen_solve(A.cores, b.cores, x_cores, b.N, A.R, b.R, x_R, nswp, eps, rmax, max_full, kickrank, kick2, local_iterations, resets, verbose, prec)
         return torchtt.TT(list(cores))
     else:
         return _amen_solve_python(A, b, nswp, x0, eps,rmax, max_full, kickrank, kick2, trunc_norm, local_solver, local_iterations, resets, verbose, preconditioner)
@@ -251,6 +270,7 @@ def _amen_solve_python(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_
         x = torchtt.ones(b.N, dtype = dtype, device = device)
     else:
         x = x0
+    
     
     # kkt = torchttcpp.amen_solve(A.cores, b.cores, x.cores, b.N, A.R, b.R, x.R, nswp, eps, rmax, max_full, kickrank, kick2, local_iterations, resets, verbose, 0)
     rA = A.R
@@ -281,6 +301,10 @@ def _amen_solve_python(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_
     normb = np.ones((d-1))
     normx = np.ones((d-1))
     nrmsc = 1.0
+    
+    if verbose:
+        print(&#39;Starting AMEn solve with:\n\tepsilon: %g\n\tsweeps: %d\n\tlocal iterations: %d\n\tresets: %d\n\tpreconditioner: %s&#39;%(eps, nswp, local_iterations, resets, str(preconditioner)))
+        print()
 
     for swp in range(nswp):
         # right to left orthogonalization
@@ -701,6 +725,8 @@ print((xx-x).norm()/x.norm()) # error
 <dl>
 <dt><code>InvalidArguments</code></dt>
 <dd>A and b must be TT instances.</dd>
+<dt><code>InvalidArguments</code></dt>
+<dd>Invalid preconditioner.</dd>
 <dt><code>IncompatibleTypes</code></dt>
 <dd>A must be TT-matrix and b must be vector.</dd>
 <dt><code>ShapeMismatch</code></dt>
@@ -753,6 +779,7 @@ print((xx-x).norm()/x.norm()) # error
 
     Raises:
         InvalidArguments: A and b must be TT instances.
+        InvalidArguments: Invalid preconditioner.
         IncompatibleTypes: A must be TT-matrix and b must be vector.
         ShapeMismatch: A is not quadratic.
         ShapeMismatch: Dimension mismatch.
@@ -777,7 +804,15 @@ print((xx-x).norm()/x.norm()) # error
         else:
             x_cores = x0.cores 
             x_R = x0.R
-        cores = torchttcpp.amen_solve(A.cores, b.cores, x_cores, b.N, A.R, b.R, x_R, nswp, eps, rmax, max_full, kickrank, kick2, local_iterations, resets, verbose, 0 if preconditioner == None else 1)
+        if preconditioner == None:
+            prec = 0
+        elif preconditioner == &#39;c&#39;:
+            prec = 1
+        elif preconditioner == &#39;r&#39;:
+            prec = 2
+        else:
+            raise InvalidArguments(&#34;Invalid preconditioner.&#34;)
+        cores = torchttcpp.amen_solve(A.cores, b.cores, x_cores, b.N, A.R, b.R, x_R, nswp, eps, rmax, max_full, kickrank, kick2, local_iterations, resets, verbose, prec)
         return torchtt.TT(list(cores))
     else:
         return _amen_solve_python(A, b, nswp, x0, eps,rmax, max_full, kickrank, kick2, trunc_norm, local_solver, local_iterations, resets, verbose, preconditioner)</code></pre>

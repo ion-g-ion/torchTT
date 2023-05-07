@@ -58,7 +58,7 @@ for i in range(d-1):
    
 # Solve the system 
 time = datetime.datetime.now()
-x = tntt.solvers.amen_solve(L_tt, b_tt ,x0 = b_tt, nswp = 20, eps = 1e-7, verbose = True, preconditioner=None, use_cpp = True)
+x = tntt.solvers.amen_solve(L_tt, b_tt ,x0 = b_tt, nswp = 20, eps = 1e-7, verbose = True, preconditioner='c', use_cpp = True)
 time = datetime.datetime.now() - time
 print('Relative residual: ',(L_tt@x-b_tt).norm()/b_tt.norm())
 print('Solver time: ',time)
