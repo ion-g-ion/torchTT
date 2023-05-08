@@ -31,14 +31,14 @@ print('Relative error of the solution  ',(xs-x).norm()/x.norm())
 # We now solve the problem $\Delta u = 1$ in $[0,1]^d$ with $ u = 0 $ on the entire boundary using finite differences.
 # First, set the size of the problem (n is the mode size and d is the number of dimensions):
 dtype = tn.float64 
-n =  256
+n =  64
 d = 8
 
 # Create the finite differences matrix corresponding to the problem. The operator is constructed directly in the TT format as it follows
 L1d = -2*tn.eye(n, dtype = dtype)+tn.diag(tn.ones(n-1,dtype = dtype),-1)+tn.diag(tn.ones(n-1,dtype = dtype),1)
 L1d[0,1] = 0
 L1d[-1,-2] = 0
-L1d /= (n-1)
+L1d *= (n-1)**2
 L1d = tntt.TT(L1d, [(n,n)])
 
 L_tt = tntt.zeros([(n,n)]*d)
@@ -49,8 +49,8 @@ L_tt = L_tt.round(1e-14)
 
 # The right hand site of the finite difference system is also computed in the TT format
 b1d = tn.ones(n, dtype=dtype)
-b1d[0] = 0
-b1d[-1] = 0
+#b1d[0] = 0
+#b1d[-1] = 0
 b1d = tntt.TT(b1d)
 b_tt = b1d
 for i in range(d-1):
@@ -58,18 +58,21 @@ for i in range(d-1):
    
 # Solve the system 
 time = datetime.datetime.now()
-x = tntt.solvers.amen_solve(L_tt, b_tt ,x0 = b_tt, nswp = 20, eps = 1e-8, verbose = True, preconditioner=None)
+x = tntt.solvers.amen_solve(L_tt, b_tt ,x0 = b_tt, nswp = 20, eps = 1e-7, verbose = True, preconditioner='c', use_cpp = True)
 time = datetime.datetime.now() - time
 print('Relative residual: ',(L_tt@x-b_tt).norm()/b_tt.norm())
 print('Solver time: ',time)
 
 # Display the structure of the TT
 print(x)
+# input()
+import sys
+sys.exit()
 
 #%% Try one more time on the GPU (if available).
 if tn.cuda.is_available():
     time = datetime.datetime.now()
-    x = tntt.solvers.amen_solve(L_tt.cuda(), b_tt.cuda() ,x0 = b_tt.cuda(), nswp = 20, eps = 1e-8, verbose = True, preconditioner=None)
+    x = tntt.solvers.amen_solve(L_tt.cuda(), b_tt.cuda() ,x0 = b_tt.cuda(), nswp = 20, eps = 1e-8, verbose = True, preconditioner='c')
     time = datetime.datetime.now() - time
     x = x.cpu()
     print('Relative residual: ',(L_tt@x-b_tt).norm()/b_tt.norm())

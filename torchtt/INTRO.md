@@ -1,0 +1,34 @@
+  
+ What is the Tensor-Train format?
+-----------------
+
+ The Tensor-Train (TT) format is a low-rank tensor decomposition format used to fight the curse of dimensionality. A d-dimensional tensor \(\mathsf{x} \in \mathbb{R} ^{n_1 \times n_2 \times \cdots \times n_d}\) can be expressed using algebraic operations between d smaller tensors:
+
+ $$ \mathsf{x}_{i_1i_2...i_d} = \sum\limits_{s_0=1}^{r_0} \sum\limits_{s_1=1}^{r_1} \cdots \sum\limits_{s_{d-1}=1}^{r_{d-1}} \sum\limits_{s_d=1}^{r_d} \mathsf{g}^{(1)}_{s_0 i_1 s_1} \cdots \mathsf{g}^{(d)}_{s_{d-1} i_d s_d}, $$
+where \(\mathbf{r} = (r_0,r_1,...,r_d), r_0 = r_d = 1\) is the TT rank and  \(\mathsf{g}^{(k)} \in \mathbb{R}^{r_{k-1} \times n_k \times r_k}\) are the TT cores.
+The storage complexity is \(\mathcal{O}(nr^2d)\) instead of \(\mathcal{O}(n^d)\) if the rank remains bounded. Tensor operators \(\mathsf{A} \in \mathbb{R} ^{(m_1 \times m_2 \times \cdots \times m_d) \times (n_1 \times n_2 \times \cdots \times n_d)}\) can be similarly expressed in the TT format as:
+
+ $$ \mathsf{A}_{i_1i_2...i_d,j_1j_2...j_d} = \sum\limits_{s_0=1}^{r_0} \sum\limits_{s_1=1}^{r_1} \cdots \sum\limits_{s_{d-1}=1}^{r_{d-1}} \sum\limits_{s_d=1}^{r_d} \mathsf{h}^{(1)}_{s_0 i_1 j_1 s_1} \cdots \mathsf{h}^{(d)}_{s_{d-1} i_d j_d s_d}, \\ j_k = 1,...,m_k, \: i_k=1,...,n_k, \; \; k=1,...,d.$$
+ Tensor operators (also called tensor matrices in this library) generalize the concept of matrix-vector product to the multilinear case.
+
+About the package
+-----------------
+
+The class `torchtt.TT` is used to create tensors in the TT format. Passing a `torch.Tensor` to the constructor computes a TT decomposition. The accuracy `eps` can be provided as an additional argument. In order to recover the original tensor (also called full tensor), the `torchtt.TT.full()` method can be used. Tensors can be further compressed using the `torchtt.TT.round()` method.
+
+Once in the TT format, linear algebra operations can be performed between compressed tensors without going to the full format. The implemented operations are:
+ 
+ * Sum and difference between TT objects. Two `torchtt.TT` instances can be summed using the `+` operator. The difference can be implemented using the `-` operator.
+ * Elementwise product (also called Hadamard product is performed using) the `*` operator. The same operator also implements the scalar multiplication.
+ * The operator `@` implements the generalization of the matrix product. It can also be used between a tensor operator and a tensor.
+ * The operator `/` implements the elementwise division of two TT objects. The algorithm is AMEn.
+ * The operator `**` implements the Kronecker product.
+
+The package also includes more features such as solving multilinear systems, cross approximation and automatic differentiation (with the possibility to define TT layers for neural networks`torchtt.TT.full()). 
+
+Utilities
+-----------------
+
+ * Example scripts (and ipy notebooks) can be found in the [examples/](https://github.com/ion-g-ion/torchTT/tree/main/examples) folder.
+ * Tests can be found in the [tests/](https://github.com/ion-g-ion/torchTT/tree/main/tests) folder.
+

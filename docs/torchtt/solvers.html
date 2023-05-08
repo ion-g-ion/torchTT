@@ -42,6 +42,23 @@ from torchtt._iterative_solvers import BiCGSTAB_reset, gmres_restart
 import opt_einsum as oe
 from .errors import *
 
+try:
+    import torchttcpp 
+    _flag_use_cpp = True
+except:
+    import warnings
+    warnings.warn(&#34;\x1B[33m\nC++ implementation not available. Using pure Python.\n\033[0m&#34;)
+    _flag_use_cpp = False
+
+def cpp_enabled():
+    &#34;&#34;&#34;
+    Is the C++ backend enabled?
+
+    Returns:
+        bool: the flag
+    &#34;&#34;&#34;
+    return _flag_use_cpp
+
 def _local_product(Phi_right, Phi_left, coreA, core, shape):
     &#34;&#34;&#34;
     Compute local matvec product
@@ -87,12 +104,28 @@ class _LinearOp():
             # J = oe.contract(&#39;dmnS,SD-&gt;dDmn&#39;,Jl,Jr)
             J = tn.einsum(&#39;dmnS,SD-&gt;dDmn&#39;,Jl,Jr)
             self.J = tn.linalg.inv(J)
+
+            if shape[0]*shape[1]*shape[2] &gt; 1e5:
+                self.contraction = oe.contract_expression(&#39;lsr,smnS,LSR,raR,rRna-&gt;lmL&#39;, Phi_left.shape, coreA.shape, Phi_right.shape, shape, self.J.shape)
+            else:
+                self.contraction = None
+                
+        if prec == &#39;r&#39;:
+            Jl = tn.einsum(&#39;sd,smnS-&gt;dmnS&#39;,tn.diagonal(Phi_left,0,0,2),coreA)
+            J = tn.einsum(&#39;dmnS,LSR-&gt;dmLnR&#39;,Jl,Phi_right)
+            sh = J.shape
+            J = tn.reshape(J, [-1,J.shape[1]*J.shape[2], J.shape[3]*J.shape[4]])
+            self.J = tn.reshape(tn.linalg.inv(J), sh)
+            
         # tme = datetime.datetime.now() - tme 
         # print(&#39;contr   &#39;,tme)
     def apply_prec(self,x):
         
         if self.prec == &#39;c&#39;:
             y = tn.einsum(&#39;rnR,rRmn-&gt;rmR&#39;,x,self.J) # no improvement using opt_einsum
+            return y
+        elif self.prec == &#39;r&#39;:
+            y = tn.einsum(&#39;rnR,rmLnR-&gt;rmL&#39;, x, self.J)
             return y
         
     def matvec(self, x, apply_prec = True):
@@ -115,35 +148,42 @@ class _LinearOp():
             # w = self.contraction(self.Phi_left,self.coreA,self.Phi_right,x)
             # tme = datetime.datetime.now() - tme
             # # print(&#39;time 2 &#39;,tme)
-        elif self.prec == &#39;c&#39;:
+        #elif self.prec == &#39;c&#39;:
+        #    
+        #    x = tn.reshape(x,self.shape)
+        #    w = self.contraction(self.Phi_left, self.coreA, self.Phi_right, x, self.J)
+        elif self.prec == &#39;c&#39; or self.prec == &#39;r&#39;:
             # tme = datetime.datetime.now()
             x = tn.reshape(x,self.shape)
             # tme = datetime.datetime.now() - tme 
             # print(&#39;reshape  &#39;,tme)
             
-            # tme = datetime.datetime.now()
-            x = self.apply_prec(x)
-            # tme = datetime.datetime.now() - tme 
-            # print(&#39;prec     &#39;,tme)
             
-            # tme = datetime.datetime.now()
-            # w = self.contraction(self.Phi_left,self.coreA,self.Phi_right,x)
-            # tme = datetime.datetime.now() - tme 
-            # print(&#39;mv       &#39;,tme)
             
-            # tme = datetime.datetime.now()
-            w = tn.tensordot(x,self.Phi_left,([0],[2])) # shape rnR,lsr-&gt;nRls
-            w = tn.tensordot(w,self.coreA,([0,3],[2,0])) # nRls,smnS-&gt;RlmS
-            w = tn.tensordot(w,self.Phi_right,([0,3],[2,1])) # RlmS,LSR-&gt;lmL 
-            # tme = datetime.datetime.now() - tme 
-            # print(&#39;mv2      &#39;,tme)
+            if not self.contraction is None:
+            #tme = datetime.datetime.now()
+                w = self.contraction(self.Phi_left, self.coreA, self.Phi_right, x, self.J)
+            #tme = datetime.datetime.now() - tme 
+            #print(&#39;optimized      &#39;,tme)
             
+            #tme = datetime.datetime.now()
+            else:
+                x = self.apply_prec(x)
+                w = tn.tensordot(x,self.Phi_left,([0],[2])) # shape rnR,lsr-&gt;nRls
+                w = tn.tensordot(w,self.coreA,([0,3],[2,0])) # nRls,smnS-&gt;RlmS
+                w = tn.tensordot(w,self.Phi_right,([0,3],[2,1])) # RlmS,LSR-&gt;lmL 
+            #tme = datetime.datetime.now() - tme 
+            #print(&#39;custom      &#39;,tme)
+             
             
         else:
             raise Exception(&#39;Preconditioner &#39;+str(self.prec)+&#39; not defined.&#39;)
         return tn.reshape(w,[-1,1])
 
-def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100000, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = &#39;res&#39;, local_solver = 1, local_iterations = 40, resets = 2, verbose = False, preconditioner = None):
+
+
+
+def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 32768, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = &#39;res&#39;, local_solver = 1, local_iterations = 40, resets = 2, verbose = False, preconditioner = None, use_cpp = True):
     &#34;&#34;&#34;
     Solve a multilinear system \(\\mathsf{Ax} = \\mathsf{b}\) in the Tensor Train format.
     
@@ -175,9 +215,11 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100000, max_full =
         resets (int, optional): number of resets in the GMRES. Defaults to 2.
         verbose (bool, optional): choose whether to display or not additional information during the runtime. Defaults to True.
         preconditioner (string, optional): Choose the preconditioner for the local system. Possible values are None, &#39;c&#39; (central Jacobi preconditioner). No preconditioner is used if None is provided. Defaults to None.
+        use_cpp (bool, optional): use the C++ implementation of AMEn. Defaults to True.
 
     Raises:
         InvalidArguments: A and b must be TT instances.
+        InvalidArguments: Invalid preconditioner.
         IncompatibleTypes: A must be TT-matrix and b must be vector.
         ShapeMismatch: A is not quadratic.
         ShapeMismatch: Dimension mismatch.
@@ -195,6 +237,28 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100000, max_full =
     if A.N != b.N:
         raise ShapeMismatch(&#39;Dimension mismatch.&#39;)
 
+    if use_cpp and _flag_use_cpp:
+        if x0 == None:
+            x_cores = []
+            x_R = [1]*(1+len(A.N))
+        else:
+            x_cores = x0.cores 
+            x_R = x0.R
+        if preconditioner == None:
+            prec = 0
+        elif preconditioner == &#39;c&#39;:
+            prec = 1
+        elif preconditioner == &#39;r&#39;:
+            prec = 2
+        else:
+            raise InvalidArguments(&#34;Invalid preconditioner.&#34;)
+        cores = torchttcpp.amen_solve(A.cores, b.cores, x_cores, b.N, A.R, b.R, x_R, nswp, eps, rmax, max_full, kickrank, kick2, local_iterations, resets, verbose, prec)
+        return torchtt.TT(list(cores))
+    else:
+        return _amen_solve_python(A, b, nswp, x0, eps,rmax, max_full, kickrank, kick2, trunc_norm, local_solver, local_iterations, resets, verbose, preconditioner)
+
+
+def _amen_solve_python(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = &#39;res&#39;, local_solver = 1, local_iterations = 40, resets = 2, verbose = False, preconditioner = None):
     if verbose: time_total = datetime.datetime.now()
     
     dtype = A.cores[0].dtype 
@@ -207,6 +271,8 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100000, max_full =
     else:
         x = x0
     
+    
+    # kkt = torchttcpp.amen_solve(A.cores, b.cores, x.cores, b.N, A.R, b.R, x.R, nswp, eps, rmax, max_full, kickrank, kick2, local_iterations, resets, verbose, 0)
     rA = A.R
     N = b.N
     d = len(N)
@@ -235,14 +301,17 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100000, max_full =
     normb = np.ones((d-1))
     normx = np.ones((d-1))
     nrmsc = 1.0
+    
+    if verbose:
+        print(&#39;Starting AMEn solve with:\n\tepsilon: %g\n\tsweeps: %d\n\tlocal iterations: %d\n\tresets: %d\n\tpreconditioner: %s&#39;%(eps, nswp, local_iterations, resets, str(preconditioner)))
+        print()
 
     for swp in range(nswp):
-        tme_sweep = datetime.datetime.now()
         # right to left orthogonalization
 
         if verbose:
             print()
-            print(&#39;Starting sweep %d %s...&#39;%(swp,&#34;(last one) &#34; if last else &#34;&#34;))
+            print(&#39;Starting sweep %d %s...&#39;%(swp+1,&#34;(last one) &#34; if last else &#34;&#34;))
             tme_sweep = datetime.datetime.now() 
         
 
@@ -333,7 +402,6 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100000, max_full =
                 # solve the full system
                 if verbose: print(&#39;\t\tChoosing direct solver (local size %d)....&#39;%(rx[k]*N[k]*rx[k+1]))  
                 Bp = tn.einsum(&#39;smnS,LSR-&gt;smnRL&#39;,A.cores[k],Phis[k+1]) # shape is Rp x N x N x r x r
-                #B = tn.einsum(&#39;lsr,smnRL-&gt;rmRlnL&#39;,Phis[k],Bp)
                 B = tn.einsum(&#39;lsr,smnRL-&gt;lmLrnR&#39;,Phis[k],Bp) 
                 B = tn.reshape(B,[rx[k]*N[k]*rx[k+1],rx[k]*N[k]*rx[k+1]])
 
@@ -390,7 +458,6 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100000, max_full =
             # truncation
             if k&lt;d-1:
                 u, s, v = SVD(solution_now)
-                # print(&#39;\t\tTruncation of solution of shape&#39;,[rx[k]*N[k],rx[k+1]],&#39; into u&#39;, u.shape, &#39; and v &#39;,v.shape)
                 if trunc_norm == &#39;fro&#39;:
                     pass
                 else:
@@ -425,10 +492,6 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100000, max_full =
                 czA = _local_product(Phiz[k+1], Phiz[k], A.cores[k], tn.reshape(u@v.t(),[rx[k],N[k],rx[k+1]]), [rx[k],N[k],rx[k+1]]) # shape rzp x N x rz
                 czy = tn.einsum(&#39;br,bnB,BR-&gt;rnR&#39;,Phiz_b[k],b.cores[k]*nrmsc,Phiz_b[k+1]) # shape is rzp x N x rz
                 cz_new = czy - czA
-                # print(&#39;Phiz_b&#39;,[plm.shape for plm in Phiz_b])
-                # print(&#39;czA&#39;,czA.shape,&#39; czy&#39;,czy.shape)
-                # print(&#39;rz&#39;,rz)
-                # print(&#39;rx&#39;,rx)
 
                 uz,_,_ = SVD(tn.reshape(cz_new, [rz[k]*N[k],rz[k+1]]))
                 cz_new = uz[:,:min(kickrank,uz.shape[1])] # truncate to kickrank
@@ -444,21 +507,12 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100000, max_full =
                     left_res = _local_product(Phiz[k+1],Phis[k],A.cores[k],tn.reshape(u@v.t(),[rx[k],N[k],rx[k+1]]),[rx[k],N[k],rx[k+1]])
                     left_b = tn.einsum(&#39;br,bmB,BR-&gt;rmR&#39;,Phis_b[k],b.cores[k]*nrmsc,Phiz_b[k+1])
                     uk = left_b - left_res # rx_k x N_k x rz_k+1
-                    # print(&#39;u&#39;,u.shape,&#39; uk&#39;,uk.shape)
-                    # print(&#39;rx&#39;,rx,&#39;rz&#39;,rz)
-                    # print(Phis_b[k].shape,Phiz_b[k+1].shape, left_res.shape)
-                    # uk = tn.reshape(uk,[-1,rz[k+1]])
                     u, Rmat = QR(tn.cat((u,tn.reshape(uk,[u.shape[0],-1])),1))
-                    # print(&#39;Q&#39;,u.shape,&#39; R&#39;, Rmat.shape)
                     r_add = uk.shape[2]
-                    # print(&#39;v before&#39;,v.shape,&#39; solution shape &#39;,solution_now.shape)
-                    # print(&#39;adding &#39;,[rx[k+1],r_add])
                     v = tn.cat((v,tn.zeros([rx[k+1],r_add],  dtype = dtype, device = device)), 1)
-                    # print(&#39;v after &#39;,v.shape)
                     v = v @ Rmat.t()
                  
                 r = u.shape[1]
-                # print(u.shape,v.shape,x_cores[k+1].shape)
                 v = tn.einsum(&#39;ji,jkl-&gt;ikl&#39;,v,x_cores[k+1])
                 # remove norm correction
                 nrmsc = nrmsc * normA[k] * normx[k] / normb[k]  
@@ -516,7 +570,7 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100000, max_full =
     if verbose:
         time_total = datetime.datetime.now() - time_total
         print()
-        print(&#39;Finished after&#39; ,swp,&#39; sweeps and &#39;,time_total)
+        print(&#39;Finished after&#39; ,swp+1,&#39; sweeps and &#39;,time_total)
         print()
     normx = np.exp(np.sum(np.log(normx))/d)
 
@@ -547,6 +601,7 @@ def _compute_phi_bck_A(Phi_now,core_left,core_A,core_right):
     # Phipp = tn.einsum(&#39;ijkl,abjk-&gt;ilba&#39;,Phip,core_A)
     # Phi = tn.einsum(&#39;ijkl,akj-&gt;ila&#39;,Phipp,core_left)
     Phi = oe.contract(&#39;LSR,lML,sMNS,rNR-&gt;lsr&#39;,Phi_now,core_left,core_A,core_right)
+    # print(oe.contract_path(&#39;LSR,lML,sMNS,rNR-&gt;lsr&#39;,Phi_now,core_left,core_A,core_right))
     return Phi
 
 def _compute_phi_fwd_A(Phi_now, core_left, core_A, core_right):
@@ -570,6 +625,7 @@ def _compute_phi_fwd_A(Phi_now, core_left, core_A, core_right):
     # tme1 = datetime.datetime.now() - tme1 
     # tme2 = datetime.datetime.now()
     Phi_next = oe.contract(&#39;lsr,lML,sMNS,rNR-&gt;LSR&#39;,Phi_now,core_left,core_A,core_right)
+    # print(oe.contract_path(&#39;lsr,lML,sMNS,rNR-&gt;LSR&#39;,Phi_now,core_left,core_A,core_right))
     # tme2 = datetime.datetime.now() - tme2 
     # print(&#39;\n&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;Time1 &#39;,tme1,&#39; time 2&#39;, tme2) 
     return Phi_next
@@ -617,7 +673,7 @@ def _compute_phi_fwd_rhs(Phi_now,core_rhs,core):
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="torchtt.solvers.amen_solve"><code class="name flex">
-<span>def <span class="ident">amen_solve</span></span>(<span>A, b, nswp=22, x0=None, eps=1e-10, rmax=100000, max_full=500, kickrank=4, kick2=0, trunc_norm='res', local_solver=1, local_iterations=40, resets=2, verbose=False, preconditioner=None)</span>
+<span>def <span class="ident">amen_solve</span></span>(<span>A, b, nswp=22, x0=None, eps=1e-10, rmax=32768, max_full=500, kickrank=4, kick2=0, trunc_norm='res', local_solver=1, local_iterations=40, resets=2, verbose=False, preconditioner=None, use_cpp=True)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Solve a multilinear system <span><span class="MathJax_Preview">\mathsf{Ax} = \mathsf{b}</span><script type="math/tex">\mathsf{Ax} = \mathsf{b}</script></span> in the Tensor Train format.</p>
@@ -662,11 +718,15 @@ print((xx-x).norm()/x.norm()) # error
 <dd>choose whether to display or not additional information during the runtime. Defaults to True.</dd>
 <dt><strong><code>preconditioner</code></strong> :&ensp;<code>string</code>, optional</dt>
 <dd>Choose the preconditioner for the local system. Possible values are None, 'c' (central Jacobi preconditioner). No preconditioner is used if None is provided. Defaults to None.</dd>
+<dt><strong><code>use_cpp</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>use the C++ implementation of AMEn. Defaults to True.</dd>
 </dl>
 <h2 id="raises">Raises</h2>
 <dl>
 <dt><code>InvalidArguments</code></dt>
 <dd>A and b must be TT instances.</dd>
+<dt><code>InvalidArguments</code></dt>
+<dd>Invalid preconditioner.</dd>
 <dt><code>IncompatibleTypes</code></dt>
 <dd>A must be TT-matrix and b must be vector.</dd>
 <dt><code>ShapeMismatch</code></dt>
@@ -683,7 +743,7 @@ print((xx-x).norm()/x.norm()) # error
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 100000, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = &#39;res&#39;, local_solver = 1, local_iterations = 40, resets = 2, verbose = False, preconditioner = None):
+<pre><code class="python">def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 32768, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = &#39;res&#39;, local_solver = 1, local_iterations = 40, resets = 2, verbose = False, preconditioner = None, use_cpp = True):
     &#34;&#34;&#34;
     Solve a multilinear system \(\\mathsf{Ax} = \\mathsf{b}\) in the Tensor Train format.
     
@@ -715,9 +775,11 @@ print((xx-x).norm()/x.norm()) # error
         resets (int, optional): number of resets in the GMRES. Defaults to 2.
         verbose (bool, optional): choose whether to display or not additional information during the runtime. Defaults to True.
         preconditioner (string, optional): Choose the preconditioner for the local system. Possible values are None, &#39;c&#39; (central Jacobi preconditioner). No preconditioner is used if None is provided. Defaults to None.
+        use_cpp (bool, optional): use the C++ implementation of AMEn. Defaults to True.
 
     Raises:
         InvalidArguments: A and b must be TT instances.
+        InvalidArguments: Invalid preconditioner.
         IncompatibleTypes: A must be TT-matrix and b must be vector.
         ShapeMismatch: A is not quadratic.
         ShapeMismatch: Dimension mismatch.
@@ -735,337 +797,49 @@ print((xx-x).norm()/x.norm()) # error
     if A.N != b.N:
         raise ShapeMismatch(&#39;Dimension mismatch.&#39;)
 
-    if verbose: time_total = datetime.datetime.now()
-    
-    dtype = A.cores[0].dtype 
-    device = A.cores[0].device
-    rank_search = 1 # binary rank search
-    damp = 2
-
-    if x0 == None:
-        x = torchtt.ones(b.N, dtype = dtype, device = device)
+    if use_cpp and _flag_use_cpp:
+        if x0 == None:
+            x_cores = []
+            x_R = [1]*(1+len(A.N))
+        else:
+            x_cores = x0.cores 
+            x_R = x0.R
+        if preconditioner == None:
+            prec = 0
+        elif preconditioner == &#39;c&#39;:
+            prec = 1
+        elif preconditioner == &#39;r&#39;:
+            prec = 2
+        else:
+            raise InvalidArguments(&#34;Invalid preconditioner.&#34;)
+        cores = torchttcpp.amen_solve(A.cores, b.cores, x_cores, b.N, A.R, b.R, x_R, nswp, eps, rmax, max_full, kickrank, kick2, local_iterations, resets, verbose, prec)
+        return torchtt.TT(list(cores))
     else:
-        x = x0
-    
-    rA = A.R
-    N = b.N
-    d = len(N)
-    x_cores = x.cores.copy()
-    rx = x.R.copy()
-    # check if rmax is a list
-    if isinstance(rmax, int):
-        rmax = [1] + (d-1) * [rmax] + [1]
+        return _amen_solve_python(A, b, nswp, x0, eps,rmax, max_full, kickrank, kick2, trunc_norm, local_solver, local_iterations, resets, verbose, preconditioner)</code></pre>
+</details>
+</dd>
+<dt id="torchtt.solvers.cpp_enabled"><code class="name flex">
+<span>def <span class="ident">cpp_enabled</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Is the C++ backend enabled?</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>bool</code></dt>
+<dd>the flag</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cpp_enabled():
+    &#34;&#34;&#34;
+    Is the C++ backend enabled?
 
-    # z cores
-    rz = [1]+(d-1)*[kickrank+kick2]+[1]
-    z_tt = torchtt.random(N,rz,dtype,device = device)
-    z_cores = z_tt.cores
-    z_cores, rz = rl_orthogonal(z_cores, rz, False)
-    
-    norms = np.zeros(d)
-    Phiz = [tn.ones((1,1,1), dtype = dtype, device = device)] + [None] * (d-1) + [tn.ones((1,1,1), dtype = dtype, device = device)] # size is rzk x Rk x rxk
-    Phiz_b = [tn.ones((1,1), dtype = dtype, device = device)] + [None] * (d-1) + [tn.ones((1,1), dtype = dtype, device = device)]   # size is rzk x rzbk
-    
-    Phis = [tn.ones((1,1,1), dtype = dtype, device = device)] + [None] * (d-1) + [tn.ones((1,1,1), dtype = dtype, device = device)] # size is rk x Rk x rk
-    Phis_b = [tn.ones((1,1), dtype = dtype, device = device)] + [None] * (d-1) + [tn.ones((1,1), dtype = dtype, device = device)] # size is rk x rbk
-
-    last = False
-
-    normA = np.ones((d-1))
-    normb = np.ones((d-1))
-    normx = np.ones((d-1))
-    nrmsc = 1.0
-
-    for swp in range(nswp):
-        tme_sweep = datetime.datetime.now()
-        # right to left orthogonalization
-
-        if verbose:
-            print()
-            print(&#39;Starting sweep %d %s...&#39;%(swp,&#34;(last one) &#34; if last else &#34;&#34;))
-            tme_sweep = datetime.datetime.now() 
-        
-
-        tme = datetime.datetime.now()
-        for k in range(d-1,0,-1):
-            
-            # update the z part (ALS) update
-            if not last:
-                if swp &gt; 0:
-                    czA = _local_product(Phiz[k+1],Phiz[k],A.cores[k],x_cores[k],x_cores[k].shape) # shape rzp x N x rz
-                    czy = tn.einsum(&#39;br,bnB,BR-&gt;rnR&#39;,Phiz_b[k],b.cores[k],Phiz_b[k+1]) # shape is rzp x N x rz
-                    cz_new = czy*nrmsc - czA
-                    _,_,vz = SVD(tn.reshape(cz_new,[cz_new.shape[0],-1]))
-                    cz_new = vz[:min(kickrank,vz.shape[0]),:].t() # truncate to kickrank
-                    if k &lt; d-1: # extend cz_new with random elements
-                        cz_new = tn.cat((cz_new,tn.randn((cz_new.shape[0],kick2),  dtype = dtype, device = device)),1)
-                else:
-                    cz_new = tn.reshape(z_cores[k],[rz[k],-1]).t()
-
-                qz, _ = QR(cz_new)
-                rz[k] = qz.shape[1]
-                z_cores[k] = tn.reshape(qz.t(),[rz[k],N[k],rz[k+1]]) 
-            
-            # norm correction ?
-            if swp &gt; 0: nrmsc = nrmsc * normA[k-1] * normx[k-1] / normb[k-1] 
-        
-            
-            core = tn.reshape(x_cores[k],[rx[k],N[k]*rx[k+1]]).t()
-            Qmat, Rmat = QR(core)
-            
-            core_prev = tn.einsum(&#39;ijk,km-&gt;ijm&#39;,x_cores[k-1],Rmat.T)
-            rx[k] = Qmat.shape[1]
-            
-            current_norm = tn.linalg.norm(core_prev)
-            if current_norm&gt;0:
-                core_prev = core_prev /  current_norm
-            else:
-                current_norm = 1.0
-            normx[k-1] = normx[k-1]*current_norm
-             
-            x_cores[k] = tn.reshape(Qmat.t(),[rx[k],N[k],rx[k+1]]) 
-            x_cores[k-1] = core_prev[:]
-            
-            # update phis (einsum)
-            # print(x_cores[k].shape,A.cores[k].shape,x_cores[k].shape)
-            Phis[k] = _compute_phi_bck_A(Phis[k+1],x_cores[k],A.cores[k],x_cores[k])
-            Phis_b[k] = _compute_phi_bck_rhs(Phis_b[k+1],b.cores[k],x_cores[k])
-            
-            # ... and norms 
-            norm = tn.linalg.norm(Phis[k])
-            norm = norm if norm&gt;0 else 1.0
-            normA[k-1] = norm 
-            Phis[k] =  Phis[k] / norm
-            norm = tn.linalg.norm(Phis_b[k])
-            norm = norm if norm&gt;0 else 1.0
-            normb[k-1] = norm 
-            Phis_b[k] = Phis_b[k]/norm
-            
-            # norm correction
-            nrmsc = nrmsc * normb[k-1]/ (normA[k-1] * normx[k-1])      
-
-            # compute phis_z
-            if not last:
-                Phiz[k] = _compute_phi_bck_A(Phiz[k+1], z_cores[k], A.cores[k], x_cores[k]) / normA[k-1]
-                Phiz_b[k] = _compute_phi_bck_rhs(Phiz_b[k+1], b.cores[k], z_cores[k]) / normb[k-1]
-
-
-        # start loop
-        max_res = 0
-        max_dx = 0
-
-        for k in range(d):
-            if verbose: print(&#39;\tCore&#39;,k) 
-            previous_solution = tn.reshape(x_cores[k],[-1,1])
-            
-        
-            # assemble rhs 
-            rhs = tn.einsum(&#39;br,bmB,BR-&gt;rmR&#39;,Phis_b[k] , b.cores[k] * nrmsc, Phis_b[k+1])
-            rhs = tn.reshape(rhs,[-1,1])
-            norm_rhs = tn.linalg.norm(rhs)
-            
-            #residuals
-            real_tol = (eps/np.sqrt(d))/damp
-        
-            # solve the local system
-            use_full = rx[k]*N[k]*rx[k+1] &lt; max_full
-            if use_full: 
-                # solve the full system
-                if verbose: print(&#39;\t\tChoosing direct solver (local size %d)....&#39;%(rx[k]*N[k]*rx[k+1]))  
-                Bp = tn.einsum(&#39;smnS,LSR-&gt;smnRL&#39;,A.cores[k],Phis[k+1]) # shape is Rp x N x N x r x r
-                #B = tn.einsum(&#39;lsr,smnRL-&gt;rmRlnL&#39;,Phis[k],Bp)
-                B = tn.einsum(&#39;lsr,smnRL-&gt;lmLrnR&#39;,Phis[k],Bp) 
-                B = tn.reshape(B,[rx[k]*N[k]*rx[k+1],rx[k]*N[k]*rx[k+1]])
-
-                solution_now = tn.linalg.solve(B,rhs)   
-                
-                res_old = tn.linalg.norm(B@previous_solution-rhs)/norm_rhs
-                res_new = tn.linalg.norm(B@solution_now-rhs)/norm_rhs
-            else:
-                # iterative solver
-                if verbose: 
-                    print(&#39;\t\tChoosing iterative solver %s (local size %d)....&#39;%(&#39;GMRES&#39; if local_solver==1 else &#39;BiCGSTAB_reset&#39;, rx[k]*N[k]*rx[k+1])) 
-                    time_local = datetime.datetime.now()
-                shape_now = [rx[k],N[k],rx[k+1]]
-                Op = _LinearOp(Phis[k],Phis[k+1],A.cores[k],shape_now, preconditioner)
-                
-                # solution_now, flag, nit, res_new = BiCGSTAB_reset(Op, rhs,previous_solution[:], eps_local, local_iterations) 
-                eps_local = real_tol * norm_rhs
-                drhs = Op.matvec(previous_solution, False)
-                drhs = rhs-drhs
-                eps_local = eps_local / tn.linalg.norm(drhs)
-                if local_solver == 1: 
-                    solution_now, flag, nit = gmres_restart(Op, drhs, previous_solution*0, rhs.shape[0], local_iterations+1, eps_local, resets)
-                elif local_solver == 2:
-                    solution_now, flag, nit, _ = BiCGSTAB_reset(Op, drhs, previous_solution*0, eps_local, local_iterations)
-                else:
-                    raise InvalidArguments(&#39;Solver not implemented.&#39;)
-                    
-                
-                if preconditioner != None:
-                    solution_now = Op.apply_prec(tn.reshape(solution_now,shape_now))
-                    solution_now = tn.reshape(solution_now,[-1,1])
-                
-                solution_now = previous_solution + solution_now
-                res_old = tn.linalg.norm(Op.matvec(previous_solution, False)-rhs)/norm_rhs
-                res_new = tn.linalg.norm(Op.matvec(solution_now, False)-rhs)/norm_rhs
-                if verbose:
-                    print(&#39;\t\tFinished with flag %d after %d iterations with relres %g (from %g)&#39;%(flag,nit,res_new,eps_local)) 
-                    time_local = datetime.datetime.now() - time_local
-                    print(&#39;\t\tTime needed &#39;,time_local)
-            # residual damp check
-            if res_old/res_new &lt; damp and res_new &gt; real_tol:
-                if verbose: print(&#39;WARNING: residual increases. res_old %g, res_new %g, real_tol %g&#39;%(res_old,res_new,real_tol)) # warning (from tt toolbox)
-
-            # compute residual and step size
-            dx = tn.linalg.norm(solution_now-previous_solution)/tn.linalg.norm(solution_now)
-            if verbose: 
-                print(&#39;\t\tdx = %g, res_now = %g, res_old = %g&#39;%(dx,res_new,res_old))
-                
-
-            max_dx = max(dx,max_dx)
-            max_res = max(max_res,res_old)
-            
-            solution_now = tn.reshape(solution_now,[rx[k]*N[k],rx[k+1]])
-            # truncation
-            if k&lt;d-1:
-                u, s, v = SVD(solution_now)
-                # print(&#39;\t\tTruncation of solution of shape&#39;,[rx[k]*N[k],rx[k+1]],&#39; into u&#39;, u.shape, &#39; and v &#39;,v.shape)
-                if trunc_norm == &#39;fro&#39;:
-                    pass
-                else:
-                    # search for a rank such that offeres small enough residuum
-                    # TODO: binary search?
-                    r = 0
-                    for r in range(u.shape[1]-1,0,-1):
-                        solution = u[:,:r] @ tn.diag(s[:r]) @ v[:r,:] # solution has the same size
-                        # res = tn.linalg.norm(tn.reshape(local_product(Phis[k+1],Phis[k],A.cores[k],tn.reshape(solution,[rx[k],N[k],rx[k+1]]),solution_now.shape),[-1,1]) - rhs)/norm_rhs
-                        
-                        if use_full:
-                            res = tn.linalg.norm(B@tn.reshape(solution,[-1,1])-rhs)/norm_rhs
-                        else:
-                            # res = tn.linalg.norm(tn.reshape(local_product(Phis[k+1],Phis[k],A.cores[k],tn.reshape(solution,[rx[k],N[k],rx[k+1]]),solution_now.shape),[-1,1]) - rhs)/norm_rhs
-                            res = tn.linalg.norm(Op.matvec(solution)-rhs)/norm_rhs
-                        if res &gt; max(real_tol*damp,res_new):
-                            break
-                    r += 1
-
-                    r = min([r,tn.numel(s),rmax[k+1]])
-            else:
-                u, v = QR(solution_now)
-                # v = v.t()
-                r = u.shape[1]
-                s = tn.ones(r,  dtype = dtype, device = device)
-
-            u = u[:,:r]
-            v = tn.diag(s[:r]) @ v[:r,:]
-            v = v.t()
-
-            if not last:
-                czA = _local_product(Phiz[k+1], Phiz[k], A.cores[k], tn.reshape(u@v.t(),[rx[k],N[k],rx[k+1]]), [rx[k],N[k],rx[k+1]]) # shape rzp x N x rz
-                czy = tn.einsum(&#39;br,bnB,BR-&gt;rnR&#39;,Phiz_b[k],b.cores[k]*nrmsc,Phiz_b[k+1]) # shape is rzp x N x rz
-                cz_new = czy - czA
-                # print(&#39;Phiz_b&#39;,[plm.shape for plm in Phiz_b])
-                # print(&#39;czA&#39;,czA.shape,&#39; czy&#39;,czy.shape)
-                # print(&#39;rz&#39;,rz)
-                # print(&#39;rx&#39;,rx)
-
-                uz,_,_ = SVD(tn.reshape(cz_new, [rz[k]*N[k],rz[k+1]]))
-                cz_new = uz[:,:min(kickrank,uz.shape[1])] # truncate to kickrank
-                if k &lt; d-1: # extend cz_new with random elements
-                    cz_new = tn.cat((cz_new,tn.randn((cz_new.shape[0],kick2),  dtype = dtype, device = device)),1)
-                
-                qz,_ = QR(cz_new)
-                rz[k+1] = qz.shape[1]
-                z_cores[k] = tn.reshape(qz,[rz[k],N[k],rz[k+1]])
-
-            if k &lt; d-1:
-                if not last:
-                    left_res = _local_product(Phiz[k+1],Phis[k],A.cores[k],tn.reshape(u@v.t(),[rx[k],N[k],rx[k+1]]),[rx[k],N[k],rx[k+1]])
-                    left_b = tn.einsum(&#39;br,bmB,BR-&gt;rmR&#39;,Phis_b[k],b.cores[k]*nrmsc,Phiz_b[k+1])
-                    uk = left_b - left_res # rx_k x N_k x rz_k+1
-                    # print(&#39;u&#39;,u.shape,&#39; uk&#39;,uk.shape)
-                    # print(&#39;rx&#39;,rx,&#39;rz&#39;,rz)
-                    # print(Phis_b[k].shape,Phiz_b[k+1].shape, left_res.shape)
-                    # uk = tn.reshape(uk,[-1,rz[k+1]])
-                    u, Rmat = QR(tn.cat((u,tn.reshape(uk,[u.shape[0],-1])),1))
-                    # print(&#39;Q&#39;,u.shape,&#39; R&#39;, Rmat.shape)
-                    r_add = uk.shape[2]
-                    # print(&#39;v before&#39;,v.shape,&#39; solution shape &#39;,solution_now.shape)
-                    # print(&#39;adding &#39;,[rx[k+1],r_add])
-                    v = tn.cat((v,tn.zeros([rx[k+1],r_add],  dtype = dtype, device = device)), 1)
-                    # print(&#39;v after &#39;,v.shape)
-                    v = v @ Rmat.t()
-                 
-                r = u.shape[1]
-                # print(u.shape,v.shape,x_cores[k+1].shape)
-                v = tn.einsum(&#39;ji,jkl-&gt;ikl&#39;,v,x_cores[k+1])
-                # remove norm correction
-                nrmsc = nrmsc * normA[k] * normx[k] / normb[k]  
-
-                norm_now = tn.linalg.norm(v)
-
-                if norm_now&gt;0:
-                    v = v / norm_now
-                else:
-                    norm_now = 1.0
-                normx[k] = normx[k] * norm_now
-
-                x_cores[k] = tn.reshape(u, [rx[k],N[k],r])
-                x_cores[k+1] = tn.reshape(v, [r,N[k+1],rx[k+2]])
-                rx[k+1] = r
-
-                # next phis with norm correction
-                Phis[k+1] = _compute_phi_fwd_A(Phis[k], x_cores[k], A.cores[k], x_cores[k]) 
-                Phis_b[k+1] = _compute_phi_fwd_rhs(Phis_b[k], b.cores[k],x_cores[k])
-                
-                # ... and norms 
-                norm = tn.linalg.norm(Phis[k+1])
-                norm = norm if norm&gt;0 else 1.0
-                normA[k] = norm 
-                Phis[k+1] = Phis[k+1] / norm
-                norm = tn.linalg.norm(Phis_b[k+1])
-                norm = norm if norm&gt;0 else 1.0
-                normb[k] = norm 
-                Phis_b[k+1] = Phis_b[k+1] / norm
-                
-                # norm correction
-                nrmsc = nrmsc * normb[k] / ( normA[k] * normx[k] )
-
-
-                # next phiz
-                if not last:
-                    Phiz[k+1] = _compute_phi_fwd_A(Phiz[k], z_cores[k], A.cores[k], x_cores[k]) / normA[k]
-                    Phiz_b[k+1] = _compute_phi_fwd_rhs(Phiz_b[k], b.cores[k],z_cores[k]) / normb[k]
-            else:
-                x_cores[k] = tn.reshape(u@tn.diag(s[:r]) @ v[:r,:].t(),[rx[k],N[k],rx[k+1]])
-
-        if verbose:
-            print(&#39;Solution rank is&#39;,rx)
-            print(&#39;Maxres &#39;,max_res)
-            tme_sweep = datetime.datetime.now()-tme_sweep
-            print(&#39;Time &#39;,tme_sweep)
-              
-                
-        if last:
-            break
-
-        if max_res &lt; eps:
-            last = True
-
-    if verbose:
-        time_total = datetime.datetime.now() - time_total
-        print()
-        print(&#39;Finished after&#39; ,swp,&#39; sweeps and &#39;,time_total)
-        print()
-    normx = np.exp(np.sum(np.log(normx))/d)
-
-    for k in range(d):
-        x_cores[k] = x_cores[k] * normx
-
-    x = torchtt.TT(x_cores)
-
-    return x</code></pre>
+    Returns:
+        bool: the flag
+    &#34;&#34;&#34;
+    return _flag_use_cpp</code></pre>
 </details>
 </dd>
 </dl>
@@ -1087,6 +861,7 @@ print((xx-x).norm()/x.norm()) # error
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
 <li><code><a title="torchtt.solvers.amen_solve" href="#torchtt.solvers.amen_solve">amen_solve</a></code></li>
+<li><code><a title="torchtt.solvers.cpp_enabled" href="#torchtt.solvers.cpp_enabled">cpp_enabled</a></code></li>
 </ul>
 </li>
 </ul>
