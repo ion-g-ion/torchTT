@@ -26,9 +26,10 @@ jobs:
       # ADJUST THIS: install all dependencies (including pdoc)
       - run: pip install torch
       - run: pip install -e .
+      - run: pip install pdoc
       # ADJUST THIS: build your documentation into docs/.
       # We use a custom build script for pdoc itself, ideally you just run `pdoc -o docs/ ...` here.
-      - run: pdoc3 --html torchtt -o docs/ --config latex_math=True --force   
+      - run: pdoc --html torchtt -o docs/ --config latex_math=True --force   
 
       - uses: actions/upload-pages-artifact@v1
         with:
