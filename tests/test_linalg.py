@@ -510,6 +510,36 @@ class TestLinalg(unittest.TestCase):
 
         af = tn.cat((a1.full(), a2.full(), a3.full()), 2)
         self.assertLess(tn.linalg.norm(a.full()-af)/tn.linalg.norm(af), 1e-14, "torchtt.cat() failed.")
+    
+    def test_pad(self):
+        """
+        Test the tensor padding in TT.
+        """
+        
+        A = tntt.randn((5,6,7,8),(1,2,3,4,1))
+
+        Ap = tntt.pad(A, ((1,2),(1,4),(3,5),(2,1)), value = 1/2)
+
+
+        self.assertLess(tn.linalg.norm(A.full()-Ap.full()[1:6,1:7,3:10,2:10])/Ap.norm(), 1e-15, "torchtt.pad() fail 1.")
+        self.assertLess(abs(tn.mean(Ap.full()[6:,7:,10:,10:])-1/2), 1e-15, "torchtt.pad() fail 2.")
+        self.assertLess(abs(tn.mean(Ap.full()[:1,:1,:3,:2])-1/2), 1e-15, "torchtt.pad() fail 3.")
+        
+        # TTM case
+        
+        M = tntt.randn(((3,2),(4,4),(5,2)),(1,3,2,1))
+        Mp = tntt.pad(M, ((1,2),(1,4),(3,5)), value = 1/2)
+
+        err = tn.linalg.norm(M.full() - Mp.full()[1:4,1:5,3:8,1:3,1:5,3:5])
+        self.assertLess(err/M.norm(), 1e-15, "torchtt.pad() TTM fail 1.")
+
+        n = 3
+        err = tn.linalg.norm(tn.reshape(Mp.full()[:1,:1,:3,:1,:1,:3],[n,n]) - 1/2*tn.eye(n))
+        self.assertLess(err/n, 1e-15, "torchtt.pad() TTM fail 2.")
+
+        n = 40
+        err = tn.linalg.norm(tn.reshape(Mp.full()[4:, 5:, 8:, 3:, 5:, 5:],[n,n])-tn.eye(n)/2)
+        self.assertLess(err/n, 1e-15, "torchtt.pad() TTM fail 3.")
 
 if __name__ == '__main__':
     unittest.main()

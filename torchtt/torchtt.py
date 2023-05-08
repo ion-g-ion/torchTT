@@ -2243,9 +2243,9 @@ def cat(tensors, dim = 0):
         import torch 
 
 
-        a1 = torchtt.randn((3,4,2,6,7), [1,2,
-        a2 = torchtt.randn((3,4,8,6,7), [1,3,
-        a3 = torchtt.randn((3,4,15,6,7), [1,3
+        a1 = torchtt.randn((3,4,2,6,7), [1,2,3,4,2,1])
+        a2 = torchtt.randn((3,4,8,6,7), [1,3,1,7,5,1])
+        a3 = torchtt.randn((3,4,15,6,7), [1,3,10,2,4,1])
 
         a = torchtt.cat((a1,a2,a3),2)
 
@@ -2320,3 +2320,44 @@ def cat(tensors, dim = 0):
         #    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
         #    cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(other.cores[i],pad2))
     return TT(cores)
+
+def pad(tensor, padding, value = 0.0):
+    """
+    Pad a tensor in the TT format.
+    The `padding` argument is a tuple of tuples `((b1, a1), (b2, a2), ... , (bd, ad))`. 
+    Each dimension is padded with `bk` at the beginning and `ak` at the end. The padding value is constant and is given as the argument `value`. 
+    In case of a TT operator, duiagual padding is performed. On the diagonal, the provided `value` is inserted.
+
+    Args:
+        tensor (TT): the tensor to be padded.
+        padding (tuple(tuple(int))): the paddings.
+        value (float, optional): the value to pad. Defaults to 0.0.
+
+    Raises:
+        InvalidArguments: The number of paddings should not exceed the number of dimensions of the tensor.
+
+    Returns:
+        TT: the result.
+    """
+    if(len(padding) > len(tensor.N)):
+        raise InvalidArguments("The number of paddings should not exceed the number of dimensions of the tensor.")
+    
+    
+    if tensor.is_ttm:
+        cores = [c.clone() for c in tensor.cores]
+        for pad,k in zip(reversed(padding),reversed(range(len(tensor.N)))):
+            cores[k] = tnf.pad(cores[k],(1 if k < len(tensor.N)-1 else 0,1 if k < len(tensor.N)-1 else 0,pad[0],pad[1],pad[0],pad[1],1 if k>0 else 0,1 if k>0 else 0),value = 0)
+            cores[k][0,:pad[0],:pad[0],0] = value*tn.eye(pad[0], device = cores[k].device, dtype = cores[k].dtype)
+            cores[k][-1,(pad[0]+tensor.M[k]):,(pad[0]+tensor.N[k]):,-1] = value*tn.eye(pad[1], device = cores[k].device, dtype = cores[k].dtype)
+            value = 1
+    else:
+        rprod = np.prod(tensor.R)
+        value = value/rprod 
+
+        cores = [c.clone() for c in tensor.cores]
+        for pad,k in zip(reversed(padding),reversed(range(len(tensor.N)))):
+            cores[k] = tnf.pad(cores[k],(0,0,pad[0],pad[1],0,0),value = value)
+            value = 1
+            
+    return TT(cores)
+            
