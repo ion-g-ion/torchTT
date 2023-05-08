@@ -32,7 +32,8 @@ It also has linear solvers in TT and cross approximation as well as automatic di
 where <span><span class="MathJax_Preview">\mathbf{r} = (r_0,r_1,...,r_d), r_0 = r_d = 1</span><script type="math/tex">\mathbf{r} = (r_0,r_1,...,r_d), r_0 = r_d = 1</script></span> is the TT rank and
 <span><span class="MathJax_Preview">\mathsf{g}^{(k)} \in \mathbb{R}^{r_{k-1} \times n_k \times r_k}</span><script type="math/tex">\mathsf{g}^{(k)} \in \mathbb{R}^{r_{k-1} \times n_k \times r_k}</script></span> are the TT cores.
 The storage complexity is <span><span class="MathJax_Preview">\mathcal{O}(nr^2d)</span><script type="math/tex">\mathcal{O}(nr^2d)</script></span> instead of <span><span class="MathJax_Preview">\mathcal{O}(n^d)</span><script type="math/tex">\mathcal{O}(n^d)</script></span> if the rank remains bounded. Tensor operators <span><span class="MathJax_Preview">\mathsf{A} \in \mathbb{R} ^{(m_1 \times m_2 \times \cdots \times m_d) \times (n_1 \times n_2 \times \cdots \times n_d)}</span><script type="math/tex">\mathsf{A} \in \mathbb{R} ^{(m_1 \times m_2 \times \cdots \times m_d) \times (n_1 \times n_2 \times \cdots \times n_d)}</script></span> can be similarly expressed in the TT format as:</p>
-<p><span><span class="MathJax_Preview"> \mathsf{A}_{i_1i_2...i_d,j_1j_2...j_d} = \sum\limits_{s_0=1}^{r_0} \sum\limits_{s_1=1}^{r_1} \cdots \sum\limits_{s_{d-1}=1}^{r_{d-1}} \sum\limits_{s_d=1}^{r_d} \mathsf{h}^{(1)}_{s_0 i_1 j_1 s_1} \cdots \mathsf{h}^{(d)}_{s_{d-1} i_d j_d s_d}, \\ j_k = 1,...,m_k, \: i_k=1,...,n_k, \; \; k=1,...,d.</span><script type="math/tex; mode=display"> \mathsf{A}_{i_1i_2...i_d,j_1j_2...j_d} = \sum\limits_{s_0=1}^{r_0} \sum\limits_{s_1=1}^{r_1} \cdots \sum\limits_{s_{d-1}=1}^{r_{d-1}} \sum\limits_{s_d=1}^{r_d} \mathsf{h}^{(1)}_{s_0 i_1 j_1 s_1} \cdots \mathsf{h}^{(d)}_{s_{d-1} i_d j_d s_d}, \\ j_k = 1,...,m_k, \: i_k=1,...,n_k, \; \; k=1,...,d.</script></span></p>
+<p><span><span class="MathJax_Preview"> \mathsf{A}_{i_1i_2...i_d,j_1j_2...j_d} = \sum\limits_{s_0=1}^{r_0} \sum\limits_{s_1=1}^{r_1} \cdots \sum\limits_{s_{d-1}=1}^{r_{d-1}} \sum\limits_{s_d=1}^{r_d} \mathsf{h}^{(1)}_{s_0 i_1 j_1 s_1} \cdots \mathsf{h}^{(d)}_{s_{d-1} i_d j_d s_d}, \\ j_k = 1,...,m_k, \: i_k=1,...,n_k, \; \; k=1,...,d.</span><script type="math/tex; mode=display"> \mathsf{A}_{i_1i_2...i_d,j_1j_2...j_d} = \sum\limits_{s_0=1}^{r_0} \sum\limits_{s_1=1}^{r_1} \cdots \sum\limits_{s_{d-1}=1}^{r_{d-1}} \sum\limits_{s_d=1}^{r_d} \mathsf{h}^{(1)}_{s_0 i_1 j_1 s_1} \cdots \mathsf{h}^{(d)}_{s_{d-1} i_d j_d s_d}, \\ j_k = 1,...,m_k, \: i_k=1,...,n_k, \; \; k=1,...,d.</script></span>
+Tensor operators (also called tensor matrices in this library) generalize the concept of matrix-vector product to the multilinear case.</p>
 <h2 id="about-the-package">About The Package</h2>
 <p>The class <code><a title="torchtt.torchtt.TT" href="torchtt.html#torchtt.torchtt.TT">TT</a></code> is used to create tensors in the TT format. Passing a <code>torch.Tensor</code> to the constructor computes a TT decomposition. The accuracy <code>eps</code> can be provided as an additional argument. In order to recover the original tensor (also called full tensor), the <code><a title="torchtt.torchtt.TT.full" href="torchtt.html#torchtt.torchtt.TT.full">TT.full()</a></code> method can be used. Tensors can be further compressed using the <code><a title="torchtt.torchtt.TT.round" href="torchtt.html#torchtt.torchtt.TT.round">TT.round()</a></code> method.</p>
 <p>Once in the TT format, linear algebra operations can be performed between compressed tensors without going to the full format. The implemented operations are:</p>
@@ -63,7 +64,7 @@ It also has linear solvers in TT and cross approximation as well as automatic di
 
 &#34;&#34;&#34;
 
-from .torchtt import TT, eye, zeros, kron, ones, random, randn, reshape, meshgrid , dot, elementwise_divide, numel, rank1TT, bilinear_form, diag, permute, load, save 
+from .torchtt import TT, eye, zeros, kron, ones, random, randn, reshape, meshgrid , dot, elementwise_divide, numel, rank1TT, bilinear_form, diag, permute, load, save, cat 
 from . import solvers
 from . import grad
 # from .grad import grad, watch, unwatch
@@ -103,7 +104,8 @@ from . import nn
 <dt><code class="name"><a title="torchtt.torchtt" href="torchtt.html">torchtt.torchtt</a></code></dt>
 <dd>
 <div class="desc"><p>Basic class for TT decomposition.
-It contains the base TT class as well as additional functions.</p></div>
+It contains the base TT class as well as additional functions.
+The TT class implements tensors in the TT format as …</p></div>
 </dd>
 </dl>
 </section>

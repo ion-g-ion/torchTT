@@ -2233,25 +2233,89 @@ def load(path):
     return TT(dct['cores'])
 
 def cat(tensors, dim = 0):
+    """
+    Concatenate tensors in the TT format along a given dimension `dim`. Only works for TT tensors and not TT matrices.
     
+    Examples:
+        ```
+        import torchtt 
+        import torch 
+
+
+        a1 = torchtt.randn((3,4,2,6,7), [1,2,
+        a2 = torchtt.randn((3,4,8,6,7), [1,3,
+        a3 = torchtt.randn((3,4,15,6,7), [1,3
+
+        a = torchtt.cat((a1,a2,a3),2)
+
+        af = torch.cat((a1.full(), a2.full(),
+        print(torch.linalg.norm(a.full()-af))
+        ```
+        
+    Args:
+        tensors (tuple[TT]): the tensors to be concatenated. Their mode sizes must match for all modex except the concatenating dimension.
+        dim (int, optional): The dimension to be concatenated after. Defaults to 0.
+
+    Raises:
+        InvalidArguments: Not implemented for tensor matrices.
+        InvalidArguments: The mode sizes must be the same on the nonconcatenated dimensions for all the provided tensors.
+        InvalidArguments: The tensors must have the same number of dimensions.
+
+    Returns:
+        torchtt.TT: the result.
+    """
 
     if(len(tensors) == 0):
         return None 
-    
-    for i in range(1, len(tensors)):
-        if(tensors[i].N[:dim] != tensors[0].N[:dim] and tensors[i].N[(dim+1):] != tensors[0].N[(dim+1):]):
-            raise InvalidArguments("The mode sizes must be the same on the nonconcatenated dimensions for all the provided tensors.")
-    
-    cores = []
-    if tensors.is_ttm:
+
+    if tensors[0].is_ttm:
         raise InvalidArguments("Not implemented for tensor matrices.")
+    Rs = [tensors[0].R] 
+
+    for i in range(1, len(tensors)):
+        if tensors[i].is_ttm:
+            raise InvalidArguments("Not implemented for tensor matrices.")
+        if tensors[i].N[:dim] != tensors[0].N[:dim] and tensors[i].N[(dim+1):] != tensors[0].N[(dim+1):]:
+            raise InvalidArguments("The mode sizes must be the same on the nonconcatenated dimensions for all the provided tensors.")
+        if len(tensors[i].N) != len(tensors[0].N):
+            raise InvalidArguments("The tensors must have the same number of dimensions.")
+        Rs.append(tensors[i].R)
+    
+
+    cores = []
+    
+    
+    if tensors[0].is_ttm:
+        pass
     else:
-        r1s = []
-        r2s = []
-        #for i in range(len())
+        
+        r_sum = [1]
+        for i in range(1,len(tensors[0].N)):
+            r_sum.append(sum([Rs[k][i] for k in range(len(tensors))]))
+        r_sum.append(1)
+        for i in range(len(tensors[0].N)):
+            if i == dim:
+                n = sum([t.N[dim] for t in tensors])
+                cores.append(tn.zeros((r_sum[i], n, r_sum[i+1]), device = tensors[0].cores[0].device, dtype = tensors[0].cores[0].dtype))
+            else:
+                cores.append(tn.zeros((r_sum[i], tensors[0].N[i], r_sum[i+1]), device = tensors[0].cores[0].device, dtype = tensors[0].cores[0].dtype))
+                
+            offset1 = 0
+            offset2 = 0
+            offset3 = 0
+            
+            for t in tensors:
+                if i==dim:
+                    cores[i][offset1:(offset1+t.cores[i].shape[0]),offset2:(offset2+t.cores[i].shape[1]),offset3:(offset3+t.cores[i].shape[2])] = t.cores[i]
+                    if i>0: offset1 += t.cores[i].shape[0]
+                    offset2 += t.cores[i].shape[1]
+                    if i<len(tensors[0].N)-1: offset3 += t.cores[i].shape[2]
+                else:
+                    cores[i][offset1:(offset1+t.cores[i].shape[0]),:,offset3:(offset3+t.cores[i].shape[2])] = t.cores[i]
+                    if i>0: offset1 += t.cores[i].shape[0]
+                    if i<len(tensors[0].N)-1: offset3 += t.cores[i].shape[2]
         #for i in range(len(self.__N)):
         #    pad1 = (0,0 if i == len(self.__N)-1 else other.R[i+1] , 0,0 , 0,0 if i==0 else other.R[i])
         #    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
         #    cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(other.cores[i],pad2))
-        
     return TT(cores)

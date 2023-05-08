@@ -6,7 +6,8 @@
 <meta name="generator" content="pdoc 0.10.0" />
 <title>torchtt.torchtt API documentation</title>
 <meta name="description" content="Basic class for TT decomposition.
-It contains the base TT class as well as additional functions." />
+It contains the base TT class as well as additional functions.
+The TT class implements tensors in the TT format as …" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
 <link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
@@ -25,7 +26,8 @@ It contains the base TT class as well as additional functions." />
 </header>
 <section id="section-intro">
 <p>Basic class for TT decomposition.
-It contains the base TT class as well as additional functions.</p>
+It contains the base TT class as well as additional functions.
+The TT class implements tensors in the TT format as well as tensors operators in TT format. Once in the TT format, linear algebra operations (<code>+</code>, <code>-</code>, <code>*</code>, <code>@</code>, <code>/</code>) can be performed without resorting to the full format. The format and the operations is similat to the one implemented in <code>torch</code>.</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -33,7 +35,7 @@ It contains the base TT class as well as additional functions.</p>
 <pre><code class="python">&#34;&#34;&#34;
 Basic class for TT decomposition.
 It contains the base TT class as well as additional functions.
-
+The TT class implements tensors in the TT format as well as tensors operators in TT format. Once in the TT format, linear algebra operations (`+`, `-`, `*`, `@`, `/`) can be performed without resorting to the full format. The format and the operations is similat to the one implemented in `torch`.
 &#34;&#34;&#34;
 
 import torch as tn
@@ -2263,7 +2265,94 @@ def load(path):
     dct = tn.load(path)
     
     return TT(dct[&#39;cores&#39;])
-    </code></pre>
+
+def cat(tensors, dim = 0):
+    &#34;&#34;&#34;
+    Concatenate tensors in the TT format along a given dimension `dim`. Only works for TT tensors and not TT matrices.
+    
+    Examples:
+        ```
+        import torchtt 
+        import torch 
+
+
+        a1 = torchtt.randn((3,4,2,6,7), [1,2,
+        a2 = torchtt.randn((3,4,8,6,7), [1,3,
+        a3 = torchtt.randn((3,4,15,6,7), [1,3
+
+        a = torchtt.cat((a1,a2,a3),2)
+
+        af = torch.cat((a1.full(), a2.full(),
+        print(torch.linalg.norm(a.full()-af))
+        ```
+        
+    Args:
+        tensors (tuple[TT]): the tensors to be concatenated. Their mode sizes must match for all modex except the concatenating dimension.
+        dim (int, optional): The dimension to be concatenated after. Defaults to 0.
+
+    Raises:
+        InvalidArguments: Not implemented for tensor matrices.
+        InvalidArguments: The mode sizes must be the same on the nonconcatenated dimensions for all the provided tensors.
+        InvalidArguments: The tensors must have the same number of dimensions.
+
+    Returns:
+        torchtt.TT: the result.
+    &#34;&#34;&#34;
+
+    if(len(tensors) == 0):
+        return None 
+
+    if tensors[0].is_ttm:
+        raise InvalidArguments(&#34;Not implemented for tensor matrices.&#34;)
+    Rs = [tensors[0].R] 
+
+    for i in range(1, len(tensors)):
+        if tensors[i].is_ttm:
+            raise InvalidArguments(&#34;Not implemented for tensor matrices.&#34;)
+        if tensors[i].N[:dim] != tensors[0].N[:dim] and tensors[i].N[(dim+1):] != tensors[0].N[(dim+1):]:
+            raise InvalidArguments(&#34;The mode sizes must be the same on the nonconcatenated dimensions for all the provided tensors.&#34;)
+        if len(tensors[i].N) != len(tensors[0].N):
+            raise InvalidArguments(&#34;The tensors must have the same number of dimensions.&#34;)
+        Rs.append(tensors[i].R)
+    
+
+    cores = []
+    
+    
+    if tensors[0].is_ttm:
+        pass
+    else:
+        
+        r_sum = [1]
+        for i in range(1,len(tensors[0].N)):
+            r_sum.append(sum([Rs[k][i] for k in range(len(tensors))]))
+        r_sum.append(1)
+        for i in range(len(tensors[0].N)):
+            if i == dim:
+                n = sum([t.N[dim] for t in tensors])
+                cores.append(tn.zeros((r_sum[i], n, r_sum[i+1]), device = tensors[0].cores[0].device, dtype = tensors[0].cores[0].dtype))
+            else:
+                cores.append(tn.zeros((r_sum[i], tensors[0].N[i], r_sum[i+1]), device = tensors[0].cores[0].device, dtype = tensors[0].cores[0].dtype))
+                
+            offset1 = 0
+            offset2 = 0
+            offset3 = 0
+            
+            for t in tensors:
+                if i==dim:
+                    cores[i][offset1:(offset1+t.cores[i].shape[0]),offset2:(offset2+t.cores[i].shape[1]),offset3:(offset3+t.cores[i].shape[2])] = t.cores[i]
+                    if i&gt;0: offset1 += t.cores[i].shape[0]
+                    offset2 += t.cores[i].shape[1]
+                    if i&lt;len(tensors[0].N)-1: offset3 += t.cores[i].shape[2]
+                else:
+                    cores[i][offset1:(offset1+t.cores[i].shape[0]),:,offset3:(offset3+t.cores[i].shape[2])] = t.cores[i]
+                    if i&gt;0: offset1 += t.cores[i].shape[0]
+                    if i&lt;len(tensors[0].N)-1: offset3 += t.cores[i].shape[2]
+        #for i in range(len(self.__N)):
+        #    pad1 = (0,0 if i == len(self.__N)-1 else other.R[i+1] , 0,0 , 0,0 if i==0 else other.R[i])
+        #    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
+        #    cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(other.cores[i],pad2))
+    return TT(cores)</code></pre>
 </details>
 </section>
 <section>
@@ -2397,6 +2486,139 @@ the shape must be a list of int and the vector has to fit the shape.</p>
         raise ShapeMismatch(&#34;Check the shapes. Required is x.N == A.M and y.N == A.N.&#34;)
     d = len(x.N)
     return bilinear_form_aux(x.cores,A.cores,y.cores,d)</code></pre>
+</details>
+</dd>
+<dt id="torchtt.torchtt.cat"><code class="name flex">
+<span>def <span class="ident">cat</span></span>(<span>tensors, dim=0)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Concatenate tensors in the TT format along a given dimension <code>dim</code>. Only works for TT tensors and not TT matrices.</p>
+<h2 id="examples">Examples</h2>
+<pre><code>import torchtt 
+import torch 
+
+
+a1 = torchtt.randn((3,4,2,6,7), [1,2,
+a2 = torchtt.randn((3,4,8,6,7), [1,3,
+a3 = torchtt.randn((3,4,15,6,7), [1,3
+
+a = torchtt.cat((a1,a2,a3),2)
+
+af = torch.cat((a1.full(), a2.full(),
+print(torch.linalg.norm(a.full()-af))
+</code></pre>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>tensors</code></strong> :&ensp;<code>tuple[<a title="torchtt.torchtt.TT" href="#torchtt.torchtt.TT">TT</a>]</code></dt>
+<dd>the tensors to be concatenated. Their mode sizes must match for all modex except the concatenating dimension.</dd>
+<dt><strong><code>dim</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>The dimension to be concatenated after. Defaults to 0.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>InvalidArguments</code></dt>
+<dd>Not implemented for tensor matrices.</dd>
+<dt><code>InvalidArguments</code></dt>
+<dd>The mode sizes must be the same on the nonconcatenated dimensions for all the provided tensors.</dd>
+<dt><code>InvalidArguments</code></dt>
+<dd>The tensors must have the same number of dimensions.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>torchtt.TT</code></dt>
+<dd>the result.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cat(tensors, dim = 0):
+    &#34;&#34;&#34;
+    Concatenate tensors in the TT format along a given dimension `dim`. Only works for TT tensors and not TT matrices.
+    
+    Examples:
+        ```
+        import torchtt 
+        import torch 
+
+
+        a1 = torchtt.randn((3,4,2,6,7), [1,2,
+        a2 = torchtt.randn((3,4,8,6,7), [1,3,
+        a3 = torchtt.randn((3,4,15,6,7), [1,3
+
+        a = torchtt.cat((a1,a2,a3),2)
+
+        af = torch.cat((a1.full(), a2.full(),
+        print(torch.linalg.norm(a.full()-af))
+        ```
+        
+    Args:
+        tensors (tuple[TT]): the tensors to be concatenated. Their mode sizes must match for all modex except the concatenating dimension.
+        dim (int, optional): The dimension to be concatenated after. Defaults to 0.
+
+    Raises:
+        InvalidArguments: Not implemented for tensor matrices.
+        InvalidArguments: The mode sizes must be the same on the nonconcatenated dimensions for all the provided tensors.
+        InvalidArguments: The tensors must have the same number of dimensions.
+
+    Returns:
+        torchtt.TT: the result.
+    &#34;&#34;&#34;
+
+    if(len(tensors) == 0):
+        return None 
+
+    if tensors[0].is_ttm:
+        raise InvalidArguments(&#34;Not implemented for tensor matrices.&#34;)
+    Rs = [tensors[0].R] 
+
+    for i in range(1, len(tensors)):
+        if tensors[i].is_ttm:
+            raise InvalidArguments(&#34;Not implemented for tensor matrices.&#34;)
+        if tensors[i].N[:dim] != tensors[0].N[:dim] and tensors[i].N[(dim+1):] != tensors[0].N[(dim+1):]:
+            raise InvalidArguments(&#34;The mode sizes must be the same on the nonconcatenated dimensions for all the provided tensors.&#34;)
+        if len(tensors[i].N) != len(tensors[0].N):
+            raise InvalidArguments(&#34;The tensors must have the same number of dimensions.&#34;)
+        Rs.append(tensors[i].R)
+    
+
+    cores = []
+    
+    
+    if tensors[0].is_ttm:
+        pass
+    else:
+        
+        r_sum = [1]
+        for i in range(1,len(tensors[0].N)):
+            r_sum.append(sum([Rs[k][i] for k in range(len(tensors))]))
+        r_sum.append(1)
+        for i in range(len(tensors[0].N)):
+            if i == dim:
+                n = sum([t.N[dim] for t in tensors])
+                cores.append(tn.zeros((r_sum[i], n, r_sum[i+1]), device = tensors[0].cores[0].device, dtype = tensors[0].cores[0].dtype))
+            else:
+                cores.append(tn.zeros((r_sum[i], tensors[0].N[i], r_sum[i+1]), device = tensors[0].cores[0].device, dtype = tensors[0].cores[0].dtype))
+                
+            offset1 = 0
+            offset2 = 0
+            offset3 = 0
+            
+            for t in tensors:
+                if i==dim:
+                    cores[i][offset1:(offset1+t.cores[i].shape[0]),offset2:(offset2+t.cores[i].shape[1]),offset3:(offset3+t.cores[i].shape[2])] = t.cores[i]
+                    if i&gt;0: offset1 += t.cores[i].shape[0]
+                    offset2 += t.cores[i].shape[1]
+                    if i&lt;len(tensors[0].N)-1: offset3 += t.cores[i].shape[2]
+                else:
+                    cores[i][offset1:(offset1+t.cores[i].shape[0]),:,offset3:(offset3+t.cores[i].shape[2])] = t.cores[i]
+                    if i&gt;0: offset1 += t.cores[i].shape[0]
+                    if i&lt;len(tensors[0].N)-1: offset3 += t.cores[i].shape[2]
+        #for i in range(len(self.__N)):
+        #    pad1 = (0,0 if i == len(self.__N)-1 else other.R[i+1] , 0,0 , 0,0 if i==0 else other.R[i])
+        #    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
+        #    cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(other.cores[i],pad2))
+    return TT(cores)</code></pre>
 </details>
 </dd>
 <dt id="torchtt.torchtt.diag"><code class="name flex">
@@ -6264,6 +6486,7 @@ N1 x &hellip; x Nd x 1 x &hellip; x 1.</p>
 <ul class="two-column">
 <li><code><a title="torchtt.torchtt.arange" href="#torchtt.torchtt.arange">arange</a></code></li>
 <li><code><a title="torchtt.torchtt.bilinear_form" href="#torchtt.torchtt.bilinear_form">bilinear_form</a></code></li>
+<li><code><a title="torchtt.torchtt.cat" href="#torchtt.torchtt.cat">cat</a></code></li>
 <li><code><a title="torchtt.torchtt.diag" href="#torchtt.torchtt.diag">diag</a></code></li>
 <li><code><a title="torchtt.torchtt.dot" href="#torchtt.torchtt.dot">dot</a></code></li>
 <li><code><a title="torchtt.torchtt.elementwise_divide" href="#torchtt.torchtt.elementwise_divide">elementwise_divide</a></code></li>

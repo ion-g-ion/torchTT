@@ -496,5 +496,20 @@ class TestLinalg(unittest.TestCase):
         self.assertLess(err_rel(x.conj().full(),tn.conj(x.full())),5e-13,"torchtt.TT.conj() failed.")
         self.assertLess(err_rel(A.conj().full(),tn.conj(A.full())),5e-13,"torchtt.TT.conj() failed fpr TT matrix.")
         
+    def test_cat(self):
+        """
+        Test the concatenation of tensors.
+        """
+        
+
+        a1 = tntt.randn((3,4,2,6,7), [1,2,3,2,4,1])
+        a2 = tntt.randn((3,4,8,6,7), [1,3,2,2,1,1])
+        a3 = tntt.randn((3,4,15,6,7), [1,3,7,7,5,1])
+
+        a = tntt.cat((a1,a2,a3),2)
+
+        af = tn.cat((a1.full(), a2.full(), a3.full()), 2)
+        self.assertLess(tn.linalg.norm(a.full()-af)/tn.linalg.norm(af), 1e-14, "torchtt.cat() failed.")
+
 if __name__ == '__main__':
     unittest.main()

@@ -9,6 +9,7 @@ where \(\mathbf{r} = (r_0,r_1,...,r_d), r_0 = r_d = 1\) is the TT rank and  \(\m
 The storage complexity is \(\mathcal{O}(nr^2d)\) instead of \(\mathcal{O}(n^d)\) if the rank remains bounded. Tensor operators \(\mathsf{A} \in \mathbb{R} ^{(m_1 \times m_2 \times \cdots \times m_d) \times (n_1 \times n_2 \times \cdots \times n_d)}\) can be similarly expressed in the TT format as:
 
  $$ \mathsf{A}_{i_1i_2...i_d,j_1j_2...j_d} = \sum\limits_{s_0=1}^{r_0} \sum\limits_{s_1=1}^{r_1} \cdots \sum\limits_{s_{d-1}=1}^{r_{d-1}} \sum\limits_{s_d=1}^{r_d} \mathsf{h}^{(1)}_{s_0 i_1 j_1 s_1} \cdots \mathsf{h}^{(d)}_{s_{d-1} i_d j_d s_d}, \\ j_k = 1,...,m_k, \: i_k=1,...,n_k, \; \; k=1,...,d.$$
+ Tensor operators (also called tensor matrices in this library) generalize the concept of matrix-vector product to the multilinear case.
 
 About the package
 -----------------

@@ -1,6 +1,15 @@
 from setuptools import setup, Extension
 import platform
 
+logo_ascii = """
+  _                 _   _____ _____ 
+ | |_ ___  _ __ ___| |_|_   _|_   _| 
+ | __/ _ \| '__/ __| '_ \| |   | |  
+ | || (_) | | | (__| | | | |   | |  
+  \__\___/|_|  \___|_| |_|_|   |_|  
+                                    
+"""
+
 try:
     from torch.utils.cpp_extension import BuildExtension, CppExtension
 except:
@@ -8,6 +17,9 @@ except:
 
 os_name = platform.system()
 
+print()
+print(logo_ascii)
+print()
 if os_name == 'Linux' or os_name == 'Darwin':
     setup(name='torchTT',
     version='2.0',
@@ -46,5 +58,6 @@ else:
     install_requires=['numpy>=1.18','torch>=1.7','opt_einsum'],
     test_suite='tests',
     zip_safe=False) 
+
 
 
