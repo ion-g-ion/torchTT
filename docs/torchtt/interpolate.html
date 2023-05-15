@@ -725,7 +725,7 @@ x = torchtt.interpolate.dmrg_cross(func, N, eps = 1e-7)
 <dd>the relative accuracy. Defaults to 1e-9.</dd>
 <dt><strong><code>nswp</code></strong> :&ensp;<code>int</code>, optional</dt>
 <dd>number of iterations. Defaults to 20.</dd>
-<dt><strong><code>x_start</code></strong> :&ensp;<code>torchtt.TT</code>, optional</dt>
+<dt><strong><code>x_start</code></strong> :&ensp;<code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code>, optional</dt>
 <dd>initial approximation of the output tensor (None coresponds to random initialization). Defaults to None.</dd>
 <dt><strong><code>kick</code></strong> :&ensp;<code>int</code>, optional</dt>
 <dd>enrichment rank. Defaults to 2.</dd>
@@ -740,7 +740,7 @@ x = torchtt.interpolate.dmrg_cross(func, N, eps = 1e-7)
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>torchtt.TT</code></dt>
+<dt><code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the result.</dd>
 </dl></div>
 <details class="source">
@@ -1052,14 +1052,14 @@ z = tntt.interpolate.function_interpolate(func, xs)
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>function</code></strong> :&ensp;<code>Callable</code></dt>
-<dd>function handle. If the argument <code>x</code> is a <code>torchtt.TT</code> instance, the the function handle has to be appliable elementwise on torch tensors.
+<dd>function handle. If the argument <code>x</code> is a <code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code> instance, the the function handle has to be appliable elementwise on torch tensors.
 If a list is passed as <code>x</code>, the function handle takes as argument a $M
 imes d$ torch.tensor and every of the $M$ lines corresponds to an evaluation of the function <span><span class="MathJax_Preview">f</span><script type="math/tex">f</script></span> at a certain tensor entry. The function handle returns a torch tensor of length M.</dd>
-<dt><strong><code>x</code></strong> :&ensp;<code>torchtt.TT</code> or <code>list[torchtt.TT]</code></dt>
+<dt><strong><code>x</code></strong> :&ensp;<code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code> or <code>list[<a title="torchtt.TT" href="index.html#torchtt.TT">TT</a>]</code></dt>
 <dd>the argument/arguments of the function.</dd>
 <dt><strong><code>eps</code></strong> :&ensp;<code>float</code>, optional</dt>
 <dd>the relative accuracy. Defaults to 1e-9.</dd>
-<dt><strong><code>start_tens</code></strong> :&ensp;<code>torchtt.TT</code>, optional</dt>
+<dt><strong><code>start_tens</code></strong> :&ensp;<code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code>, optional</dt>
 <dd>initial approximation of the output tensor (None coresponds to random initialization). Defaults to None.</dd>
 <dt><strong><code>nswp</code></strong> :&ensp;<code>int</code>, optional</dt>
 <dd>number of iterations. Defaults to 20.</dd>
@@ -1072,7 +1072,7 @@ imes d$ torch.tensor and every of the $M$ lines corresponds to an evaluation of 
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>torchtt.TT</code></dt>
+<dt><code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the result.</dd>
 </dl></div>
 <details class="source">

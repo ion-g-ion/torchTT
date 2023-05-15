@@ -138,7 +138,7 @@ def grad_list(val, tensors, all_in_one = True):
 <dl>
 <dt><strong><code>val</code></strong> :&ensp;<code>torch.tensor</code></dt>
 <dd>Scalar tensor that has to be differentiated.</dd>
-<dt><strong><code>tens</code></strong> :&ensp;<code>torchtt.TT</code></dt>
+<dt><strong><code>tens</code></strong> :&ensp;<code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>The given tensor.</dd>
 <dt><strong><code>core_indices</code></strong> :&ensp;<code>list[int]</code>, optional</dt>
 <dd>The list of cores to construct the gradient. If None is provided, all the cores are watched. Defaults to None.</dd>
@@ -192,7 +192,7 @@ Watch must be called on all of them beforehand.</p>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>list[list[torchtt.TT]]</code></dt>
+<dt><code>list[list[<a title="torchtt.TT" href="index.html#torchtt.TT">TT</a>]]</code></dt>
 <dd>the resulting derivatives.</dd>
 </dl></div>
 <details class="source">
@@ -230,7 +230,7 @@ Watch must be called on all of them beforehand.</p>
 <div class="desc"><p>Cancel the autograd graph recording.</p>
 <h2 id="args">Args</h2>
 <dl>
-<dt><strong><code>tens</code></strong> :&ensp;<code>torchtt.TT</code></dt>
+<dt><strong><code>tens</code></strong> :&ensp;<code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the tensor.</dd>
 </dl></div>
 <details class="source">
@@ -256,7 +256,7 @@ Watch must be called on all of them beforehand.</p>
 Necessary for autograd.</p>
 <h2 id="args">Args</h2>
 <dl>
-<dt><strong><code>tens</code></strong> :&ensp;<code>torchtt.TT</code></dt>
+<dt><strong><code>tens</code></strong> :&ensp;<code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the TT-object to be watched.</dd>
 <dt><strong><code>core_indices</code></strong> :&ensp;<code>list[int]</code>, optional</dt>
 <dd>The list of cores to be watched. If None is provided, all the cores are watched. Defaults to None.</dd>
@@ -290,7 +290,7 @@ Necessary for autograd.</p>
 Necessary for autograd.</p>
 <h2 id="args">Args</h2>
 <dl>
-<dt><strong><code>tensors</code></strong> :&ensp;<code>list[torchtt.TT]</code></dt>
+<dt><strong><code>tensors</code></strong> :&ensp;<code>list[<a title="torchtt.TT" href="index.html#torchtt.TT">TT</a>]</code></dt>
 <dd>the list of tensors to be wtched for autograd.</dd>
 </dl></div>
 <details class="source">

@@ -11,6 +11,7 @@ import math
 from torchtt._dmrg import dmrg_matvec
 from torchtt._aux_ops import apply_mask, dense_matvec, bilinear_form_aux
 from torchtt.errors import *
+import sys
 
 
 class TT():
@@ -64,7 +65,7 @@ class TT():
         """
         return self.__R.copy()
 
-    def __init__(self, source, shape=None, eps=1e-10, rmax=10000):
+    def __init__(self, source, shape=None, eps=1e-10, rmax=sys.maxsize):
         """
         Constructor of the TT class. Can convert full tensor in the TT-format (from `torch.tensor` or `numpy.array`).
         In the case of tensor operators of full shape `M1 x ... Md x N1 x ... x Nd`, the shape must be specified as a list of tuples `[(M1,N1),...,(Md,Nd)]`.
@@ -97,7 +98,7 @@ class TT():
             source (torch.tensor ot list[torch.tensor] or numpy.array or None): the input tensor in full format or the cores. If a `torch.tensor` or `numpy.array` is provided
             shape (list[int] or list[tuple[int]], optional): the shape (if it differs from the one provided). For the TT-matrix case is mandatory. Defaults to None.
             eps (float, optional): tolerance of the TT approximation. Defaults to 1e-10.
-            rmax (int or list[int], optional): maximum rank (either a list of integer or an integer). Defaults to 10000.
+            rmax (int or list[int], optional): maximum rank (either a list of integer or an integer). Defaults to the maximum possible integer.
 
         Raises:
             RankMismatch: Ranks of the given cores do not match (change the spaces of the cores).
@@ -835,7 +836,7 @@ class TT():
             torchtt.TT: the result.
         """
         if isinstance(other,int) or isinstance(other,float) or ( tn.is_tensor(other) and other.numel()==1):
-            o = ones(self.__N,dtype=self.cores[0].dtype,device = self.cores[0].device)
+            o = TT([tn.ones((1,n,1),dtype=self.cores[0].dtype,device = self.cores[0].device) for n in self.__N])# ones(self.__N,dtype=self.cores[0].dtype,device = self.cores[0].device)
             o.cores[0] *= other
             cores_new = amen_divide(self,o,50,None,1e-12,500,verbose=False)
         else:
@@ -1199,7 +1200,7 @@ class TT():
         
         return sliced
     
-    def __pow__(self,other):
+    def __pow__(self, other):
         """
         Computes the tensor Kronecker product.
         This implements the "**" operator.
@@ -1219,7 +1220,19 @@ class TT():
             torchtt.TT: the result.
         """
         
-        result = kron(self,other)
+     
+        if other == None: 
+            cores_new = [c.clone() for c in self.cores]
+            result = TT(cores_new)
+        elif isinstance(other,TT):
+            if self.is_ttm != other.is_ttm:
+                raise IncompatibleTypes('Incompatible data types (make sure both are either TT-matrices or TT-tensors).')
+        
+            # concatenate the result
+            cores_new = [c.clone() for c in self.cores] + [c.clone() for c in other.cores]
+            result = TT(cores_new)
+        else:
+            raise InvalidArguments('Invalid arguments.')
         
         return result
     
@@ -1272,14 +1285,14 @@ class TT():
 
         return TT(cores_new)
     
-    def round(self, eps=1e-12, rmax = 2048): 
+    def round(self, eps=1e-12, rmax = sys.maxsize): 
         """
         Implements the rounding operations within a given tolerance epsilon.
         The maximum rank is also provided.
 
         Args:
             eps (float, optional): the relative accuracy. Defaults to 1e-12.
-            rmax (int, optional): the maximum rank. Defaults to 2048.
+            rmax (int, optional): the maximum rank. Defaults to the maximum possible integer.
 
         Returns:
             torchtt.TT: the result.
@@ -1296,7 +1309,7 @@ class TT():
                
         return T
     
-    def to_qtt(self, eps = 1e-12, mode_size = 2, rmax = 2048):
+    def to_qtt(self, eps = 1e-12, mode_size = 2, rmax = sys.maxsize):
         """
         Converts a tensor to the QTT format: N1 x N2 x ... x Nd -> mode_size x mode_size x ... x mode_size.
         The product of the mode sizes should be a power of mode_size.
@@ -1313,7 +1326,7 @@ class TT():
         Args:
             eps (float,optional): the accuracy. Defaults to 1e-12.
             mode_size (int, optional): the size of the modes. Defaults to 2.
-            rmax (int): the maximum rank. Defaults to 2048.
+            rmax (int): the maximum rank. Defaults to the maximum possible integer.
             
 
         Raises:

@@ -2277,9 +2277,9 @@ def cat(tensors, dim = 0):
         import torch 
 
 
-        a1 = torchtt.randn((3,4,2,6,7), [1,2,
-        a2 = torchtt.randn((3,4,8,6,7), [1,3,
-        a3 = torchtt.randn((3,4,15,6,7), [1,3
+        a1 = torchtt.randn((3,4,2,6,7), [1,2,3,4,2,1])
+        a2 = torchtt.randn((3,4,8,6,7), [1,3,1,7,5,1])
+        a3 = torchtt.randn((3,4,15,6,7), [1,3,10,2,4,1])
 
         a = torchtt.cat((a1,a2,a3),2)
 
@@ -2353,7 +2353,48 @@ def cat(tensors, dim = 0):
         #    pad1 = (0,0 if i == len(self.__N)-1 else other.R[i+1] , 0,0 , 0,0 if i==0 else other.R[i])
         #    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
         #    cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(other.cores[i],pad2))
-    return TT(cores)</code></pre>
+    return TT(cores)
+
+def pad(tensor, padding, value = 0.0):
+    &#34;&#34;&#34;
+    Pad a tensor in the TT format.
+    The `padding` argument is a tuple of tuples `((b1, a1), (b2, a2), ... , (bd, ad))`. 
+    Each dimension is padded with `bk` at the beginning and `ak` at the end. The padding value is constant and is given as the argument `value`. 
+    In case of a TT operator, duiagual padding is performed. On the diagonal, the provided `value` is inserted.
+
+    Args:
+        tensor (TT): the tensor to be padded.
+        padding (tuple(tuple(int))): the paddings.
+        value (float, optional): the value to pad. Defaults to 0.0.
+
+    Raises:
+        InvalidArguments: The number of paddings should not exceed the number of dimensions of the tensor.
+
+    Returns:
+        TT: the result.
+    &#34;&#34;&#34;
+    if(len(padding) &gt; len(tensor.N)):
+        raise InvalidArguments(&#34;The number of paddings should not exceed the number of dimensions of the tensor.&#34;)
+    
+    
+    if tensor.is_ttm:
+        cores = [c.clone() for c in tensor.cores]
+        for pad,k in zip(reversed(padding),reversed(range(len(tensor.N)))):
+            cores[k] = tnf.pad(cores[k],(1 if k &lt; len(tensor.N)-1 else 0,1 if k &lt; len(tensor.N)-1 else 0,pad[0],pad[1],pad[0],pad[1],1 if k&gt;0 else 0,1 if k&gt;0 else 0),value = 0)
+            cores[k][0,:pad[0],:pad[0],0] = value*tn.eye(pad[0], device = cores[k].device, dtype = cores[k].dtype)
+            cores[k][-1,(pad[0]+tensor.M[k]):,(pad[0]+tensor.N[k]):,-1] = value*tn.eye(pad[1], device = cores[k].device, dtype = cores[k].dtype)
+            value = 1
+    else:
+        rprod = np.prod(tensor.R)
+        value = value/rprod 
+
+        cores = [c.clone() for c in tensor.cores]
+        for pad,k in zip(reversed(padding),reversed(range(len(tensor.N)))):
+            cores[k] = tnf.pad(cores[k],(0,0,pad[0],pad[1],0,0),value = value)
+            value = 1
+            
+    return TT(cores)
+            </code></pre>
 </details>
 </section>
 <section>
@@ -2391,7 +2432,7 @@ the shape must be a list of int and the vector has to fit the shape.</p>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>torchtt.TT</code></dt>
+<dt><code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>an evenly spaced tensor within a given interval.</dd>
 </dl></div>
 <details class="source">
@@ -2437,11 +2478,11 @@ the shape must be a list of int and the vector has to fit the shape.</p>
 <div class="desc"><p>Computes the bilinear form x^T A y for TT tensors:</p>
 <h2 id="args">Args</h2>
 <dl>
-<dt><strong><code>x</code></strong> :&ensp;<code>torchtt.TT</code></dt>
+<dt><strong><code>x</code></strong> :&ensp;<code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the tensors.</dd>
-<dt><strong><code>A</code></strong> :&ensp;<code>torchtt.TT</code></dt>
+<dt><strong><code>A</code></strong> :&ensp;<code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the tensors (must be TT matrix).</dd>
-<dt><strong><code>y</code></strong> :&ensp;<code>torchtt.TT</code></dt>
+<dt><strong><code>y</code></strong> :&ensp;<code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the tensors.</dd>
 </dl>
 <h2 id="raises">Raises</h2>
@@ -2499,9 +2540,9 @@ the shape must be a list of int and the vector has to fit the shape.</p>
 import torch 
 
 
-a1 = torchtt.randn((3,4,2,6,7), [1,2,
-a2 = torchtt.randn((3,4,8,6,7), [1,3,
-a3 = torchtt.randn((3,4,15,6,7), [1,3
+a1 = torchtt.randn((3,4,2,6,7), [1,2,3,4,2,1])
+a2 = torchtt.randn((3,4,8,6,7), [1,3,1,7,5,1])
+a3 = torchtt.randn((3,4,15,6,7), [1,3,10,2,4,1])
 
 a = torchtt.cat((a1,a2,a3),2)
 
@@ -2526,7 +2567,7 @@ print(torch.linalg.norm(a.full()-af))
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>torchtt.TT</code></dt>
+<dt><code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the result.</dd>
 </dl></div>
 <details class="source">
@@ -2543,9 +2584,9 @@ print(torch.linalg.norm(a.full()-af))
         import torch 
 
 
-        a1 = torchtt.randn((3,4,2,6,7), [1,2,
-        a2 = torchtt.randn((3,4,8,6,7), [1,3,
-        a3 = torchtt.randn((3,4,15,6,7), [1,3
+        a1 = torchtt.randn((3,4,2,6,7), [1,2,3,4,2,1])
+        a2 = torchtt.randn((3,4,8,6,7), [1,3,1,7,5,1])
+        a3 = torchtt.randn((3,4,15,6,7), [1,3,10,2,4,1])
 
         a = torchtt.cat((a1,a2,a3),2)
 
@@ -2647,7 +2688,7 @@ print(torch.linalg.norm(a.full()-af))
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>torchtt.TT</code></dt>
+<dt><code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the result.</dd>
 </dl></div>
 <details class="source">
@@ -2700,9 +2741,9 @@ print(torchtt.dot(a,c,[0,2,3]))
 </code></pre>
 <h2 id="args">Args</h2>
 <dl>
-<dt><strong><code>a</code></strong> :&ensp;<code>torchtt.TT</code></dt>
+<dt><strong><code>a</code></strong> :&ensp;<code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the first tensor.</dd>
-<dt><strong><code>b</code></strong> :&ensp;<code>torchtt.TT</code></dt>
+<dt><strong><code>b</code></strong> :&ensp;<code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the second tensor.</dd>
 <dt><strong><code>axis</code></strong> :&ensp;<code>list[int]</code>, optional</dt>
 <dd>the mode indices for index contraction. Defaults to None.</dd>
@@ -2720,7 +2761,7 @@ print(torchtt.dot(a,c,[0,2,3]))
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>float</code> or <code>torchtt.TT</code></dt>
+<dt><code>float</code> or <code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the result. If no axis index is provided the result is a scalar otherwise a torchtt.TT object.</dd>
 </dl></div>
 <details class="source">
@@ -2811,13 +2852,13 @@ Use this method if different AMEN arguments are needed.
 This method does not check the validity of the inputs.</p>
 <h2 id="args">Args</h2>
 <dl>
-<dt><strong><code>x</code></strong> :&ensp;<code>torchtt.TT</code> or <code>scalar</code></dt>
+<dt><strong><code>x</code></strong> :&ensp;<code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code> or <code>scalar</code></dt>
 <dd>first tensor (can also be scalar of type float, int, torch.tensor with shape (1)).</dd>
-<dt><strong><code>y</code></strong> :&ensp;<code>torchtt.TT</code></dt>
+<dt><strong><code>y</code></strong> :&ensp;<code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>second tensor.</dd>
 <dt><strong><code>eps</code></strong> :&ensp;<code>float</code>, optional</dt>
 <dd>relative acccuracy. Defaults to 1e-12.</dd>
-<dt><strong><code>starting_tensor</code></strong> :&ensp;<code>torchtt.TT</code> or <code>None</code>, optional</dt>
+<dt><strong><code>starting_tensor</code></strong> :&ensp;<code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code> or <code>None</code>, optional</dt>
 <dd>initial guess of the result (None for random initial guess). Defaults to None.</dd>
 <dt><strong><code>nswp</code></strong> :&ensp;<code>int</code>, optional</dt>
 <dd>number of iterations. Defaults to 50.</dd>
@@ -2834,7 +2875,7 @@ This method does not check the validity of the inputs.</p>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>torchtt.TT</code></dt>
+<dt><code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the result</dd>
 </dl></div>
 <details class="source">
@@ -2884,7 +2925,7 @@ all the TT ranks are 1.</p>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>torchtt.TT</code></dt>
+<dt><code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the one tensor.</dd>
 </dl></div>
 <details class="source">
@@ -2921,9 +2962,9 @@ If None is provided as input the reult is the other tensor.
 If A is N_1 x &hellip; x N_d and B is M_1 x &hellip; x M_p, then kron(A,B) is N_1 x &hellip; x N_d x M_1 x &hellip; x M_p</p>
 <h2 id="args">Args</h2>
 <dl>
-<dt><strong><code>first</code></strong> :&ensp;<code>torchtt.TT</code> or <code>None</code></dt>
+<dt><strong><code>first</code></strong> :&ensp;<code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code> or <code>None</code></dt>
 <dd>first argument.</dd>
-<dt><strong><code>second</code></strong> :&ensp;<code>torchtt.TT</code> or <code>none</code></dt>
+<dt><strong><code>second</code></strong> :&ensp;<code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code> or <code>none</code></dt>
 <dd>second argument.</dd>
 </dl>
 <h2 id="raises">Raises</h2>
@@ -2935,7 +2976,7 @@ If A is N_1 x &hellip; x N_d and B is M_1 x &hellip; x M_p, then kron(A,B) is N_
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>torchtt.TT</code></dt>
+<dt><code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the result.</dd>
 </dl></div>
 <details class="source">
@@ -3004,7 +3045,7 @@ the shape must be a list of ints.</p>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>torchtt.TT</code></dt>
+<dt><code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>a linspace tensor.</dd>
 </dl></div>
 <details class="source">
@@ -3072,7 +3113,7 @@ print((A-B).norm()/A.norm())
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>torchtt.TT</code></dt>
+<dt><code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the tensor.</dd>
 </dl></div>
 <details class="source">
@@ -3157,7 +3198,7 @@ The result is a list of torchtt.TT instances of shapes N1 x &hellip; x Nd.</p>
 <div class="desc"><p>Return the number of entries needed to store the TT cores for the given tensor.</p>
 <h2 id="args">Args</h2>
 <dl>
-<dt><strong><code>tensor</code></strong> :&ensp;<code>torchtt.TT</code></dt>
+<dt><strong><code>tensor</code></strong> :&ensp;<code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the TT representation of the tensor.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
@@ -3205,7 +3246,7 @@ the shape can be a list of ints or a list of tuples of ints. The second case cre
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>torchtt.TT</code></dt>
+<dt><code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the one tensor.</dd>
 </dl></div>
 <details class="source">
@@ -3247,6 +3288,77 @@ the shape can be a list of ints or a list of tuples of ints. The second case cre
     return TT(cores)</code></pre>
 </details>
 </dd>
+<dt id="torchtt.torchtt.pad"><code class="name flex">
+<span>def <span class="ident">pad</span></span>(<span>tensor, padding, value=0.0)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Pad a tensor in the TT format.
+The <code>padding</code> argument is a tuple of tuples <code>((b1, a1), (b2, a2), &hellip; , (bd, ad))</code>.
+Each dimension is padded with <code>bk</code> at the beginning and <code>ak</code> at the end. The padding value is constant and is given as the argument <code>value</code>.
+In case of a TT operator, duiagual padding is performed. On the diagonal, the provided <code>value</code> is inserted.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>tensor</code></strong> :&ensp;<code><a title="torchtt.torchtt.TT" href="#torchtt.torchtt.TT">TT</a></code></dt>
+<dd>the tensor to be padded.</dd>
+<dt>padding (tuple(tuple(int))): the paddings.</dt>
+<dt><strong><code>value</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>the value to pad. Defaults to 0.0.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>InvalidArguments</code></dt>
+<dd>The number of paddings should not exceed the number of dimensions of the tensor.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="torchtt.torchtt.TT" href="#torchtt.torchtt.TT">TT</a></code></dt>
+<dd>the result.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def pad(tensor, padding, value = 0.0):
+    &#34;&#34;&#34;
+    Pad a tensor in the TT format.
+    The `padding` argument is a tuple of tuples `((b1, a1), (b2, a2), ... , (bd, ad))`. 
+    Each dimension is padded with `bk` at the beginning and `ak` at the end. The padding value is constant and is given as the argument `value`. 
+    In case of a TT operator, duiagual padding is performed. On the diagonal, the provided `value` is inserted.
+
+    Args:
+        tensor (TT): the tensor to be padded.
+        padding (tuple(tuple(int))): the paddings.
+        value (float, optional): the value to pad. Defaults to 0.0.
+
+    Raises:
+        InvalidArguments: The number of paddings should not exceed the number of dimensions of the tensor.
+
+    Returns:
+        TT: the result.
+    &#34;&#34;&#34;
+    if(len(padding) &gt; len(tensor.N)):
+        raise InvalidArguments(&#34;The number of paddings should not exceed the number of dimensions of the tensor.&#34;)
+    
+    
+    if tensor.is_ttm:
+        cores = [c.clone() for c in tensor.cores]
+        for pad,k in zip(reversed(padding),reversed(range(len(tensor.N)))):
+            cores[k] = tnf.pad(cores[k],(1 if k &lt; len(tensor.N)-1 else 0,1 if k &lt; len(tensor.N)-1 else 0,pad[0],pad[1],pad[0],pad[1],1 if k&gt;0 else 0,1 if k&gt;0 else 0),value = 0)
+            cores[k][0,:pad[0],:pad[0],0] = value*tn.eye(pad[0], device = cores[k].device, dtype = cores[k].dtype)
+            cores[k][-1,(pad[0]+tensor.M[k]):,(pad[0]+tensor.N[k]):,-1] = value*tn.eye(pad[1], device = cores[k].device, dtype = cores[k].dtype)
+            value = 1
+    else:
+        rprod = np.prod(tensor.R)
+        value = value/rprod 
+
+        cores = [c.clone() for c in tensor.cores]
+        for pad,k in zip(reversed(padding),reversed(range(len(tensor.N)))):
+            cores[k] = tnf.pad(cores[k],(0,0,pad[0],pad[1],0,0),value = value)
+            value = 1
+            
+    return TT(cores)</code></pre>
+</details>
+</dd>
 <dt id="torchtt.torchtt.permute"><code class="name flex">
 <span>def <span class="ident">permute</span></span>(<span>input, dims, eps=1e-12)</span>
 </code></dt>
@@ -3260,7 +3372,7 @@ print(xp_tt) # the shape of this tensor should be [9,8,7,6,5]
 </code></pre>
 <h2 id="args">Args</h2>
 <dl>
-<dt><strong><code>input</code></strong> :&ensp;<code>torchtt.TT</code></dt>
+<dt><strong><code>input</code></strong> :&ensp;<code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the input tensor.</dd>
 <dt><strong><code>dims</code></strong> :&ensp;<code>list[int]</code></dt>
 <dd>the order of the indices in the new tensor.</dd>
@@ -3416,7 +3528,7 @@ The entries of the fuill tensor are alomst normal distributed with the variance 
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>torchtt.TT</code></dt>
+<dt><code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the result.</dd>
 </dl></div>
 <details class="source">
@@ -3474,7 +3586,7 @@ Check also the method torchtt.randn()for better random tensors in the TT format.
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>torchtt.TT</code></dt>
+<dt><code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the result.</dd>
 </dl></div>
 <details class="source">
@@ -3527,7 +3639,7 @@ Check also the method torchtt.randn()for better random tensors in the TT format.
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>torchtt.TT</code></dt>
+<dt><code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the resulting TT object.</dd>
 </dl></div>
 <details class="source">
@@ -3556,7 +3668,7 @@ Check also the method torchtt.randn()for better random tensors in the TT format.
 A rounding is also performed.</p>
 <h2 id="args">Args</h2>
 <dl>
-<dt><strong><code>tens</code></strong> :&ensp;<code>torchtt.TT</code></dt>
+<dt><strong><code>tens</code></strong> :&ensp;<code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the input tensor.</dd>
 <dt><strong><code>shape</code></strong> :&ensp;<code>list[int]</code> or <code>list[tuple[int]]</code></dt>
 <dd>the desired shape. In the case of a TT operator the shape has to be given as list of tuples of ints [(M1,N1),&hellip;,(Md,Nd)].</dd>
@@ -3572,7 +3684,7 @@ A rounding is also performed.</p>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>torchtt.TT</code></dt>
+<dt><code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the resulting tensor.</dd>
 </dl></div>
 <details class="source">
@@ -3694,7 +3806,7 @@ A rounding is also performed.</p>
 <span>def <span class="ident">save</span></span>(<span>tensor, path)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Save a <code>torchtt.TT</code> object in a file.</p>
+<div class="desc"><p>Save a <code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code> object in a file.</p>
 <h2 id="examples">Examples</h2>
 <pre><code>import torchtt
 #generate a TT object
@@ -3708,7 +3820,7 @@ print((A-B).norm()/A.norm())
 </code></pre>
 <h2 id="args">Args</h2>
 <dl>
-<dt><strong><code>tensor</code></strong> :&ensp;<code>torchtt.TT</code></dt>
+<dt><strong><code>tensor</code></strong> :&ensp;<code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the tensor to be saved.</dd>
 <dt><strong><code>path</code></strong> :&ensp;<code>str</code></dt>
 <dd>the file name.</dd>
@@ -3779,7 +3891,7 @@ the shape must be a list of ints.</p>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>torchtt.TT</code></dt>
+<dt><code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the xfun tensor.</dd>
 </dl></div>
 <details class="source">
@@ -3857,7 +3969,7 @@ the shape can be a list of ints or a list of tuples of ints. The second case cre
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>torchtt.TT</code></dt>
+<dt><code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the one tensor.</dd>
 </dl></div>
 <details class="source">
@@ -5543,7 +5655,7 @@ val = x.apply_mask(indices)
 <div class="desc"><p>Clones the torchtt.TT instance. Similar to torch.tensor.clone().</p>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>torchtt.TT</code></dt>
+<dt><code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the cloned TT object.</dd>
 </dl></div>
 <details class="source">
@@ -5567,7 +5679,7 @@ val = x.apply_mask(indices)
 <div class="desc"><p>Return the complex conjugate of a tensor in TT format.</p>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>torchtt.TT</code></dt>
+<dt><code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the complex conjugated tensor.</dd>
 </dl></div>
 <details class="source">
@@ -5591,7 +5703,7 @@ val = x.apply_mask(indices)
 <div class="desc"><p>Retrive the cores from the GPU.</p>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>torchtt.TT</code></dt>
+<dt><code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>The TT-object on CPU.</dd>
 </dl></div>
 <details class="source">
@@ -5622,7 +5734,7 @@ val = x.apply_mask(indices)
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>torchtt.TT</code></dt>
+<dt><code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>The TT-object. The TT-cores are on CUDA.</dd>
 </dl></div>
 <details class="source">
@@ -5653,7 +5765,7 @@ val = x.apply_mask(indices)
 <div class="desc"><p>Detaches the TT tensor. Similar to torch.tensor.detach().</p>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>torchtt.TT</code></dt>
+<dt><code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the detached tensor.</dd>
 </dl></div>
 <details class="source">
@@ -5677,7 +5789,7 @@ val = x.apply_mask(indices)
 <div class="desc"><p>Fast matrix vector multiplication A@x using DMRG iterations. Faster than traditional matvec + rounding.</p>
 <h2 id="args">Args</h2>
 <dl>
-<dt><strong><code>other</code></strong> :&ensp;<code>torchtt.TT</code></dt>
+<dt><strong><code>other</code></strong> :&ensp;<code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the TT tensor.</dd>
 <dt><strong><code>eps</code></strong> :&ensp;<code>float</code>, optional</dt>
 <dd>relative accuracy for DMRG. Defaults to 1e-12.</dd>
@@ -5695,7 +5807,7 @@ val = x.apply_mask(indices)
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>torchtt.TT</code></dt>
+<dt><code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the result.</dd>
 </dl></div>
 <details class="source">
@@ -5821,7 +5933,7 @@ If factor_matrices is a list, the mode has to be list[int] of equal size.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>torchtt.TT</code></dt>
+<dt><code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the result</dd>
 </dl></div>
 <details class="source">
@@ -5990,7 +6102,7 @@ If it is involved in an AD graph, an error will occur.</p>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>torchtt.TT</code></dt>
+<dt><code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the folded tensor.</dd>
 </dl></div>
 <details class="source">
@@ -6151,7 +6263,7 @@ The maximum rank is also provided.</p>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>torchtt.TT</code></dt>
+<dt><code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the result.</dd>
 </dl></div>
 <details class="source">
@@ -6283,7 +6395,7 @@ print(a.sum([0,1,2,3,4]))
 <div class="desc"><p>Returns the transpose of a given TT matrix.</p>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>torchtt.TT</code></dt>
+<dt><code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the transpose.</dd>
 </dl>
 <h2 id="raises">Raises</h2>
@@ -6372,7 +6484,7 @@ xf = x_qtt.qtt_to_tens(x.N) # a TT-rounding is recommended.
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>torchtt.TT</code></dt>
+<dt><code><a title="torchtt.TT" href="index.html#torchtt.TT">TT</a></code></dt>
 <dd>the resulting reshaped tensor.</dd>
 </dl></div>
 <details class="source">
@@ -6498,6 +6610,7 @@ N1 x &hellip; x Nd x 1 x &hellip; x 1.</p>
 <li><code><a title="torchtt.torchtt.meshgrid" href="#torchtt.torchtt.meshgrid">meshgrid</a></code></li>
 <li><code><a title="torchtt.torchtt.numel" href="#torchtt.torchtt.numel">numel</a></code></li>
 <li><code><a title="torchtt.torchtt.ones" href="#torchtt.torchtt.ones">ones</a></code></li>
+<li><code><a title="torchtt.torchtt.pad" href="#torchtt.torchtt.pad">pad</a></code></li>
 <li><code><a title="torchtt.torchtt.permute" href="#torchtt.torchtt.permute">permute</a></code></li>
 <li><code><a title="torchtt.torchtt.randn" href="#torchtt.torchtt.randn">randn</a></code></li>
 <li><code><a title="torchtt.torchtt.random" href="#torchtt.torchtt.random">random</a></code></li>
