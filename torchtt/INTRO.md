@@ -1,3 +1,4 @@
+  ![logo](https://github.com/ion-g-ion/torchTT/blob/main/image.png?raw=true)
   
  What is the Tensor-Train format?
 -----------------

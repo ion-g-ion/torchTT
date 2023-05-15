@@ -1,3 +1,5 @@
+![logo](https://github.com/ion-g-ion/torchTT/blob/main/image.png?raw=true)
+
 # torchTT
 Tensor-Train decomposition in `pytorch`
 
