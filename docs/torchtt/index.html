@@ -26,6 +26,7 @@
 <p>Provides Tensor-Train (TT) decomposition using <code>pytorch</code> as backend.</p>
 <p>Contains routines for computing the TT decomposition and all the basisc linear algebra in the TT format. Additionally, GPU support can be used thanks to the <code>pytorch</code> backend. <br>
 It also has linear solvers in TT and cross approximation as well as automatic differentiation.</p>
+<p><img alt="logo" src="https://github.com/ion-g-ion/torchTT/blob/main/logo.png?raw=true"></p>
 <h2 id="what-is-the-tensor-train-format">What is the Tensor-Train format?</h2>
 <p>The Tensor-Train (TT) format is a low-rank tensor decomposition format used to fight the curse of dimensionality. A d-dimensional tensor <span><span class="MathJax_Preview">\mathsf{x} \in \mathbb{R} ^{n_1 \times n_2 \times \cdots \times n_d}</span><script type="math/tex">\mathsf{x} \in \mathbb{R} ^{n_1 \times n_2 \times \cdots \times n_d}</script></span> can be expressed using algebraic operations between d smaller tensors:</p>
 <p><span><span class="MathJax_Preview"> \mathsf{x}_{i_1i_2...i_d} = \sum\limits_{s_0=1}^{r_0} \sum\limits_{s_1=1}^{r_1} \cdots \sum\limits_{s_{d-1}=1}^{r_{d-1}} \sum\limits_{s_d=1}^{r_d} \mathsf{g}^{(1)}_{s_0 i_1 s_1} \cdots \mathsf{g}^{(d)}_{s_{d-1} i_d s_d}, </span><script type="math/tex; mode=display"> \mathsf{x}_{i_1i_2...i_d} = \sum\limits_{s_0=1}^{r_0} \sum\limits_{s_1=1}^{r_1} \cdots \sum\limits_{s_{d-1}=1}^{r_{d-1}} \sum\limits_{s_d=1}^{r_d} \mathsf{g}^{(1)}_{s_0 i_1 s_1} \cdots \mathsf{g}^{(d)}_{s_{d-1} i_d s_d}, </script></span>
@@ -73,7 +74,7 @@ yf = x.full() - 2*(a.full()*torch.einsum('ijklabcd,abcd-&gt;ijkl', A.full(), b.f
 <li>The operator <code>/</code> implements the elementwise division of two TT objects. The algorithm is AMEn.</li>
 <li>The operator <code>**</code> implements the Kronecker product.</li>
 </ul>
-<p>The package also includes more features such as solving multilinear systems, cross approximation and automatic differentiation (with the possibility to define TT layers for neural networks`torchtt.TT.full()). </p>
+<p>The package also includes more features such as solving multilinear systems, cross approximation and automatic differentiation (with the possibility to define TT layers for neural networks`torchtt.TT.full()). Working examples that can be used as a tutorial are to be found in <a href="https://github.com/ion-g-ion/torchTT/tree/main/examples">examples/</a>.</p>
 <h2 id="utilities">Utilities</h2>
 <ul>
 <li>Example scripts (and ipy notebooks) can be found in the <a href="https://github.com/ion-g-ion/torchTT/tree/main/examples">examples/</a> folder.</li>
@@ -2409,7 +2410,7 @@ print(Att)
             torchtt.TT: the result.
         &#34;&#34;&#34;
         if isinstance(other,int) or isinstance(other,float) or ( tn.is_tensor(other) and other.numel()==1):
-            o = ones(self.__N,dtype=self.cores[0].dtype,device = self.cores[0].device)
+            o = TT([tn.ones((1,n,1),dtype=self.cores[0].dtype,device = self.cores[0].device) for n in self.__N])# ones(self.__N,dtype=self.cores[0].dtype,device = self.cores[0].device)
             o.cores[0] *= other
             cores_new = amen_divide(self,o,50,None,1e-12,500,verbose=False)
         else:
@@ -2773,7 +2774,7 @@ print(Att)
         
         return sliced
     
-    def __pow__(self,other):
+    def __pow__(self, other):
         &#34;&#34;&#34;
         Computes the tensor Kronecker product.
         This implements the &#34;**&#34; operator.
@@ -2793,7 +2794,19 @@ print(Att)
             torchtt.TT: the result.
         &#34;&#34;&#34;
         
-        result = kron(self,other)
+     
+        if other == None: 
+            cores_new = [c.clone() for c in self.cores]
+            result = TT(cores_new)
+        elif isinstance(other,TT):
+            if self.is_ttm != other.is_ttm:
+                raise IncompatibleTypes(&#39;Incompatible data types (make sure both are either TT-matrices or TT-tensors).&#39;)
+        
+            # concatenate the result
+            cores_new = [c.clone() for c in self.cores] + [c.clone() for c in other.cores]
+            result = TT(cores_new)
+        else:
+            raise InvalidArguments(&#39;Invalid arguments.&#39;)
         
         return result
     

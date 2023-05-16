@@ -1,4 +1,7 @@
-![logo](https://github.com/ion-g-ion/torchTT/blob/main/logo.png?raw=true)
+
+<p align="center">
+<img src="https://github.com/ion-g-ion/torchTT/blob/main/logo.png?raw=true" width="400px" >
+</p>
 
 # torchTT
 Tensor-Train decomposition in `pytorch`

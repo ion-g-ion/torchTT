@@ -1,6 +1,4 @@
-  ![logo](https://github.com/ion-g-ion/torchTT/blob/main/logo.png?raw=true)
-
- What is the Tensor-Train format?
+What is the Tensor-Train format?
 -----------------
 
  The Tensor-Train (TT) format is a low-rank tensor decomposition format used to fight the curse of dimensionality. A d-dimensional tensor \(\mathsf{x} \in \mathbb{R} ^{n_1 \times n_2 \times \cdots \times n_d}\) can be expressed using algebraic operations between d smaller tensors:
