@@ -348,7 +348,7 @@ class TT():
         Addition in the TT format. Implements the "+" operator. This function is called in the case a non-torchtt.TT object is added to the left.
 
         Args:
-            other (int or float or torch.tensor scalar): the left operand.
+            other (float | int | torch.tensor): the first operand. If a `torch.tensor` is provided, it must have 1 element.
 
         Returns:
             torchtt.TT: the result.
@@ -365,7 +365,7 @@ class TT():
         The broadcasting rules from `torch` apply here.
         
         Args:
-            other (torchtt.TT or float or int or torch.tensor with 1 element): second operand.
+            other (torchtt.TT | float | int | torch.tensor): the second operand. If a `torch.tensor` is provided, it must have 1 element.
             
         Raises:
             ShapeMismatch: Dimension mismatch.
@@ -457,7 +457,7 @@ class TT():
         Subtract 2 tensors in the TT format. Implements the "-" operator.  
 
         Args:
-            other (int or float or torch.tensor with 1 element): the first operand.
+            other (torchtt.TT | float | int | torch.tensor): the first operand. If a `torch.tensor` is provided, it must have 1 element.
 
         Returns:
             torchtt.TT: the result.
@@ -474,7 +474,7 @@ class TT():
         Broadcasting rules from `torch` apply for this operation as well.
         
         Args:
-            other (torchtt.TT or float or int or torch.tensor with 1 element): the second operand.
+            other (torchtt.TT | float | int | torch.tensor): the second operand. If a `torch.tensor` is provided, it must have 1 element.
 
         Raises:
             ShapeMismatch: Both dimensions of the TT matrix should be equal.
@@ -570,7 +570,7 @@ class TT():
          * TT tensor and scalar(int, float or torch.tensor scalar)
 
         Args:
-            other (torchtt.TT or float or int or torch.tensor with 1 element): the second operand.
+            other (torchtt.TT | float | int | torch.tensor): the first operand. If a `torch.tensor` is provided, it must have 1 element.
 
         Raises:
             ShapeMismatch: Shapes must be equal.
@@ -594,7 +594,7 @@ class TT():
         The broadcasting rules are the same as in torch (see [here](https://pytorch.org/docs/stable/notes/broadcasting.html)).
         
         Args:
-            other (torchtt.TT or float or int or torch.tensor with 1 element): the second operand.
+            other (torchtt.TT | float | int | torch.tensor): the second operand. If a `torch.tensor` is provided, it must have 1 element.
 
         Raises:
             ShapeMismatch: Shapes are incompatible (see the broadcasting rules).
@@ -678,14 +678,14 @@ class TT():
         In the last case, the multiplication is performed along the last modes and a full torch.tensor is returned.
 
         Args:
-            other (torchtt.TT or torch.tensor): the second operand.
+            other (torchtt.TT | torch.tensor): the second operand.
 
         Raises:
             ShapeMismatch: Shapes do not match.
             InvalidArguments: Wrong arguments.
 
         Returns:
-            torchtt.TT or torch.tensor: the result. Can be full tensor if the second operand is full tensor.
+            torchtt.TT | torch.tensor: the result. Can be full tensor if the second operand is full tensor.
         """
      
         if self.__is_ttm and tn.is_tensor(other):
@@ -787,7 +787,7 @@ class TT():
         
 
         Args:
-            other (torchtt.TT or float or int or torch.tensor with 1 element): the first operand.
+            other (torchtt.TT | float | int | torch.tensor): the second operand. If a `torch.tensor` is provided, it must have 1 element.
 
         Raises:
             IncompatibleTypes: Operands should be either TT or TTM.
@@ -827,7 +827,7 @@ class TT():
             ```
             
         Args:
-            other (torchtt.TT or float or int or torch.tensor with 1 element): the first operand.
+            other (torchtt.TT | float | int | torch.tensor): the first operand. If a `torch.tensor` is provided, it must have 1 element.
 
         Raises:
             InvalidArguments: The first operand must be int, float or 1d torch.tensor.
@@ -938,7 +938,7 @@ class TT():
             ```
             
         Args:
-            index (int or list[int] or None, optional): the indices along which the summation is performed. None selects all of them. Defaults to None.
+            index (int | list[int] | None, optional): the indices along which the summation is performed. None selects all of them. Defaults to None.
 
         Raises:
             InvalidArguments: Invalid index.
@@ -1086,17 +1086,17 @@ class TT():
         Similar to pytorch or numpy slicing.
 
         Args:
-            index (tuple[slice] or tuple[int] or int or Ellipsis or slice): the slicing.
+            index (tuple[slice] | tuple[int] | int | Ellipsis | slice): the slicing.
 
         Raises:
             NotImplementedError: Ellipsis are not supported.
             InvalidArguments: Slice size is invalid.
-            InvalidArguments: Slice carguments not valid. They have to be either int, slice or None.
+            InvalidArguments: Slice carguments not valid. They have to be either int, slice | None.
             InvalidArguments: Invalid slice. Tensor is not 1d.
 
 
         Returns:
-            torchtt.TT or torch.tensor: the result. If all the indices are fixed, a scalar torch.tensor is returned otherwise a torchtt.TT.
+            torchtt.TT | torch.tensor: the result. If all the indices are fixed, a scalar torch.tensor is returned otherwise a torchtt.TT.
         """
         
         
@@ -1141,11 +1141,13 @@ class TT():
             else:
                 # if len(index) != len(self.__N):
                 #    raise InvalidArguments('Slice size is invalid.')
+                num_none = sum([i is None for i in index])
+                
                 if index[0] == Ellipsis:
-                    index = (slice(None, None, None),)*(len(self.__N)-len(index)+1) + index[1:]
+                    index = (slice(None, None, None),)*(len(self.__N)-len(index)+1+num_none) + index[1:]
                 elif index[-1] == Ellipsis:
-                    index = index[:-1] + (slice(None, None, None),)*(len(self.__N)-len(index)+1)
-
+                    index = index[:-1] + (slice(None, None, None),)*(len(self.__N)-len(index)+1+num_none)
+                print(index)
                 cores_new = []
                 k = 0
                 for i,idx in enumerate(index):

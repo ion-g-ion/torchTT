@@ -40,7 +40,7 @@ def zeros(shape, dtype=tn.float64, device = None):
     the shape can be a list of ints or a list of tuples of ints. The second case creates a TT matrix.
 
     Args:
-        shape (list[int] or list[tuple[int]]): the shape.
+        shape (list[int] | list[tuple[int]]): the shape.
         dtype (torch.dtype, optional): the dtype of the returned tensor. Defaults to tn.float64.
         device (torch.device, optional): the device where the TT cores are created (None means CPU). Defaults to None.
 
@@ -48,7 +48,7 @@ def zeros(shape, dtype=tn.float64, device = None):
         InvalidArguments: Shape must be a list.
 
     Returns:
-        torchtt.TT: the one tensor.
+        torchtt.TT: the zero tensor.
     """
     if isinstance(shape,list):
         d = len(shape)
@@ -75,8 +75,8 @@ def kron(first, second):
 
 
     Args:
-        first (torchtt.TT or None): first argument.
-        second (torchtt.TT or none): second argument.
+        first (torchtt.TT | None): first argument.
+        second (torchtt.TT | None): second argument.
 
     Raises:
         IncompatibleTypes: Incompatible data types (make sure both are either TT-matrices or TT-tensors).
@@ -649,15 +649,20 @@ def permute(input, dims, eps = 1e-12):
 
     Raises:
         InvalidArguments: The input must be a TT tensor dims must be a list of integers or a tple of integers.
-        ShapeMismatch: dims must be the length of the number of dimensions.
-
+        ShapeMismatch: `dims` must be the length of the number of dimensions.
+        InvalidArguments: Duplicate dims are not allowed.
+        InvalidArguments: Dims should only contain integers from 0 to d-1.
     Returns:
-        torch.TT: the resulting tensor.
+        torchtt.TT: the resulting tensor.
     """
     if not isinstance(input, TT) :
         raise InvalidArguments("The input must be a TT tensor dims must be a list of integers or a tple of integers.")
     if len(dims) != len(input.N):
-        raise ShapeMismatch("dims must be the length of the number of dimensions.")
+        raise ShapeMismatch("`dims` must be the length of the number of dimensions.")
+    if len(dims) != len(set(dims)):
+        raise InvalidArguments("Duplicate dims are not allowed.")
+    if min(dims) != 0 or max(dims) != len(input.N)-1:
+        raise InvalidArguments("Dims should only contain integers from 0 to d-1.")
     
     cores, R  = rl_orthogonal(input.cores, input.R, input.is_ttm)
     d = len(cores)
