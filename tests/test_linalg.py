@@ -6,7 +6,7 @@ import torchtt as tntt
 import torch as tn
 import numpy as np
 
-err_rel = lambda t, ref :  tn.linalg.norm(t-ref).numpy() / tn.linalg.norm(ref).numpy() if ref.shape == t.shape else np.inf
+err_rel = lambda t, ref :  (tn.linalg.norm(t-ref).numpy() / tn.linalg.norm(ref).numpy() if tn.linalg.norm(ref).numpy()>0 else tn.linalg.norm(t-ref).numpy() ) if ref.shape == t.shape else np.inf
    
             
 class TestLinalg(unittest.TestCase):
@@ -172,13 +172,23 @@ class TestLinalg(unittest.TestCase):
         z = c*x*(-y*c)
         zr = c*xr*(-yr*c)
 
-        self.assertLess(err_rel(z.full(),zr),1e-13,"Multiplication error: TT-tensors.")
+        self.assertLess(err_rel(z.full(), zr), 1e-13, "Multiplication error: TT-tensors.")
         
         C = c*A*(B*c)
         Cr = c*Ar*(Br*c)
 
-        self.assertLess(err_rel(C.full(),Cr),1e-13,"Multiplication error: TT-matrices.")
+        self.assertLess(err_rel(C.full(),Cr), 1e-13, "Multiplication error: TT-matrices.")
           
+        z = 0*x
+        zr = 0*xr
+        self.assertLess(err_rel(z.full(),zr), 1e-13, "Multiplication error: TT-tensor 0 with scalar.")
+        self.assertEqual(z.R, [1,1,1,1,1,1], "Multiplication error: TT-tensor 0 with scalar.")
+        
+        C = 0*A
+        Cr = 0*Ar
+        self.assertLess(err_rel(C.full(),Cr), 1e-13, "Multiplication error: TT-matrix 0 with scalar.")
+        self.assertEqual(C.R, [1,1,1,1,1], "Multiplication error: TT-matrix 0 with scalar.")
+        
         # test broadcasting
         
         x = tntt.random([2,3,4,5,6],[1,2,4,8,4,1], dtype = self.basic_dtype)

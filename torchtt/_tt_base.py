@@ -661,7 +661,8 @@ class TT():
                 cores_new[0] *= other
                 result = TT(cores_new)
             else:
-                result = zeros([(m,n) for m,n in zip(self.M,self.N)] if self.is_ttm else self.N, device=self.cores[0].device)
+                result = TT([tn.zeros((1,self.M[i],self.N[i],1) if self.is_ttm else (1,self.N[i],1), device = self.cores[0].device, dtype = self.cores[0].dtype) for i in range(len(self.N))])
+                # result = zeros([(m,n) for m,n in zip(self.M,self.N)] if self.is_ttm else self.N, device=self.cores[0].device)
         else:
             raise InvalidArguments('Second operand must be of type: TT, float, int of tensorflow Tensor.')
                     
@@ -1147,7 +1148,6 @@ class TT():
                     index = (slice(None, None, None),)*(len(self.__N)-len(index)+1+num_none) + index[1:]
                 elif index[-1] == Ellipsis:
                     index = index[:-1] + (slice(None, None, None),)*(len(self.__N)-len(index)+1+num_none)
-                print(index)
                 cores_new = []
                 k = 0
                 for i,idx in enumerate(index):
