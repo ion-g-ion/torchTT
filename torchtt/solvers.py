@@ -87,6 +87,10 @@ class _LinearOp():
             J = tn.reshape(J, [-1,J.shape[1]*J.shape[2], J.shape[3]*J.shape[4]])
             self.J = tn.reshape(tn.linalg.inv(J), sh)
             
+            if shape[0]*shape[1]*shape[2] > 2*1e4:
+                self.contraction = oe.contract_expression('lsr,smnS,LSR,rab,rnRab->lmL', Phi_left.shape, coreA.shape, Phi_right.shape, shape, self.J.shape)
+            else:
+                self.contraction = None
         # tme = datetime.datetime.now() - tme 
         # print('contr   ',tme)
     def apply_prec(self,x):
