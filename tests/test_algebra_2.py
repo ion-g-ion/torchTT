@@ -34,7 +34,25 @@ class TestLinalgAdvanced(unittest.TestCase):
 
         rel_error = (y-yf).norm().numpy()/y.norm().numpy()
         
-        self.assertLess(rel_error,1e-12,"DMRG matrix vector problem.")
+        self.assertLess(rel_error,1e-12,"DMRG matrix vector problem: square matrix.")
+        
+        n = 32
+        A = tntt.random([(n+2,n)]*8,[1]+7*[3]+[1], dtype = tn.complex128)
+        Am = A + A 
+        
+        x = tntt.random([n]*8,[1]+7*[5]+[1], dtype = tn.complex128)
+        xm = x + x
+        xm = xm + xm
+ 
+        # conventional method 
+        y = 8 * (A @ x).round(1e-12)
+
+        # dmrg matvec
+        yf = Am.fast_matvec(xm)
+
+        rel_error = (y-yf).norm().numpy()/y.norm().numpy()
+        
+        self.assertLess(rel_error,1e-12,"DMRG matrix vector problem: not square matrix.")
       
     def test_amen_division(self):
         """

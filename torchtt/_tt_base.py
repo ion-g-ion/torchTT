@@ -1154,7 +1154,7 @@ class TT():
                     if isinstance(idx,slice):
                         cores_new.append(self.cores[k][:,idx,:])
                         k+=1
-                    elif idx==None:
+                    elif idx is None:
                         # extend the tensor
                         tmp = tn.eye(cores_new[-1].shape[-1] if len(cores_new)!=0 else 1, device = self.cores[0].device, dtype = self.cores[0].dtype)[:,None,:]
                         cores_new.append(tmp)
@@ -1455,4 +1455,6 @@ class TT():
             torchtt.TT: the complex conjugated tensor.
         """
         return TT([tn.conj(c) for c in self.cores])
-    
+
+
+            

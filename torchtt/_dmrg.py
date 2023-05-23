@@ -12,7 +12,7 @@ import opt_einsum as oe
 
 def dmrg_matvec(A,x,y0 = None,nswp = 20, eps = 1e-12, rmax = 1024, kickrank = 4, verb = False):
     if y0 == None:
-        y0 = torchtt.random(x.N,2, dtype=A.cores[0].dtype, device = A.cores[0].device)
+        y0 = torchtt.random(A.M,2, dtype=A.cores[0].dtype, device = A.cores[0].device)
     y_cores = y0.cores
     Ry = y0.R.copy()
     
@@ -21,6 +21,7 @@ def dmrg_matvec(A,x,y0 = None,nswp = 20, eps = 1e-12, rmax = 1024, kickrank = 4,
         rmax = [1] + [rmax]*(d-1) + [1]
         
     N = x.N
+    M = A.M
     r_enlarge = [2]*d
     
     Phis = [tn.ones((1,1,1),dtype=A.cores[0].dtype, device = A.cores[0].device)] + [None]*(d-1) + [tn.ones((1,1,1),dtype=A.cores[0].dtype, device = A.cores[0].device)]
@@ -34,20 +35,22 @@ def dmrg_matvec(A,x,y0 = None,nswp = 20, eps = 1e-12, rmax = 1024, kickrank = 4,
         # TME = datetime.datetime.now()
         for k in range(d-1,0,-1):
             core = y_cores[k]
-            core = tn.reshape(tn.permute(core,[1,2,0]),[N[k]*Ry[k+1],Ry[k]])
+            core = tn.reshape(tn.permute(core,[1,2,0]),[M[k]*Ry[k+1],Ry[k]])
             Q, R = QR(core)
             rnew = min([core.shape[0],core.shape[1]])
             # update current core
-            y_cores[k] = (tn.reshape(Q.T,[rnew,N[k],-1]))
+            y_cores[k] = (tn.reshape(Q.T,[rnew,M[k],-1]))
             Ry[k] = rnew
             # and the k-1 one
             core_next = tn.reshape(y_cores[k-1],[y_cores[k-1].shape[0]*y_cores[k-1].shape[1],y_cores[k-1].shape[2]]) @ R.T
-            y_cores[k-1] = (tn.reshape(core_next,[-1,N[k-1],rnew]))
+            y_cores[k-1] = (tn.reshape(core_next,[-1,M[k-1],rnew]))
             
             # update Phi
-            Phi = tn.einsum('ijk,mnk->ijmn',Phis[k+1],tn.conj(x.cores[k])) # shape  rk x rAk x rxk-a x Nk
-            Phi = tn.einsum('ijkl,mlnk->ijmn',tn.conj(A.cores[k]),Phi) # shape  rAk-a x Nk x rk x rxk-1
+            Phi = tn.einsum('ijk,mnk->ijmn',Phis[k+1],tn.conj(x.cores[k])) # shape  rk x rAk x rxk-1 x Nk
+            Phi = tn.einsum('ijkl,mlnk->ijmn',tn.conj(A.cores[k]),Phi) # shape  rAk-1 x Nk x rk x rxk-1
             Phi = tn.einsum('ijkl,mjk->mil',Phi,y_cores[k]) # shape  rk-1 x rAk-1 x rxk-1
+            
+            # Phi = tn.einsum('YAX,amnA,ymY,xnX->yax', Phis[k+1], tn.conj(A.cores[k]), y_cores[k], x.cores[k])
             Phis[k] = Phi
         # TME = datetime.datetime.now()-TME    
         # print('first ',TME.total_seconds())
@@ -120,8 +123,8 @@ def dmrg_matvec(A,x,y0 = None,nswp = 20, eps = 1e-12, rmax = 1024, kickrank = 4,
               if verb: print('\tcore ',k,': delta ',delta_cores[k],' rank ',Ry[k+1],' ->',r_new)
               Ry[k+1] = r_new 
               # print(k,W1.shape,W2.shape,Ry,N)
-              y_cores[k] = tn.conj(tn.reshape(W1,[Ry[k],N[k],r_new]))
-              y_cores[k+1] = tn.conj(tn.reshape(W2,[r_new,N[k+1],Ry[k+2]]))
+              y_cores[k] = tn.conj(tn.reshape(W1,[Ry[k],M[k],r_new]))
+              y_cores[k+1] = tn.conj(tn.reshape(W2,[r_new,M[k+1],Ry[k+2]]))
               
               Wc = tn.einsum('ijk,klm->ijlm', tn.conj(y_cores[k]), tn.conj(y_cores[k+1]))
               
