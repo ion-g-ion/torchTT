@@ -10,7 +10,56 @@ from torchtt._decomposition import rank_chop, QR, SVD
 import datetime
 import opt_einsum as oe
 
-def dmrg_matvec(A,x,y0 = None,nswp = 20, eps = 1e-12, rmax = 1024, kickrank = 4, verb = False):
+try:
+    import torchttcpp 
+    _flag_use_cpp = True
+except:
+    import warnings
+    warnings.warn("\x1B[33m\nC++ implementation not available. Using pure Python.\n\033[0m")
+    _flag_use_cpp = False
+    
+def dmrg_matvec(A, x, y0 = None,nswp = 20, eps = 1e-12, rmax = 32768, kickrank = 4, verb = False, use_cpp = True):
+    """
+    Perform fast matrix vector multiplication `y = Ax` in the TT using the DMRG algorithm.
+    Uses C++ backend if available.
+    
+    Args:
+        A (TT): TT matrix
+        x (TT): TT tensor
+        y0 (TT, optional): initial guess of the result (if None is provided a random tensor is generated as a guess). Defaults to None.
+        nswp (int, optional): numebr of sweeps. Defaults to 20.
+        eps (float, optional): relative accuracy. Defaults to 1e-12.
+        rmax (int, optional): maximum rank. Defaults to 32768.
+        kickrank (int, optional): kickrank. Defaults to 4.
+        verb (bool, optional): show debug info. Defaults to False.
+        use_cpp (bool, optional): flag to choose between the python and C++ implementation (if available). Defaults to False.
+
+    Returns:
+        TT: the result.
+    """
+    if _flag_use_cpp and use_cpp:
+        return torchtt.TT(torchttcpp.dmrg_mv(A.cores, x.cores, [] if y0 is None else y0.cores, A.M, A.N, x.R, [] if y0 is None else y0.R, nswp, eps, rmax, kickrank, verb))
+        #return dmrg_matvec_python(A, x, y0, nswp, eps, rmax, kickrank, verb)
+    else:
+        return dmrg_matvec_python(A, x, y0, nswp, eps, rmax, kickrank, verb)
+    
+def dmrg_matvec_python(A, x, y0 = None, nswp = 20, eps = 1e-12, rmax = 32768, kickrank = 4, verb = False):
+    """
+    Perform fast matrix vector multiplication `y = Ax` in the TT using the DMRG algorithm.
+
+    Args:
+        A (TT): TT matrix
+        x (TT): TT tensor
+        y0 (TT, optional): initial guess of the result (if None is provided a random tensor is generated as a guess). Defaults to None.
+        nswp (int, optional): numebr of sweeps. Defaults to 20.
+        eps (float, optional): relative accuracy. Defaults to 1e-12.
+        rmax (int, optional): maximum rank. Defaults to 32768.
+        kickrank (int, optional): kickrank. Defaults to 4.
+        verb (bool, optional): show debug info. Defaults to False.
+
+    Returns:
+        TT: the result.
+    """
     if y0 == None:
         y0 = torchtt.random(A.M,2, dtype=A.cores[0].dtype, device = A.cores[0].device)
     y_cores = y0.cores
@@ -126,7 +175,7 @@ def dmrg_matvec(A,x,y0 = None,nswp = 20, eps = 1e-12, rmax = 1024, kickrank = 4,
               y_cores[k] = tn.conj(tn.reshape(W1,[Ry[k],M[k],r_new]))
               y_cores[k+1] = tn.conj(tn.reshape(W2,[r_new,M[k+1],Ry[k+2]]))
               
-              Wc = tn.einsum('ijk,klm->ijlm', tn.conj(y_cores[k]), tn.conj(y_cores[k+1]))
+              #Wc = tn.einsum('ijk,klm->ijlm', tn.conj(y_cores[k]), tn.conj(y_cores[k+1]))
               
               # print('decomposition ',tn.linalg.norm(Wc-W)/tn.linalg.norm(W))
               Phi_next = tn.einsum('ijk,kmn->ijmn',Phis[k],tn.conj(x.cores[k])) # shape rk-1 x rAk-1 x Nk x rxk
