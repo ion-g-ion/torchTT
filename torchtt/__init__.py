@@ -21,4 +21,5 @@ from . import grad
 from . import manifold
 from . import interpolate
 from . import nn
+from . import cpp
 # from .errors import *

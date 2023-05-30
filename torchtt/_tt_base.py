@@ -733,13 +733,14 @@ class TT():
         result = TT(cores_new)
         return result
 
-    def fast_matvec(self,other, eps = 1e-12, nswp = 20, verb = False, use_cpp = True):
+    def fast_matvec(self,other, eps = 1e-12, initial = None, nswp = 20, verb = False, use_cpp = True):
         """
         Fast matrix vector multiplication A@x using DMRG iterations. Faster than traditional matvec + rounding.
 
         Args:
             other (torchtt.TT): the TT tensor.
             eps (float, optional): relative accuracy for DMRG. Defaults to 1e-12.
+            initial (None|torchtt.TT, optional): an approximation of the product (None means random initial guess). Defaults to None.
             nswp (int, optional): number of DMRG iterations. Defaults to 40.
             verb (bool, optional): show info for debug. Defaults to False.
             use_cpp (bool, optional): use the C++ implementation if available. Defaults to True.
@@ -757,7 +758,7 @@ class TT():
         if not self.__is_ttm or other.is_ttm:
             raise IncompatibleTypes('First operand should be a TT matrix and second a TT vector.')
             
-        return dmrg_matvec(self, other, eps = eps, verb = verb, nswp = nswp, use_cpp = use_cpp)
+        return dmrg_matvec(self, other, y0 = initial, eps = eps, verb = verb, nswp = nswp, use_cpp = use_cpp)
 
     def apply_mask(self,indices):
         """

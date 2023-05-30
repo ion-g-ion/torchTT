@@ -26,7 +26,6 @@
 <p>Provides Tensor-Train (TT) decomposition using <code>pytorch</code> as backend.</p>
 <p>Contains routines for computing the TT decomposition and all the basisc linear algebra in the TT format. Additionally, GPU support can be used thanks to the <code>pytorch</code> backend. <br>
 It also has linear solvers in TT and cross approximation as well as automatic differentiation.</p>
-<p><img alt="logo" src="https://github.com/ion-g-ion/torchTT/blob/main/logo.png?raw=true"></p>
 <h2 id="what-is-the-tensor-train-format">What is the Tensor-Train format?</h2>
 <p>The Tensor-Train (TT) format is a low-rank tensor decomposition format used to fight the curse of dimensionality. A d-dimensional tensor <span><span class="MathJax_Preview">\mathsf{x} \in \mathbb{R} ^{n_1 \times n_2 \times \cdots \times n_d}</span><script type="math/tex">\mathsf{x} \in \mathbb{R} ^{n_1 \times n_2 \times \cdots \times n_d}</script></span> can be expressed using algebraic operations between d smaller tensors:</p>
 <p><span><span class="MathJax_Preview"> \mathsf{x}_{i_1i_2...i_d} = \sum\limits_{s_0=1}^{r_0} \sum\limits_{s_1=1}^{r_1} \cdots \sum\limits_{s_{d-1}=1}^{r_{d-1}} \sum\limits_{s_d=1}^{r_d} \mathsf{g}^{(1)}_{s_0 i_1 s_1} \cdots \mathsf{g}^{(d)}_{s_{d-1} i_d s_d}, </span><script type="math/tex; mode=display"> \mathsf{x}_{i_1i_2...i_d} = \sum\limits_{s_0=1}^{r_0} \sum\limits_{s_1=1}^{r_1} \cdots \sum\limits_{s_{d-1}=1}^{r_{d-1}} \sum\limits_{s_d=1}^{r_d} \mathsf{g}^{(1)}_{s_0 i_1 s_1} \cdots \mathsf{g}^{(d)}_{s_{d-1} i_d s_d}, </script></span>
@@ -112,6 +111,10 @@ from . import nn
 <section>
 <h2 class="section-title" id="header-submodules">Sub-modules</h2>
 <dl>
+<dt><code class="name"><a title="torchtt.cpp" href="cpp.html">torchtt.cpp</a></code></dt>
+<dd>
+<div class="desc"><p>Module for the C++ backend.</p></div>
+</dd>
 <dt><code class="name"><a title="torchtt.errors" href="errors.html">torchtt.errors</a></code></dt>
 <dd>
 <div class="desc"><p>Contains the errors used in the <code><a title="torchtt" href="#torchtt">torchtt</a></code> package.</p></div>
@@ -633,12 +636,8 @@ all the TT ranks are 1.</p>
 If None is provided as input the reult is the other tensor.
 If A is N_1 x &hellip; x N_d and B is M_1 x &hellip; x M_p, then kron(A,B) is N_1 x &hellip; x N_d x M_1 x &hellip; x M_p</p>
 <h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>first</code></strong> :&ensp;<code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code> or <code>None</code></dt>
-<dd>first argument.</dd>
-<dt><strong><code>second</code></strong> :&ensp;<code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code> or <code>none</code></dt>
-<dd>second argument.</dd>
-</dl>
+<p>first (torchtt.TT | None): first argument.
+second (torchtt.TT | None): second argument.</p>
 <h2 id="raises">Raises</h2>
 <dl>
 <dt><code>IncompatibleTypes</code></dt>
@@ -663,8 +662,8 @@ If A is N_1 x &hellip; x N_d and B is M_1 x &hellip; x M_p, then kron(A,B) is N_
 
 
     Args:
-        first (torchtt.TT or None): first argument.
-        second (torchtt.TT or none): second argument.
+        first (torchtt.TT | None): first argument.
+        second (torchtt.TT | None): second argument.
 
     Raises:
         IncompatibleTypes: Incompatible data types (make sure both are either TT-matrices or TT-tensors).
@@ -985,11 +984,15 @@ print(xp_tt) # the shape of this tensor should be [9,8,7,6,5]
 <dt><code>InvalidArguments</code></dt>
 <dd>The input must be a TT tensor dims must be a list of integers or a tple of integers.</dd>
 <dt><code>ShapeMismatch</code></dt>
-<dd>dims must be the length of the number of dimensions.</dd>
+<dd><code>dims</code> must be the length of the number of dimensions.</dd>
+<dt><code>InvalidArguments</code></dt>
+<dd>Duplicate dims are not allowed.</dd>
+<dt><code>InvalidArguments</code></dt>
+<dd>Dims should only contain integers from 0 to d-1.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>torch.TT</code></dt>
+<dt><code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
 <dd>the resulting tensor.</dd>
 </dl></div>
 <details class="source">
@@ -1015,15 +1018,20 @@ print(xp_tt) # the shape of this tensor should be [9,8,7,6,5]
 
     Raises:
         InvalidArguments: The input must be a TT tensor dims must be a list of integers or a tple of integers.
-        ShapeMismatch: dims must be the length of the number of dimensions.
-
+        ShapeMismatch: `dims` must be the length of the number of dimensions.
+        InvalidArguments: Duplicate dims are not allowed.
+        InvalidArguments: Dims should only contain integers from 0 to d-1.
     Returns:
-        torch.TT: the resulting tensor.
+        torchtt.TT: the resulting tensor.
     &#34;&#34;&#34;
     if not isinstance(input, TT) :
         raise InvalidArguments(&#34;The input must be a TT tensor dims must be a list of integers or a tple of integers.&#34;)
     if len(dims) != len(input.N):
-        raise ShapeMismatch(&#34;dims must be the length of the number of dimensions.&#34;)
+        raise ShapeMismatch(&#34;`dims` must be the length of the number of dimensions.&#34;)
+    if len(dims) != len(set(dims)):
+        raise InvalidArguments(&#34;Duplicate dims are not allowed.&#34;)
+    if min(dims) != 0 or max(dims) != len(input.N)-1:
+        raise InvalidArguments(&#34;Dims should only contain integers from 0 to d-1.&#34;)
     
     cores, R  = rl_orthogonal(input.cores, input.R, input.is_ttm)
     d = len(cores)
@@ -1478,8 +1486,7 @@ print((A-B).norm()/A.norm())
 the shape can be a list of ints or a list of tuples of ints. The second case creates a TT matrix.</p>
 <h2 id="args">Args</h2>
 <dl>
-<dt><strong><code>shape</code></strong> :&ensp;<code>list[int]</code> or <code>list[tuple[int]]</code></dt>
-<dd>the shape.</dd>
+<dt>shape (list[int] | list[tuple[int]]): the shape.</dt>
 <dt><strong><code>dtype</code></strong> :&ensp;<code>torch.dtype</code>, optional</dt>
 <dd>the dtype of the returned tensor. Defaults to tn.float64.</dd>
 <dt><strong><code>device</code></strong> :&ensp;<code>torch.device</code>, optional</dt>
@@ -1493,7 +1500,7 @@ the shape can be a list of ints or a list of tuples of ints. The second case cre
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
-<dd>the one tensor.</dd>
+<dd>the zero tensor.</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -1505,7 +1512,7 @@ the shape can be a list of ints or a list of tuples of ints. The second case cre
     the shape can be a list of ints or a list of tuples of ints. The second case creates a TT matrix.
 
     Args:
-        shape (list[int] or list[tuple[int]]): the shape.
+        shape (list[int] | list[tuple[int]]): the shape.
         dtype (torch.dtype, optional): the dtype of the returned tensor. Defaults to tn.float64.
         device (torch.device, optional): the device where the TT cores are created (None means CPU). Defaults to None.
 
@@ -1513,7 +1520,7 @@ the shape can be a list of ints or a list of tuples of ints. The second case cre
         InvalidArguments: Shape must be a list.
 
     Returns:
-        torchtt.TT: the one tensor.
+        torchtt.TT: the zero tensor.
     &#34;&#34;&#34;
     if isinstance(shape,list):
         d = len(shape)
@@ -1922,7 +1929,7 @@ print(Att)
         Addition in the TT format. Implements the &#34;+&#34; operator. This function is called in the case a non-torchtt.TT object is added to the left.
 
         Args:
-            other (int or float or torch.tensor scalar): the left operand.
+            other (float | int | torch.tensor): the first operand. If a `torch.tensor` is provided, it must have 1 element.
 
         Returns:
             torchtt.TT: the result.
@@ -1939,7 +1946,7 @@ print(Att)
         The broadcasting rules from `torch` apply here.
         
         Args:
-            other (torchtt.TT or float or int or torch.tensor with 1 element): second operand.
+            other (torchtt.TT | float | int | torch.tensor): the second operand. If a `torch.tensor` is provided, it must have 1 element.
             
         Raises:
             ShapeMismatch: Dimension mismatch.
@@ -2031,7 +2038,7 @@ print(Att)
         Subtract 2 tensors in the TT format. Implements the &#34;-&#34; operator.  
 
         Args:
-            other (int or float or torch.tensor with 1 element): the first operand.
+            other (torchtt.TT | float | int | torch.tensor): the first operand. If a `torch.tensor` is provided, it must have 1 element.
 
         Returns:
             torchtt.TT: the result.
@@ -2048,7 +2055,7 @@ print(Att)
         Broadcasting rules from `torch` apply for this operation as well.
         
         Args:
-            other (torchtt.TT or float or int or torch.tensor with 1 element): the second operand.
+            other (torchtt.TT | float | int | torch.tensor): the second operand. If a `torch.tensor` is provided, it must have 1 element.
 
         Raises:
             ShapeMismatch: Both dimensions of the TT matrix should be equal.
@@ -2144,7 +2151,7 @@ print(Att)
          * TT tensor and scalar(int, float or torch.tensor scalar)
 
         Args:
-            other (torchtt.TT or float or int or torch.tensor with 1 element): the second operand.
+            other (torchtt.TT | float | int | torch.tensor): the first operand. If a `torch.tensor` is provided, it must have 1 element.
 
         Raises:
             ShapeMismatch: Shapes must be equal.
@@ -2168,7 +2175,7 @@ print(Att)
         The broadcasting rules are the same as in torch (see [here](https://pytorch.org/docs/stable/notes/broadcasting.html)).
         
         Args:
-            other (torchtt.TT or float or int or torch.tensor with 1 element): the second operand.
+            other (torchtt.TT | float | int | torch.tensor): the second operand. If a `torch.tensor` is provided, it must have 1 element.
 
         Raises:
             ShapeMismatch: Shapes are incompatible (see the broadcasting rules).
@@ -2235,7 +2242,8 @@ print(Att)
                 cores_new[0] *= other
                 result = TT(cores_new)
             else:
-                result = zeros([(m,n) for m,n in zip(self.M,self.N)] if self.is_ttm else self.N, device=self.cores[0].device)
+                result = TT([tn.zeros((1,self.M[i],self.N[i],1) if self.is_ttm else (1,self.N[i],1), device = self.cores[0].device, dtype = self.cores[0].dtype) for i in range(len(self.N))])
+                # result = zeros([(m,n) for m,n in zip(self.M,self.N)] if self.is_ttm else self.N, device=self.cores[0].device)
         else:
             raise InvalidArguments(&#39;Second operand must be of type: TT, float, int of tensorflow Tensor.&#39;)
                     
@@ -2252,14 +2260,14 @@ print(Att)
         In the last case, the multiplication is performed along the last modes and a full torch.tensor is returned.
 
         Args:
-            other (torchtt.TT or torch.tensor): the second operand.
+            other (torchtt.TT | torch.tensor): the second operand.
 
         Raises:
             ShapeMismatch: Shapes do not match.
             InvalidArguments: Wrong arguments.
 
         Returns:
-            torchtt.TT or torch.tensor: the result. Can be full tensor if the second operand is full tensor.
+            torchtt.TT | torch.tensor: the result. Can be full tensor if the second operand is full tensor.
         &#34;&#34;&#34;
      
         if self.__is_ttm and tn.is_tensor(other):
@@ -2306,7 +2314,7 @@ print(Att)
         result = TT(cores_new)
         return result
 
-    def fast_matvec(self,other, eps = 1e-12, nswp = 20, verb = False):
+    def fast_matvec(self,other, eps = 1e-12, nswp = 20, verb = False, use_cpp = True):
         &#34;&#34;&#34;
         Fast matrix vector multiplication A@x using DMRG iterations. Faster than traditional matvec + rounding.
 
@@ -2315,6 +2323,7 @@ print(Att)
             eps (float, optional): relative accuracy for DMRG. Defaults to 1e-12.
             nswp (int, optional): number of DMRG iterations. Defaults to 40.
             verb (bool, optional): show info for debug. Defaults to False.
+            use_cpp (bool, optional): use the C++ implementation if available. Defaults to True.
 
         Raises:
             InvalidArguments: Second operand has to be TT object.
@@ -2329,7 +2338,7 @@ print(Att)
         if not self.__is_ttm or other.is_ttm:
             raise IncompatibleTypes(&#39;First operand should be a TT matrix and second a TT vector.&#39;)
             
-        return dmrg_matvec(self, other, eps = eps, verb = verb, nswp = nswp)
+        return dmrg_matvec(self, other, eps = eps, verb = verb, nswp = nswp, use_cpp = use_cpp)
 
     def apply_mask(self,indices):
         &#34;&#34;&#34;
@@ -2361,7 +2370,7 @@ print(Att)
         
 
         Args:
-            other (torchtt.TT or float or int or torch.tensor with 1 element): the first operand.
+            other (torchtt.TT | float | int | torch.tensor): the second operand. If a `torch.tensor` is provided, it must have 1 element.
 
         Raises:
             IncompatibleTypes: Operands should be either TT or TTM.
@@ -2401,7 +2410,7 @@ print(Att)
             ```
             
         Args:
-            other (torchtt.TT or float or int or torch.tensor with 1 element): the first operand.
+            other (torchtt.TT | float | int | torch.tensor): the first operand. If a `torch.tensor` is provided, it must have 1 element.
 
         Raises:
             InvalidArguments: The first operand must be int, float or 1d torch.tensor.
@@ -2512,7 +2521,7 @@ print(Att)
             ```
             
         Args:
-            index (int or list[int] or None, optional): the indices along which the summation is performed. None selects all of them. Defaults to None.
+            index (int | list[int] | None, optional): the indices along which the summation is performed. None selects all of them. Defaults to None.
 
         Raises:
             InvalidArguments: Invalid index.
@@ -2660,17 +2669,17 @@ print(Att)
         Similar to pytorch or numpy slicing.
 
         Args:
-            index (tuple[slice] or tuple[int] or int or Ellipsis or slice): the slicing.
+            index (tuple[slice] | tuple[int] | int | Ellipsis | slice): the slicing.
 
         Raises:
             NotImplementedError: Ellipsis are not supported.
             InvalidArguments: Slice size is invalid.
-            InvalidArguments: Slice carguments not valid. They have to be either int, slice or None.
+            InvalidArguments: Slice carguments not valid. They have to be either int, slice | None.
             InvalidArguments: Invalid slice. Tensor is not 1d.
 
 
         Returns:
-            torchtt.TT or torch.tensor: the result. If all the indices are fixed, a scalar torch.tensor is returned otherwise a torchtt.TT.
+            torchtt.TT | torch.tensor: the result. If all the indices are fixed, a scalar torch.tensor is returned otherwise a torchtt.TT.
         &#34;&#34;&#34;
         
         
@@ -2715,18 +2724,19 @@ print(Att)
             else:
                 # if len(index) != len(self.__N):
                 #    raise InvalidArguments(&#39;Slice size is invalid.&#39;)
+                num_none = sum([i is None for i in index])
+                
                 if index[0] == Ellipsis:
-                    index = (slice(None, None, None),)*(len(self.__N)-len(index)+1) + index[1:]
+                    index = (slice(None, None, None),)*(len(self.__N)-len(index)+1+num_none) + index[1:]
                 elif index[-1] == Ellipsis:
-                    index = index[:-1] + (slice(None, None, None),)*(len(self.__N)-len(index)+1)
-
+                    index = index[:-1] + (slice(None, None, None),)*(len(self.__N)-len(index)+1+num_none)
                 cores_new = []
                 k = 0
                 for i,idx in enumerate(index):
                     if isinstance(idx,slice):
                         cores_new.append(self.cores[k][:,idx,:])
                         k+=1
-                    elif idx==None:
+                    elif idx is None:
                         # extend the tensor
                         tmp = tn.eye(cores_new[-1].shape[-1] if len(cores_new)!=0 else 1, device = self.cores[0].device, dtype = self.cores[0].dtype)[:,None,:]
                         cores_new.append(tmp)
@@ -3318,7 +3328,7 @@ val = x.apply_mask(indices)
 </details>
 </dd>
 <dt id="torchtt.TT.fast_matvec"><code class="name flex">
-<span>def <span class="ident">fast_matvec</span></span>(<span>self, other, eps=1e-12, nswp=20, verb=False)</span>
+<span>def <span class="ident">fast_matvec</span></span>(<span>self, other, eps=1e-12, nswp=20, verb=False, use_cpp=True)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Fast matrix vector multiplication A@x using DMRG iterations. Faster than traditional matvec + rounding.</p>
@@ -3332,6 +3342,8 @@ val = x.apply_mask(indices)
 <dd>number of DMRG iterations. Defaults to 40.</dd>
 <dt><strong><code>verb</code></strong> :&ensp;<code>bool</code>, optional</dt>
 <dd>show info for debug. Defaults to False.</dd>
+<dt><strong><code>use_cpp</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>use the C++ implementation if available. Defaults to True.</dd>
 </dl>
 <h2 id="raises">Raises</h2>
 <dl>
@@ -3349,7 +3361,7 @@ val = x.apply_mask(indices)
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def fast_matvec(self,other, eps = 1e-12, nswp = 20, verb = False):
+<pre><code class="python">def fast_matvec(self,other, eps = 1e-12, nswp = 20, verb = False, use_cpp = True):
     &#34;&#34;&#34;
     Fast matrix vector multiplication A@x using DMRG iterations. Faster than traditional matvec + rounding.
 
@@ -3358,6 +3370,7 @@ val = x.apply_mask(indices)
         eps (float, optional): relative accuracy for DMRG. Defaults to 1e-12.
         nswp (int, optional): number of DMRG iterations. Defaults to 40.
         verb (bool, optional): show info for debug. Defaults to False.
+        use_cpp (bool, optional): use the C++ implementation if available. Defaults to True.
 
     Raises:
         InvalidArguments: Second operand has to be TT object.
@@ -3372,7 +3385,7 @@ val = x.apply_mask(indices)
     if not self.__is_ttm or other.is_ttm:
         raise IncompatibleTypes(&#39;First operand should be a TT matrix and second a TT vector.&#39;)
         
-    return dmrg_matvec(self, other, eps = eps, verb = verb, nswp = nswp)</code></pre>
+    return dmrg_matvec(self, other, eps = eps, verb = verb, nswp = nswp, use_cpp = use_cpp)</code></pre>
 </details>
 </dd>
 <dt id="torchtt.TT.full"><code class="name flex">
@@ -3844,10 +3857,7 @@ print(a.sum([1,2]))
 print(a.sum([0,1,2,3,4]))
 </code></pre>
 <h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>index</code></strong> :&ensp;<code>int</code> or <code>list[int]</code> or <code>None</code>, optional</dt>
-<dd>the indices along which the summation is performed. None selects all of them. Defaults to None.</dd>
-</dl>
+<p>index (int | list[int] | None, optional): the indices along which the summation is performed. None selects all of them. Defaults to None.</p>
 <h2 id="raises">Raises</h2>
 <dl>
 <dt><code>InvalidArguments</code></dt>
@@ -3874,7 +3884,7 @@ print(a.sum([0,1,2,3,4]))
         ```
         
     Args:
-        index (int or list[int] or None, optional): the indices along which the summation is performed. None selects all of them. Defaults to None.
+        index (int | list[int] | None, optional): the indices along which the summation is performed. None selects all of them. Defaults to None.
 
     Raises:
         InvalidArguments: Invalid index.
@@ -4131,6 +4141,7 @@ N1 x &hellip; x Nd x 1 x &hellip; x 1.</p>
 <ul id="index">
 <li><h3><a href="#header-submodules">Sub-modules</a></h3>
 <ul>
+<li><code><a title="torchtt.cpp" href="cpp.html">torchtt.cpp</a></code></li>
 <li><code><a title="torchtt.errors" href="errors.html">torchtt.errors</a></code></li>
 <li><code><a title="torchtt.grad" href="grad.html">torchtt.grad</a></code></li>
 <li><code><a title="torchtt.interpolate" href="interpolate.html">torchtt.interpolate</a></code></li>
