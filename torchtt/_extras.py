@@ -355,7 +355,7 @@ def reshape(tens, shape, eps = 1e-16, rmax = sys.maxsize):
         
         while True:
             if core.shape[1] % M[idx_shape] == 0 and core.shape[2] % N[idx_shape] == 0:
-                if core.shape[1] // M[idx_shape] > 1 and core.shape[2] // N[idx_shape] > 1:
+                if core.shape[1] // M[idx_shape] > 1 or core.shape[2] // N[idx_shape] > 1:
                     m1 = M[idx_shape]
                     m2 = core.shape[1] // m1
                     n1 = N[idx_shape]
@@ -935,3 +935,31 @@ def pad(tensor, padding, value = 0.0):
             
     return TT(cores)
             
+def shape_tuple_to_mn(shape):
+    """
+    Convert the shape of a TTM from tuple format to row and column shapes.
+
+    Args:
+        shape (list[tuple[int]]): shape.
+
+    Returns:
+        tuple[list[int],list[int]]: still the shape.
+    """
+    M = [s[0] for s in shape]
+    N = [s[1] for s in shape]
+    
+    return M, N
+
+def shape_mn_to_tuple(M, N):
+    """
+    Convert the shape of a TTM from row/column format to tuple format.
+
+    Args:
+        M (list[int]): row shapes.
+        N (list[int]): column shapes.
+
+    Returns:
+        list[tuple[int]]: shape.
+    """
+
+    return [(m,n) for m,n in zip(M,N)]

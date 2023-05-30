@@ -94,10 +94,10 @@ It also has linear solvers in TT and cross approximation as well as automatic di
 &#34;&#34;&#34;
 
 from ._tt_base import TT 
-from ._extras import eye, zeros, kron, ones, random, randn, reshape, meshgrid , dot, elementwise_divide, numel, rank1TT, bilinear_form, diag, permute, load, save, cat, pad 
+from ._extras import eye, zeros, kron, ones, random, randn, reshape, meshgrid , dot, elementwise_divide, numel, rank1TT, bilinear_form, diag, permute, load, save, cat, pad, shape_mn_to_tuple, shape_tuple_to_mn 
 # from .torchtt import TT, eye, zeros, kron, ones, random, randn, reshape, meshgrid , dot, elementwise_divide, numel, rank1TT, bilinear_form, diag, permute, load, save, cat, pad 
 
-__all__ = [&#39;TT&#39;, &#39;eye&#39;, &#39;zeros&#39;, &#39;kron&#39;, &#39;ones&#39;, &#39;random&#39;, &#39;randn&#39;, &#39;reshape&#39;, &#39;meshgrid&#39;, &#39;dot&#39;, &#39;elementwise_divide&#39;, &#39;numel&#39;, &#39;rank1TT&#39;, &#39;bilinear_form&#39;, &#39;diag&#39;, &#39;permute&#39;, &#39;load&#39;, &#39;save&#39;, &#39;cat&#39;, &#39;pad&#39;]
+__all__ = [&#39;TT&#39;, &#39;eye&#39;, &#39;zeros&#39;, &#39;kron&#39;, &#39;ones&#39;, &#39;random&#39;, &#39;randn&#39;, &#39;reshape&#39;, &#39;meshgrid&#39;, &#39;dot&#39;, &#39;elementwise_divide&#39;, &#39;numel&#39;, &#39;rank1TT&#39;, &#39;bilinear_form&#39;, &#39;diag&#39;, &#39;permute&#39;, &#39;load&#39;, &#39;save&#39;, &#39;cat&#39;, &#39;pad&#39;, &#39;shape_mn_to_tuple&#39;, &#39;shape_tuple_to_mn&#39;]
 
 from . import solvers
 from . import grad
@@ -105,6 +105,7 @@ from . import grad
 from . import manifold
 from . import interpolate
 from . import nn
+from . import cpp
 # from .errors import *</code></pre>
 </details>
 </section>
@@ -1335,7 +1336,7 @@ A rounding is also performed.</p>
         
         while True:
             if core.shape[1] % M[idx_shape] == 0 and core.shape[2] % N[idx_shape] == 0:
-                if core.shape[1] // M[idx_shape] &gt; 1 and core.shape[2] // N[idx_shape] &gt; 1:
+                if core.shape[1] // M[idx_shape] &gt; 1 or core.shape[2] // N[idx_shape] &gt; 1:
                     m1 = M[idx_shape]
                     m2 = core.shape[1] // m1
                     n1 = N[idx_shape]
@@ -1476,6 +1477,77 @@ print((A-B).norm()/A.norm())
     else:
         dct = {&#34;is_ttm&#34;: tensor.is_ttm, &#34;R&#34;: tensor.R, &#34;N&#34;: tensor.N, &#34;cores&#34;: tensor.cores}
         tn.save(dct, path)</code></pre>
+</details>
+</dd>
+<dt id="torchtt.shape_mn_to_tuple"><code class="name flex">
+<span>def <span class="ident">shape_mn_to_tuple</span></span>(<span>M, N)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Convert the shape of a TTM from row/column format to tuple format.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>M</code></strong> :&ensp;<code>list[int]</code></dt>
+<dd>row shapes.</dd>
+<dt><strong><code>N</code></strong> :&ensp;<code>list[int]</code></dt>
+<dd>column shapes.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list[tuple[int]]</code></dt>
+<dd>shape.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def shape_mn_to_tuple(M, N):
+    &#34;&#34;&#34;
+    Convert the shape of a TTM from row/column format to tuple format.
+
+    Args:
+        M (list[int]): row shapes.
+        N (list[int]): column shapes.
+
+    Returns:
+        list[tuple[int]]: shape.
+    &#34;&#34;&#34;
+
+    return [(m,n) for m,n in zip(M,N)]</code></pre>
+</details>
+</dd>
+<dt id="torchtt.shape_tuple_to_mn"><code class="name flex">
+<span>def <span class="ident">shape_tuple_to_mn</span></span>(<span>shape)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Convert the shape of a TTM from tuple format to row and column shapes.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>shape</code></strong> :&ensp;<code>list[tuple[int]]</code></dt>
+<dd>shape.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>tuple[list[int],list[int]]</code></dt>
+<dd>still the shape.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def shape_tuple_to_mn(shape):
+    &#34;&#34;&#34;
+    Convert the shape of a TTM from tuple format to row and column shapes.
+
+    Args:
+        shape (list[tuple[int]]): shape.
+
+    Returns:
+        tuple[list[int],list[int]]: still the shape.
+    &#34;&#34;&#34;
+    M = [s[0] for s in shape]
+    N = [s[1] for s in shape]
+    
+    return M, N</code></pre>
 </details>
 </dd>
 <dt id="torchtt.zeros"><code class="name flex">
@@ -2314,13 +2386,14 @@ print(Att)
         result = TT(cores_new)
         return result
 
-    def fast_matvec(self,other, eps = 1e-12, nswp = 20, verb = False, use_cpp = True):
+    def fast_matvec(self,other, eps = 1e-12, initial = None, nswp = 20, verb = False, use_cpp = True):
         &#34;&#34;&#34;
         Fast matrix vector multiplication A@x using DMRG iterations. Faster than traditional matvec + rounding.
 
         Args:
             other (torchtt.TT): the TT tensor.
             eps (float, optional): relative accuracy for DMRG. Defaults to 1e-12.
+            initial (None|torchtt.TT, optional): an approximation of the product (None means random initial guess). Defaults to None.
             nswp (int, optional): number of DMRG iterations. Defaults to 40.
             verb (bool, optional): show info for debug. Defaults to False.
             use_cpp (bool, optional): use the C++ implementation if available. Defaults to True.
@@ -2338,7 +2411,7 @@ print(Att)
         if not self.__is_ttm or other.is_ttm:
             raise IncompatibleTypes(&#39;First operand should be a TT matrix and second a TT vector.&#39;)
             
-        return dmrg_matvec(self, other, eps = eps, verb = verb, nswp = nswp, use_cpp = use_cpp)
+        return dmrg_matvec(self, other, y0 = initial, eps = eps, verb = verb, nswp = nswp, use_cpp = use_cpp)
 
     def apply_mask(self,indices):
         &#34;&#34;&#34;
@@ -3328,7 +3401,7 @@ val = x.apply_mask(indices)
 </details>
 </dd>
 <dt id="torchtt.TT.fast_matvec"><code class="name flex">
-<span>def <span class="ident">fast_matvec</span></span>(<span>self, other, eps=1e-12, nswp=20, verb=False, use_cpp=True)</span>
+<span>def <span class="ident">fast_matvec</span></span>(<span>self, other, eps=1e-12, initial=None, nswp=20, verb=False, use_cpp=True)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Fast matrix vector multiplication A@x using DMRG iterations. Faster than traditional matvec + rounding.</p>
@@ -3338,6 +3411,7 @@ val = x.apply_mask(indices)
 <dd>the TT tensor.</dd>
 <dt><strong><code>eps</code></strong> :&ensp;<code>float</code>, optional</dt>
 <dd>relative accuracy for DMRG. Defaults to 1e-12.</dd>
+<dt>initial (None|torchtt.TT, optional): an approximation of the product (None means random initial guess). Defaults to None.</dt>
 <dt><strong><code>nswp</code></strong> :&ensp;<code>int</code>, optional</dt>
 <dd>number of DMRG iterations. Defaults to 40.</dd>
 <dt><strong><code>verb</code></strong> :&ensp;<code>bool</code>, optional</dt>
@@ -3361,13 +3435,14 @@ val = x.apply_mask(indices)
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def fast_matvec(self,other, eps = 1e-12, nswp = 20, verb = False, use_cpp = True):
+<pre><code class="python">def fast_matvec(self,other, eps = 1e-12, initial = None, nswp = 20, verb = False, use_cpp = True):
     &#34;&#34;&#34;
     Fast matrix vector multiplication A@x using DMRG iterations. Faster than traditional matvec + rounding.
 
     Args:
         other (torchtt.TT): the TT tensor.
         eps (float, optional): relative accuracy for DMRG. Defaults to 1e-12.
+        initial (None|torchtt.TT, optional): an approximation of the product (None means random initial guess). Defaults to None.
         nswp (int, optional): number of DMRG iterations. Defaults to 40.
         verb (bool, optional): show info for debug. Defaults to False.
         use_cpp (bool, optional): use the C++ implementation if available. Defaults to True.
@@ -3385,7 +3460,7 @@ val = x.apply_mask(indices)
     if not self.__is_ttm or other.is_ttm:
         raise IncompatibleTypes(&#39;First operand should be a TT matrix and second a TT vector.&#39;)
         
-    return dmrg_matvec(self, other, eps = eps, verb = verb, nswp = nswp, use_cpp = use_cpp)</code></pre>
+    return dmrg_matvec(self, other, y0 = initial, eps = eps, verb = verb, nswp = nswp, use_cpp = use_cpp)</code></pre>
 </details>
 </dd>
 <dt id="torchtt.TT.full"><code class="name flex">
@@ -4170,6 +4245,8 @@ N1 x &hellip; x Nd x 1 x &hellip; x 1.</p>
 <li><code><a title="torchtt.rank1TT" href="#torchtt.rank1TT">rank1TT</a></code></li>
 <li><code><a title="torchtt.reshape" href="#torchtt.reshape">reshape</a></code></li>
 <li><code><a title="torchtt.save" href="#torchtt.save">save</a></code></li>
+<li><code><a title="torchtt.shape_mn_to_tuple" href="#torchtt.shape_mn_to_tuple">shape_mn_to_tuple</a></code></li>
+<li><code><a title="torchtt.shape_tuple_to_mn" href="#torchtt.shape_tuple_to_mn">shape_tuple_to_mn</a></code></li>
 <li><code><a title="torchtt.zeros" href="#torchtt.zeros">zeros</a></code></li>
 </ul>
 </li>

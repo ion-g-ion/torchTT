@@ -1457,6 +1457,8 @@ class TT():
             torchtt.TT: the complex conjugated tensor.
         """
         return TT([tn.conj(c) for c in self.cores])
+    
+
 
 
             

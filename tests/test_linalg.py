@@ -467,7 +467,13 @@ class TestLinalg(unittest.TestCase):
         Ur = Ar@Tr
         U = A@T
         self.assertLess(err_rel(Ur.full(),tn.reshape(U.full(),Ur.N)),1e-13,'TT-matrix reshape fail: test 3')
+        
+        A = tntt.random([(2,2),(4,2),(2,2)],[1,3,4,1])
+        Af = A.full()
+        Ar = tntt.reshape(A, [(2,2),(2,2),(2,1),(2,2)])
+        self.assertLess(err_rel(Ar.full(),tn.reshape(Af,Ar.M+Ar.N)),1e-13,'TT-matrix reshape fail: test 4')
 
+        
     def test_mask(self):
         """
         Test the apply_mask() method.
