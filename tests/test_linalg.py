@@ -316,6 +316,16 @@ class TestLinalg(unittest.TestCase):
         self.assertLess(err_rel(y.full(),tn.einsum('abcdef,bdf->ace',a.full(),tn.conj(c.full()))), 1e-12, 'Dot product error. Test: different sizes 1.')
         self.assertLess(err_rel(z.full(),tn.einsum('abcdef,abf->cde',b.full(),tn.conj(d.full()))), 1e-12, 'Dot product error. Test: different sizes 2.')
         
+    def test_sum(self):
+        '''
+        Test the sum method.
+        '''
+        a = tntt.random([4,5,6,7,8],[1,2,10,16,7,1], dtype = self.basic_dtype)
+        
+        afull = a.full()
+        
+        self.assertLess(err_rel(a.sum(),afull.sum()), 1e-13, "Test TT.sum() error 1.")
+
 
     def test_kron(self):
         '''
@@ -558,6 +568,23 @@ class TestLinalg(unittest.TestCase):
         n = 40
         err = tn.linalg.norm(tn.reshape(Mp.full()[4:, 5:, 8:, 3:, 5:, 5:],[n,n])-tn.eye(n)/2)
         self.assertLess(err/n, 1e-15, "torchtt.pad() TTM fail 3.")
+
+    def test_diag(self):
+        """
+        Test the torchtt.diag() function.
+        """
+        
+        n = [3,4,5]
+        I = tntt.eye(n, dtype = tn.float64)
+        dg = tntt.diag(I)
+        
+        self.assertLess(err_rel(dg.full(), tntt.ones(n)), 1e-13, "torchtt.diag() TTM->TT failed.")
+        
+        o = tntt.ones(n)
+        E = tntt.diag(o)
+        
+        self.assertLess(err_rel(E.full(), tntt.eye(n).full() ), 1e-13, "torchtt.diag() TT->TTM failed.")
+        
 
 if __name__ == '__main__':
     unittest.main()
