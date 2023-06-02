@@ -3,31 +3,42 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Readme File
-===========
 
-.. include:: ./README.md
-   :parser: myst_parser.sphinx_
 
-Intro to torchTT
-================
 
-.. include:: ./torchtt/INTRO.md
-   :parser: myst_parser.sphinx_
+.. image:: https://github.com/ion-g-ion/torchTT/blob/main/logo.png?raw=true
+   :height: 100px
+   :width: 200 px
+   :alt: logo
+   :align: center
 
-Welcome to torchtt's documentation!
-===================================
+.. include:: ./docs/intro_page.rst
+
+
+
+:ref:`install-page-label`
+------------------------
+
+:ref:`about-tt-label`
+---------------------
+
+:ref:`reference-label`
+----------------------
+
+
 
 .. toctree::
-   :maxdepth: 1
-   :caption: Contents:
+   :hidden:
+   :maxdepth: 2
 
-   README.md
+   ./docs/intro_page.rst
+   ./docs/install.rst
+   ./docs/package-overview.rst
    ./docs/modules
 
 
-Indices and tables
-==================
+Index
+=====
 
 * :ref:`genindex`
 * :ref:`modindex`
