@@ -11,6 +11,7 @@ import math
 from torchtt._dmrg import dmrg_matvec
 from torchtt._aux_ops import apply_mask, dense_matvec, bilinear_form_aux
 from torchtt.errors import *
+import torchtt._extras
 import sys
 
 
@@ -1353,7 +1354,7 @@ class TT():
                 else:
                     raise ShapeMismatch('Reshaping error: check if the dimensions are powers of the desired mode size:\r\ncore size '+str(list(self.cores[i].shape))+' cannot be reshaped.')
                 
-            result = reshape(self, shape_new, eps, rmax)
+            result = torchtt._extras.reshape(self, shape_new, eps, rmax)
         else:
             for core in self.cores:
                 if int(math.log(core.shape[1],mode_size))>1:

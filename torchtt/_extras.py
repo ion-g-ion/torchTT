@@ -11,7 +11,8 @@ import math
 from torchtt._dmrg import dmrg_matvec
 from torchtt._aux_ops import apply_mask, dense_matvec, bilinear_form_aux
 from torchtt.errors import *
-from ._tt_base import TT
+#from ._tt_base import TT
+import torchtt._tt_base
 import sys 
 
 def eye(shape, dtype=tn.float64, device = None):
@@ -32,7 +33,7 @@ def eye(shape, dtype=tn.float64, device = None):
     
     cores = [tn.unsqueeze(tn.unsqueeze(tn.eye(s, dtype=dtype, device = device),0),3) for s in shape]            
     
-    return TT(cores)
+    return torchtt._tt_base.TT(cores)
     
 def zeros(shape, dtype=tn.float64, device = None):
     """
@@ -63,7 +64,7 @@ def zeros(shape, dtype=tn.float64, device = None):
     else:
         raise InvalidArguments('Shape must be a list.')
     
-    return TT(cores)
+    return torchtt._tt_base.TT(cores)
     
 
   
@@ -85,19 +86,19 @@ def kron(first, second):
     Returns:
         torchtt.TT: the result.
     """
-    if first == None and isinstance(second,TT):
+    if first == None and isinstance(second,torchtt._tt_base.TT):
         cores_new = [c.clone() for c in second.cores]
-        result = TT(cores_new)
-    elif second == None and isinstance(first,TT): 
+        result = torchtt._tt_base.TT(cores_new)
+    elif second == None and isinstance(first,torchtt._tt_base.TT): 
         cores_new = [c.clone() for c in first.cores]
-        result = TT(cores_new)
-    elif isinstance(first,TT) and isinstance(second,TT):
+        result = torchtt._tt_base.TT(cores_new)
+    elif isinstance(first,torchtt._tt_base.TT) and isinstance(second,torchtt._tt_base.TT):
         if first.is_ttm != second.is_ttm:
             raise IncompatibleTypes('Incompatible data types (make sure both are either TT-matrices or TT-tensors).')
     
         # concatenate the result
         cores_new = [c.clone() for c in first.cores] + [c.clone() for c in second.cores]
-        result = TT(cores_new)
+        result = torchtt._tt_base.TT(cores_new)
     else:
         raise InvalidArguments('Invalid arguments.')
     return result
@@ -123,7 +124,7 @@ def ones(shape, dtype=tn.float64, device = None):
     if isinstance(shape,list):
         d = len(shape)
         if d==0:
-            return TT(None)
+            return torchtt._tt_base.TT(None)
         else:
             if isinstance(shape[0],tuple):
                 # we create a TT-matrix
@@ -136,7 +137,7 @@ def ones(shape, dtype=tn.float64, device = None):
     else:
         raise InvalidArguments('Shape must be a list.')
     
-    return TT(cores)
+    return torchtt._tt_base.TT(cores)
 
 
 
@@ -161,10 +162,10 @@ def xfun(shape, dtype = tn.float64, device = None):
     if isinstance(shape, list):
         d = len(shape)
         if d == 0:
-            return TT(None)
+            return torchtt._tt_base.TT(None)
             
         if d == 1: 
-            return TT(tn.arange(shape[0], dtype = dtype, device = device))
+            return torchtt._tt_base.TT(tn.arange(shape[0], dtype = dtype, device = device))
             
         else:
             cores = []
@@ -186,7 +187,7 @@ def xfun(shape, dtype = tn.float64, device = None):
     else:
         raise InvalidArguments('Shape must be a list.')
     
-    return TT(cores)
+    return torchtt._tt_base.TT(cores)
 
 
 
@@ -211,10 +212,10 @@ def linspace(shape = [1], a = 0.0, b = 0.0, dtype = tn.float64, device = None):
     if isinstance(shape,list):
         d = len(shape)
         if d == 0:
-            return TT(None)
+            return torchtt._tt_base.TT(None)
             
         if d == 1: 
-            return TT(tn.linspace(shape[0], a, b, dtype = dtype, device = device))
+            return torchtt._tt_base.TT(tn.linspace(shape[0], a, b, dtype = dtype, device = device))
             
         else:
             x = xfun(shape)
@@ -251,14 +252,14 @@ def arange(shape = [1], a = 0, b = 0, step = 1, dtype = tn.float64, device = Non
     if isinstance(shape,list):
         d = len(shape)
         if d == 0:
-            return TT(None)
+            return torchtt._tt_base.TT(None)
                 
         if d == 1: 
-            return TT(tn.arange(a, b, step, dtype = dtype, device = device))
+            return torchtt._tt_base.TT(tn.arange(a, b, step, dtype = dtype, device = device))
     else:
         raise InvalidArguments('Shape must be a list.')
         
-    return reshape(TT(tn.arange(a, b, step, dtype = dtype, device = device)), shape)
+    return reshape(torchtt._tt_base.TT(tn.arange(a, b, step, dtype = dtype, device = device)), shape)
 
 
 
@@ -291,7 +292,7 @@ def random(N, R, dtype = tn.float64, device = None):
     for i in range(len(N)):
         cores.append(tn.randn([R[i],N[i][0],N[i][1],R[i+1]] if isinstance(N[i],tuple) else [R[i],N[i],R[i+1]], dtype = dtype, device = device))
         
-    T = TT(cores)
+    T = torchtt._tt_base.TT(cores)
     
     return T
 
@@ -318,7 +319,7 @@ def randn(N, R, var = 1.0, dtype = tn.float64, device = None):
     for i in range(d):
         cores[i] = tn.randn([R[i],N[i][0],N[i][1],R[i+1]] if isinstance(N[i],tuple) else [R[i],N[i],R[i+1]], dtype = dtype, device = device)*np.sqrt(v)
 
-    return TT(cores)
+    return torchtt._tt_base.TT(cores)
 
 def reshape(tens, shape, eps = 1e-16, rmax = sys.maxsize):
     """
@@ -428,7 +429,7 @@ def reshape(tens, shape, eps = 1e-16, rmax = sys.maxsize):
                 core = tn.einsum('ijk,klm->ijlm',core,tens.cores[idx])
                 core = tn.reshape(core,[core.shape[0],-1,core.shape[-1]])
                 
-    return TT(cores_new).round(eps)
+    return torchtt._tt_base.TT(cores_new).round(eps)
         
         
 def meshgrid(vectors):
@@ -449,7 +450,7 @@ def meshgrid(vectors):
     for i in range(len(vectors)):
         lst = [tn.ones((1,v.shape[0],1),dtype=dtype) for v in vectors]
         lst[i] = tn.reshape(vectors[i],[1,-1,1])
-        Xs.append(TT(lst))
+        Xs.append(torchtt._tt_base.TT(lst))
     return Xs
     
 def dot(a,b,axis=None):
@@ -485,7 +486,7 @@ def dot(a,b,axis=None):
         float or torchtt.TT: the result. If no axis index is provided the result is a scalar otherwise a torchtt.TT object.
     """
     
-    if not isinstance(a, TT) or not isinstance(b, TT):
+    if not isinstance(a, torchtt._tt_base.TT) or not isinstance(b, torchtt._tt_base.TT):
         raise InvalidArguments('Both operands should be TT instances.')
     
     
@@ -523,7 +524,7 @@ def dot(a,b,axis=None):
                 rank_right = b.cores[k].shape[0] if i+1 in axis else rank_left                
                 cores_new.append(tn.conj(tn.einsum('ik,j->ijk',tn.eye(rank_left,rank_right,dtype=a.cores[0].dtype),tn.ones([a.N[i]],dtype=a.cores[0].dtype))))
         
-        result = (a*TT(cores_new)).sum(axis)
+        result = (a*torchtt._tt_base.TT(cores_new)).sum(axis)
     return result
 
 def bilinear_form(x,A,y):
@@ -543,7 +544,7 @@ def bilinear_form(x,A,y):
     Returns:
         torch.tensor: the result of the bilienar form as tensor with 1 element.
     """
-    if not isinstance(x,TT) or not isinstance(A,TT) or not isinstance(y,TT):
+    if not isinstance(x,torchtt._tt_base.TT) or not isinstance(A,torchtt._tt_base.TT) or not isinstance(y,torchtt._tt_base.TT):
         raise InvalidArguments("Inputs must be torchtt.TT instances.")
     if x.is_ttm or y.is_ttm or A.is_ttm==False:
         raise IncompatibleTypes("x and y must be TT tensors and A must be TT matrix.")
@@ -575,7 +576,7 @@ def elementwise_divide(x, y, eps = 1e-12, starting_tensor = None, nswp = 50, kic
     """
 
     cores_new = amen_divide(y,x,nswp,starting_tensor,eps,rmax = 1000, kickrank = kick, local_iterations = local_iterations, resets = resets, verbose=verbose, preconditioner = preconditioner)
-    return TT(cores_new)
+    return torchtt._tt_base.TT(cores_new)
 
 def rank1TT(elements):
     """
@@ -588,7 +589,7 @@ def rank1TT(elements):
         torchtt.TT: the resulting TT object.
     """
     
-    return TT([e[None,...,None] for e in elements])
+    return torchtt._tt_base.TT([e[None,...,None] for e in elements])
  
 def numel(tensor):
     """
@@ -621,13 +622,13 @@ def diag(input):
         torchtt.TT: the result.
     """
 
-    if not isinstance(input, TT):
+    if not isinstance(input, torchtt._tt_base.TT):
         raise InvalidArguments("Input must be a torchtt.TT instance.")
 
     if input.is_ttm:
-        return TT([tn.diagonal(c, dim1 = 1, dim2 = 2).permute([0,2,1]) for c in input.cores])
+        return torchtt._tt_base.TT([tn.diagonal(c, dim1 = 1, dim2 = 2).permute([0,2,1]) for c in input.cores])
     else:
-        return TT([tn.einsum('ijk,jm->ijmk',c,tn.eye(c.shape[1])) for c in input.cores])
+        return torchtt._tt_base.TT([tn.einsum('ijk,jm->ijmk',c,tn.eye(c.shape[1])) for c in input.cores])
 
 
 def permute(input, dims, eps = 1e-12):
@@ -655,7 +656,7 @@ def permute(input, dims, eps = 1e-12):
     Returns:
         torchtt.TT: the resulting tensor.
     """
-    if not isinstance(input, TT) :
+    if not isinstance(input, torchtt._tt_base.TT) :
         raise InvalidArguments("The input must be a TT tensor dims must be a list of integers or a tple of integers.")
     if len(dims) != len(input.N):
         raise ShapeMismatch("`dims` must be the length of the number of dimensions.")
@@ -744,7 +745,7 @@ def permute(input, dims, eps = 1e-12):
                     cores[i+1] = tn.reshape(V, [-1, n2, cores[i+1].shape[2]])
                     
                 
-    return TT(cores)
+    return torchtt._tt_base.TT(cores)
     
 def save(tensor, path):
     """
@@ -770,7 +771,7 @@ def save(tensor, path):
     Raises:
         InvalidArguments: First argument must be a torchtt.TT instance.
     """
-    if not isinstance(tensor, TT):
+    if not isinstance(tensor, torchtt._tt_base.TT):
         raise InvalidArguments("First argument must be a torchtt.TT instance.")
     
     if tensor.is_ttm:
@@ -805,7 +806,7 @@ def load(path):
     """
     dct = tn.load(path)
     
-    return TT(dct['cores'])
+    return torchtt._tt_base.TT(dct['cores'])
 
 def cat(tensors, dim = 0):
     """
@@ -893,7 +894,7 @@ def cat(tensors, dim = 0):
         #    pad1 = (0,0 if i == len(self.__N)-1 else other.R[i+1] , 0,0 , 0,0 if i==0 else other.R[i])
         #    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
         #    cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(other.cores[i],pad2))
-    return TT(cores)
+    return torchtt._tt_base.TT(cores)
 
 def pad(tensor, padding, value = 0.0):
     """
@@ -933,7 +934,7 @@ def pad(tensor, padding, value = 0.0):
             cores[k] = tnf.pad(cores[k],(0,0,pad[0],pad[1],0,0),value = value)
             value = 1
             
-    return TT(cores)
+    return torchtt._tt_base.TT(cores)
             
 def shape_tuple_to_mn(shape):
     """
