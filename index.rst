@@ -25,6 +25,8 @@
 :ref:`reference-label`
 ----------------------
 
+:ref:`index-label`
+------------------
 
 
 .. toctree::
@@ -37,9 +39,3 @@
    ./docs/modules
 
 
-Index
-=====
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
