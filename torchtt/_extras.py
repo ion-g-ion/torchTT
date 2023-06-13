@@ -339,7 +339,8 @@ def reshape(tens, shape, eps = 1e-16, rmax = sys.maxsize):
         torchtt.TT: the resulting tensor.
     """
     
-    
+    dfin = len(shape)
+    cores, R = rl_orthogonal(tens.cores, tens.R, tens.is_ttm)
     if tens.is_ttm:
         M = []
         N = []
@@ -348,7 +349,7 @@ def reshape(tens, shape, eps = 1e-16, rmax = sys.maxsize):
             N.append(t[1])
         if np.prod(tens.N)!=np.prod(N) or np.prod(tens.M)!=np.prod(M):
             raise ShapeMismatch('The product of modes should remain equal. Check the given shape.')
-        core = tens.cores[0]
+        core = cores[0]
         cores_new = []
         
         idx = 0
@@ -365,34 +366,34 @@ def reshape(tens, shape, eps = 1e-16, rmax = sys.maxsize):
                     r2 = core.shape[-1]
                     tmp = tn.reshape(core,[r1*m1,m2,n1,n2*r2])
                     
-                    crz,_ = mat_to_tt(tmp, [r1*m1,m2], [n1,n2*r2], eps, rmax)
+                    crz,_ = mat_to_tt(tmp, [r1*m1,m2], [n1,n2*r2], eps/np.sqrt(dfin-1), rmax)
                     
                     cores_new.append(tn.reshape(crz[0],[r1,m1,n1,-1]))
                     
                     core = tn.reshape(crz[1],[-1,m2,n2,r2]) 
                 else:
                     cores_new.append(core+0)
-                    if idx == len(tens.cores)-1:
+                    if idx == len(cores)-1:
                         break
                     else:
                         idx+=1
-                        core = tens.cores[idx]
+                        core = cores[idx]
                 idx_shape += 1
                 if idx_shape == len(shape):
                     break
             else: 
                 idx += 1
-                if idx>=len(tens.cores):
+                if idx>=len(cores):
                     break
                 
-                core = tn.einsum('ijkl,lmno->ijmkno',core,tens.cores[idx])
+                core = tn.einsum('ijkl,lmno->ijmkno',core,cores[idx])
                 core = tn.reshape(core,[core.shape[0],core.shape[1]*core.shape[2],-1,core.shape[-1]])
                 
     else:
         if np.prod(tens.N)!=np.prod(shape):
             raise ShapeMismatch('The product of modes should remain equal. Check the given shape.')
             
-        core = tens.cores[0]
+        core = cores[0]
         cores_new = []
         
         idx = 0
@@ -406,27 +407,27 @@ def reshape(tens, shape, eps = 1e-16, rmax = sys.maxsize):
                     r2 = core.shape[2]
                     tmp = tn.reshape(core,[r1*s1,s2*r2])
                     
-                    crz,_ = to_tt(tmp,tmp.shape,eps,rmax)
+                    crz,_ = to_tt(tmp,tmp.shape,eps/np.sqrt(dfin-1),rmax)
                     
                     cores_new.append(tn.reshape(crz[0],[r1,s1,-1]))
                     
                     core = tn.reshape(crz[1],[-1,s2,r2]) 
                 else:
                     cores_new.append(core+0)
-                    if idx == len(tens.cores)-1:
+                    if idx == len(cores)-1:
                         break
                     else:
                         idx+=1
-                        core = tens.cores[idx]
+                        core = cores[idx]
                 idx_shape += 1
                 if idx_shape == len(shape):
                     break
             else: 
                 idx += 1
-                if idx>=len(tens.cores):
+                if idx>=len(cores):
                     break
                 
-                core = tn.einsum('ijk,klm->ijlm',core,tens.cores[idx])
+                core = tn.einsum('ijk,klm->ijlm',core,cores[idx])
                 core = tn.reshape(core,[core.shape[0],-1,core.shape[-1]])
                 
     return torchtt._tt_base.TT(cores_new).round(eps)
