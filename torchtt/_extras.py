@@ -933,7 +933,7 @@ def pad(tensor, padding, value = 0.0):
         cores = [c.clone() for c in tensor.cores]
         for pad,k in zip(reversed(padding),reversed(range(len(tensor.N)))):
             cores[k] = tnf.pad(cores[k],(0,0,pad[0],pad[1],0,0),value = value)
-            value = 1
+            value = 1 if value != 0 else 0
             
     return torchtt._tt_base.TT(cores)
             
