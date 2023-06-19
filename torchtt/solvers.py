@@ -438,7 +438,7 @@ def _amen_solve_python(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_
                     res_new = tn.linalg.norm(Op.matvec(solution_now, False)-rhs)/norm_rhs
                     
                 if verbose:
-                    print('\t\tFinished with flag %d after %d iterations with relres %g (from %g)'%(flag,nit,res_new,eps_local)) 
+                    print('\t\tFinished with flag %d after %d iterations with relres %g (from %g)'%(flag,nit,res_new, real_tol * norm_rhs)) 
                     time_local = datetime.datetime.now() - time_local
                     print('\t\tTime needed ',time_local)
             # residual damp check
