@@ -1,7 +1,7 @@
 .. _reference-label:
 
-Reference
-=========
+API reference
+=============
 
 .. toctree::
    :maxdepth: 4
