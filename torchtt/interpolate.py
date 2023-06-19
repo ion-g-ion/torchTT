@@ -6,7 +6,7 @@ import torch as tn
 import numpy as np
 import torchtt 
 import datetime
-from torchtt._decomposition import QR, SVD, rank_chop, lr_orthogonal
+from torchtt._decomposition import QR, SVD, rank_chop, lr_orthogonal, rl_orthogonal
 from torchtt._iterative_solvers import BiCGSTAB_reset, gmres_restart
 import opt_einsum as oe
 
@@ -138,8 +138,9 @@ def function_interpolate(function, x, eps = 1e-9, start_tens = None, nswp = 20, 
     # cores = (ones(N,dtype=dtype)).cores
     
 
+    cores, rank = rl_orthogonal(cores,rank,False)
     cores, rank = lr_orthogonal(cores,rank,False)
-    
+    print(rank)
     Mats = []*(d+1)
     
     
@@ -169,7 +170,9 @@ def function_interpolate(function, x, eps = 1e-9, start_tens = None, nswp = 20, 
         core = tn.linalg.solve(Rm.T,core.T)
         Rm = (Rm@Rmat).t()
         cores[k] = tn.reshape(core,[rnew,N[k],rank[k+1]])
+        
         core = tn.reshape(core,[-1,rank[k+1]]) @ Ps[k+1]
+        
         core = tn.reshape(core,[rank[k],-1]).t()
         _,Ps[k] = QR(core) 
     cores[0] = tn.einsum('ijk,kl->ijl',cores[0],Rm) 

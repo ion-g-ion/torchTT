@@ -79,10 +79,16 @@ Following example scripts (as well as python notebooks) are also provied provide
  * [basic_nn.py](examples/basic_nn.py) / [basic_nn.ipynb](examples/basic_nn.ipynb): This provides an example on how to use the TT neural network layers ([Try on Google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/basic_nn.ipynb)). 
  * [mnist_nn.py](examples/mnist_nn.py) / [mnist_nn.ipynb](examples/mnist_nn.ipynb): Example of TT layers used for image classification ([Try on Google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/mnist_nn.ipynb)). 
  
- The documentation is generated using `pdoc3` with:
+ The documentation is generated using `shpinx` with:
 
  ```
- pdoc3 --html torchtt -o docs/ --config latex_math=True --force
+ make html
+ ```
+
+ after installing the packages
+
+ ```
+ pip install sphinx sphinx_rtd_theme
  ```
 
 ## Author 
