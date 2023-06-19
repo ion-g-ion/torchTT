@@ -464,13 +464,15 @@ def dot(a,b,axis=None):
     For the compelx case (a,b) = b^H . a.
 
     Examples:
-        ```
-        a = torchtt.randn([3,4,5,6,7],[1,2,2,2,2,1])
-        b = torchtt.randn([3,4,5,6,7],[1,2,2,2,2,1])
-        c = torchtt.randn([3,5,6],[1,2,2,1])
-        print(torchtt.dot(a,b))
-        print(torchtt.dot(a,c,[0,2,3]))
-        ```
+        
+        .. code-block:: python
+        
+            a = torchtt.randn([3,4,5,6,7],[1,2,2,2,2,1])
+            b = torchtt.randn([3,4,5,6,7],[1,2,2,2,2,1])
+            c = torchtt.randn([3,5,6],[1,2,2,1])
+            print(torchtt.dot(a,b))
+            print(torchtt.dot(a,c,[0,2,3]))
+        
 
     Args:
         a (torchtt.TT): the first tensor.
@@ -609,9 +611,9 @@ def diag(input):
     """
     Creates diagonal TT matrix from TT tensor or extracts the diagonal of a TT matrix:
 
-    * If a TT matrix is provided the result is a TT tensor representing the diagonal \( \\mathsf{x}_{i_1...i_d} = \\mathsf{A}_{i_1...i_d,i_1...i_d} \)
+    * If a TT matrix is provided the result is a TT tensor representing the diagonal :math:` \\mathsf{x}_{i_1...i_d} = \\mathsf{A}_{i_1...i_d,i_1...i_d} `
 
-    * If a TT tensor is provided the result is a diagonal TT matrix with the entries \( \\mathsf{A}_{i_1...i_d,j_1...j_d} = \\mathsf{x}_{i_1...i_d} \\delta_{i_1}^{j_1} \\cdots \\delta_{i_d}^{j_d} \)
+    * If a TT tensor is provided the result is a diagonal TT matrix with the entries :math:` \\mathsf{A}_{i_1...i_d,j_1...j_d} = \\mathsf{x}_{i_1...i_d} \\delta_{i_1}^{j_1} \\cdots \\delta_{i_d}^{j_d} `
 
     Args:
         input (TT): the input. 
@@ -634,15 +636,17 @@ def diag(input):
 
 def permute(input, dims, eps = 1e-12):
     """
-    Permutes the dimensions of the tensor. Works similarily to `torch.permute`.
+    Permutes the dimensions of the tensor. Works similarily to ``torch.permute``.
     Works like a bubble sort for both TT tensors and TT matrices.
     
     Examples:
-    ```
-    x_tt = torchtt.random([5,6,7,8,9],[1,2,3,4,2,1])
-    xp_tt = torchtt.permute(x_tt, [4,3,2,1,0], 1e-10)
-    print(xp_tt) # the shape of this tensor should be [9,8,7,6,5]
-    ```
+    
+        .. code-block:: python
+        
+            x_tt = torchtt.random([5,6,7,8,9],[1,2,3,4,2,1])
+            xp_tt = torchtt.permute(x_tt, [4,3,2,1,0], 1e-10)
+            print(xp_tt) # the shape of this tensor should be [9,8,7,6,5]
+    
     
     Args:
         input (torchtt.TT): the input tensor.
@@ -753,17 +757,19 @@ def save(tensor, path):
     Save a `torchtt.TT` object in a file.
 
     Examples:
-        ```
-        import torchtt
-        #generate a TT object
-        A = torchtt.randn([10,20,30,40,4,5],[1,6,5,4,3,2,1])
-        # save the TT object
-        torchtt.save(A,"./test.TT")
-        # load the TT object
-        B = torchtt.load("./test.TT")
-        # the loaded should be the same
-        print((A-B).norm()/A.norm())
-        ```
+        
+        .. code-block:: python
+        
+            import torchtt
+            #generate a TT object
+            A = torchtt.randn([10,20,30,40,4,5],[1,6,5,4,3,2,1])
+            # save the TT object
+            torchtt.save(A,"./test.TT")
+            # load the TT object
+            B = torchtt.load("./test.TT")
+            # the loaded should be the same
+            print((A-B).norm()/A.norm())
+        
     
     Args:
         tensor (torchtt.TT): the tensor to be saved.
@@ -787,17 +793,19 @@ def load(path):
     Load a torchtt.TT object from a file.
 
     Examples:
-        ```
-        import torchtt
-        #generate a TT object
-        A = torchtt.randn([10,20,30,40,4,5],[1,6,5,4,3,2,1])
-        # save the TT object
-        torchtt.save(A,"./test.TT")
-        # load the TT object
-        B = torchtt.load("./test.TT")
-        # the loaded should be the same
-        print((A-B).norm()/A.norm())
-        ```
+        
+        .. code-block:: python
+        
+            import torchtt
+            #generate a TT object
+            A = torchtt.randn([10,20,30,40,4,5],[1,6,5,4,3,2,1])
+            # save the TT object
+            torchtt.save(A,"./test.TT")
+            # load the TT object
+            B = torchtt.load("./test.TT")
+            # the loaded should be the same
+            print((A-B).norm()/A.norm())
+        
         
     Args:
         path (str): the file name.
@@ -814,20 +822,22 @@ def cat(tensors, dim = 0):
     Concatenate tensors in the TT format along a given dimension `dim`. Only works for TT tensors and not TT matrices.
     
     Examples:
-        ```
-        import torchtt 
-        import torch 
+        
+        .. code-block:: python 
+        
+            import torchtt 
+            import torch 
 
 
-        a1 = torchtt.randn((3,4,2,6,7), [1,2,3,4,2,1])
-        a2 = torchtt.randn((3,4,8,6,7), [1,3,1,7,5,1])
-        a3 = torchtt.randn((3,4,15,6,7), [1,3,10,2,4,1])
+            a1 = torchtt.randn((3,4,2,6,7), [1,2,3,4,2,1])
+            a2 = torchtt.randn((3,4,8,6,7), [1,3,1,7,5,1])
+            a3 = torchtt.randn((3,4,15,6,7), [1,3,10,2,4,1])
 
-        a = torchtt.cat((a1,a2,a3),2)
+            a = torchtt.cat((a1,a2,a3),2)
 
-        af = torch.cat((a1.full(), a2.full(),
-        print(torch.linalg.norm(a.full()-af))
-        ```
+            af = torch.cat((a1.full(), a2.full(),
+            print(torch.linalg.norm(a.full()-af))
+        `
         
     Args:
         tensors (tuple[TT]): the tensors to be concatenated. Their mode sizes must match for all modex except the concatenating dimension.

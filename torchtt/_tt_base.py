@@ -59,7 +59,7 @@ class TT():
     def R(self):
         """
         The rank of the TT decomposition.
-        It's length should be `len(R)==len(N)+1`.
+        It's length should be ``len(R)==len(N)+1``.
 
         Returns:
             list[int]: the rank.
@@ -75,25 +75,27 @@ class TT():
         
         The TT decomposition of a tensor is
         
-        \(\\mathsf{x}=\\sum\\limits_{r_1...r_{d-1}=1}^{R_1,...,R_{d-1}} \\mathsf{x}^{(1)}_{1i_1r_1}\\cdots\\mathsf{x}^{(d)}_{r_{d-1}i_d1}\),
+        :math:`\\mathsf{x}=\\sum\\limits_{r_1...r_{d-1}=1}^{R_1,...,R_{d-1}} \\mathsf{x}^{(1)}_{1i_1r_1}\\cdots\\mathsf{x}^{(d)}_{r_{d-1}i_d1},`
         
-        where \(\\{\\mathsf{x}^{(k)}\\}_{k=1}^d\) are the TT cores and \(\\mathbf{R}=(1,R_1,...,R_{d-1},1)\) is the TT rank.
-        Using the constructor, a TT decomposition of a tensor can be computed. The TT cores are stored as a list in `torchtt.TT.cores`.   
+        where :math::`\\{\\mathsf{x}^{(k)}\\}_{k=1}^d` are the TT cores and ::math:`\\mathbf{R}=(1,R_1,...,R_{d-1},1)` is the TT rank.
+        Using the constructor, a TT decomposition of a tensor can be computed. The TT cores are stored as a list in ``torchtt.TT.cores``.   
         This class implements basic operators such as `+,-,*,/,@,**` (add, subtract, elementwise multiplication, elementwise division, matrix vector product and Kronecker product) between TT instances.
         The `examples\` folder server as a tutorial for all the possibilities of the toolbox.
         
         Examples:
-            ```
-            import torchtt
-            import torch
-            x = torch.reshape(torch.arange(0,128,dtype = torch.float64),[8,4,4])
-            xtt = torchtt.TT(x)
-            ytt = torchtt.TT(torch.squeeze(x),[8,4,4])
-            # create a TT matrix
-            A = torch.reshape(torch.arange(0,20160,dtype = torch.float64),[3,5,7,4,6,8])
-            Att = torchtt.TT(A,[(3,4),(5,6),(7,8)])
-            print(Att)        
-            ```
+            
+            .. code-block:: python
+            
+                import torchtt
+                import torch
+                x = torch.reshape(torch.arange(0,128,dtype = torch.float64),[8,4,4])
+                xtt = torchtt.TT(x)
+                ytt = torchtt.TT(torch.squeeze(x),[8,4,4])
+                # create a TT matrix
+                A = torch.reshape(torch.arange(0,20160,dtype = torch.float64),[3,5,7,4,6,8])
+                Att = torchtt.TT(A,[(3,4),(5,6),(7,8)])
+                print(Att)        
+            
             
         Args:
             source (torch.tensor ot list[torch.tensor] or numpy.array or None): the input tensor in full format or the cores. If a `torch.tensor` or `numpy.array` is provided
@@ -261,7 +263,7 @@ class TT():
 
     def detach(self):
         """
-        Detaches the TT tensor. Similar to torch.tensor.detach().
+        Detaches the TT tensor. Similar to ``torch.tensor.detach()``.
 
         Returns:
             torchtt.TT: the detached tensor.
@@ -280,7 +282,7 @@ class TT():
     def full(self):       
         """
         Return the full tensor.
-        In case of a TTM, the result has the shape M1 x M2 x ... x Md x N1 x N2 x ... x Nd.
+        In case of a TTM, the result has the shape ``M1 x M2 x ... x Md x N1 x N2 x ... x Nd``.
 
         Returns:
             torch.tensor: the full tensor.
@@ -309,7 +311,7 @@ class TT():
     def numpy(self):
         """
         Return the full tensor as a numpy.array.
-        In case of a TTM, the result has the shape M1 x M2 x ... x Md x N1 x N2 x ... x Nd.
+        In case of a TTM, the result has the shape ``M1 x M2 x ... x Md x N1 x N2 x ... x Nd``.
         If it is involved in an AD graph, an error will occur.
         
         Returns:
@@ -766,11 +768,13 @@ class TT():
         Evaluate the tensor on the given index list.
 
         Examples:
-            ```
-            x = torchtt.random([10,12,14],[1,4,5,1])
-            indices = torch.tensor([[0,0,0],[1,2,3],[1,1,1]])
-            val = x.apply_mask(indices)
-            ```
+            
+            .. code-block:: python 
+            
+                x = torchtt.random([10,12,14],[1,4,5,1])
+                indices = torch.tensor([[0,0,0],[1,2,3],[1,1,1]])
+                val = x.apply_mask(indices)
+            
             
         Args:
             indices (list[list[int]]): the index list where the tensor should be evaluated. Length is M.
@@ -826,9 +830,11 @@ class TT():
         Check the function torchtt.elementwise_divide() if you want to change the arguments of the AMEN solver.
         
         Example: 
-            ```
-            z = 1.0/x # x is TT instance
-            ```
+            
+            .. code-block:: python
+            
+                z = 1.0/x # x is TT instance
+            
             
         Args:
             other (torchtt.TT | float | int | torch.tensor): the first operand. If a `torch.tensor` is provided, it must have 1 element.
@@ -933,13 +939,14 @@ class TT():
         If no index list is given, the sum over all indices is performed.
 
         Examples:
-            ```
+            
+            .. code-block:: python
             a = torchtt.ones([3,4,5,6,7])
             print(a.sum()) 
             print(a.sum([0,2,4]))
             print(a.sum([1,2]))
             print(a.sum([0,1,2,3,4]))
-            ```
+            
             
         Args:
             index (int | list[int] | None, optional): the indices along which the summation is performed. None selects all of them. Defaults to None.
@@ -1321,12 +1328,14 @@ class TT():
         The tensor in QTT can be converted back using the qtt_to_tens() method.
 
         Examples:
-            ```
-            x = torchtt.random([16,8,64,128],[1,2,10,12,1])
-            x_qtt = x.to_qtt()
-            print(x_qtt)
-            xf = x_qtt.qtt_to_tens(x.N) # a TT-rounding is recommended.
-            ```
+            
+            .. code-block:: python
+            
+                x = torchtt.random([16,8,64,128],[1,2,10,12,1])
+                x_qtt = x.to_qtt()
+                print(x_qtt)
+                xf = x_qtt.qtt_to_tens(x.N) # a TT-rounding is recommended.
+            
             
         Args:
             eps (float,optional): the accuracy. Defaults to 1e-12.

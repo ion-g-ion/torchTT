@@ -159,19 +159,21 @@ class _LinearOp():
 
 def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 32768, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = 'res', local_solver = 1, local_iterations = 40, resets = 2, verbose = False, preconditioner = None, use_cpp = True, use_single_precision = False):
     """
-    Solve a multilinear system \(\\mathsf{Ax} = \\mathsf{b}\) in the Tensor Train format.
+    Solve a multilinear system :math:`\\mathsf{Ax} = \\mathsf{b}` in the Tensor Train format.
     
-    This method implements the algorithm from [Sergey V Dolgov, Dmitry V Savostyanov, Alternating minimal energy methods for linear systems in higher dimensions](https://epubs.siam.org/doi/abs/10.1137/140953289).
+    This method implements the algorithm from `Sergey V Dolgov, Dmitry V Savostyanov, Alternating minimal energy methods for linear systems in higher dimensions <https://epubs.siam.org/doi/abs/10.1137/140953289>`_.
 
     Example:
-        ```
-        import torchtt
-        A = torchtt.random([(4,4),(5,5),(6,6)],[1,2,3,1]) # create random matrix
-        x = torchtt.random([4,5,6],[1,2,3,1]) # invent a random solution
-        b = A @ x # compute the rhs
-        xx = torchtt.solvers.amen_solve(A,b) # solve
-        print((xx-x).norm()/x.norm()) # error
-        ```
+        
+        .. code-block:: python
+        
+            import torchtt
+            A = torchtt.random([(4,4),(5,5),(6,6)],[1,2,3,1]) # create random matrix
+            x = torchtt.random([4,5,6],[1,2,3,1]) # invent a random solution
+            b = A @ x # compute the rhs
+            xx = torchtt.solvers.amen_solve(A,b) # solve
+            print((xx-x).norm()/x.norm()) # error
+        
     
     Args:
         A (torchtt.TT): the system matrix in TT.

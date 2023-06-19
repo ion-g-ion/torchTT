@@ -73,31 +73,35 @@ def function_interpolate(function, x, eps = 1e-9, start_tens = None, nswp = 20, 
     
     * Univariate interpoaltion:
     
-    Let \(f:\\mathbb{R}\\rightarrow\\mathbb{R}\) be a function and \(\\mathsf{x}\\in\\mathbb{R}^{N_1\\times\\cdots\\times N_d}\) be a tensor with a known TT approximation.
-    The goal is to determine the TT approximation of \(\\mathsf{y}_{i_1...i_d}=f(\\mathsf{x}_{i_1...i_d})\) within a prescribed relative accuracy `eps`. 
+    Let :math:`f:\\mathbb{R}\\rightarrow\\mathbb{R}` be a function and :math:`\\mathsf{x}\\in\\mathbb{R}^{N_1\\times\\cdots\\times N_d}` be a tensor with a known TT approximation.
+    The goal is to determine the TT approximation of :math:`\\mathsf{y}_{i_1...i_d}=f(\\mathsf{x}_{i_1...i_d})` within a prescribed relative accuracy `eps`. 
     
     * Multivariate interpolation
     
-    Let \(f:\\mathbb{R}\\rightarrow\\mathbb{R}\) be a function and \(\\mathsf{x}^{(1)},...,\\mathsf{x}^{(d)}\\in\\mathbb{R}^{N_1\\times\\cdots\\times N_d}\) be tensors with a known TT approximation. The goal is to determine the TT approximation of \(\\mathsf{y}_{i_1...i_d}=f(\\mathsf{x}_{i_1...i_d}^{(1)},...,\\mathsf{x}^{(d)})_{i_1...i_d}\) within a prescribed relative accuracy `eps`.
+    Let :math:`f:\\mathbb{R}\\rightarrow\\mathbb{R}` be a function and :math:`\\mathsf{x}^{(1)},...,\\mathsf{x}^{(d)}\\in\\mathbb{R}^{N_1\\times\\cdots\\times N_d}` be tensors with a known TT approximation. The goal is to determine the TT approximation of :math:`\\mathsf{y}_{i_1...i_d}=f(\\mathsf{x}_{i_1...i_d}^{(1)},...,\\mathsf{x}^{(d)})_{i_1...i_d}` within a prescribed relative accuracy `eps`.
     
     
     Example:
     
         * Univariate interpolation:
-        ```
-        func = lambda t: torch.log(t)
-        y = tntt.interpolate.function_interpolate(func, x, 1e-9) # the tensor x is chosen such that y has an afforbable low rank structure
-        ```
+        
+        .. code-block:: python
+        
+            func = lambda t: torch.log(t)
+            y = tntt.interpolate.function_interpolate(func, x, 1e-9) # the tensor x is chosen such that y has an afforbable low rank structure
+        
         * Multivariate interpolation:
-        ```
-        xs = tntt.meshgrid([tn.arange(0,n,dtype=torch.float64) for n in N])
-        func = lambda x: 1/(2+tn.sum(x,1).to(dtype=torch.float64))
-        z = tntt.interpolate.function_interpolate(func, xs)
-        ```
+        
+        .. code-block:: python
+            
+            xs = tntt.meshgrid([tn.arange(0,n,dtype=torch.float64) for n in N])
+            func = lambda x: 1/(2+tn.sum(x,1).to(dtype=torch.float64))
+            z = tntt.interpolate.function_interpolate(func, xs)
+        
     
     Args:
         function (Callable): function handle. If the argument `x` is a `torchtt.TT` instance, the the function handle has to be appliable elementwise on torch tensors.
-                             If a list is passed as `x`, the function handle takes as argument a $M\times d$ torch.tensor and every of the $M$ lines corresponds to an evaluation of the function \(f\) at a certain tensor entry. The function handle returns a torch tensor of length M.
+                             If a list is passed as `x`, the function handle takes as argument a :math:`M\times d` torch.tensor and every of the :math:`M` lines corresponds to an evaluation of the function :math:`f` at a certain tensor entry. The function handle returns a torch tensor of length M.
         x (torchtt.TT or list[torchtt.TT]): the argument/arguments of the function.
         eps (float, optional): the relative accuracy. Defaults to 1e-9.
         start_tens (torchtt.TT, optional): initial approximation of the output tensor (None coresponds to random initialization). Defaults to None.
@@ -402,11 +406,13 @@ def dmrg_cross(function, N, eps = 1e-9, nswp = 10, x_start = None, kick = 2, dty
     The function is given as a function handle taking as arguments a matrix of integer indices.
 
     Example:
-        ```
-        func = lambda I: 1/(2+I[:,0]+I[:,1]+I[:,2]+I[:,3]).to(dtype=torch.float64)
-        N = [20]*4
-        x = torchtt.interpolate.dmrg_cross(func, N, eps = 1e-7)
-        ```
+        
+        .. code-block:: python
+        
+            func = lambda I: 1/(2+I[:,0]+I[:,1]+I[:,2]+I[:,3]).to(dtype=torch.float64)
+            N = [20]*4
+            x = torchtt.interpolate.dmrg_cross(func, N, eps = 1e-7)
+        
     
     Args:
         function (Callable): function handle.

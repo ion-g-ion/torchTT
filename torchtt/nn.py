@@ -10,9 +10,9 @@ from .errors import *
 
 class LinearLayerTT(nn.Module):
     """
-    Basic class for TT layers. See [Tensorizing Neural Networks](https://arxiv.org/abs/1509.06569) for a detailed description.
+    Basic class for TT layers. See `Tensorizing Neural Networks <https://arxiv.org/abs/1509.06569>`_ for a detailed description.
     It can be used similarily to any layer from `torch.nn`.
-    The output of the layer is \(\\mathcal{LTT}(\\mathsf{x}) =\\mathsf{Wx}+\\mathsf{b}\), where the tensor operator \(\\mathsf{W}\) is represented in the TT format (with a fixed prescribed rank).
+    The output of the layer is :math:`\\mathcal{LTT}(\\mathsf{x}) =\\mathsf{Wx}+\\mathsf{b}`, where the tensor operator :math:`\\mathsf{W}` is represented in the TT format (with a fixed prescribed rank).
 
     """
     def __init__(self, size_in, size_out, rank, dtype = tn.float32, initializer = 'He'):
@@ -21,8 +21,8 @@ class LinearLayerTT(nn.Module):
         
         Possible initializers are:
         
-         * `'He'` for He Normal (He-et-al) initialization.
-         * `'Glo'` for Glorot initialization.
+         * ``'He'`` for He Normal (He-et-al) initialization.
+         * ``'Glo'`` for Glorot initialization.
             
         Args:
             size_in (list[int]): the size of the input tensor.
@@ -58,7 +58,7 @@ class LinearLayerTT(nn.Module):
         """
         Computes the output of the layer for the given input. 
         
-        Supports trailing dimensiond broadcasting. If the input of the layer is set to `[M1,...,Md]` and a tensor od shape `[...,M1,...,Md]` is provided then the multiplication is performed along the last d dimensions.
+        Supports trailing dimensiond broadcasting. If the input of the layer is set to ``[M1,...,Md]`` and a tensor od shape ``[...,M1,...,Md]`` is provided then the multiplication is performed along the last d dimensions.
 
         Args:
             x (torch.tensor): input of the layer.
