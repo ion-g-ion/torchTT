@@ -578,7 +578,7 @@ class TestLinalg(unittest.TestCase):
         I = tntt.eye(n, dtype = tn.float64)
         dg = tntt.diag(I)
         
-        self.assertLess(err_rel(dg.full(), tntt.ones(n)), 1e-13, "torchtt.diag() TTM->TT failed.")
+        self.assertLess(err_rel(dg.full(), tntt.ones(n).full()), 1e-13, "torchtt.diag() TTM->TT failed.")
         
         o = tntt.ones(n)
         E = tntt.diag(o)
