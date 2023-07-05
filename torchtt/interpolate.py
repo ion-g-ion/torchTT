@@ -21,7 +21,7 @@ def _LU(M):
     Returns:
         tuple[torch.tensor,torch.tensor,torch.tensor]: L, U, P
     """
-    LU,P = tn.lu(M)
+    LU,P = tn.linalg.lu_factor(M)
     P,L,U = tn.lu_unpack(LU,P) # P transpose or not transpose?
     P = P@tn.reshape(tn.arange(P.shape[1],dtype=P.dtype,device=P.device),[-1,1])
     # P = tn.reshape(tn.arange(P.shape[1],dtype=P.dtype,device=P.device),[1,-1]) @ P
@@ -144,7 +144,6 @@ def function_interpolate(function, x, eps = 1e-9, start_tens = None, nswp = 20, 
 
     cores, rank = rl_orthogonal(cores,rank,False)
     cores, rank = lr_orthogonal(cores,rank,False)
-    print(rank)
     Mats = []*(d+1)
     
     
