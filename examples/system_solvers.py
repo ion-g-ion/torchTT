@@ -43,7 +43,7 @@ L1d = tntt.TT(L1d, [(n,n)])
 
 L_tt = tntt.zeros([(n,n)]*d)
 for i in range(1,d-1):
-    L_tt = L_tt+tntt.eye([n]*i)**L1d**tntt.eye([n]*(d-2))
+    L_tt = L_tt+tntt.eye([n]*i)**L1d**tntt.eye([n]*(d-1-i))
 L_tt = L_tt + L1d**tntt.eye([n]*(d-1)) +  tntt.eye([n]*(d-1))**L1d
 L_tt = L_tt.round(1e-14)
 
