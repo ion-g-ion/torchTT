@@ -279,6 +279,35 @@ class TT():
         """
         return TT([c.clone() for c in self.cores]) 
 
+    def set_core(self, k, core):
+        """
+        Replaces the k-th TT core. This can change the mode size of the TT object.
+
+        Args:
+            k (int): the core index.
+            core (torch.tensor): _description_
+
+        Raises:
+            InvalidArguments: The given core must match the the ranks and the dimensionality.
+            InvalidArguments: The index of the core mst match the dimensionality.
+        """
+        if k >= len(self.__N) or k < 0:
+            raise InvalidArguments("The index of the core mst match the dimensionality.")    
+        if self.__is_ttm:
+            if core.shape[0] != self.__R[k] or core.shape[3] != self.__R[k+1] or len(core.shape) != 4:
+                raise InvalidArguments("The given core must match the the ranks and the dimensionality.")    
+            else:
+                self.cores[k] = core.clone()
+                self.__M[k] = core.shape[1]
+                self.__N[k] = core.shape[2]
+        else:
+            if core.shape[0] != self.__R[k] or core.shape[2] != self.__R[k+1] or len(core.shape) != 3:
+                raise InvalidArguments(" The given core must match the the ranks and the dimensionality.")    
+            else:
+                self.cores[k] = core.clone()
+                self.__N[k] = core.shape[1]
+        
+    
     def full(self):       
         """
         Return the full tensor.
