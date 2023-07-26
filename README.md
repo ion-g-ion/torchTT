@@ -34,7 +34,7 @@ One can also clone the repository and manually install the package:
 
 ```
 git clone https://github.com/ion-g-ion/torchTT
-cd torchtt
+cd torchTT
 python setup.py install
 ``` 
 
