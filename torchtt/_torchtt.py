@@ -2056,7 +2056,7 @@ def diag(input):
         raise InvalidArguments("Input must be a torchtt.TT instance.")
 
     if input.is_ttm:
-        return TT([tn.diagonal(c, dim1 = 1, dim2 = 2) for c in input.cores])
+        return TT([tn.permute(tn.diagonal(c, dim1 = 1, dim2 = 2), [0,2,1]) for c in input.cores])
     else:
         return TT([tn.einsum('ijk,jm->ijmk',c,tn.eye(c.shape[1])) for c in input.cores])
 
