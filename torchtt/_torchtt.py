@@ -15,6 +15,7 @@ from torchtt._aux_ops import apply_mask, dense_matvec, bilinear_form_aux
 from torchtt.errors import *
 # import torchttcpp
 # from torchtt._aux_ops import save, load
+import sys
 
 class TT():
 
@@ -67,7 +68,7 @@ class TT():
         """
         return self.__R.copy()
 
-    def __init__(self, source, shape=None, eps=1e-10, rmax=10000):
+    def __init__(self, source, shape=None, eps=1e-10, rmax=sys.maxsize):
         """
         Constructor of the TT class. Can convert full tensor in the TT-format (from `torch.tensor` or `numpy.array`).
         In the case of tensor operators of full shape `M1 x ... Md x N1 x ... x Nd`, the shape must be specified as a list of tuples `[(M1,N1),...,(Md,Nd)]`.
@@ -100,7 +101,7 @@ class TT():
             source (torch.tensor ot list[torch.tensor] or numpy.array or None): the input tensor in full format or the cores. If a `torch.tensor` or `numpy.array` is provided
             shape (list[int] or list[tuple[int]], optional): the shape (if it differs from the one provided). For the TT-matrix case is mandatory. Defaults to None.
             eps (float, optional): tolerance of the TT approximation. Defaults to 1e-10.
-            rmax (int or list[int], optional): maximum rank (either a list of integer or an integer). Defaults to 10000.
+            rmax (int or list[int], optional): maximum rank (either a list of integer or an integer). Defaults to the maximum possible integer.
 
         Raises:
             RankMismatch: Ranks of the given cores do not match (change the spaces of the cores).
@@ -1275,14 +1276,14 @@ class TT():
 
         return TT(cores_new)
     
-    def round(self, eps=1e-12, rmax = 2048): 
+    def round(self, eps=1e-12, rmax = sys.maxsize): 
         """
         Implements the rounding operations within a given tolerance epsilon.
         The maximum rank is also provided.
 
         Args:
             eps (float, optional): the relative accuracy. Defaults to 1e-12.
-            rmax (int, optional): the maximum rank. Defaults to 2048.
+            rmax (int, optional): the maximum rank. Defaults to the maximum possible integer.
 
         Returns:
             torchtt.TT: the result.
@@ -1299,7 +1300,7 @@ class TT():
                
         return T
     
-    def to_qtt(self, eps = 1e-12, mode_size = 2, rmax = 2048):
+    def to_qtt(self, eps = 1e-12, mode_size = 2, rmax = sys.maxsize):
         """
         Converts a tensor to the QTT format: N1 x N2 x ... x Nd -> mode_size x mode_size x ... x mode_size.
         The product of the mode sizes should be a power of mode_size.
@@ -1316,7 +1317,7 @@ class TT():
         Args:
             eps (float,optional): the accuracy. Defaults to 1e-12.
             mode_size (int, optional): the size of the modes. Defaults to 2.
-            rmax (int): the maximum rank. Defaults to 2048.
+            rmax (int): the maximum rank. Defaults to the maximum possible integer.
             
 
         Raises:
@@ -1750,7 +1751,7 @@ def randn(N, R, var = 1.0, dtype = tn.float64, device = None):
 
     return TT(cores)
 
-def reshape(tens, shape, eps = 1e-16, rmax = 2048):
+def reshape(tens, shape, eps = 1e-16, rmax = sys.maxsize):
     """
     Reshapes a torchtt.TT tensor in the TT format.
     A rounding is also performed.
@@ -1759,7 +1760,7 @@ def reshape(tens, shape, eps = 1e-16, rmax = 2048):
         tens (torchtt.TT): the input tensor.
         shape (list[int] or list[tuple[int]]): the desired shape. In the case of a TT operator the shape has to be given as list of tuples of ints [(M1,N1),...,(Md,Nd)].
         eps (float, optional): relative accuracy. Defaults to 1e-16.
-        rmax (int, optional): maximum rank. Defaults to 2048.
+        rmax (int, optional): maximum rank. Defaults to the maximum possible integer.
 
     Raises:
         ShapeMismatch: The product of modes should remain equal. Check the given shape.
@@ -2055,7 +2056,7 @@ def diag(input):
         raise InvalidArguments("Input must be a torchtt.TT instance.")
 
     if input.is_ttm:
-        return TT([tn.diagonal(c, dim1 = 1, dim2 = 2) for c in input.cores])
+        return TT([tn.permute(tn.diagonal(c, dim1 = 1, dim2 = 2), [0,2,1]) for c in input.cores])
     else:
         return TT([tn.einsum('ijk,jm->ijmk',c,tn.eye(c.shape[1])) for c in input.cores])
 
@@ -2242,9 +2243,9 @@ def cat(tensors, dim = 0):
         import torch 
 
 
-        a1 = torchtt.randn((3,4,2,6,7), [1,2,
-        a2 = torchtt.randn((3,4,8,6,7), [1,3,
-        a3 = torchtt.randn((3,4,15,6,7), [1,3
+        a1 = torchtt.randn((3,4,2,6,7), [1,2,3,4,2,1])
+        a2 = torchtt.randn((3,4,8,6,7), [1,3,1,7,5,1])
+        a3 = torchtt.randn((3,4,15,6,7), [1,3,10,2,4,1])
 
         a = torchtt.cat((a1,a2,a3),2)
 
@@ -2319,3 +2320,44 @@ def cat(tensors, dim = 0):
         #    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
         #    cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(other.cores[i],pad2))
     return TT(cores)
+
+def pad(tensor, padding, value = 0.0):
+    """
+    Pad a tensor in the TT format.
+    The `padding` argument is a tuple of tuples `((b1, a1), (b2, a2), ... , (bd, ad))`. 
+    Each dimension is padded with `bk` at the beginning and `ak` at the end. The padding value is constant and is given as the argument `value`. 
+    In case of a TT operator, duiagual padding is performed. On the diagonal, the provided `value` is inserted.
+
+    Args:
+        tensor (TT): the tensor to be padded.
+        padding (tuple(tuple(int))): the paddings.
+        value (float, optional): the value to pad. Defaults to 0.0.
+
+    Raises:
+        InvalidArguments: The number of paddings should not exceed the number of dimensions of the tensor.
+
+    Returns:
+        TT: the result.
+    """
+    if(len(padding) > len(tensor.N)):
+        raise InvalidArguments("The number of paddings should not exceed the number of dimensions of the tensor.")
+    
+    
+    if tensor.is_ttm:
+        cores = [c.clone() for c in tensor.cores]
+        for pad,k in zip(reversed(padding),reversed(range(len(tensor.N)))):
+            cores[k] = tnf.pad(cores[k],(1 if k < len(tensor.N)-1 else 0,1 if k < len(tensor.N)-1 else 0,pad[0],pad[1],pad[0],pad[1],1 if k>0 else 0,1 if k>0 else 0),value = 0)
+            cores[k][0,:pad[0],:pad[0],0] = value*tn.eye(pad[0], device = cores[k].device, dtype = cores[k].dtype)
+            cores[k][-1,(pad[0]+tensor.M[k]):,(pad[0]+tensor.N[k]):,-1] = value*tn.eye(pad[1], device = cores[k].device, dtype = cores[k].dtype)
+            value = 1
+    else:
+        rprod = np.prod(tensor.R)
+        value = value/rprod 
+
+        cores = [c.clone() for c in tensor.cores]
+        for pad,k in zip(reversed(padding),reversed(range(len(tensor.N)))):
+            cores[k] = tnf.pad(cores[k],(0,0,pad[0],pad[1],0,0),value = value)
+            value = 1
+            
+    return TT(cores)
+            

@@ -17,14 +17,14 @@ import datetime
 # This feature is implemented in torchtt by the member function fast_matvec() of the TT class. An example is showed in the following.
 
 # Create a random TT object and a TT matrix.
-n = 32 # mode size
+n = 4 # mode size
 A = tntt.random([(n,n)]*8,[1]+7*[4]+[1]) # random array
 x = tntt.random([n]*8,[1]+7*[5]+[1]) # random tensor 
 
 # Increase the rank without adding redundant information. 
 # The multiplication performed in this case is actually equivalent to $32\mathbf{\mathsf{Ax}}$. 
-A = A + A + A + A 
-x = x + x + x + x + x + x + x + x
+A = A + A + A + A - A + A - A + A
+x = x + x + x + x + x + x + x + x - x + x - x + x 
 print(A)
 print(x)
 

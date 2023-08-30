@@ -24,14 +24,16 @@ jobs:
           python-version: '3.10'
 
       # ADJUST THIS: install all dependencies (including pdoc)
+      - run: pip install torch
       - run: pip install -e .
+      - run: pip install sphinx sphinx_rtd_theme
       # ADJUST THIS: build your documentation into docs/.
       # We use a custom build script for pdoc itself, ideally you just run `pdoc -o docs/ ...` here.
-      - run: pdoc3 --html torchtt -o docs/ --config latex_math=True --force   
+      - run: make html
 
       - uses: actions/upload-pages-artifact@v1
         with:
-          path: docs/
+          path: _build/html
 
   # Deploy the artifact to GitHub pages.
   # This is a separate job so that only actions/deploy-pages has the necessary permissions.

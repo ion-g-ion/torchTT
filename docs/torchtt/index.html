@@ -34,17 +34,46 @@ where <span><span class="MathJax_Preview">\mathbf{r} = (r_0,r_1,...,r_d), r_0 = 
 The storage complexity is <span><span class="MathJax_Preview">\mathcal{O}(nr^2d)</span><script type="math/tex">\mathcal{O}(nr^2d)</script></span> instead of <span><span class="MathJax_Preview">\mathcal{O}(n^d)</span><script type="math/tex">\mathcal{O}(n^d)</script></span> if the rank remains bounded. Tensor operators <span><span class="MathJax_Preview">\mathsf{A} \in \mathbb{R} ^{(m_1 \times m_2 \times \cdots \times m_d) \times (n_1 \times n_2 \times \cdots \times n_d)}</span><script type="math/tex">\mathsf{A} \in \mathbb{R} ^{(m_1 \times m_2 \times \cdots \times m_d) \times (n_1 \times n_2 \times \cdots \times n_d)}</script></span> can be similarly expressed in the TT format as:</p>
 <p><span><span class="MathJax_Preview"> \mathsf{A}_{i_1i_2...i_d,j_1j_2...j_d} = \sum\limits_{s_0=1}^{r_0} \sum\limits_{s_1=1}^{r_1} \cdots \sum\limits_{s_{d-1}=1}^{r_{d-1}} \sum\limits_{s_d=1}^{r_d} \mathsf{h}^{(1)}_{s_0 i_1 j_1 s_1} \cdots \mathsf{h}^{(d)}_{s_{d-1} i_d j_d s_d}, \\ j_k = 1,...,m_k, \: i_k=1,...,n_k, \; \; k=1,...,d.</span><script type="math/tex; mode=display"> \mathsf{A}_{i_1i_2...i_d,j_1j_2...j_d} = \sum\limits_{s_0=1}^{r_0} \sum\limits_{s_1=1}^{r_1} \cdots \sum\limits_{s_{d-1}=1}^{r_{d-1}} \sum\limits_{s_d=1}^{r_d} \mathsf{h}^{(1)}_{s_0 i_1 j_1 s_1} \cdots \mathsf{h}^{(d)}_{s_{d-1} i_d j_d s_d}, \\ j_k = 1,...,m_k, \: i_k=1,...,n_k, \; \; k=1,...,d.</script></span>
 Tensor operators (also called tensor matrices in this library) generalize the concept of matrix-vector product to the multilinear case.</p>
+<p>To create a <code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code> object one can simply provide a tensor or the representation in terms of TT-cores. In the first case, the relative accuracy can also be provided such that
+<span><span class="MathJax_Preview"> || \mathsf{x} - \mathsf{y} ||_F^2 &lt; \epsilon || \mathsf{x}||_F^2, </span><script type="math/tex; mode=display"> || \mathsf{x} - \mathsf{y} ||_F^2 < \epsilon || \mathsf{x}||_F^2, </script></span>
+where <code>y</code> is the <code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code> tensor returned by the decomposition. In code, this translates to</p>
+<pre><code>import torchtt
+
+# tens is a torch.Tensor 
+# tens = ...
+
+tt = torchtt.TT(tens, 1e-10)
+</code></pre>
+<p>The rank of the object <code>tt</code> can be inspected using the <code>print()</code> function or can accessed using <code>tt.R</code>. The tensor can be converted back to the full format using <code>tt.full()</code>.
+The TT class implements tensors in the TT format as well as tensors operators in TT format. Once in the TT format, linear algebra operations (<code>+</code>, <code>-</code>, <code>*</code>, <code>@</code>, <code>/</code>) can be performed without resorting to the full format. The format and the operations is similat to the one implemented in <code>torch</code>.
+As an example, we have the following code where 3 tensors in the TT format are involved in algebra operations:</p>
+<pre><code>import torchTT
+import torch
+
+# generate 2 random tensors and a tensor matrix
+a = torchtt.randn([4,5,6,7],[1,2,3,4,1])
+b = torchtt.randn([8,4,6,4],[1,2,5,2,1])
+A = torchtt.randn([(4,8), (5,4) ,(6,6) (7,4)],[1,2,3,2,1])
+
+x = a * ( A @ b )
+x = x.round(1e-12)
+y = x-2*a
+
+# this is equivalent to 
+yf = x.full() - 2*(a.full()*torch.einsum('ijklabcd,abcd-&gt;ijkl', A.full(), b.full()))
+</code></pre>
+<p>During the process, the <code>round()</code> function has been used. This has the role of further compressing tensors by reducing the rank. After successive linear algebra operations, the rank will overshoot and therefore it is required to perform rounding operations.</p>
 <h2 id="about-the-package">About The Package</h2>
-<p>The class <code><a title="torchtt.torchtt.TT" href="torchtt.html#torchtt.torchtt.TT">TT</a></code> is used to create tensors in the TT format. Passing a <code>torch.Tensor</code> to the constructor computes a TT decomposition. The accuracy <code>eps</code> can be provided as an additional argument. In order to recover the original tensor (also called full tensor), the <code><a title="torchtt.torchtt.TT.full" href="torchtt.html#torchtt.torchtt.TT.full">TT.full()</a></code> method can be used. Tensors can be further compressed using the <code><a title="torchtt.torchtt.TT.round" href="torchtt.html#torchtt.torchtt.TT.round">TT.round()</a></code> method.</p>
+<p>The class <code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code> is used to create tensors in the TT format. Passing a <code>torch.Tensor</code> to the constructor computes a TT decomposition. The accuracy <code>eps</code> can be provided as an additional argument. In order to recover the original tensor (also called full tensor), the <code><a title="torchtt.TT.full" href="#torchtt.TT.full">TT.full()</a></code> method can be used. Tensors can be further compressed using the <code><a title="torchtt.TT.round" href="#torchtt.TT.round">TT.round()</a></code> method.</p>
 <p>Once in the TT format, linear algebra operations can be performed between compressed tensors without going to the full format. The implemented operations are:</p>
 <ul>
-<li>Sum and difference between TT objects. Two <code><a title="torchtt.torchtt.TT" href="torchtt.html#torchtt.torchtt.TT">TT</a></code> instances can be summed using the <code>+</code> operator. The difference can be implemented using the <code>-</code> operator.</li>
+<li>Sum and difference between TT objects. Two <code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code> instances can be summed using the <code>+</code> operator. The difference can be implemented using the <code>-</code> operator.</li>
 <li>Elementwise product (also called Hadamard product is performed using) the <code>*</code> operator. The same operator also implements the scalar multiplication.</li>
 <li>The operator <code>@</code> implements the generalization of the matrix product. It can also be used between a tensor operator and a tensor.</li>
 <li>The operator <code>/</code> implements the elementwise division of two TT objects. The algorithm is AMEn.</li>
 <li>The operator <code>**</code> implements the Kronecker product.</li>
 </ul>
-<p>The package also includes more features such as solving multilinear systems, cross approximation and automatic differentiation (with the possibility to define TT layers for neural networks`torchtt.TT.full()). </p>
+<p>The package also includes more features such as solving multilinear systems, cross approximation and automatic differentiation (with the possibility to define TT layers for neural networks`torchtt.TT.full()). Working examples that can be used as a tutorial are to be found in <a href="https://github.com/ion-g-ion/torchTT/tree/main/examples">examples/</a>.</p>
 <h2 id="utilities">Utilities</h2>
 <ul>
 <li>Example scripts (and ipy notebooks) can be found in the <a href="https://github.com/ion-g-ion/torchTT/tree/main/examples">examples/</a> folder.</li>
@@ -64,22 +93,32 @@ It also has linear solvers in TT and cross approximation as well as automatic di
 
 &#34;&#34;&#34;
 
-from .torchtt import TT, eye, zeros, kron, ones, random, randn, reshape, meshgrid , dot, elementwise_divide, numel, rank1TT, bilinear_form, diag, permute, load, save, cat 
+from ._tt_base import TT 
+from ._extras import eye, zeros, kron, ones, random, randn, reshape, meshgrid , dot, elementwise_divide, numel, rank1TT, bilinear_form, diag, permute, load, save, cat, pad, shape_mn_to_tuple, shape_tuple_to_mn 
+# from .torchtt import TT, eye, zeros, kron, ones, random, randn, reshape, meshgrid , dot, elementwise_divide, numel, rank1TT, bilinear_form, diag, permute, load, save, cat, pad 
+
+__all__ = [&#39;TT&#39;, &#39;eye&#39;, &#39;zeros&#39;, &#39;kron&#39;, &#39;ones&#39;, &#39;random&#39;, &#39;randn&#39;, &#39;reshape&#39;, &#39;meshgrid&#39;, &#39;dot&#39;, &#39;elementwise_divide&#39;, &#39;numel&#39;, &#39;rank1TT&#39;, &#39;bilinear_form&#39;, &#39;diag&#39;, &#39;permute&#39;, &#39;load&#39;, &#39;save&#39;, &#39;cat&#39;, &#39;pad&#39;, &#39;shape_mn_to_tuple&#39;, &#39;shape_tuple_to_mn&#39;]
+
 from . import solvers
 from . import grad
 # from .grad import grad, watch, unwatch
 from . import manifold
 from . import interpolate
 from . import nn
+from . import cpp
 # from .errors import *</code></pre>
 </details>
 </section>
 <section>
 <h2 class="section-title" id="header-submodules">Sub-modules</h2>
 <dl>
+<dt><code class="name"><a title="torchtt.cpp" href="cpp.html">torchtt.cpp</a></code></dt>
+<dd>
+<div class="desc"><p>Module for the C++ backend.</p></div>
+</dd>
 <dt><code class="name"><a title="torchtt.errors" href="errors.html">torchtt.errors</a></code></dt>
 <dd>
-<div class="desc"><p>Contains the errors used in the <code><a title="torchtt.torchtt" href="torchtt.html">torchtt.torchtt</a></code> package.</p></div>
+<div class="desc"><p>Contains the errors used in the <code><a title="torchtt" href="#torchtt">torchtt</a></code> package.</p></div>
 </dd>
 <dt><code class="name"><a title="torchtt.grad" href="grad.html">torchtt.grad</a></code></dt>
 <dd>
@@ -101,19 +140,4068 @@ from . import nn
 <dd>
 <div class="desc"><p>System solvers in the TT format.</p></div>
 </dd>
-<dt><code class="name"><a title="torchtt.torchtt" href="torchtt.html">torchtt.torchtt</a></code></dt>
-<dd>
-<div class="desc"><p>Basic class for TT decomposition.
-It contains the base TT class as well as additional functions.
-The TT class implements tensors in the TT format as …</p></div>
-</dd>
 </dl>
 </section>
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="torchtt.bilinear_form"><code class="name flex">
+<span>def <span class="ident">bilinear_form</span></span>(<span>x, A, y)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Computes the bilinear form x^T A y for TT tensors:</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>x</code></strong> :&ensp;<code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the tensors.</dd>
+<dt><strong><code>A</code></strong> :&ensp;<code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the tensors (must be TT matrix).</dd>
+<dt><strong><code>y</code></strong> :&ensp;<code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the tensors.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>InvalidArguments</code></dt>
+<dd>Inputs must be torchtt.TT instances.</dd>
+<dt><code>IncompatibleTypes</code></dt>
+<dd>x and y must be TT tensors and A must be TT matrix.</dd>
+<dt><code>ShapeMismatch</code></dt>
+<dd>Check the shapes. Required is x.N == A.M and y.N == A.N.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>torch.tensor</code></dt>
+<dd>the result of the bilienar form as tensor with 1 element.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def bilinear_form(x,A,y):
+    &#34;&#34;&#34;
+    Computes the bilinear form x^T A y for TT tensors:
+
+    Args:
+        x (torchtt.TT): the tensors.
+        A (torchtt.TT): the tensors (must be TT matrix).
+        y (torchtt.TT): the tensors.
+
+    Raises:
+        InvalidArguments: Inputs must be torchtt.TT instances.
+        IncompatibleTypes: x and y must be TT tensors and A must be TT matrix.
+        ShapeMismatch: Check the shapes. Required is x.N == A.M and y.N == A.N.
+
+    Returns:
+        torch.tensor: the result of the bilienar form as tensor with 1 element.
+    &#34;&#34;&#34;
+    if not isinstance(x,TT) or not isinstance(A,TT) or not isinstance(y,TT):
+        raise InvalidArguments(&#34;Inputs must be torchtt.TT instances.&#34;)
+    if x.is_ttm or y.is_ttm or A.is_ttm==False:
+        raise IncompatibleTypes(&#34;x and y must be TT tensors and A must be TT matrix.&#34;)
+    if x.N != A.M or y.N != A.N:
+        raise ShapeMismatch(&#34;Check the shapes. Required is x.N == A.M and y.N == A.N.&#34;)
+    d = len(x.N)
+    return bilinear_form_aux(x.cores,A.cores,y.cores,d)</code></pre>
+</details>
+</dd>
+<dt id="torchtt.cat"><code class="name flex">
+<span>def <span class="ident">cat</span></span>(<span>tensors, dim=0)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Concatenate tensors in the TT format along a given dimension <code>dim</code>. Only works for TT tensors and not TT matrices.</p>
+<h2 id="examples">Examples</h2>
+<pre><code>import torchtt 
+import torch 
+
+
+a1 = torchtt.randn((3,4,2,6,7), [1,2,3,4,2,1])
+a2 = torchtt.randn((3,4,8,6,7), [1,3,1,7,5,1])
+a3 = torchtt.randn((3,4,15,6,7), [1,3,10,2,4,1])
+
+a = torchtt.cat((a1,a2,a3),2)
+
+af = torch.cat((a1.full(), a2.full(),
+print(torch.linalg.norm(a.full()-af))
+</code></pre>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>tensors</code></strong> :&ensp;<code>tuple[<a title="torchtt.TT" href="#torchtt.TT">TT</a>]</code></dt>
+<dd>the tensors to be concatenated. Their mode sizes must match for all modex except the concatenating dimension.</dd>
+<dt><strong><code>dim</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>The dimension to be concatenated after. Defaults to 0.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>InvalidArguments</code></dt>
+<dd>Not implemented for tensor matrices.</dd>
+<dt><code>InvalidArguments</code></dt>
+<dd>The mode sizes must be the same on the nonconcatenated dimensions for all the provided tensors.</dd>
+<dt><code>InvalidArguments</code></dt>
+<dd>The tensors must have the same number of dimensions.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the result.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cat(tensors, dim = 0):
+    &#34;&#34;&#34;
+    Concatenate tensors in the TT format along a given dimension `dim`. Only works for TT tensors and not TT matrices.
+    
+    Examples:
+        ```
+        import torchtt 
+        import torch 
+
+
+        a1 = torchtt.randn((3,4,2,6,7), [1,2,3,4,2,1])
+        a2 = torchtt.randn((3,4,8,6,7), [1,3,1,7,5,1])
+        a3 = torchtt.randn((3,4,15,6,7), [1,3,10,2,4,1])
+
+        a = torchtt.cat((a1,a2,a3),2)
+
+        af = torch.cat((a1.full(), a2.full(),
+        print(torch.linalg.norm(a.full()-af))
+        ```
+        
+    Args:
+        tensors (tuple[TT]): the tensors to be concatenated. Their mode sizes must match for all modex except the concatenating dimension.
+        dim (int, optional): The dimension to be concatenated after. Defaults to 0.
+
+    Raises:
+        InvalidArguments: Not implemented for tensor matrices.
+        InvalidArguments: The mode sizes must be the same on the nonconcatenated dimensions for all the provided tensors.
+        InvalidArguments: The tensors must have the same number of dimensions.
+
+    Returns:
+        torchtt.TT: the result.
+    &#34;&#34;&#34;
+
+    if(len(tensors) == 0):
+        return None 
+
+    if tensors[0].is_ttm:
+        raise InvalidArguments(&#34;Not implemented for tensor matrices.&#34;)
+    Rs = [tensors[0].R] 
+
+    for i in range(1, len(tensors)):
+        if tensors[i].is_ttm:
+            raise InvalidArguments(&#34;Not implemented for tensor matrices.&#34;)
+        if tensors[i].N[:dim] != tensors[0].N[:dim] and tensors[i].N[(dim+1):] != tensors[0].N[(dim+1):]:
+            raise InvalidArguments(&#34;The mode sizes must be the same on the nonconcatenated dimensions for all the provided tensors.&#34;)
+        if len(tensors[i].N) != len(tensors[0].N):
+            raise InvalidArguments(&#34;The tensors must have the same number of dimensions.&#34;)
+        Rs.append(tensors[i].R)
+    
+
+    cores = []
+    
+    
+    if tensors[0].is_ttm:
+        pass
+    else:
+        
+        r_sum = [1]
+        for i in range(1,len(tensors[0].N)):
+            r_sum.append(sum([Rs[k][i] for k in range(len(tensors))]))
+        r_sum.append(1)
+        for i in range(len(tensors[0].N)):
+            if i == dim:
+                n = sum([t.N[dim] for t in tensors])
+                cores.append(tn.zeros((r_sum[i], n, r_sum[i+1]), device = tensors[0].cores[0].device, dtype = tensors[0].cores[0].dtype))
+            else:
+                cores.append(tn.zeros((r_sum[i], tensors[0].N[i], r_sum[i+1]), device = tensors[0].cores[0].device, dtype = tensors[0].cores[0].dtype))
+                
+            offset1 = 0
+            offset2 = 0
+            offset3 = 0
+            
+            for t in tensors:
+                if i==dim:
+                    cores[i][offset1:(offset1+t.cores[i].shape[0]),offset2:(offset2+t.cores[i].shape[1]),offset3:(offset3+t.cores[i].shape[2])] = t.cores[i]
+                    if i&gt;0: offset1 += t.cores[i].shape[0]
+                    offset2 += t.cores[i].shape[1]
+                    if i&lt;len(tensors[0].N)-1: offset3 += t.cores[i].shape[2]
+                else:
+                    cores[i][offset1:(offset1+t.cores[i].shape[0]),:,offset3:(offset3+t.cores[i].shape[2])] = t.cores[i]
+                    if i&gt;0: offset1 += t.cores[i].shape[0]
+                    if i&lt;len(tensors[0].N)-1: offset3 += t.cores[i].shape[2]
+        #for i in range(len(self.__N)):
+        #    pad1 = (0,0 if i == len(self.__N)-1 else other.R[i+1] , 0,0 , 0,0 if i==0 else other.R[i])
+        #    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
+        #    cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(other.cores[i],pad2))
+    return TT(cores)</code></pre>
+</details>
+</dd>
+<dt id="torchtt.diag"><code class="name flex">
+<span>def <span class="ident">diag</span></span>(<span>input)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Creates diagonal TT matrix from TT tensor or extracts the diagonal of a TT matrix:</p>
+<ul>
+<li>
+<p>If a TT matrix is provided the result is a TT tensor representing the diagonal <span><span class="MathJax_Preview"> \mathsf{x}_{i_1...i_d} = \mathsf{A}_{i_1...i_d,i_1...i_d} </span><script type="math/tex"> \mathsf{x}_{i_1...i_d} = \mathsf{A}_{i_1...i_d,i_1...i_d} </script></span></p>
+</li>
+<li>
+<p>If a TT tensor is provided the result is a diagonal TT matrix with the entries <span><span class="MathJax_Preview"> \mathsf{A}_{i_1...i_d,j_1...j_d} = \mathsf{x}_{i_1...i_d} \delta_{i_1}^{j_1} \cdots \delta_{i_d}^{j_d} </span><script type="math/tex"> \mathsf{A}_{i_1...i_d,j_1...j_d} = \mathsf{x}_{i_1...i_d} \delta_{i_1}^{j_1} \cdots \delta_{i_d}^{j_d} </script></span></p>
+</li>
+</ul>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>input</code></strong> :&ensp;<code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the input. </dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>InvalidArguments</code></dt>
+<dd>Input must be a torchtt.TT instance.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the result.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def diag(input):
+    &#34;&#34;&#34;
+    Creates diagonal TT matrix from TT tensor or extracts the diagonal of a TT matrix:
+
+    * If a TT matrix is provided the result is a TT tensor representing the diagonal \( \\mathsf{x}_{i_1...i_d} = \\mathsf{A}_{i_1...i_d,i_1...i_d} \)
+
+    * If a TT tensor is provided the result is a diagonal TT matrix with the entries \( \\mathsf{A}_{i_1...i_d,j_1...j_d} = \\mathsf{x}_{i_1...i_d} \\delta_{i_1}^{j_1} \\cdots \\delta_{i_d}^{j_d} \)
+
+    Args:
+        input (TT): the input. 
+
+    Raises:
+        InvalidArguments: Input must be a torchtt.TT instance.
+
+    Returns:
+        torchtt.TT: the result.
+    &#34;&#34;&#34;
+
+    if not isinstance(input, TT):
+        raise InvalidArguments(&#34;Input must be a torchtt.TT instance.&#34;)
+
+    if input.is_ttm:
+        return TT([tn.diagonal(c, dim1 = 1, dim2 = 2) for c in input.cores])
+    else:
+        return TT([tn.einsum(&#39;ijk,jm-&gt;ijmk&#39;,c,tn.eye(c.shape[1])) for c in input.cores])</code></pre>
+</details>
+</dd>
+<dt id="torchtt.dot"><code class="name flex">
+<span>def <span class="ident">dot</span></span>(<span>a, b, axis=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Computes the dot product between 2 tensors in TT format.
+If both a and b have identical mode sizes the result is the dot product.
+If a and b have inequal mode sizes, the function perform index contraction.
+The number of dimensions of a must be greater or equal as b.
+The modes of the tensor a along which the index contraction with b is performed are given in axis.
+For the compelx case (a,b) = b^H . a.</p>
+<h2 id="examples">Examples</h2>
+<pre><code>a = torchtt.randn([3,4,5,6,7],[1,2,2,2,2,1])
+b = torchtt.randn([3,4,5,6,7],[1,2,2,2,2,1])
+c = torchtt.randn([3,5,6],[1,2,2,1])
+print(torchtt.dot(a,b))
+print(torchtt.dot(a,c,[0,2,3]))
+</code></pre>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>a</code></strong> :&ensp;<code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the first tensor.</dd>
+<dt><strong><code>b</code></strong> :&ensp;<code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the second tensor.</dd>
+<dt><strong><code>axis</code></strong> :&ensp;<code>list[int]</code>, optional</dt>
+<dd>the mode indices for index contraction. Defaults to None.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>InvalidArguments</code></dt>
+<dd>Both operands should be TT instances.</dd>
+<dt><code>NotImplementedError</code></dt>
+<dd>Operation not implemented for TT-matrices.</dd>
+<dt><code>ShapeMismatch</code></dt>
+<dd>Operands are not the same size.</dd>
+<dt><code>ShapeMismatch</code></dt>
+<dd>Number of the modes of the first tensor must be equal with the second.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>float</code> or <code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the result. If no axis index is provided the result is a scalar otherwise a torchtt.TT object.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def dot(a,b,axis=None):
+    &#34;&#34;&#34;
+    Computes the dot product between 2 tensors in TT format.
+    If both a and b have identical mode sizes the result is the dot product.
+    If a and b have inequal mode sizes, the function perform index contraction. 
+    The number of dimensions of a must be greater or equal as b.
+    The modes of the tensor a along which the index contraction with b is performed are given in axis.
+    For the compelx case (a,b) = b^H . a.
+
+    Examples:
+        ```
+        a = torchtt.randn([3,4,5,6,7],[1,2,2,2,2,1])
+        b = torchtt.randn([3,4,5,6,7],[1,2,2,2,2,1])
+        c = torchtt.randn([3,5,6],[1,2,2,1])
+        print(torchtt.dot(a,b))
+        print(torchtt.dot(a,c,[0,2,3]))
+        ```
+
+    Args:
+        a (torchtt.TT): the first tensor.
+        b (torchtt.TT): the second tensor.
+        axis (list[int], optional): the mode indices for index contraction. Defaults to None.
+
+    Raises:
+        InvalidArguments: Both operands should be TT instances.
+        NotImplementedError: Operation not implemented for TT-matrices.
+        ShapeMismatch: Operands are not the same size.
+        ShapeMismatch: Number of the modes of the first tensor must be equal with the second.
+
+    Returns:
+        float or torchtt.TT: the result. If no axis index is provided the result is a scalar otherwise a torchtt.TT object.
+    &#34;&#34;&#34;
+    
+    if not isinstance(a, TT) or not isinstance(b, TT):
+        raise InvalidArguments(&#39;Both operands should be TT instances.&#39;)
+    
+    
+    if axis == None:
+        # treat first the full dot product
+        # faster than partial projection
+        if a.is_ttm or b.is_ttm:
+            raise NotImplementedError(&#39;Operation not implemented for TT-matrices.&#39;)
+        if a.N != b.N:
+            raise ShapeMismatch(&#39;Operands are not the same size.&#39;)
+        
+        result = tn.tensor([[1.0]],dtype = a.cores[0].dtype, device=a.cores[0].device)
+        
+        for i in range(len(a.N)):
+            result = tn.einsum(&#39;ab,aim,bin-&gt;mn&#39;,result, a.cores[i], tn.conj(b.cores[i]))
+        result = tn.squeeze(result)
+    else:
+        # partial case
+        if a.is_ttm or b.is_ttm:
+            raise NotImplementedError(&#39;Operation not implemented for TT-matrices.&#39;)
+        if len(a.N)&lt;len(b.N):
+            raise ShapeMismatch(&#39;Number of the modes of the first tensor must be equal with the second.&#39;)
+        # if a.N[axis] != b.N:
+        #     raise Exception(&#39;Dimension mismatch.&#39;)
+        
+        k = 0 # index for the tensor b
+        cores_new = []
+        rank_left = 1
+        for i in range(len(a.N)):
+            if i in axis:
+                cores_new.append(tn.conj(b.cores[k]))
+                rank_left = b.cores[k].shape[2]
+                k+=1
+            else:
+                rank_right = b.cores[k].shape[0] if i+1 in axis else rank_left                
+                cores_new.append(tn.conj(tn.einsum(&#39;ik,j-&gt;ijk&#39;,tn.eye(rank_left,rank_right,dtype=a.cores[0].dtype),tn.ones([a.N[i]],dtype=a.cores[0].dtype))))
+        
+        result = (a*TT(cores_new)).sum(axis)
+    return result</code></pre>
+</details>
+</dd>
+<dt id="torchtt.elementwise_divide"><code class="name flex">
+<span>def <span class="ident">elementwise_divide</span></span>(<span>x, y, eps=1e-12, starting_tensor=None, nswp=50, kick=4, local_iterations=40, resets=2, preconditioner=None, verbose=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Perform the elemntwise division x/y of two tensors in the TT format using the AMEN method.
+Use this method if different AMEN arguments are needed.
+This method does not check the validity of the inputs.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>x</code></strong> :&ensp;<code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code> or <code>scalar</code></dt>
+<dd>first tensor (can also be scalar of type float, int, torch.tensor with shape (1)).</dd>
+<dt><strong><code>y</code></strong> :&ensp;<code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>second tensor.</dd>
+<dt><strong><code>eps</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>relative acccuracy. Defaults to 1e-12.</dd>
+<dt><strong><code>starting_tensor</code></strong> :&ensp;<code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code> or <code>None</code>, optional</dt>
+<dd>initial guess of the result (None for random initial guess). Defaults to None.</dd>
+<dt><strong><code>nswp</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>number of iterations. Defaults to 50.</dd>
+<dt><strong><code>kick</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>size of rank enrichment. Defaults to 4.</dd>
+<dt><strong><code>local_iterations</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>the number of iterations for the local iterative solver. Defaults to 40.</dd>
+<dt><strong><code>resets</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>the number of restarts in the GMRES solver. Defaults to 2.</dd>
+<dt><strong><code>preconditioner</code></strong> :&ensp;<code>string</code>, optional</dt>
+<dd>Use preconditioner for the local solver (possible vaules None, 'c'). Defaults to None. </dd>
+<dt><strong><code>verbose</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>display debug info. Defaults to False.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the result</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def elementwise_divide(x, y, eps = 1e-12, starting_tensor = None, nswp = 50, kick = 4, local_iterations = 40, resets = 2, preconditioner = None, verbose = False):
+    &#34;&#34;&#34;
+    Perform the elemntwise division x/y of two tensors in the TT format using the AMEN method.
+    Use this method if different AMEN arguments are needed.
+    This method does not check the validity of the inputs.
+    
+    Args:
+        x (torchtt.TT or scalar): first tensor (can also be scalar of type float, int, torch.tensor with shape (1)).
+        y (torchtt.TT): second tensor.
+        eps (float, optional): relative acccuracy. Defaults to 1e-12.
+        starting_tensor (torchtt.TT or None, optional): initial guess of the result (None for random initial guess). Defaults to None.
+        nswp (int, optional): number of iterations. Defaults to 50.
+        kick (int, optional): size of rank enrichment. Defaults to 4.
+        local_iterations (int, optional): the number of iterations for the local iterative solver. Defaults to 40.
+        resets (int, optional): the number of restarts in the GMRES solver. Defaults to 2.
+        preconditioner (string, optional): Use preconditioner for the local solver (possible vaules None, &#39;c&#39;). Defaults to None. 
+        verbose (bool, optional): display debug info. Defaults to False.
+
+    Returns:
+        torchtt.TT: the result
+    &#34;&#34;&#34;
+
+    cores_new = amen_divide(y,x,nswp,starting_tensor,eps,rmax = 1000, kickrank = kick, local_iterations = local_iterations, resets = resets, verbose=verbose, preconditioner = preconditioner)
+    return TT(cores_new)</code></pre>
+</details>
+</dd>
+<dt id="torchtt.eye"><code class="name flex">
+<span>def <span class="ident">eye</span></span>(<span>shape, dtype=torch.float64, device=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Construct the TT decomposition of a multidimensional identity matrix.
+all the TT ranks are 1.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>shape</code></strong> :&ensp;<code>list[int]</code></dt>
+<dd>the shape.</dd>
+<dt><strong><code>dtype</code></strong> :&ensp;<code>torch.dtype</code>, optional</dt>
+<dd>the dtype of the returned tensor. Defaults to tn.float64.</dd>
+<dt><strong><code>device</code></strong> :&ensp;<code>torch.device</code>, optional</dt>
+<dd>the device where the TT cores are created (None means CPU). Defaults to None.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the one tensor.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def eye(shape, dtype=tn.float64, device = None):
+    &#34;&#34;&#34;
+    Construct the TT decomposition of a multidimensional identity matrix.
+    all the TT ranks are 1.
+
+    Args:
+        shape (list[int]): the shape.
+        dtype (torch.dtype, optional): the dtype of the returned tensor. Defaults to tn.float64.
+        device (torch.device, optional): the device where the TT cores are created (None means CPU). Defaults to None.
+
+    Returns:
+        torchtt.TT: the one tensor.
+    &#34;&#34;&#34;
+    
+    shape = list(shape)
+    
+    cores = [tn.unsqueeze(tn.unsqueeze(tn.eye(s, dtype=dtype, device = device),0),3) for s in shape]            
+    
+    return TT(cores)</code></pre>
+</details>
+</dd>
+<dt id="torchtt.kron"><code class="name flex">
+<span>def <span class="ident">kron</span></span>(<span>first, second)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Computes the tensor Kronecker product.
+If None is provided as input the reult is the other tensor.
+If A is N_1 x &hellip; x N_d and B is M_1 x &hellip; x M_p, then kron(A,B) is N_1 x &hellip; x N_d x M_1 x &hellip; x M_p</p>
+<h2 id="args">Args</h2>
+<p>first (torchtt.TT | None): first argument.
+second (torchtt.TT | None): second argument.</p>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>IncompatibleTypes</code></dt>
+<dd>Incompatible data types (make sure both are either TT-matrices or TT-tensors).</dd>
+<dt><code>InvalidArguments</code></dt>
+<dd>Invalid arguments.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the result.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def kron(first, second):
+    &#34;&#34;&#34;
+    Computes the tensor Kronecker product.
+    If None is provided as input the reult is the other tensor.
+    If A is N_1 x ... x N_d and B is M_1 x ... x M_p, then kron(A,B) is N_1 x ... x N_d x M_1 x ... x M_p
+
+
+    Args:
+        first (torchtt.TT | None): first argument.
+        second (torchtt.TT | None): second argument.
+
+    Raises:
+        IncompatibleTypes: Incompatible data types (make sure both are either TT-matrices or TT-tensors).
+        InvalidArguments: Invalid arguments.
+
+    Returns:
+        torchtt.TT: the result.
+    &#34;&#34;&#34;
+    if first == None and isinstance(second,TT):
+        cores_new = [c.clone() for c in second.cores]
+        result = TT(cores_new)
+    elif second == None and isinstance(first,TT): 
+        cores_new = [c.clone() for c in first.cores]
+        result = TT(cores_new)
+    elif isinstance(first,TT) and isinstance(second,TT):
+        if first.is_ttm != second.is_ttm:
+            raise IncompatibleTypes(&#39;Incompatible data types (make sure both are either TT-matrices or TT-tensors).&#39;)
+    
+        # concatenate the result
+        cores_new = [c.clone() for c in first.cores] + [c.clone() for c in second.cores]
+        result = TT(cores_new)
+    else:
+        raise InvalidArguments(&#39;Invalid arguments.&#39;)
+    return result</code></pre>
+</details>
+</dd>
+<dt id="torchtt.load"><code class="name flex">
+<span>def <span class="ident">load</span></span>(<span>path)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Load a torchtt.TT object from a file.</p>
+<h2 id="examples">Examples</h2>
+<pre><code>import torchtt
+#generate a TT object
+A = torchtt.randn([10,20,30,40,4,5],[1,6,5,4,3,2,1])
+# save the TT object
+torchtt.save(A,&quot;./test.TT&quot;)
+# load the TT object
+B = torchtt.load(&quot;./test.TT&quot;)
+# the loaded should be the same
+print((A-B).norm()/A.norm())
+</code></pre>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>path</code></strong> :&ensp;<code>str</code></dt>
+<dd>the file name.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the tensor.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def load(path):
+    &#34;&#34;&#34;
+    Load a torchtt.TT object from a file.
+
+    Examples:
+        ```
+        import torchtt
+        #generate a TT object
+        A = torchtt.randn([10,20,30,40,4,5],[1,6,5,4,3,2,1])
+        # save the TT object
+        torchtt.save(A,&#34;./test.TT&#34;)
+        # load the TT object
+        B = torchtt.load(&#34;./test.TT&#34;)
+        # the loaded should be the same
+        print((A-B).norm()/A.norm())
+        ```
+        
+    Args:
+        path (str): the file name.
+
+    Returns:
+        torchtt.TT: the tensor.
+    &#34;&#34;&#34;
+    dct = tn.load(path)
+    
+    return TT(dct[&#39;cores&#39;])</code></pre>
+</details>
+</dd>
+<dt id="torchtt.meshgrid"><code class="name flex">
+<span>def <span class="ident">meshgrid</span></span>(<span>vectors)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Creates a meshgrid of torchtt.TT objects. Similar to numpy.meshgrid or torch.meshgrid.
+The input is a list of d torch.tensor vectors of sizes N_1, &hellip; ,N_d
+The result is a list of torchtt.TT instances of shapes N1 x &hellip; x Nd.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>vectors</code></strong> :&ensp;<code>list[torch.tensor]</code></dt>
+<dd>the vectors (1d tensors).</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list[<a title="torchtt.TT" href="#torchtt.TT">TT</a>]</code></dt>
+<dd>the resulting meshgrid.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def meshgrid(vectors):
+    &#34;&#34;&#34;
+    Creates a meshgrid of torchtt.TT objects. Similar to numpy.meshgrid or torch.meshgrid.
+    The input is a list of d torch.tensor vectors of sizes N_1, ... ,N_d
+    The result is a list of torchtt.TT instances of shapes N1 x ... x Nd.
+    
+    Args:
+        vectors (list[torch.tensor]): the vectors (1d tensors).
+
+    Returns:
+        list[TT]: the resulting meshgrid.
+    &#34;&#34;&#34;
+    
+    Xs = []
+    dtype = vectors[0].dtype
+    for i in range(len(vectors)):
+        lst = [tn.ones((1,v.shape[0],1),dtype=dtype) for v in vectors]
+        lst[i] = tn.reshape(vectors[i],[1,-1,1])
+        Xs.append(TT(lst))
+    return Xs</code></pre>
+</details>
+</dd>
+<dt id="torchtt.numel"><code class="name flex">
+<span>def <span class="ident">numel</span></span>(<span>tensor)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return the number of entries needed to store the TT cores for the given tensor.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>tensor</code></strong> :&ensp;<code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the TT representation of the tensor.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>int</code></dt>
+<dd>number of floats stored for the TT decomposition.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def numel(tensor):
+    &#34;&#34;&#34;
+    Return the number of entries needed to store the TT cores for the given tensor.
+
+    Args:
+        tensor (torchtt.TT): the TT representation of the tensor.
+
+    Returns:
+        int: number of floats stored for the TT decomposition.
+    &#34;&#34;&#34;
+    
+    return sum([tn.numel(tensor.cores[i]) for i in range(len(tensor.N))])</code></pre>
+</details>
+</dd>
+<dt id="torchtt.ones"><code class="name flex">
+<span>def <span class="ident">ones</span></span>(<span>shape, dtype=torch.float64, device=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Construct a tensor that contains only ones.
+the shape can be a list of ints or a list of tuples of ints. The second case creates a TT matrix.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>shape</code></strong> :&ensp;<code>list[int]</code> or <code>list[tuple[int]]</code></dt>
+<dd>the shape.</dd>
+<dt><strong><code>dtype</code></strong> :&ensp;<code>torch.dtype</code>, optional</dt>
+<dd>the dtype of the returned tensor. Defaults to tn.float64.</dd>
+<dt><strong><code>device</code></strong> :&ensp;<code>torch.device</code>, optional</dt>
+<dd>the device where the TT cores are created (None means CPU). Defaults to None.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>InvalidArguments</code></dt>
+<dd>Shape must be a list.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the one tensor.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def ones(shape, dtype=tn.float64, device = None):
+    &#34;&#34;&#34;
+    Construct a tensor that contains only ones.
+    the shape can be a list of ints or a list of tuples of ints. The second case creates a TT matrix.
+
+    Args:
+        shape (list[int] or list[tuple[int]]): the shape.
+        dtype (torch.dtype, optional): the dtype of the returned tensor. Defaults to tn.float64.
+        device (torch.device, optional): the device where the TT cores are created (None means CPU). Defaults to None.
+
+    Raises:
+        InvalidArguments: Shape must be a list.
+
+    Returns:
+        torchtt.TT: the one tensor.
+    &#34;&#34;&#34;
+    if isinstance(shape,list):
+        d = len(shape)
+        if d==0:
+            return TT(None)
+        else:
+            if isinstance(shape[0],tuple):
+                # we create a TT-matrix
+                cores = [tn.ones([1,shape[i][0],shape[i][1],1],dtype=dtype,device=device) for i in range(d)]            
+                
+            else:
+                # we create a TT-tensor
+                cores = [tn.ones([1,shape[i],1],dtype=dtype,device=device) for i in range(d)]
+            
+    else:
+        raise InvalidArguments(&#39;Shape must be a list.&#39;)
+    
+    return TT(cores)</code></pre>
+</details>
+</dd>
+<dt id="torchtt.pad"><code class="name flex">
+<span>def <span class="ident">pad</span></span>(<span>tensor, padding, value=0.0)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Pad a tensor in the TT format.
+The <code>padding</code> argument is a tuple of tuples <code>((b1, a1), (b2, a2), &hellip; , (bd, ad))</code>.
+Each dimension is padded with <code>bk</code> at the beginning and <code>ak</code> at the end. The padding value is constant and is given as the argument <code>value</code>.
+In case of a TT operator, duiagual padding is performed. On the diagonal, the provided <code>value</code> is inserted.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>tensor</code></strong> :&ensp;<code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the tensor to be padded.</dd>
+<dt>padding (tuple(tuple(int))): the paddings.</dt>
+<dt><strong><code>value</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>the value to pad. Defaults to 0.0.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>InvalidArguments</code></dt>
+<dd>The number of paddings should not exceed the number of dimensions of the tensor.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the result.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def pad(tensor, padding, value = 0.0):
+    &#34;&#34;&#34;
+    Pad a tensor in the TT format.
+    The `padding` argument is a tuple of tuples `((b1, a1), (b2, a2), ... , (bd, ad))`. 
+    Each dimension is padded with `bk` at the beginning and `ak` at the end. The padding value is constant and is given as the argument `value`. 
+    In case of a TT operator, duiagual padding is performed. On the diagonal, the provided `value` is inserted.
+
+    Args:
+        tensor (TT): the tensor to be padded.
+        padding (tuple(tuple(int))): the paddings.
+        value (float, optional): the value to pad. Defaults to 0.0.
+
+    Raises:
+        InvalidArguments: The number of paddings should not exceed the number of dimensions of the tensor.
+
+    Returns:
+        TT: the result.
+    &#34;&#34;&#34;
+    if(len(padding) &gt; len(tensor.N)):
+        raise InvalidArguments(&#34;The number of paddings should not exceed the number of dimensions of the tensor.&#34;)
+    
+    
+    if tensor.is_ttm:
+        cores = [c.clone() for c in tensor.cores]
+        for pad,k in zip(reversed(padding),reversed(range(len(tensor.N)))):
+            cores[k] = tnf.pad(cores[k],(1 if k &lt; len(tensor.N)-1 else 0,1 if k &lt; len(tensor.N)-1 else 0,pad[0],pad[1],pad[0],pad[1],1 if k&gt;0 else 0,1 if k&gt;0 else 0),value = 0)
+            cores[k][0,:pad[0],:pad[0],0] = value*tn.eye(pad[0], device = cores[k].device, dtype = cores[k].dtype)
+            cores[k][-1,(pad[0]+tensor.M[k]):,(pad[0]+tensor.N[k]):,-1] = value*tn.eye(pad[1], device = cores[k].device, dtype = cores[k].dtype)
+            value = 1
+    else:
+        rprod = np.prod(tensor.R)
+        value = value/rprod 
+
+        cores = [c.clone() for c in tensor.cores]
+        for pad,k in zip(reversed(padding),reversed(range(len(tensor.N)))):
+            cores[k] = tnf.pad(cores[k],(0,0,pad[0],pad[1],0,0),value = value)
+            value = 1
+            
+    return TT(cores)</code></pre>
+</details>
+</dd>
+<dt id="torchtt.permute"><code class="name flex">
+<span>def <span class="ident">permute</span></span>(<span>input, dims, eps=1e-12)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Permutes the dimensions of the tensor. Works similarily to <code>torch.permute</code>.
+Works like a bubble sort for both TT tensors and TT matrices.</p>
+<p>Examples:</p>
+<pre><code>x_tt = torchtt.random([5,6,7,8,9],[1,2,3,4,2,1])
+xp_tt = torchtt.permute(x_tt, [4,3,2,1,0], 1e-10)
+print(xp_tt) # the shape of this tensor should be [9,8,7,6,5]
+</code></pre>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>input</code></strong> :&ensp;<code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the input tensor.</dd>
+<dt><strong><code>dims</code></strong> :&ensp;<code>list[int]</code></dt>
+<dd>the order of the indices in the new tensor.</dd>
+<dt><strong><code>eps</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>the relative accuracy of the decomposition. Defaults to 1e-12.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>InvalidArguments</code></dt>
+<dd>The input must be a TT tensor dims must be a list of integers or a tple of integers.</dd>
+<dt><code>ShapeMismatch</code></dt>
+<dd><code>dims</code> must be the length of the number of dimensions.</dd>
+<dt><code>InvalidArguments</code></dt>
+<dd>Duplicate dims are not allowed.</dd>
+<dt><code>InvalidArguments</code></dt>
+<dd>Dims should only contain integers from 0 to d-1.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the resulting tensor.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def permute(input, dims, eps = 1e-12):
+    &#34;&#34;&#34;
+    Permutes the dimensions of the tensor. Works similarily to `torch.permute`.
+    Works like a bubble sort for both TT tensors and TT matrices.
+    
+    Examples:
+    ```
+    x_tt = torchtt.random([5,6,7,8,9],[1,2,3,4,2,1])
+    xp_tt = torchtt.permute(x_tt, [4,3,2,1,0], 1e-10)
+    print(xp_tt) # the shape of this tensor should be [9,8,7,6,5]
+    ```
+    
+    Args:
+        input (torchtt.TT): the input tensor.
+        dims (list[int]): the order of the indices in the new tensor.
+        eps (float, optional): the relative accuracy of the decomposition. Defaults to 1e-12.
+
+    Raises:
+        InvalidArguments: The input must be a TT tensor dims must be a list of integers or a tple of integers.
+        ShapeMismatch: `dims` must be the length of the number of dimensions.
+        InvalidArguments: Duplicate dims are not allowed.
+        InvalidArguments: Dims should only contain integers from 0 to d-1.
+    Returns:
+        torchtt.TT: the resulting tensor.
+    &#34;&#34;&#34;
+    if not isinstance(input, TT) :
+        raise InvalidArguments(&#34;The input must be a TT tensor dims must be a list of integers or a tple of integers.&#34;)
+    if len(dims) != len(input.N):
+        raise ShapeMismatch(&#34;`dims` must be the length of the number of dimensions.&#34;)
+    if len(dims) != len(set(dims)):
+        raise InvalidArguments(&#34;Duplicate dims are not allowed.&#34;)
+    if min(dims) != 0 or max(dims) != len(input.N)-1:
+        raise InvalidArguments(&#34;Dims should only contain integers from 0 to d-1.&#34;)
+    
+    cores, R  = rl_orthogonal(input.cores, input.R, input.is_ttm)
+    d = len(cores)
+    eps = eps/(d**1.5) 
+    indices = list(range(d))
+    
+    last_idx = 0
+    
+    inversions = True 
+    while inversions:
+        inversions = False 
+        
+        
+        
+        for i in range(d-1):
+            i1 = indices[i]
+            i2 = indices[i+1]
+            if dims.index(i1)&gt;dims.index(i2):
+                # inverion in the index permutation =&gt; the cores must be swapped.
+                inversions = True
+            
+                indices[i] = i2
+                indices[i+1] = i1
+                
+                
+                # print(indices,&#39; permute &#39;, i1, i2)
+        
+        
+
+                last_idx = i
+                if input.is_ttm:
+                    #reorthonormalize
+                    for k in range(last_idx, i):
+                        Q, R = QR(tn.reshape(cores[k],[cores[k].shape[0]*cores[k].shape[1]*cores[k].shape[2], cores[k].shape[3]]))
+                        R[k+1] = Q.shape[1]
+                        cores[k] = tn.reshape(Q, [cores[k].shape[0], cores[k].shape[1], cores[k].shape[2], -1])
+                        cores[k+1] = tn.einsum(&#39;ij,jkl-&gt;ikl&#39;,R,cores[k+1])
+                    
+                    n2 = [cores[i].shape[1], cores[i].shape[2]]
+                    core = tn.einsum(&#39;ijkl,lmno-&gt;ijkmno&#39;,cores[i],cores[i+1])
+                    core = tn.permute(core, [0,3,4,1,2,5])
+                    U,S,V = SVD(tn.reshape(core, [core.shape[0]*core.shape[1]*core.shape[2],-1]))
+                    if S.is_cuda:
+                        r_now = min([rank_chop(S.cpu().numpy(),tn.linalg.norm(S).cpu().numpy()*eps)])
+                    else:
+                        r_now = min([rank_chop(S.numpy(),tn.linalg.norm(S).numpy()*eps)])
+                
+                    US = U[:,:r_now]@tn.diag(S[:r_now])
+                    V = V[:r_now,:]
+                    
+                    cores[i] = tn.reshape(US,[cores[i].shape[0],cores[i+1].shape[1],cores[i+1].shape[2],-1])
+                    R[i+1] = cores[i].shape[2]
+                    cores[i+1] = tn.reshape(V, [-1]+ n2 +[cores[i+1].shape[3]])
+                    
+                else:
+                    
+                    #reorthonormalize
+                    for k in range(last_idx, i):
+                        Q, R = QR(tn.reshape(cores[k],[cores[k].shape[0]*cores[k].shape[1], cores[k].shape[2]]))
+                        R[k+1] = Q.shape[1]
+                        cores[k] = tn.reshape(Q, [cores[k].shape[0], cores[k].shape[1],-1])
+                        cores[k+1] = tn.einsum(&#39;ij,jkl-&gt;ikl&#39;,R,cores[k+1])
+                    
+                    n2 = cores[i].shape[1]
+                    core = tn.einsum(&#39;ijk,klm-&gt;ijlm&#39;,cores[i],cores[i+1])
+                    core = tn.permute(core, [0,2,1,3])
+                    U,S,V = SVD(tn.reshape(core, [core.shape[0]*core.shape[1],-1]))
+                    if S.is_cuda:
+                        r_now = min([rank_chop(S.cpu().numpy(),tn.linalg.norm(S).cpu().numpy()*eps)])
+                    else:
+                        r_now = min([rank_chop(S.numpy(),tn.linalg.norm(S).numpy()*eps)])
+
+                
+                    US = U[:,:r_now]@tn.diag(S[:r_now])
+                    V = V[:r_now,:]
+                    
+                    cores[i] = tn.reshape(US,[cores[i].shape[0],cores[i+1].shape[1],-1])
+                    R[i+1] = cores[i].shape[2]
+                    cores[i+1] = tn.reshape(V, [-1, n2, cores[i+1].shape[2]])
+                    
+                
+    return TT(cores)</code></pre>
+</details>
+</dd>
+<dt id="torchtt.randn"><code class="name flex">
+<span>def <span class="ident">randn</span></span>(<span>N, R, var=1.0, dtype=torch.float64, device=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>A torchtt.TT tensor of shape N = [N1 x &hellip; x Nd] and rank R is returned.
+The entries of the fuill tensor are alomst normal distributed with the variance var.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>N</code></strong> :&ensp;<code>list[int]</code></dt>
+<dd>the shape.</dd>
+<dt><strong><code>R</code></strong> :&ensp;<code>list[int]</code></dt>
+<dd>the rank.</dd>
+<dt><strong><code>var</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>the variance. Defaults to 1.0.</dd>
+<dt><strong><code>dtype</code></strong> :&ensp;<code>torch.dtype</code>, optional</dt>
+<dd>the dtype of the returned tensor. Defaults to tn.float64.</dd>
+<dt><strong><code>device</code></strong> :&ensp;<code>torch.device</code>, optional</dt>
+<dd>the device where the TT cores are created (None means CPU). Defaults to None.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the result.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def randn(N, R, var = 1.0, dtype = tn.float64, device = None):
+    &#34;&#34;&#34;
+    A torchtt.TT tensor of shape N = [N1 x ... x Nd] and rank R is returned. 
+    The entries of the fuill tensor are alomst normal distributed with the variance var.
+    
+    Args:
+        N (list[int]): the shape.
+        R (list[int]): the rank.
+        var (float, optional): the variance. Defaults to 1.0.
+        dtype (torch.dtype, optional): the dtype of the returned tensor. Defaults to tn.float64.
+        device (torch.device, optional): the device where the TT cores are created (None means CPU). Defaults to None.
+
+    Returns:
+        torchtt.TT: the result.
+    &#34;&#34;&#34;
+
+    d = len(N)
+    v1 = var / np.prod(R)
+    v = v1**(1/d)
+    cores = [None] * d
+    for i in range(d):
+        cores[i] = tn.randn([R[i],N[i][0],N[i][1],R[i+1]] if isinstance(N[i],tuple) else [R[i],N[i],R[i+1]], dtype = dtype, device = device)*np.sqrt(v)
+
+    return TT(cores)</code></pre>
+</details>
+</dd>
+<dt id="torchtt.random"><code class="name flex">
+<span>def <span class="ident">random</span></span>(<span>N, R, dtype=torch.float64, device=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns a tensor of shape N with random cores of rank R.
+Each core is a normal distributed with mean 0 and variance 1.
+Check also the method torchtt.randn()for better random tensors in the TT format.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>N</code></strong> :&ensp;<code>list[int]</code> or <code>list[tuple[int]]</code></dt>
+<dd>the shape of the tensor. If the elements are tuples of integers, we deal with a TT-matrix.</dd>
+<dt><strong><code>R</code></strong> :&ensp;<code>list[int]</code> or <code>int</code></dt>
+<dd>can be a list if the exact rank is specified or an integer if the maximum rank is secified.</dd>
+<dt><strong><code>dtype</code></strong> :&ensp;<code>torch.dtype</code>, optional</dt>
+<dd>the dtype of the returned tensor. Defaults to tn.float64.</dd>
+<dt><strong><code>device</code></strong> :&ensp;<code>torch.device</code>, optional</dt>
+<dd>the device where the TT cores are created (None means CPU). Defaults to None.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>InvalidArguments</code></dt>
+<dd>Check if N and R are right.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the result.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def random(N, R, dtype = tn.float64, device = None):
+    &#34;&#34;&#34;
+    Returns a tensor of shape N with random cores of rank R.
+    Each core is a normal distributed with mean 0 and variance 1.
+    Check also the method torchtt.randn()for better random tensors in the TT format.
+
+    Args:
+        N (list[int] or list[tuple[int]]): the shape of the tensor. If the elements are tuples of integers, we deal with a TT-matrix.
+        R (list[int] or int): can be a list if the exact rank is specified or an integer if the maximum rank is secified.
+        dtype (torch.dtype, optional): the dtype of the returned tensor. Defaults to tn.float64.
+        device (torch.device, optional): the device where the TT cores are created (None means CPU). Defaults to None.
+
+    Raises:
+        InvalidArguments: Check if N and R are right.
+
+    Returns:
+        torchtt.TT: the result.
+    &#34;&#34;&#34;
+    
+    if isinstance(R,int):
+        R = [1]+[R]*(len(N)-1)+[1]
+    elif len(N)+1 != len(R) or R[0] != 1 or R[-1] != 1 or len(N)==0:
+        raise InvalidArguments(&#39;Check if N and R are right.&#39;)
+        
+    cores = []
+    
+    for i in range(len(N)):
+        cores.append(tn.randn([R[i],N[i][0],N[i][1],R[i+1]] if isinstance(N[i],tuple) else [R[i],N[i],R[i+1]], dtype = dtype, device = device))
+        
+    T = TT(cores)
+    
+    return T</code></pre>
+</details>
+</dd>
+<dt id="torchtt.rank1TT"><code class="name flex">
+<span>def <span class="ident">rank1TT</span></span>(<span>elements)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Compute the rank 1 TT from a list of vectors (or matrices).</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>elements</code></strong> :&ensp;<code>list[torch.tensor]</code></dt>
+<dd>the list of vectors (or matrices in case a TT matrix should be created).</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the resulting TT object.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def rank1TT(elements):
+    &#34;&#34;&#34;
+    Compute the rank 1 TT from a list of vectors (or matrices).
+
+    Args:
+        elements (list[torch.tensor]): the list of vectors (or matrices in case a TT matrix should be created).
+
+    Returns:
+        torchtt.TT: the resulting TT object.
+    &#34;&#34;&#34;
+    
+    return TT([e[None,...,None] for e in elements])</code></pre>
+</details>
+</dd>
+<dt id="torchtt.reshape"><code class="name flex">
+<span>def <span class="ident">reshape</span></span>(<span>tens, shape, eps=1e-16, rmax=9223372036854775807)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Reshapes a torchtt.TT tensor in the TT format.
+A rounding is also performed.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>tens</code></strong> :&ensp;<code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the input tensor.</dd>
+<dt><strong><code>shape</code></strong> :&ensp;<code>list[int]</code> or <code>list[tuple[int]]</code></dt>
+<dd>the desired shape. In the case of a TT operator the shape has to be given as list of tuples of ints [(M1,N1),&hellip;,(Md,Nd)].</dd>
+<dt><strong><code>eps</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>relative accuracy. Defaults to 1e-16.</dd>
+<dt><strong><code>rmax</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>maximum rank. Defaults to the maximum possible integer.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>ShapeMismatch</code></dt>
+<dd>The product of modes should remain equal. Check the given shape.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the resulting tensor.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def reshape(tens, shape, eps = 1e-16, rmax = sys.maxsize):
+    &#34;&#34;&#34;
+    Reshapes a torchtt.TT tensor in the TT format.
+    A rounding is also performed.
+    
+    Args:
+        tens (torchtt.TT): the input tensor.
+        shape (list[int] or list[tuple[int]]): the desired shape. In the case of a TT operator the shape has to be given as list of tuples of ints [(M1,N1),...,(Md,Nd)].
+        eps (float, optional): relative accuracy. Defaults to 1e-16.
+        rmax (int, optional): maximum rank. Defaults to the maximum possible integer.
+
+    Raises:
+        ShapeMismatch: The product of modes should remain equal. Check the given shape.
+
+    Returns:
+        torchtt.TT: the resulting tensor.
+    &#34;&#34;&#34;
+    
+    
+    if tens.is_ttm:
+        M = []
+        N = []
+        for t in shape:
+            M.append(t[0])
+            N.append(t[1])
+        if np.prod(tens.N)!=np.prod(N) or np.prod(tens.M)!=np.prod(M):
+            raise ShapeMismatch(&#39;The product of modes should remain equal. Check the given shape.&#39;)
+        core = tens.cores[0]
+        cores_new = []
+        
+        idx = 0
+        idx_shape = 0
+        
+        while True:
+            if core.shape[1] % M[idx_shape] == 0 and core.shape[2] % N[idx_shape] == 0:
+                if core.shape[1] // M[idx_shape] &gt; 1 or core.shape[2] // N[idx_shape] &gt; 1:
+                    m1 = M[idx_shape]
+                    m2 = core.shape[1] // m1
+                    n1 = N[idx_shape]
+                    n2 = core.shape[2] // n1
+                    r1 = core.shape[0]
+                    r2 = core.shape[-1]
+                    tmp = tn.reshape(core,[r1*m1,m2,n1,n2*r2])
+                    
+                    crz,_ = mat_to_tt(tmp, [r1*m1,m2], [n1,n2*r2], eps, rmax)
+                    
+                    cores_new.append(tn.reshape(crz[0],[r1,m1,n1,-1]))
+                    
+                    core = tn.reshape(crz[1],[-1,m2,n2,r2]) 
+                else:
+                    cores_new.append(core+0)
+                    if idx == len(tens.cores)-1:
+                        break
+                    else:
+                        idx+=1
+                        core = tens.cores[idx]
+                idx_shape += 1
+                if idx_shape == len(shape):
+                    break
+            else: 
+                idx += 1
+                if idx&gt;=len(tens.cores):
+                    break
+                
+                core = tn.einsum(&#39;ijkl,lmno-&gt;ijmkno&#39;,core,tens.cores[idx])
+                core = tn.reshape(core,[core.shape[0],core.shape[1]*core.shape[2],-1,core.shape[-1]])
+                
+    else:
+        if np.prod(tens.N)!=np.prod(shape):
+            raise ShapeMismatch(&#39;The product of modes should remain equal. Check the given shape.&#39;)
+            
+        core = tens.cores[0]
+        cores_new = []
+        
+        idx = 0
+        idx_shape = 0
+        while True:
+            if core.shape[1] % shape[idx_shape] == 0:
+                if core.shape[1] // shape[idx_shape] &gt; 1:
+                    s1 = shape[idx_shape]
+                    s2 = core.shape[1] // s1
+                    r1 = core.shape[0]
+                    r2 = core.shape[2]
+                    tmp = tn.reshape(core,[r1*s1,s2*r2])
+                    
+                    crz,_ = to_tt(tmp,tmp.shape,eps,rmax)
+                    
+                    cores_new.append(tn.reshape(crz[0],[r1,s1,-1]))
+                    
+                    core = tn.reshape(crz[1],[-1,s2,r2]) 
+                else:
+                    cores_new.append(core+0)
+                    if idx == len(tens.cores)-1:
+                        break
+                    else:
+                        idx+=1
+                        core = tens.cores[idx]
+                idx_shape += 1
+                if idx_shape == len(shape):
+                    break
+            else: 
+                idx += 1
+                if idx&gt;=len(tens.cores):
+                    break
+                
+                core = tn.einsum(&#39;ijk,klm-&gt;ijlm&#39;,core,tens.cores[idx])
+                core = tn.reshape(core,[core.shape[0],-1,core.shape[-1]])
+                
+    return TT(cores_new).round(eps)</code></pre>
+</details>
+</dd>
+<dt id="torchtt.save"><code class="name flex">
+<span>def <span class="ident">save</span></span>(<span>tensor, path)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Save a <code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code> object in a file.</p>
+<h2 id="examples">Examples</h2>
+<pre><code>import torchtt
+#generate a TT object
+A = torchtt.randn([10,20,30,40,4,5],[1,6,5,4,3,2,1])
+# save the TT object
+torchtt.save(A,&quot;./test.TT&quot;)
+# load the TT object
+B = torchtt.load(&quot;./test.TT&quot;)
+# the loaded should be the same
+print((A-B).norm()/A.norm())
+</code></pre>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>tensor</code></strong> :&ensp;<code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the tensor to be saved.</dd>
+<dt><strong><code>path</code></strong> :&ensp;<code>str</code></dt>
+<dd>the file name.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>InvalidArguments</code></dt>
+<dd>First argument must be a torchtt.TT instance.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def save(tensor, path):
+    &#34;&#34;&#34;
+    Save a `torchtt.TT` object in a file.
+
+    Examples:
+        ```
+        import torchtt
+        #generate a TT object
+        A = torchtt.randn([10,20,30,40,4,5],[1,6,5,4,3,2,1])
+        # save the TT object
+        torchtt.save(A,&#34;./test.TT&#34;)
+        # load the TT object
+        B = torchtt.load(&#34;./test.TT&#34;)
+        # the loaded should be the same
+        print((A-B).norm()/A.norm())
+        ```
+    
+    Args:
+        tensor (torchtt.TT): the tensor to be saved.
+        path (str): the file name.
+
+    Raises:
+        InvalidArguments: First argument must be a torchtt.TT instance.
+    &#34;&#34;&#34;
+    if not isinstance(tensor, TT):
+        raise InvalidArguments(&#34;First argument must be a torchtt.TT instance.&#34;)
+    
+    if tensor.is_ttm:
+        dct = {&#34;is_ttm&#34;: tensor.is_ttm, &#34;R&#34;: tensor.R, &#34;M&#34;: tensor.M, &#34;N&#34;: tensor.N, &#34;cores&#34;: tensor.cores}
+        tn.save(dct, path)
+    else:
+        dct = {&#34;is_ttm&#34;: tensor.is_ttm, &#34;R&#34;: tensor.R, &#34;N&#34;: tensor.N, &#34;cores&#34;: tensor.cores}
+        tn.save(dct, path)</code></pre>
+</details>
+</dd>
+<dt id="torchtt.shape_mn_to_tuple"><code class="name flex">
+<span>def <span class="ident">shape_mn_to_tuple</span></span>(<span>M, N)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Convert the shape of a TTM from row/column format to tuple format.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>M</code></strong> :&ensp;<code>list[int]</code></dt>
+<dd>row shapes.</dd>
+<dt><strong><code>N</code></strong> :&ensp;<code>list[int]</code></dt>
+<dd>column shapes.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list[tuple[int]]</code></dt>
+<dd>shape.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def shape_mn_to_tuple(M, N):
+    &#34;&#34;&#34;
+    Convert the shape of a TTM from row/column format to tuple format.
+
+    Args:
+        M (list[int]): row shapes.
+        N (list[int]): column shapes.
+
+    Returns:
+        list[tuple[int]]: shape.
+    &#34;&#34;&#34;
+
+    return [(m,n) for m,n in zip(M,N)]</code></pre>
+</details>
+</dd>
+<dt id="torchtt.shape_tuple_to_mn"><code class="name flex">
+<span>def <span class="ident">shape_tuple_to_mn</span></span>(<span>shape)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Convert the shape of a TTM from tuple format to row and column shapes.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>shape</code></strong> :&ensp;<code>list[tuple[int]]</code></dt>
+<dd>shape.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>tuple[list[int],list[int]]</code></dt>
+<dd>still the shape.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def shape_tuple_to_mn(shape):
+    &#34;&#34;&#34;
+    Convert the shape of a TTM from tuple format to row and column shapes.
+
+    Args:
+        shape (list[tuple[int]]): shape.
+
+    Returns:
+        tuple[list[int],list[int]]: still the shape.
+    &#34;&#34;&#34;
+    M = [s[0] for s in shape]
+    N = [s[1] for s in shape]
+    
+    return M, N</code></pre>
+</details>
+</dd>
+<dt id="torchtt.zeros"><code class="name flex">
+<span>def <span class="ident">zeros</span></span>(<span>shape, dtype=torch.float64, device=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Construct a tensor that contains only zeros.
+the shape can be a list of ints or a list of tuples of ints. The second case creates a TT matrix.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt>shape (list[int] | list[tuple[int]]): the shape.</dt>
+<dt><strong><code>dtype</code></strong> :&ensp;<code>torch.dtype</code>, optional</dt>
+<dd>the dtype of the returned tensor. Defaults to tn.float64.</dd>
+<dt><strong><code>device</code></strong> :&ensp;<code>torch.device</code>, optional</dt>
+<dd>the device where the TT cores are created (None means CPU). Defaults to None.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>InvalidArguments</code></dt>
+<dd>Shape must be a list.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the zero tensor.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def zeros(shape, dtype=tn.float64, device = None):
+    &#34;&#34;&#34;
+    Construct a tensor that contains only zeros.
+    the shape can be a list of ints or a list of tuples of ints. The second case creates a TT matrix.
+
+    Args:
+        shape (list[int] | list[tuple[int]]): the shape.
+        dtype (torch.dtype, optional): the dtype of the returned tensor. Defaults to tn.float64.
+        device (torch.device, optional): the device where the TT cores are created (None means CPU). Defaults to None.
+
+    Raises:
+        InvalidArguments: Shape must be a list.
+
+    Returns:
+        torchtt.TT: the zero tensor.
+    &#34;&#34;&#34;
+    if isinstance(shape,list):
+        d = len(shape)
+        if isinstance(shape[0],tuple):
+            # we create a TT-matrix
+            cores = [tn.zeros([1,shape[i][0],shape[i][1],1],dtype=dtype, device = device) for i in range(d)]            
+            
+        else:
+            # we create a TT-tensor
+            cores = [tn.zeros([1,shape[i],1],dtype=dtype, device = device) for i in range(d)]
+            
+    else:
+        raise InvalidArguments(&#39;Shape must be a list.&#39;)
+    
+    return TT(cores)</code></pre>
+</details>
+</dd>
+</dl>
 </section>
 <section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="torchtt.TT"><code class="flex name class">
+<span>class <span class="ident">TT</span></span>
+<span>(</span><span>source, shape=None, eps=1e-10, rmax=9223372036854775807)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Constructor of the TT class. Can convert full tensor in the TT-format (from <code>torch.tensor</code> or <code>numpy.array</code>).
+In the case of tensor operators of full shape <code>M1 x &hellip; Md x N1 x &hellip; x Nd</code>, the shape must be specified as a list of tuples <code>[(M1,N1),&hellip;,(Md,Nd)]</code>.
+A TT-object can also be computed from cores if the list of cores is passed as argument.
+If None is provided, an empty tensor is created.</p>
+<p>The TT decomposition of a tensor is</p>
+<p><span><span class="MathJax_Preview">\mathsf{x}=\sum\limits_{r_1...r_{d-1}=1}^{R_1,...,R_{d-1}} \mathsf{x}^{(1)}_{1i_1r_1}\cdots\mathsf{x}^{(d)}_{r_{d-1}i_d1}</span><script type="math/tex">\mathsf{x}=\sum\limits_{r_1...r_{d-1}=1}^{R_1,...,R_{d-1}} \mathsf{x}^{(1)}_{1i_1r_1}\cdots\mathsf{x}^{(d)}_{r_{d-1}i_d1}</script></span>,</p>
+<p>where <span><span class="MathJax_Preview">\{\mathsf{x}^{(k)}\}_{k=1}^d</span><script type="math/tex">\{\mathsf{x}^{(k)}\}_{k=1}^d</script></span> are the TT cores and <span><span class="MathJax_Preview">\mathbf{R}=(1,R_1,...,R_{d-1},1)</span><script type="math/tex">\mathbf{R}=(1,R_1,...,R_{d-1},1)</script></span> is the TT rank.
+Using the constructor, a TT decomposition of a tensor can be computed. The TT cores are stored as a list in <code>torchtt.TT.cores</code>. <br>
+This class implements basic operators such as <code>+,-,*,/,@,**</code> (add, subtract, elementwise multiplication, elementwise division, matrix vector product and Kronecker product) between TT instances.
+The <code>examples\</code> folder server as a tutorial for all the possibilities of the toolbox.</p>
+<h2 id="examples">Examples</h2>
+<pre><code>import torchtt
+import torch
+x = torch.reshape(torch.arange(0,128,dtype = torch.float64),[8,4,4])
+xtt = torchtt.TT(x)
+ytt = torchtt.TT(torch.squeeze(x),[8,4,4])
+# create a TT matrix
+A = torch.reshape(torch.arange(0,20160,dtype = torch.float64),[3,5,7,4,6,8])
+Att = torchtt.TT(A,[(3,4),(5,6),(7,8)])
+print(Att)        
+</code></pre>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>source</code></strong> :&ensp;<code>torch.tensor ot list[torch.tensor]</code> or <code>numpy.array</code> or <code>None</code></dt>
+<dd>the input tensor in full format or the cores. If a <code>torch.tensor</code> or <code>numpy.array</code> is provided</dd>
+<dt><strong><code>shape</code></strong> :&ensp;<code>list[int]</code> or <code>list[tuple[int]]</code>, optional</dt>
+<dd>the shape (if it differs from the one provided). For the TT-matrix case is mandatory. Defaults to None.</dd>
+<dt><strong><code>eps</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>tolerance of the TT approximation. Defaults to 1e-10.</dd>
+<dt><strong><code>rmax</code></strong> :&ensp;<code>int</code> or <code>list[int]</code>, optional</dt>
+<dd>maximum rank (either a list of integer or an integer). Defaults to the maximum possible integer.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>RankMismatch</code></dt>
+<dd>Ranks of the given cores do not match (change the spaces of the cores).</dd>
+<dt><code>InvalidArguments</code></dt>
+<dd>Invalid input: TT-cores have to be either 4d or 3d.</dd>
+<dt><code>InvalidArguments</code></dt>
+<dd>Check the ranks and the mode size.</dd>
+<dt><code>NotImplementedError</code></dt>
+<dd>Function only implemented for torch tensors, numpy arrays, list of cores as torch tensors and None</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class TT():
+
+    #cores : list[tn.tensor]
+    #&#34;&#34;&#34; The TT cores as a list of `torch.tensor` instances.&#34;&#34;&#34;
+    
+    @property
+    def is_ttm(self):
+        &#34;&#34;&#34;
+        Check whether the instance is a TT operator or not.
+
+        Returns:
+            bool: the flag.
+        &#34;&#34;&#34;
+        return self.__is_ttm
+
+    @property 
+    def M(self):
+        &#34;&#34;&#34;
+        Return the &#34;row&#34; shape in case of TT matrices.
+
+        Raises:
+            IncompatibleTypes: The field is_ttm is defined only for TT matrices.
+
+        Returns:
+            list[int]: the shape.
+        &#34;&#34;&#34;
+        if not self.__is_ttm:
+            raise IncompatibleTypes(&#34;The field is_ttm is defined only for TT matrices.&#34;)
+        return self.__M.copy()
+
+    @property 
+    def N(self):
+        &#34;&#34;&#34;
+        Return the shape of a tensor or the &#34;column&#34; shape of a TT operator.
+
+        Returns:
+            list[int]: the shape.
+        &#34;&#34;&#34;
+        return self.__N.copy()
+    
+    @property
+    def R(self):
+        &#34;&#34;&#34;
+        The rank of the TT decomposition.
+        It&#39;s length should be `len(R)==len(N)+1`.
+
+        Returns:
+            list[int]: the rank.
+        &#34;&#34;&#34;
+        return self.__R.copy()
+
+    def __init__(self, source, shape=None, eps=1e-10, rmax=sys.maxsize):
+        &#34;&#34;&#34;
+        Constructor of the TT class. Can convert full tensor in the TT-format (from `torch.tensor` or `numpy.array`).
+        In the case of tensor operators of full shape `M1 x ... Md x N1 x ... x Nd`, the shape must be specified as a list of tuples `[(M1,N1),...,(Md,Nd)]`.
+        A TT-object can also be computed from cores if the list of cores is passed as argument.
+        If None is provided, an empty tensor is created.
+        
+        The TT decomposition of a tensor is
+        
+        \(\\mathsf{x}=\\sum\\limits_{r_1...r_{d-1}=1}^{R_1,...,R_{d-1}} \\mathsf{x}^{(1)}_{1i_1r_1}\\cdots\\mathsf{x}^{(d)}_{r_{d-1}i_d1}\),
+        
+        where \(\\{\\mathsf{x}^{(k)}\\}_{k=1}^d\) are the TT cores and \(\\mathbf{R}=(1,R_1,...,R_{d-1},1)\) is the TT rank.
+        Using the constructor, a TT decomposition of a tensor can be computed. The TT cores are stored as a list in `torchtt.TT.cores`.   
+        This class implements basic operators such as `+,-,*,/,@,**` (add, subtract, elementwise multiplication, elementwise division, matrix vector product and Kronecker product) between TT instances.
+        The `examples\` folder server as a tutorial for all the possibilities of the toolbox.
+        
+        Examples:
+            ```
+            import torchtt
+            import torch
+            x = torch.reshape(torch.arange(0,128,dtype = torch.float64),[8,4,4])
+            xtt = torchtt.TT(x)
+            ytt = torchtt.TT(torch.squeeze(x),[8,4,4])
+            # create a TT matrix
+            A = torch.reshape(torch.arange(0,20160,dtype = torch.float64),[3,5,7,4,6,8])
+            Att = torchtt.TT(A,[(3,4),(5,6),(7,8)])
+            print(Att)        
+            ```
+            
+        Args:
+            source (torch.tensor ot list[torch.tensor] or numpy.array or None): the input tensor in full format or the cores. If a `torch.tensor` or `numpy.array` is provided
+            shape (list[int] or list[tuple[int]], optional): the shape (if it differs from the one provided). For the TT-matrix case is mandatory. Defaults to None.
+            eps (float, optional): tolerance of the TT approximation. Defaults to 1e-10.
+            rmax (int or list[int], optional): maximum rank (either a list of integer or an integer). Defaults to the maximum possible integer.
+
+        Raises:
+            RankMismatch: Ranks of the given cores do not match (change the spaces of the cores).
+            InvalidArguments: Invalid input: TT-cores have to be either 4d or 3d.
+            InvalidArguments: Check the ranks and the mode size.
+            NotImplementedError: Function only implemented for torch tensors, numpy arrays, list of cores as torch tensors and None
+   
+        &#34;&#34;&#34;
+        
+        if source is None:
+            # empty TT
+            self.cores = []
+            self.__M = []
+            self.__N = []
+            self.__R = [1,1]
+            self.__is_ttm = False
+            
+        elif isinstance(source, list):
+            # tt cores were passed directly
+            
+            # check if sizes are consistent
+            prev = 1
+            N = []
+            M = []
+            R = [source[0].shape[0]]
+            d = len(source)
+            for i in range(len(source)):
+                s = source[i].shape
+                
+                if s[0] != R[-1]:
+                    raise RankMismatch(&#34;Ranks of the given cores do not match: for core number %d previous rank is %d and and current rank is %d.&#34;%(i,R[-1],s[0]))
+                if len(s) == 3:
+                    R.append(s[2])
+                    N.append(s[1])
+                elif len(s)==4:
+                    R.append(s[3])
+                    M.append(s[1])
+                    N.append(s[2])
+                else:
+                    raise InvalidArguments(&#34;Invalid input: TT-cores have to be either 4d or 3d.&#34;)
+            
+            if len(N) != d or len(R) != d+1 or R[0] != 1 or R[-1] != 1 or (len(M)!=0 and len(M)!=len(N)) :
+                raise InvalidArguments(&#34;Check the ranks and the mode size.&#34;)
+            
+            self.cores = source
+            self.__R = R
+            self.__N = N
+            if len(M) == len(N):
+                self.__M = M
+                self.__is_ttm = True
+            else:
+                self.__is_ttm = False
+            self.shape = [ (m,n) for m,n in zip(self.__M,self.__N) ] if self.__is_ttm else [n for n in self.N]     
+
+        elif tn.is_tensor(source):
+            if shape == None:
+                # no size is given. Deduce it from the tensor. No TT-matrix in this case.
+                self.__N = list(source.shape)
+                if len(self.__N)&gt;1:
+                    self.cores, self.__R = to_tt(source,self.__N,eps,rmax,is_sparse=False)
+                else:    
+                    self.cores = [tn.reshape(source,[1,self.__N[0],1])]
+                    self.__R = [1,1]
+                self.__is_ttm = False
+            elif isinstance(shape,list) and isinstance(shape[0],tuple):
+                # if the size contains tuples, we have a TT-matrix.
+                if len(shape) &gt; 1:
+                    self.__M = [s[0] for s in shape]
+                    self.__N = [s[1] for s in shape]
+                    self.cores, self.__R = mat_to_tt(source, self.__M, self.__N, eps, rmax)
+                    self.__is_ttm = True
+                else:
+                    self.__M = [shape[0][0]]
+                    self.__N = [shape[0][1]]
+                    self.cores, self.__R = [tn.reshape(source,[1,shape[0][0],shape[0][1],1])], [1,1]
+                    self.__is_ttm = True
+            else:
+                # TT-decomposition with prescribed size
+                # perform reshape first
+                self.__N = shape
+                self.cores, self.__R = to_tt(tn.reshape(source,shape),self.__N,eps,rmax,is_sparse=False)
+                self.__is_ttm = False
+            self.shape = [ (m,n) for m,n in zip(self.__M,self.__N) ] if self.__is_ttm else [n for n in self.N]     
+
+        elif isinstance(source, np.ndarray):
+            source = tn.tensor(source) 
+                    
+            if shape == None:
+                # no size is given. Deduce it from the tensor. No TT-matrix in this case.
+                self.__N = list(source.shape)
+                if len(self.__N)&gt;1:
+                    self.cores, self.__R = to_tt(source,self.__N,eps,rmax,is_sparse=False)
+                else:    
+                    self.cores = [tn.reshape(source,[1,self.__N[0],1])]
+                    self.__R = [1,1]
+                self.__is_ttm = False
+            elif isinstance(shape,list) and isinstance(shape[0],tuple):
+                # if the size contains tuples, we have a TT-matrix.
+                self.__M = [s[0] for s in shape]
+                self.__N = [s[1] for s in shape]
+                self.cores, self.__R = mat_to_tt(source, self.__M, self.__N, eps, rmax)
+                self.__is_ttm = True
+            else:
+                # TT-decomposition with prescribed size
+                # perform reshape first
+                self.__N = shape
+                self.cores, self.__R = to_tt(tn.reshape(source,shape),self.__N,eps,rmax,is_sparse=False)
+                self.__is_ttm = False
+            self.shape = [ (m,n) for m,n in zip(self.__M,self.__N) ] if self.__is_ttm else [n for n in self.N]     
+        else:
+            raise NotImplementedError(&#34;Function only implemented for torch tensors, numpy arrays, list of cores as torch tensors and None.&#34;)
+
+    def cuda(self, device = None):
+        &#34;&#34;&#34;
+        Return a torchtt.TT object on the CUDA device by cloning all the cores on the GPU.
+
+        Args:
+            device (torch.device, optional): The CUDA device (None for CPU). Defaults to None.
+
+        Returns:
+            torchtt.TT: The TT-object. The TT-cores are on CUDA.
+        &#34;&#34;&#34;
+         
+        
+        t = TT([ c.cuda(device) for c in self.cores])
+
+        return t
+
+    def cpu(self):
+        &#34;&#34;&#34;
+        Retrive the cores from the GPU.
+
+        Returns:
+            torchtt.TT: The TT-object on CPU.
+        &#34;&#34;&#34;
+
+        
+        return TT([ c.cpu() for c in self.cores])
+
+    def is_cuda(self):
+        &#34;&#34;&#34;
+        Return True if the tensor is on GPU.
+
+        Returns:
+            bool: Is the torchtt.TT on GPU or not.
+        &#34;&#34;&#34;
+        return all([c.is_cuda for c in self.core])
+
+    
+    def to(self, device = None, dtype = None):
+        &#34;&#34;&#34;
+        Moves the TT instance to the given device with the given dtype.
+
+        Args:
+            device (torch.device, optional): The desired device. If none is provided, the device is the CPU. Defaults to None.
+            dtype (torch.dtype, optional): The desired dtype (torch.float64, torch.float32,...). If None is provided the dtype is not changed. Defaults to None.
+        &#34;&#34;&#34;
+        return TT( [ c.to(device=device,dtype=dtype) for c in self.cores])
+
+    def detach(self):
+        &#34;&#34;&#34;
+        Detaches the TT tensor. Similar to torch.tensor.detach().
+
+        Returns:
+            torchtt.TT: the detached tensor.
+        &#34;&#34;&#34;
+        return TT([c.detach() for c in self.cores])
+        
+    def clone(self):
+        &#34;&#34;&#34;
+        Clones the torchtt.TT instance. Similar to torch.tensor.clone().
+
+        Returns:
+            torchtt.TT: the cloned TT object.
+        &#34;&#34;&#34;
+        return TT([c.clone() for c in self.cores]) 
+
+    def full(self):       
+        &#34;&#34;&#34;
+        Return the full tensor.
+        In case of a TTM, the result has the shape M1 x M2 x ... x Md x N1 x N2 x ... x Nd.
+
+        Returns:
+            torch.tensor: the full tensor.
+        &#34;&#34;&#34;
+        if self.__is_ttm:
+            # the case of tt-matrix
+            tfull = self.cores[0][0,:,:,:]
+            for i in  range(1,len(self.cores)-1) :
+                tfull = tn.einsum(&#39;...i,ijkl-&gt;...jkl&#39;,tfull,self.cores[i])
+            if len(self.__N) != 1:
+                tfull = tn.einsum(&#39;...i,ijk-&gt;...jk&#39;,tfull,self.cores[-1][:,:,:,0])
+                tfull = tn.permute(tfull,list(np.arange(len(self.__N))*2)+list(np.arange(len(self.N))*2+1))
+            else:
+                tfull = tfull[:,:,0]
+        else:
+            # the case of a normal tt
+            tfull = self.cores[0][0,:,:]
+            for i in  range(1,len(self.cores)-1) :
+                tfull = tn.einsum(&#39;...i,ijk-&gt;...jk&#39;,tfull,self.cores[i])
+            if len(self.__N) != 1:
+                tfull = tn.einsum(&#39;...i,ij-&gt;...j&#39;,tfull,self.cores[-1][:,:,0])
+            else:
+                tfull = tn.squeeze(tfull)
+        return tfull
+    
+    def numpy(self):
+        &#34;&#34;&#34;
+        Return the full tensor as a numpy.array.
+        In case of a TTM, the result has the shape M1 x M2 x ... x Md x N1 x N2 x ... x Nd.
+        If it is involved in an AD graph, an error will occur.
+        
+        Returns:
+            numpy.array: the full tensor in numpy.
+        &#34;&#34;&#34;
+        return self.full().cpu().numpy()
+    
+    def __repr__(self):
+        &#34;&#34;&#34;
+        Show the information as a string
+
+        Returns:
+            string: the string representation of a torchtt.TT
+        &#34;&#34;&#34;
+        
+        if self.__is_ttm:
+            output = &#39;TT-matrix&#39; 
+            output += &#39; with sizes and ranks:\n&#39;
+            output += &#39;M = &#39; + str(self.__M) + &#39;\nN = &#39; + str(self.__N) + &#39;\n&#39;
+            output += &#39;R = &#39; + str(self.__R) + &#39;\n&#39;
+            output += &#39;Device: &#39;+str(self.cores[0].device)+&#39;, dtype: &#39;+str(self.cores[0].dtype)+&#39;\n&#39;
+            entries = sum([tn.numel(c)  for c in self.cores])
+            output += &#39;#entries &#39; + str(entries) +&#39; compression &#39; + str(entries/np.prod(np.array(self.__N,dtype=np.float64)*np.array(self.__M,dtype=np.float64))) +  &#39;\n&#39;
+        else:
+            output = &#39;TT&#39;
+            output += &#39; with sizes and ranks:\n&#39;
+            output += &#39;N = &#39; + str(self.__N) + &#39;\n&#39;
+            output += &#39;R = &#39; + str(self.__R) + &#39;\n\n&#39;
+            output += &#39;Device: &#39;+str(self.cores[0].device)+&#39;, dtype: &#39;+str(self.cores[0].dtype)+&#39;\n&#39;
+            entries = sum([tn.numel(c) for c in self.cores])
+            output += &#39;#entries &#39; + str(entries) +&#39; compression &#39;  + str(entries/np.prod(np.array(self.__N,dtype=np.float64))) + &#39;\n&#39;
+        
+        return output
+    
+    def __radd__(self,other):
+        &#34;&#34;&#34;
+        Addition in the TT format. Implements the &#34;+&#34; operator. This function is called in the case a non-torchtt.TT object is added to the left.
+
+        Args:
+            other (float | int | torch.tensor): the first operand. If a `torch.tensor` is provided, it must have 1 element.
+
+        Returns:
+            torchtt.TT: the result.
+        &#34;&#34;&#34;
+        
+        return self.__add__(other)
+
+    def __add__(self,other):
+        &#34;&#34;&#34;
+        Addition in the TT format. Implements the &#34;+&#34; operator. The following type pairs are supported:
+            - both operands are TT-tensors.
+            - both operands are TT-matrices.
+            - first operand is a TT-tensor or a TT-matrix and the second is a scalar (either torch.tensor scalar or int or float).
+        The broadcasting rules from `torch` apply here.
+        
+        Args:
+            other (torchtt.TT | float | int | torch.tensor): the second operand. If a `torch.tensor` is provided, it must have 1 element.
+            
+        Raises:
+            ShapeMismatch: Dimension mismatch.
+            IncompatibleTypes: Addition between a tensor and a matrix is not defined.
+
+        Returns:
+            torchtt.TT: the result.
+        &#34;&#34;&#34;
+
+        if np.isscalar(other) or ( tn.is_tensor(other) and tn.numel(other) == 1):
+            # the second term is a scalar
+            cores =  []
+            
+            for i in range(len(self.__N)):
+                if self.__is_ttm:
+                    pad1 = (0,0 if i == len(self.__N)-1 else 1 , 0,0 , 0,0 , 0,0 if i==0 else 1)
+                    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0,0 , 0 if i==0 else self.R[i],0)
+                    othr = tn.ones([1,1,1,1],dtype=self.cores[i].dtype) * (other if i ==0 else 1)
+                else:
+                    pad1 = (0,0 if i == len(self.__N)-1 else 1 , 0,0 , 0,0 if i==0 else 1)
+                    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
+                    othr = tn.ones([1,1,1],dtype=self.cores[i].dtype) * (other if i ==0 else 1)
+                
+
+                cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(othr,pad2))
+
+                
+            result = TT(cores)
+        elif isinstance(other,TT):
+        #second term is TT object 
+            if self.__is_ttm and other.is_ttm:
+                # both are TT-matrices
+                if self.__M != self.M or self.__N != self.N:
+                    raise ShapeMismatch(&#34;Shapes are incompatible: first operand is %s x %s, second operand is %s x %s.&#34;%(str(self.M), str(self.N), str(other.M), str(other.N)))
+                    
+                cores = []
+                for i in range(len(self.__N)):
+                    pad1 = (0,0 if i == len(self.__N)-1 else other.R[i+1], 0,0 , 0,0 , 0,0 if i==0 else other.R[i])
+                    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0,0 , 0 if i==0 else self.R[i],0)
+                    cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(other.cores[i],pad2))
+                    
+                result = TT(cores)
+                
+            elif self.__is_ttm==False and other.is_ttm==False:
+                # normal tensors in TT format.
+                if self.__N == other.N:                  
+                    cores = []
+                    for i in range(len(self.__N)):
+                        pad1 = (0,0 if i == len(self.__N)-1 else other.R[i+1] , 0,0 , 0,0 if i==0 else other.R[i])
+                        pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
+                        cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(other.cores[i],pad2))
+                else:
+                    if len(self.__N) &lt; len(other.N):
+                        raise ShapeMismatch(&#34;Shapes are incompatible: first operand is %s, second operand is %s.&#34;%(str(self.N), str(other.N)))
+
+                    cores = []
+                    for i in range(len(self.cores)-len(other.cores)):
+                        pad1 = (0,0 if i == len(self.__N)-1 else 1 , 0,0 , 0,0 if i==0 else 1)
+                        pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
+                        cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(tn.ones((1,self.__N[i],1), device = self.cores[i].device),pad2))
+                        
+                    for k,i in zip(range(len(other.cores)), range(len(self.cores)-len(other.cores), len(self.cores))):
+                        if other.N[k] == self.__N[i]:
+                            pad1 = (0,0 if i == len(self.__N)-1 else other.R[k+1] , 0,0 , 0,0 if i==0 else other.R[k])
+                            pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
+                            cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(other.cores[k],pad2))
+                            
+                        elif other.N[k] == 1:
+                            pad1 = (0,0 if i == len(self.__N)-1 else other.R[k+1] , 0,0 , 0,0 if i==0 else other.R[k])
+                            pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
+                            cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(tn.tile(other.cores[k],(1,self.__N[i],1)),pad2))
+                        else:
+                            raise ShapeMismatch(&#34;Shapes are incompatible: first operand is %s, second operand is %s.&#34;%(str(self.N), str(other.N)))
+                            
+                    
+                result = TT(cores)
+                
+                
+            else:
+                # incompatible types 
+                raise IncompatibleTypes(&#39;Addition between a tensor and a matrix is not defined.&#39;)
+        else:
+            InvalidArguments(&#39;Second term is incompatible.&#39;)
+            
+        return result
+    
+    def __rsub__(self,other):
+        &#34;&#34;&#34;
+        Subtract 2 tensors in the TT format. Implements the &#34;-&#34; operator.  
+
+        Args:
+            other (torchtt.TT | float | int | torch.tensor): the first operand. If a `torch.tensor` is provided, it must have 1 element.
+
+        Returns:
+            torchtt.TT: the result.
+        &#34;&#34;&#34;
+        
+        T = self.__sub__(other)
+        T.cores[0] = -T.cores[0]
+        return T
+    
+    def __sub__(self,other):
+        &#34;&#34;&#34;
+        Subtract 2 tensors in the TT format. Implements the &#34;-&#34; operator.
+        Possible second operands are: torchtt.TT, float, int, torch.tensor with 1 element.
+        Broadcasting rules from `torch` apply for this operation as well.
+        
+        Args:
+            other (torchtt.TT | float | int | torch.tensor): the second operand. If a `torch.tensor` is provided, it must have 1 element.
+
+        Raises:
+            ShapeMismatch: Both dimensions of the TT matrix should be equal.
+            ShapeMismatch: Dimension mismatch.
+            IncompatibleTypes: Addition between a tensor and a matrix is not defined.
+            InvalidArguments: Second term is incompatible (must be either torchtt.TT or int or float or torch.tensor with 1 element).
+
+        Returns:
+            torchtt.TT: the result.
+        &#34;&#34;&#34;
+        if np.isscalar(other) or ( tn.is_tensor(other) and other.shape == []):
+            # the second term is a scalar
+            cores =  []
+            
+            for i in range(len(self.__N)):
+                if self.__is_ttm:
+                    pad1 = (0,0 if i == len(self.__N)-1 else 1 , 0,0 , 0,0 , 0,0 if i==0 else 1)
+                    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0,0 , 0 if i==0 else self.R[i],0)
+                    othr = tn.ones([1,1,1,1],dtype=self.cores[i].dtype) * (-other if i ==0 else 1)
+                else:
+                    pad1 = (0,0 if i == len(self.__N)-1 else 1 , 0,0 , 0,0 if i==0 else 1)
+                    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
+                    othr = tn.ones([1,1,1],dtype=self.cores[i].dtype) * (-other if i ==0 else 1)
+                cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(othr,pad2))
+            result = TT(cores)
+
+        elif isinstance(other,TT):
+        #second term is TT object 
+            if self.__is_ttm and other.is_ttm:
+                # both are TT-matrices
+                if self.__M != self.M or self.__N != self.N:
+                    raise ShapeMismatch(&#34;Shapes are incompatible: first operand is %s x %s, second operand is %s x %s.&#34;%(str(self.M), str(self.N), str(other.M), str(other.N)))
+                
+                cores = []
+                for i in range(len(self.__N)):
+                    pad1 = (0,0 if i == len(self.__N)-1 else other.R[i+1] , 0,0 , 0,0 , 0,0 if i==0 else other.R[i])
+                    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0,0 , 0 if i==0 else self.R[i],0)
+                    cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(-other.cores[i] if i==0 else other.cores[i],pad2))
+                    
+                result = TT(cores)
+                
+            elif self.__is_ttm==False and other.is_ttm==False:
+                # normal tensors in TT format.
+                if self.__N == other.N:                  
+                    cores = []
+                    for i in range(len(self.__N)):
+                        pad1 = (0,0 if i == len(self.__N)-1 else other.R[i+1] , 0,0 , 0,0 if i==0 else other.R[i])
+                        pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
+                        cores.append(tnf.pad(self.cores[i], pad1)+tnf.pad(-other.cores[i] if i==0 else other.cores[i],pad2))
+                else:
+                    if len(self.__N) &lt; len(other.N):
+                        raise ShapeMismatch(&#34;Shapes are incompatible: first operand is %s, second operand is %s.&#34;%(str(self.N), str(other.N)))
+
+                    cores = []
+                    for i in range(len(self.cores)-len(other.cores)):
+                        pad1 = (0,0 if i == len(self.__N)-1 else 1 , 0,0 , 0,0 if i==0 else 1)
+                        pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
+                        cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad((-1 if i==0 else 1)*tn.ones((1,self.__N[i],1), device = self.cores[i].device),pad2))
+                        
+                    for k,i in zip(range(len(other.cores)), range(len(self.cores)-len(other.cores), len(self.cores))):
+                        if other.N[k] == self.__N[i]:
+                            pad1 = (0,0 if i == len(self.__N)-1 else other.R[k+1] , 0,0 , 0,0 if i==0 else other.R[k])
+                            pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
+                            cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(-other.cores[k] if i==0 else other.cores[k],pad2))
+                            
+                        elif other.N[k] == 1:
+                            pad1 = (0,0 if i == len(self.__N)-1 else other.R[k+1] , 0,0 , 0,0 if i==0 else other.R[k])
+                            pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
+                            cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(tn.tile(-other.cores[k] if i==0 else other.cores[k],(1,self.__N[i],1)),pad2))
+                        else:
+                            raise ShapeMismatch(&#34;Shapes are incompatible: first operand is %s, second operand is %s.&#34;%(str(self.N), str(other.N)))
+                            
+                    
+                result = TT(cores)
+                
+                
+            else:
+                # incompatible types 
+                raise IncompatibleTypes(&#39;Addition between a tensor and a matrix is not defined.&#39;)
+        else:
+            InvalidArguments(&#39;Second term is incompatible (must be either torchtt.TT or int or float or torch.tensor with 1 element).&#39;)
+            
+        return result
+    
+    def __rmul__(self,other):
+        &#34;&#34;&#34;
+        Elementwise multiplication in the TT format.
+        This implements the &#34;*&#34; operator when the left operand is not torchtt.TT.
+        Following are supported:
+
+         * TT tensor and TT tensor
+         * TT matrix and TT matrix
+         * TT tensor and scalar(int, float or torch.tensor scalar)
+
+        Args:
+            other (torchtt.TT | float | int | torch.tensor): the first operand. If a `torch.tensor` is provided, it must have 1 element.
+
+        Raises:
+            ShapeMismatch: Shapes must be equal.
+            IncompatibleTypes: Second operand must be the same type as the fisrt (both should be either TT matrices or TT tensors).
+            InvalidArguments: Second operand must be of type: torchtt.TT, float, int of torch.tensor.
+
+        Returns:
+            torchtt.TT: [description]
+        &#34;&#34;&#34;
+        
+        return self.__mul__(other)
+        
+    def __mul__(self,other):
+        &#34;&#34;&#34;
+        Elementwise multiplication in the TT format.
+        This implements the &#34;*&#34; operator.
+        Following are supported:
+         - TT tensor and TT tensor
+         - TT matrix and TT matrix
+         - TT tensor and scalar(int, float or torch.tensor scalar)
+        The broadcasting rules are the same as in torch (see [here](https://pytorch.org/docs/stable/notes/broadcasting.html)).
+        
+        Args:
+            other (torchtt.TT | float | int | torch.tensor): the second operand. If a `torch.tensor` is provided, it must have 1 element.
+
+        Raises:
+            ShapeMismatch: Shapes are incompatible (see the broadcasting rules).
+            IncompatibleTypes: Second operand must be the same type as the fisrt (both should be either TT matrices or TT tensors).
+            InvalidArguments: Second operand must be of type: torchtt.TT, float, int of torch.tensor.
+
+        Returns:
+            torchtt.TT: the result.
+        &#34;&#34;&#34;
+       
+        # elementwise multiplication
+        if isinstance(other, TT):
+            if self.__is_ttm and other.is_ttm:
+                if self.__N == other.N and self.__M == other.M:
+                    # raise ShapeMismatch(&#39;Shapes must be equal.&#39;) 
+                    
+                    cores_new = []
+                    
+                    for i in range(len(self.cores)):
+                        core = tn.reshape(tn.einsum(&#39;aijb,mijn-&gt;amijbn&#39;,self.cores[i],other.cores[i]),[self.__R[i]*other.R[i],self.__M[i],self.__N[i],self.R[i+1]*other.R[i+1]])
+                        cores_new.append(core)
+                        
+                else:
+                    raise ShapeMismatch(&#34;Shapes are incompatible: first operand is %s x %s, second operand is %s x %s.&#34;%(str(self.M), str(self.N), str(other.M), str(other.N)))
+                    # if len(self.__N) &lt; len(other.N):
+                    #     raise ShapeMismatch(&#34;Shapes are incompatible: first operand is %s x %s, second operand is %s x %s.&#34;%(str(self.M), str(self.N), str(other.M), str(other.N)))
+                    
+                    # cores_new = []
+                    # raise NotImplementedError(&#34;Not yet implemented.&#34;)
+                    
+            elif self.__is_ttm == False and other.is_ttm == False:
+                # broadcasting rul;es have to be applied. Sperate if else to make the non-broadcasting case the fastest.
+                if self.__N == other.N:  
+                    cores_new = []
+                    
+                    for i in range(len(self.cores)):
+                        core = tn.reshape(tn.einsum(&#39;aib,min-&gt;amibn&#39;,self.cores[i],other.cores[i]),[self.__R[i]*other.R[i],self.__N[i],self.R[i+1]*other.R[i+1]])
+                        cores_new.append(core)
+                else:
+                    if len(self.__N) &lt; len(other.N):
+                        raise ShapeMismatch(&#34;Shapes are incompatible: first operand is %s, second operand is %s.&#34;%(str(self.N), str(other.N)))
+
+                    cores_new = []
+                    for i in range(len(self.cores)-len(other.cores)):
+                        cores_new.append(self.cores[i]*1)
+                        
+                    for k,i in zip(range(len(other.cores)), range(len(self.cores)-len(other.cores), len(self.cores))):
+                        if other.N[k] == self.__N[i]:
+                            core = tn.reshape(tn.einsum(&#39;aib,min-&gt;amibn&#39;,self.cores[i],other.cores[k]),[self.__R[i]*other.R[k],self.__N[i],self.R[i+1]*other.R[k+1]])
+                        elif other.N[k] == 1:
+                            core = tn.reshape(tn.einsum(&#39;aib,mn-&gt;amibn&#39;,self.cores[i],other.cores[k][:,0,:]),[self.__R[i]*other.R[k],self.__N[i],self.R[i+1]*other.R[k+1]])
+                        else:
+                            raise ShapeMismatch(&#34;Shapes are incompatible: first operand is %s, second operand is %s.&#34;%(str(self.N), str(other.N)))
+                            
+                        cores_new.append(core)
+                    
+            else:
+                raise IncompatibleTypes(&#39;Second operand must be the same type as the fisrt (both should be either TT matrices or TT tensors).&#39;)
+            result = TT(cores_new)
+
+        elif isinstance(other,int) or isinstance(other,float) or isinstance(other,tn.tensor):
+            if other != 0:
+                cores_new = [c+0 for c in self.cores]
+                cores_new[0] *= other
+                result = TT(cores_new)
+            else:
+                result = TT([tn.zeros((1,self.M[i],self.N[i],1) if self.is_ttm else (1,self.N[i],1), device = self.cores[0].device, dtype = self.cores[0].dtype) for i in range(len(self.N))])
+                # result = zeros([(m,n) for m,n in zip(self.M,self.N)] if self.is_ttm else self.N, device=self.cores[0].device)
+        else:
+            raise InvalidArguments(&#39;Second operand must be of type: TT, float, int of tensorflow Tensor.&#39;)
+                    
+        return result
+        
+    def __matmul__(self,other):
+        &#34;&#34;&#34;
+        Matrix-vector multiplication in TT-format
+        Supported operands:
+            - TT-matrix @ TT-tensor -&gt; TT-tensor: y_i = A_ij * x_j
+            - TT-tensor @ TT-matrix -&gt; TT-tensor: y_j = x_i * A_ij 
+            - TT-matrix @ TT-matrix -&gt; TT-matrix: Y_ij = A_ik * B_kj
+            - TT-matrix @ torch.tensor -&gt; torch.tensor: y_bi = A_ij * x_bj 
+        In the last case, the multiplication is performed along the last modes and a full torch.tensor is returned.
+
+        Args:
+            other (torchtt.TT | torch.tensor): the second operand.
+
+        Raises:
+            ShapeMismatch: Shapes do not match.
+            InvalidArguments: Wrong arguments.
+
+        Returns:
+            torchtt.TT | torch.tensor: the result. Can be full tensor if the second operand is full tensor.
+        &#34;&#34;&#34;
+     
+        if self.__is_ttm and tn.is_tensor(other):
+            if self.__N != list(other.shape)[-len(self.N):]:
+                raise ShapeMismatch(&#34;Shapes do not match.&#34;)
+            result = dense_matvec(self.cores,other) 
+            return result
+
+        elif self.__is_ttm and other.is_ttm == False:
+            # matrix-vector multiplication
+            if self.__N != other.N:
+                raise ShapeMismatch(&#34;Shapes do not match.&#34;)
+                
+            cores_new = []
+            
+            for i in range(len(self.cores)):
+                core = tn.reshape(tn.einsum(&#39;ijkl,mkp-&gt;imjlp&#39;,self.cores[i],other.cores[i]),[self.cores[i].shape[0]*other.cores[i].shape[0],self.cores[i].shape[1],self.cores[i].shape[3]*other.cores[i].shape[2]])
+                cores_new.append(core)
+            
+            
+        elif self.__is_ttm and other.is_ttm:
+            # multiplication between 2 TT-matrices
+            if self.__N != other.M:
+                raise ShapeMismatch(&#34;Shapes do not match.&#34;)
+                
+            cores_new = []
+            
+            for i in range(len(self.cores)):
+                core = tn.reshape(tn.einsum(&#39;ijkl,mknp-&gt;imjnlp&#39;,self.cores[i],other.cores[i]),[self.cores[i].shape[0]*other.cores[i].shape[0],self.cores[i].shape[1],other.cores[i].shape[2],self.cores[i].shape[3]*other.cores[i].shape[3]])
+                cores_new.append(core)
+        elif self.__is_ttm == False and other.is_ttm:
+            # vector-matrix multiplication
+            if self.__N != other.M:
+                raise ShapeMismatch(&#34;Shapes do not match.&#34;)
+                
+            cores_new = []
+            
+            for i in range(len(self.cores)):
+                core = tn.reshape(tn.einsum(&#39;mkp,ikjl-&gt;imjlp&#39;,self.cores[i],other.cores[i]),[self.cores[i].shape[0]*other.cores[i].shape[0],other.cores[i].shape[2],self.cores[i].shape[2]*other.cores[i].shape[3]])
+                cores_new.append(core)
+        else:
+            raise InvalidArguments(&#34;Wrong arguments.&#34;)
+            
+        result = TT(cores_new)
+        return result
+
+    def fast_matvec(self,other, eps = 1e-12, initial = None, nswp = 20, verb = False, use_cpp = True):
+        &#34;&#34;&#34;
+        Fast matrix vector multiplication A@x using DMRG iterations. Faster than traditional matvec + rounding.
+
+        Args:
+            other (torchtt.TT): the TT tensor.
+            eps (float, optional): relative accuracy for DMRG. Defaults to 1e-12.
+            initial (None|torchtt.TT, optional): an approximation of the product (None means random initial guess). Defaults to None.
+            nswp (int, optional): number of DMRG iterations. Defaults to 40.
+            verb (bool, optional): show info for debug. Defaults to False.
+            use_cpp (bool, optional): use the C++ implementation if available. Defaults to True.
+
+        Raises:
+            InvalidArguments: Second operand has to be TT object.
+            IncompatibleTypes: First operand should be a TT matrix and second a TT vector.
+
+        Returns:
+            torchtt.TT: the result.
+        &#34;&#34;&#34;
+        
+        if not isinstance(other,TT):
+            raise InvalidArguments(&#39;Second operand has to be TT object.&#39;)
+        if not self.__is_ttm or other.is_ttm:
+            raise IncompatibleTypes(&#39;First operand should be a TT matrix and second a TT vector.&#39;)
+            
+        return dmrg_matvec(self, other, y0 = initial, eps = eps, verb = verb, nswp = nswp, use_cpp = use_cpp)
+
+    def apply_mask(self,indices):
+        &#34;&#34;&#34;
+        Evaluate the tensor on the given index list.
+
+        Examples:
+            ```
+            x = torchtt.random([10,12,14],[1,4,5,1])
+            indices = torch.tensor([[0,0,0],[1,2,3],[1,1,1]])
+            val = x.apply_mask(indices)
+            ```
+            
+        Args:
+            indices (list[list[int]]): the index list where the tensor should be evaluated. Length is M.
+
+        Returns:
+            torch.tensor: the values of the tensor
+
+        &#34;&#34;&#34;
+        result = apply_mask(self.cores,self.__R,indices)
+        return result
+
+    def __truediv__(self,other):
+        &#34;&#34;&#34;
+        This function implements the &#34;/&#34; operator.
+        This operation is performed using the AMEN solver. The number of sweeps and rthe relative accuracy are fixed.
+        For most cases it is sufficient but sometimes it can fail.
+        Check the function torchtt.elementwise_divide() if you want to change the arguments of the AMEN solver.
+        
+
+        Args:
+            other (torchtt.TT | float | int | torch.tensor): the second operand. If a `torch.tensor` is provided, it must have 1 element.
+
+        Raises:
+            IncompatibleTypes: Operands should be either TT or TTM.
+            ShapeMismatch: Both operands should have the same shape.
+            InvalidArguments: Operand not permitted. A TT-object can be divided only with scalars.
+            
+        Returns:
+            torchtt.TT: the result.
+        &#34;&#34;&#34;
+        if isinstance(other,int) or isinstance(other,float) or tn.is_tensor(other):
+            # divide by a scalar
+            cores_new = self.cores.copy()
+            cores_new[0] /= other
+            result = TT(cores_new)
+        elif isinstance(other,TT):
+            if self.__is_ttm != other.is_ttm:
+                raise IncompatibleTypes(&#39;Operands should be either TT or TTM.&#39;)
+            if self.__N != other.N or (self.__is_ttm and self.__M != other.M):
+                raise ShapeMismatch(&#34;Both operands should have the same shape.&#34;)
+            result = TT(amen_divide(other,self,50,None,1e-12,500,verbose=False))       
+        else:
+            raise InvalidArguments(&#39;Operand not permitted. A TT-object can be divided only with scalars.&#39;)
+            
+       
+        return result
+    
+    def __rtruediv__(self,other):
+        &#34;&#34;&#34;
+        Right true division. this function is called when a non TT object is divided by a TT object.
+        This operation is performed using the AMEN solver. The number of sweeps and rthe relative accuracy are fixed.
+        For most cases it is sufficient but sometimes it can fail.
+        Check the function torchtt.elementwise_divide() if you want to change the arguments of the AMEN solver.
+        
+        Example: 
+            ```
+            z = 1.0/x # x is TT instance
+            ```
+            
+        Args:
+            other (torchtt.TT | float | int | torch.tensor): the first operand. If a `torch.tensor` is provided, it must have 1 element.
+
+        Raises:
+            InvalidArguments: The first operand must be int, float or 1d torch.tensor.
+            
+        Returns:
+            torchtt.TT: the result.
+        &#34;&#34;&#34;
+        if isinstance(other,int) or isinstance(other,float) or ( tn.is_tensor(other) and other.numel()==1):
+            o = TT([tn.ones((1,n,1),dtype=self.cores[0].dtype,device = self.cores[0].device) for n in self.__N])# ones(self.__N,dtype=self.cores[0].dtype,device = self.cores[0].device)
+            o.cores[0] *= other
+            cores_new = amen_divide(self,o,50,None,1e-12,500,verbose=False)
+        else:
+            raise InvalidArguments(&#34;The first operand must be int, float or 1d torch.tensor.&#34;)   
+         
+        return TT(cores_new)
+
+    
+    
+    def t(self):
+        &#34;&#34;&#34;
+        Returns the transpose of a given TT matrix.
+                
+                    
+        Returns:
+            torchtt.TT: the transpose.
+            
+        Raises:
+            InvalidArguments: Has to be TT matrix.
+        &#34;&#34;&#34; 
+        if not self.__is_ttm:
+            raise InvalidArguments(&#39;Has to be TT matrix.&#39;)
+            
+        cores_new = [tn.permute(c,[0,2,1,3]) for c in self.cores]
+        
+        return TT(cores_new)
+        
+    
+    def norm(self,squared=False):
+        &#34;&#34;&#34;
+        Computes the frobenius norm of a TT object.
+
+        Args:
+            squared (bool, optional): returns the square of the norm if True. Defaults to False.
+
+        Returns:
+            torch.tensor: the norm.
+        &#34;&#34;&#34;
+        
+        if any([c.requires_grad or c.grad_fn != None for c in self.cores]):
+            norm = tn.tensor([[1.0]],dtype = self.cores[0].dtype, device=self.cores[0].device)
+            
+            if self.__is_ttm:
+                for i in range(len(self.__N)):
+                    norm = tn.einsum(&#39;ab,aijm,bijn-&gt;mn&#39;,norm, self.cores[i], tn.conj(self.cores[i]))
+                norm = tn.squeeze(norm)
+            else:
+                           
+                for i in range(len(self.__N)):
+                    norm = tn.einsum(&#39;ab,aim,bin-&gt;mn&#39;,norm, self.cores[i], tn.conj(self.cores[i]))
+                norm = tn.squeeze(norm)
+            if squared:
+                return norm
+            else:
+                return tn.sqrt(tn.abs(norm))
+ 
+        else:        
+            d = len(self.cores)
+
+            core_now = self.cores[0]
+            for i in range(d-1):
+                if self.__is_ttm:
+                    mode_shape = [core_now.shape[1],core_now.shape[2]]
+                    core_now = tn.reshape(core_now,[core_now.shape[0]*core_now.shape[1]*core_now.shape[2],-1])
+                else:
+                    mode_shape = [core_now.shape[1]]
+                    core_now = tn.reshape(core_now,[core_now.shape[0]*core_now.shape[1],-1])
+                    
+                # perform QR
+                Qmat, Rmat = QR(core_now)
+                     
+                # take next core
+                core_next = self.cores[i+1]
+                shape_next = list(core_next.shape[1:])
+                core_next = tn.reshape(core_next,[core_next.shape[0],-1])
+                core_next = Rmat @ core_next
+                core_next = tn.reshape(core_next,[Qmat.shape[1]]+shape_next)
+                
+                # update the cores
+                
+                core_now = core_next
+            if squared:
+                return tn.linalg.norm(core_next)**2
+            else:
+                return tn.linalg.norm(core_next)
+
+    def sum(self,index = None):
+        &#34;&#34;&#34;
+        Contracts a tensor in the TT format along the given indices and retuyrns the resulting tensor in the TT format.
+        If no index list is given, the sum over all indices is performed.
+
+        Examples:
+            ```
+            a = torchtt.ones([3,4,5,6,7])
+            print(a.sum()) 
+            print(a.sum([0,2,4]))
+            print(a.sum([1,2]))
+            print(a.sum([0,1,2,3,4]))
+            ```
+            
+        Args:
+            index (int | list[int] | None, optional): the indices along which the summation is performed. None selects all of them. Defaults to None.
+
+        Raises:
+            InvalidArguments: Invalid index.
+
+        Returns:
+            torchtt.TT/torch.tensor: the result.
+        &#34;&#34;&#34;
+        
+        if index != None and isinstance(index,int):
+            index = [index]
+        if not isinstance(index,list) and index != None:
+            raise InvalidArguments(&#39;Invalid index.&#39;)
+             
+        if index == None: 
+            # the case we need to sum over all modes
+            if self.__is_ttm:
+                C = tn.reduce_sum(self.cores[0],[0,1,2])
+                for i in range(1,len(self.__N)):
+                    C = tn.sum(tn.einsum(&#39;i,ijkl-&gt;jkl&#39;,C,self.cores[i]),[0,1])
+                S = tn.sum(C)
+            else:
+                C = tn.sum(self.cores[0],[0,1])
+                for i in range(1,len(self.__N)):
+                    C = tn.sum(tn.einsum(&#39;i,ijk-&gt;jk&#39;,C,self.cores[i]),0)
+                S = tn.sum(C)
+        else:
+            # we return the TT-tensor with summed indices
+            cores = []
+            
+            if self.__is_ttm:
+                tmp = [1,2]
+            else:
+                tmp = [1]
+                
+            for i in range(len(self.__N)):
+                if i in index:
+                    C = tn.sum(self.cores[i], tmp, keepdim = True)
+                    cores.append(C)
+                else:
+                    cores.append(self.cores[i])
+                        
+            S = TT(cores)
+            S.reduce_dims()
+            if len(S.cores)==1 and tn.numel(S.cores[0])==1:
+                S = tn.squeeze(S.cores[0])
+        return S
+
+    def to_ttm(self):
+        &#34;&#34;&#34;
+        Converts a TT-tensor to the TT-matrix format. In the tensor has the shape N1 x ... x Nd, the result has the shape 
+        N1 x ... x Nd x 1 x ... x 1.
+    
+        Returns:
+            torch.TT: the result
+        &#34;&#34;&#34;
+
+        cores_new = [tn.reshape(c,(c.shape[0],c.shape[1],1,c.shape[2])) for c in self.cores]
+        return TT(cores_new)
+
+    def reduce_dims(self, exclude = []):
+        &#34;&#34;&#34;
+        Reduces the size 1 modes of the TT-object.
+        At least one mode should be larger than 1.
+
+        Args:
+            exclude (list, optional): Indices to exclude. Defaults to [].
+        &#34;&#34;&#34;
+        
+        # TODO: implement a version that reduces the rank also. by spliting the cores with modes 1 into 2 using the SVD.
+        
+        if self.__is_ttm:
+            cores_new = []
+            
+            for i in range(len(self.__N)):
+                
+                if self.cores[i].shape[1] == 1 and self.cores[i].shape[2] == 1 and not i in exclude:
+                    if self.cores[i].shape[0] &gt; self.cores[i].shape[3] or i == len(self.__N)-1:
+                        # multiply to the left
+                        if len(cores_new) &gt; 0:
+                            cores_new[-1] = tn.einsum(&#39;ijok,kl-&gt;ijol&#39;,cores_new[-1], self.cores[i][:,0,0,:])
+                        else: 
+                            # there is no core to the left. Multiply right.
+                            if i != len(self.__N)-1:
+                                self.cores[i+1] = tn.einsum(&#39;ij,jkml-&gt;ikml&#39;, self.cores[i][:,0,0,:],self.cores[i+1])
+                            else:
+                                cores_new.append(self.cores[i])
+                            
+                    else:
+                        # multiply to the right. Set the carry 
+                        self.cores[i+1] = tn.einsum(&#39;ij,jkml-&gt;ikml&#39;,self.cores[i][:,0,0,:],self.cores[i+1])
+                        
+                else:
+                    cores_new.append(self.cores[i])
+                    
+            # update the cores and ranks and shape
+            self.__N = []
+            self.__M = []
+            self.__R = [1]
+            for i in range(len(cores_new)):
+                self.__N.append(cores_new[i].shape[2])
+                self.__M.append(cores_new[i].shape[1])
+                self.__R.append(cores_new[i].shape[3])
+            self.cores = cores_new
+        else:
+            cores_new = []
+            
+            for i in range(len(self.__N)):
+                
+                if self.cores[i].shape[1] == 1 and not i in exclude:
+                    if self.cores[i].shape[0] &gt; self.cores[i].shape[2] or i == len(self.__N)-1:
+                        # multiply to the left
+                        if len(cores_new) &gt; 0:
+                            cores_new[-1] = tn.einsum(&#39;ijk,kl-&gt;ijl&#39;,cores_new[-1], self.cores[i][:,0,:])
+                        else: 
+                            # there is no core to the left. Multiply right.
+                            if i != len(self.__N)-1:
+                                self.cores[i+1] = tn.einsum(&#39;ij,jkl-&gt;ikl&#39;, self.cores[i][:,0,:],self.cores[i+1])
+                            else:
+                                cores_new.append(self.cores[i])
+                                
+                            
+                    else:
+                        # multiply to the right. Set the carry 
+                        self.cores[i+1] = tn.einsum(&#39;ij,jkl-&gt;ikl&#39;,self.cores[i][:,0,:],self.cores[i+1])
+                        
+                else:
+                    cores_new.append(self.cores[i])
+            
+            
+            # update the cores and ranks and shape
+            self.__N = []
+            self.__R = [1]
+            for i in range(len(cores_new)):
+                self.__N.append(cores_new[i].shape[1])
+                self.__R.append(cores_new[i].shape[2])
+            self.cores = cores_new
+                    
+                    
+        self.shape = [ (m,n) for m,n in zip(self.__M,self.__N) ] if self.__is_ttm else [n for n in self.N] 
+        
+    def __getitem__(self,index):
+        &#34;&#34;&#34;
+        Performs slicing of a TT object.
+        Both TT matrix and TT tensor are supported.
+        Similar to pytorch or numpy slicing.
+
+        Args:
+            index (tuple[slice] | tuple[int] | int | Ellipsis | slice): the slicing.
+
+        Raises:
+            NotImplementedError: Ellipsis are not supported.
+            InvalidArguments: Slice size is invalid.
+            InvalidArguments: Slice carguments not valid. They have to be either int, slice | None.
+            InvalidArguments: Invalid slice. Tensor is not 1d.
+
+
+        Returns:
+            torchtt.TT | torch.tensor: the result. If all the indices are fixed, a scalar torch.tensor is returned otherwise a torchtt.TT.
+        &#34;&#34;&#34;
+        
+        
+        # slicing function
+        
+        ##### TODO: include Ellipsis support for tensor operators.
+        
+        # if a slice containg integers is passed, an element is returned
+        # if ranged slices are used, a TT-object has to be returned.
+
+        exclude = []
+        
+        if isinstance(index,tuple):
+            # check if more than two Ellipsis are to be found.
+            if index.count(Ellipsis) &gt; 1 or (self.is_ttm and index.count(Ellipsis) &gt; 0):
+                raise NotImplementedError(&#39;Ellipsis are not supported more than once of for tensor operators.&#39;)
+            
+            if self.__is_ttm:
+                    
+                    
+                cores_new = []
+                k=0
+                for i in range(len(index)//2):
+                    idx1 = index[i]
+                    idx2 = index[i+len(index)//2]
+                    if isinstance(idx1,slice) and isinstance(idx2,slice):
+                        cores_new.append(self.cores[k][:,idx1,idx2,:])
+                        k+=1
+                    elif idx1==None and idx2==None:
+                        # extend the tensor
+                        tmp = tn.eye(cores_new[-1].shape[-1] if len(cores_new)!=0 else 1, device = self.cores[0].device, dtype = self.cores[0].dtype)[:,None,None,:]
+                        cores_new.append(tmp)
+                        exclude.append(i)
+                    elif isinstance(idx1, int) and isinstance(idx2,int):
+                        cores_new.append(tn.reshape(self.cores[k][:,idx1,idx2,:],[self.__R[k],1,1,self.R[k+1]]))
+                        k+=1
+                    else:
+                        raise InvalidArguments(&#34;Slice carguments not valid. They have to be either int, slice or None.&#34;)
+                if k&lt;len(self.cores):
+                    raise InvalidArguments(&#39;Slice size is invalid.&#39;)
+                
+            else:
+                # if len(index) != len(self.__N):
+                #    raise InvalidArguments(&#39;Slice size is invalid.&#39;)
+                num_none = sum([i is None for i in index])
+                
+                if index[0] == Ellipsis:
+                    index = (slice(None, None, None),)*(len(self.__N)-len(index)+1+num_none) + index[1:]
+                elif index[-1] == Ellipsis:
+                    index = index[:-1] + (slice(None, None, None),)*(len(self.__N)-len(index)+1+num_none)
+                cores_new = []
+                k = 0
+                for i,idx in enumerate(index):
+                    if isinstance(idx,slice):
+                        cores_new.append(self.cores[k][:,idx,:])
+                        k+=1
+                    elif idx is None:
+                        # extend the tensor
+                        tmp = tn.eye(cores_new[-1].shape[-1] if len(cores_new)!=0 else 1, device = self.cores[0].device, dtype = self.cores[0].dtype)[:,None,:]
+                        cores_new.append(tmp)
+                        exclude.append(i)
+                    elif isinstance(idx, int):
+                        cores_new.append(tn.reshape(self.cores[k][:,idx,:],[self.__R[k],-1,self.R[k+1]]))
+                        k+=1
+                    else:
+                        raise InvalidArguments(&#34;Slice carguments not valid. They have to be either int, slice or None.&#34;)
+                if k&lt;len(self.cores):
+                    raise InvalidArguments(&#39;Slice size is invalid.&#39;)
+                        
+                
+            sliced = TT(cores_new)
+            sliced.reduce_dims(exclude)
+            if (sliced.is_ttm == False and sliced.N == [1]) or (sliced.is_ttm and sliced.N == [1] and sliced.M == [1]):
+                sliced = tn.squeeze(sliced.cores[0])
+                
+                
+            # cores = None
+            
+            
+        elif isinstance(index,int):
+            # tensor is 1d and one element is retrived
+            if len(self.__N) == 1:
+                sliced = self.cores[0][0,index,0]
+            else:
+                raise InvalidArguments(&#39;Invalid slice. Tensor is not 1d.&#39;)
+                
+            ## TODO
+        elif index == Ellipsis:
+            # return a copy of the tensor
+            sliced = TT([c.clone() for c in self.cores])
+            
+        elif isinstance(index,slice):
+            # tensor is 1d and one slice is extracted
+            if len(self.__N) == 1:
+                sliced = TT(self.cores[0][:,index,:])
+            else:
+                raise InvalidArguments(&#39;Invalid slice. Tensor is not 1d.&#39;)
+            ## TODO
+        else:
+            raise InvalidArguments(&#39;Invalid slice.&#39;)
+            
+        
+        return sliced
+    
+    def __pow__(self, other):
+        &#34;&#34;&#34;
+        Computes the tensor Kronecker product.
+        This implements the &#34;**&#34; operator.
+        If None is provided as input the reult is the other tensor.
+        If A is N_1 x ... x N_d and B is M_1 x ... x M_p, then kron(A,B) is N_1 x ... x N_d x M_1 x ... x M_p
+
+
+        Args:
+            first (torchtt.TT or None): first argument.
+            second (torchtt.TT or none): second argument.
+
+        Raises:
+            IncompatibleTypes: Incompatible data types (make sure both are either TT-matrices or TT-tensors).
+            InvalidArguments: Invalid arguments.
+
+        Returns:
+            torchtt.TT: the result.
+        &#34;&#34;&#34;
+        
+     
+        if other == None: 
+            cores_new = [c.clone() for c in self.cores]
+            result = TT(cores_new)
+        elif isinstance(other,TT):
+            if self.is_ttm != other.is_ttm:
+                raise IncompatibleTypes(&#39;Incompatible data types (make sure both are either TT-matrices or TT-tensors).&#39;)
+        
+            # concatenate the result
+            cores_new = [c.clone() for c in self.cores] + [c.clone() for c in other.cores]
+            result = TT(cores_new)
+        else:
+            raise InvalidArguments(&#39;Invalid arguments.&#39;)
+        
+        return result
+    
+    def __rpow__(self,other):
+        &#34;&#34;&#34;
+        Computes the tensor Kronecker product.
+        This implements the &#34;**&#34; operator.
+        If None is provided as input the reult is the other tensor.
+        If A is N_1 x ... x N_d and B is M_1 x ... x M_p, then kron(A,B) is N_1 x ... x N_d x M_1 x ... x M_p
+
+
+        Args:
+            first (torchtt.TT or None): first argument.
+            second (torchtt.TT or none): second argument.
+
+        Raises:
+            IncompatibleTypes: Incompatible data types (make sure both are either TT-matrices or TT-tensors).
+            InvalidArguments: Invalid arguments.
+
+        Returns:
+            torchtt.TT: the result.
+        &#34;&#34;&#34;
+        
+        result = kron(self,other)
+        
+        return result
+    
+    def __neg__(self):
+        &#34;&#34;&#34;
+        Returns the negative of a given TT tensor.
+        This implements the unery operator &#34;-&#34;
+
+        Returns:
+            torchtt.TT: the negated tensor.
+        &#34;&#34;&#34;
+    
+        cores_new = [c.clone() for c in self.cores]
+        cores_new[0] = -cores_new[0]
+        return TT(cores_new)
+    
+    def __pos__(self):
+        &#34;&#34;&#34;
+        Implements the unary &#34;+&#34; operator returning a copy o the tensor.
+
+        Returns:
+            torchtt.TT: the tensor clone.
+        &#34;&#34;&#34;
+        
+        cores_new = [c.clone() for c in self.cores]
+
+        return TT(cores_new)
+    
+    def round(self, eps=1e-12, rmax = sys.maxsize): 
+        &#34;&#34;&#34;
+        Implements the rounding operations within a given tolerance epsilon.
+        The maximum rank is also provided.
+
+        Args:
+            eps (float, optional): the relative accuracy. Defaults to 1e-12.
+            rmax (int, optional): the maximum rank. Defaults to the maximum possible integer.
+
+        Returns:
+            torchtt.TT: the result.
+        &#34;&#34;&#34;
+        
+        # rmax is not list
+        if not isinstance(rmax,list):
+            rmax = [1] + len(self.__N)*[rmax] + [1]
+            
+        # call the round function
+        tt_cores, R = round_tt(self.cores, self.__R.copy(), eps, rmax,self.__is_ttm)
+        # creates a new TT and return it
+        T = TT(tt_cores)
+               
+        return T
+    
+    def to_qtt(self, eps = 1e-12, mode_size = 2, rmax = sys.maxsize):
+        &#34;&#34;&#34;
+        Converts a tensor to the QTT format: N1 x N2 x ... x Nd -&gt; mode_size x mode_size x ... x mode_size.
+        The product of the mode sizes should be a power of mode_size.
+        The tensor in QTT can be converted back using the qtt_to_tens() method.
+
+        Examples:
+            ```
+            x = torchtt.random([16,8,64,128],[1,2,10,12,1])
+            x_qtt = x.to_qtt()
+            print(x_qtt)
+            xf = x_qtt.qtt_to_tens(x.N) # a TT-rounding is recommended.
+            ```
+            
+        Args:
+            eps (float,optional): the accuracy. Defaults to 1e-12.
+            mode_size (int, optional): the size of the modes. Defaults to 2.
+            rmax (int): the maximum rank. Defaults to the maximum possible integer.
+            
+
+        Raises:
+            ShapeMismatch: Only quadratic TTM can be tranformed to QTT.
+            ShapeMismatch: Reshaping error: check if the dimensions are powers of the desired mode size.
+
+        Returns:
+            torchtt.TT: the resulting reshaped tensor.
+                       
+        &#34;&#34;&#34;
+       
+        cores_new = []
+        if self.__is_ttm:
+            shape_new = []
+            for i in range(len(self.__N)):
+                if self.__N[i]!=self.__M[i]:
+                    raise ShapeMismatch(&#39;Only quadratic TTM can be tranformed to QTT.&#39;)
+                if self.__N[i]==mode_size**int(math.log(self.N[i],mode_size)):
+                    shape_new += [(mode_size,mode_size)]*int(math.log(self.__N[i],mode_size))
+                else:
+                    raise ShapeMismatch(&#39;Reshaping error: check if the dimensions are powers of the desired mode size:\r\ncore size &#39;+str(list(self.cores[i].shape))+&#39; cannot be reshaped.&#39;)
+                
+            result = reshape(self, shape_new, eps, rmax)
+        else:
+            for core in self.cores:
+                if int(math.log(core.shape[1],mode_size))&gt;1:
+                    Nnew = [core.shape[0]*mode_size]+[mode_size]*(int(math.log(core.shape[1],mode_size))-2)+[core.shape[2]*mode_size]
+                    try:
+                        core = tn.reshape(core,Nnew)
+                    except:
+                        raise ShapeMismatch(&#39;Reshaping error: check if the dimensions care powers of the desired mode size:\r\ncore size &#39;+str(list(core.shape))+&#39; cannot be reshaped to &#39;+str(Nnew))
+                    cores,_ = to_tt(core,Nnew,eps,rmax,is_sparse=False)
+                    cores_new.append(tn.reshape(cores[0],[-1,mode_size,cores[0].shape[-1]]))
+                    cores_new += cores[1:-1]
+                    cores_new.append(tn.reshape(cores[-1],[cores[-1].shape[0],mode_size,-1]))
+                else: 
+                    cores_new.append(core)
+            result = TT(cores_new)
+            
+        return result
+               
+    def qtt_to_tens(self, original_shape):
+        &#34;&#34;&#34;
+        Transform a tensor back from QTT.
+
+        Args:
+            original_shape (list): the original shape.
+
+        Raises:
+            InvalidArguments: Original shape must be a list.
+            ShapeMismatch: Mode sizes do not match.
+
+        Returns:
+            torchtt.TT: the folded tensor.
+        &#34;&#34;&#34;
+        
+        if not isinstance(original_shape,list):
+            raise InvalidArguments(&#34;Original shape must be a list.&#34;)
+
+        core = None
+        cores_new = []
+        
+        if self.__is_ttm:
+            pass
+        else:
+            k = 0
+            for c in self.cores:
+                if core==None:
+                    core = c
+                    so_far = core.shape[1]
+                else:
+                    core = tn.einsum(&#39;...i,ijk-&gt;...jk&#39;,core,c)
+                    so_far *= c.shape[1]
+                if so_far==original_shape[k]:
+                    core = tn.reshape(core,[core.shape[0],-1,core.shape[-1]])
+                    cores_new.append(core)
+                    core = None
+                    k += 1
+            if k!= len(original_shape):
+                raise ShapeMismatch(&#39;Mode sizes do not match.&#39;)
+        return TT(cores_new)
+    
+    def mprod(self, factor_matrices, mode):
+        &#34;&#34;&#34;
+        n-mode product.
+
+        Args:
+            factor_matrices (torch.tensor or list[torch.tensor]): either a single matrix is directly provided or a list of matrices for product along multiple modes.
+            mode (int or list[int]): the mode for the product. If factor_matrices is a torch.tensor then mode is an integer and the multiplication will be performed along a single mode.
+                                     If factor_matrices is a list, the mode has to be list[int] of equal size.
+
+        Raises:
+            InvalidArguments: Invalid arguments.
+            ShapeMismatch: The n-th mode of the tensor must be equal with the 2nd mode of the matrix.
+            IncompatibleTypes: n-model product works only with TT-tensors and not TT matrices.
+            
+        Returns:
+            torchtt.TT: the result
+        &#34;&#34;&#34;
+        if self.__is_ttm:
+            raise IncompatibleTypes(&#34;n-model product works only with TT-tensors and not TT matrices.&#34;)
+    
+        if isinstance(factor_matrices,list) and isinstance(mode, list):
+            cores_new = [c.clone() for c in self.cores]
+            for i in range(len(factor_matrices)):
+                if cores_new[mode[i]].shape[1] != factor_matrices[i].shape[1]:
+                    raise ShapeMismatch(&#34;The n-th mode of the tensor must be equal with the 2nd mode of the matrix.&#34;)
+                cores_new[mode[i]] =  tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode[i]],factor_matrices[i]) # if self.__is_ttm else tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode[i]],factor_matrices[i]) 
+        elif isinstance(mode, int) and tn.is_tensor(factor_matrices):
+            cores_new = [c.clone() for c in self.cores]
+            if cores_new[mode].shape[1] != factor_matrices.shape[1]:
+                raise ShapeMismatch(&#34;The n-th mode of the tensor must be equal with the 2nd mode of the matrix.&#34;)
+            cores_new[mode] =  tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode],factor_matrices) # if self.__is_ttm else tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode],factor_matrices) 
+        else:
+            raise InvalidArguments(&#39;Invalid arguments.&#39;)
+        
+        return TT(cores_new)        
+        
+    def conj(self):
+        &#34;&#34;&#34;
+        Return the complex conjugate of a tensor in TT format.
+
+        Returns:
+            torchtt.TT: the complex conjugated tensor.
+        &#34;&#34;&#34;
+        return TT([tn.conj(c) for c in self.cores])</code></pre>
+</details>
+<h3>Instance variables</h3>
+<dl>
+<dt id="torchtt.TT.M"><code class="name">var <span class="ident">M</span></code></dt>
+<dd>
+<div class="desc"><p>Return the "row" shape in case of TT matrices.</p>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>IncompatibleTypes</code></dt>
+<dd>The field is_ttm is defined only for TT matrices.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list[int]</code></dt>
+<dd>the shape.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property 
+def M(self):
+    &#34;&#34;&#34;
+    Return the &#34;row&#34; shape in case of TT matrices.
+
+    Raises:
+        IncompatibleTypes: The field is_ttm is defined only for TT matrices.
+
+    Returns:
+        list[int]: the shape.
+    &#34;&#34;&#34;
+    if not self.__is_ttm:
+        raise IncompatibleTypes(&#34;The field is_ttm is defined only for TT matrices.&#34;)
+    return self.__M.copy()</code></pre>
+</details>
+</dd>
+<dt id="torchtt.TT.N"><code class="name">var <span class="ident">N</span></code></dt>
+<dd>
+<div class="desc"><p>Return the shape of a tensor or the "column" shape of a TT operator.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list[int]</code></dt>
+<dd>the shape.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property 
+def N(self):
+    &#34;&#34;&#34;
+    Return the shape of a tensor or the &#34;column&#34; shape of a TT operator.
+
+    Returns:
+        list[int]: the shape.
+    &#34;&#34;&#34;
+    return self.__N.copy()</code></pre>
+</details>
+</dd>
+<dt id="torchtt.TT.R"><code class="name">var <span class="ident">R</span></code></dt>
+<dd>
+<div class="desc"><p>The rank of the TT decomposition.
+It's length should be <code>len(R)==len(N)+1</code>.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list[int]</code></dt>
+<dd>the rank.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def R(self):
+    &#34;&#34;&#34;
+    The rank of the TT decomposition.
+    It&#39;s length should be `len(R)==len(N)+1`.
+
+    Returns:
+        list[int]: the rank.
+    &#34;&#34;&#34;
+    return self.__R.copy()</code></pre>
+</details>
+</dd>
+<dt id="torchtt.TT.is_ttm"><code class="name">var <span class="ident">is_ttm</span></code></dt>
+<dd>
+<div class="desc"><p>Check whether the instance is a TT operator or not.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>bool</code></dt>
+<dd>the flag.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def is_ttm(self):
+    &#34;&#34;&#34;
+    Check whether the instance is a TT operator or not.
+
+    Returns:
+        bool: the flag.
+    &#34;&#34;&#34;
+    return self.__is_ttm</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="torchtt.TT.apply_mask"><code class="name flex">
+<span>def <span class="ident">apply_mask</span></span>(<span>self, indices)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Evaluate the tensor on the given index list.</p>
+<h2 id="examples">Examples</h2>
+<pre><code>x = torchtt.random([10,12,14],[1,4,5,1])
+indices = torch.tensor([[0,0,0],[1,2,3],[1,1,1]])
+val = x.apply_mask(indices)
+</code></pre>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>indices</code></strong> :&ensp;<code>list[list[int]]</code></dt>
+<dd>the index list where the tensor should be evaluated. Length is M.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>torch.tensor</code></dt>
+<dd>the values of the tensor</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def apply_mask(self,indices):
+    &#34;&#34;&#34;
+    Evaluate the tensor on the given index list.
+
+    Examples:
+        ```
+        x = torchtt.random([10,12,14],[1,4,5,1])
+        indices = torch.tensor([[0,0,0],[1,2,3],[1,1,1]])
+        val = x.apply_mask(indices)
+        ```
+        
+    Args:
+        indices (list[list[int]]): the index list where the tensor should be evaluated. Length is M.
+
+    Returns:
+        torch.tensor: the values of the tensor
+
+    &#34;&#34;&#34;
+    result = apply_mask(self.cores,self.__R,indices)
+    return result</code></pre>
+</details>
+</dd>
+<dt id="torchtt.TT.clone"><code class="name flex">
+<span>def <span class="ident">clone</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Clones the torchtt.TT instance. Similar to torch.tensor.clone().</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the cloned TT object.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def clone(self):
+    &#34;&#34;&#34;
+    Clones the torchtt.TT instance. Similar to torch.tensor.clone().
+
+    Returns:
+        torchtt.TT: the cloned TT object.
+    &#34;&#34;&#34;
+    return TT([c.clone() for c in self.cores]) </code></pre>
+</details>
+</dd>
+<dt id="torchtt.TT.conj"><code class="name flex">
+<span>def <span class="ident">conj</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return the complex conjugate of a tensor in TT format.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the complex conjugated tensor.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def conj(self):
+    &#34;&#34;&#34;
+    Return the complex conjugate of a tensor in TT format.
+
+    Returns:
+        torchtt.TT: the complex conjugated tensor.
+    &#34;&#34;&#34;
+    return TT([tn.conj(c) for c in self.cores])</code></pre>
+</details>
+</dd>
+<dt id="torchtt.TT.cpu"><code class="name flex">
+<span>def <span class="ident">cpu</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Retrive the cores from the GPU.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>The TT-object on CPU.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cpu(self):
+    &#34;&#34;&#34;
+    Retrive the cores from the GPU.
+
+    Returns:
+        torchtt.TT: The TT-object on CPU.
+    &#34;&#34;&#34;
+
+    
+    return TT([ c.cpu() for c in self.cores])</code></pre>
+</details>
+</dd>
+<dt id="torchtt.TT.cuda"><code class="name flex">
+<span>def <span class="ident">cuda</span></span>(<span>self, device=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return a torchtt.TT object on the CUDA device by cloning all the cores on the GPU.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>device</code></strong> :&ensp;<code>torch.device</code>, optional</dt>
+<dd>The CUDA device (None for CPU). Defaults to None.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>The TT-object. The TT-cores are on CUDA.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cuda(self, device = None):
+    &#34;&#34;&#34;
+    Return a torchtt.TT object on the CUDA device by cloning all the cores on the GPU.
+
+    Args:
+        device (torch.device, optional): The CUDA device (None for CPU). Defaults to None.
+
+    Returns:
+        torchtt.TT: The TT-object. The TT-cores are on CUDA.
+    &#34;&#34;&#34;
+     
+    
+    t = TT([ c.cuda(device) for c in self.cores])
+
+    return t</code></pre>
+</details>
+</dd>
+<dt id="torchtt.TT.detach"><code class="name flex">
+<span>def <span class="ident">detach</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Detaches the TT tensor. Similar to torch.tensor.detach().</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the detached tensor.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def detach(self):
+    &#34;&#34;&#34;
+    Detaches the TT tensor. Similar to torch.tensor.detach().
+
+    Returns:
+        torchtt.TT: the detached tensor.
+    &#34;&#34;&#34;
+    return TT([c.detach() for c in self.cores])</code></pre>
+</details>
+</dd>
+<dt id="torchtt.TT.fast_matvec"><code class="name flex">
+<span>def <span class="ident">fast_matvec</span></span>(<span>self, other, eps=1e-12, initial=None, nswp=20, verb=False, use_cpp=True)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Fast matrix vector multiplication A@x using DMRG iterations. Faster than traditional matvec + rounding.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>other</code></strong> :&ensp;<code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the TT tensor.</dd>
+<dt><strong><code>eps</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>relative accuracy for DMRG. Defaults to 1e-12.</dd>
+<dt>initial (None|torchtt.TT, optional): an approximation of the product (None means random initial guess). Defaults to None.</dt>
+<dt><strong><code>nswp</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>number of DMRG iterations. Defaults to 40.</dd>
+<dt><strong><code>verb</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>show info for debug. Defaults to False.</dd>
+<dt><strong><code>use_cpp</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>use the C++ implementation if available. Defaults to True.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>InvalidArguments</code></dt>
+<dd>Second operand has to be TT object.</dd>
+<dt><code>IncompatibleTypes</code></dt>
+<dd>First operand should be a TT matrix and second a TT vector.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the result.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def fast_matvec(self,other, eps = 1e-12, initial = None, nswp = 20, verb = False, use_cpp = True):
+    &#34;&#34;&#34;
+    Fast matrix vector multiplication A@x using DMRG iterations. Faster than traditional matvec + rounding.
+
+    Args:
+        other (torchtt.TT): the TT tensor.
+        eps (float, optional): relative accuracy for DMRG. Defaults to 1e-12.
+        initial (None|torchtt.TT, optional): an approximation of the product (None means random initial guess). Defaults to None.
+        nswp (int, optional): number of DMRG iterations. Defaults to 40.
+        verb (bool, optional): show info for debug. Defaults to False.
+        use_cpp (bool, optional): use the C++ implementation if available. Defaults to True.
+
+    Raises:
+        InvalidArguments: Second operand has to be TT object.
+        IncompatibleTypes: First operand should be a TT matrix and second a TT vector.
+
+    Returns:
+        torchtt.TT: the result.
+    &#34;&#34;&#34;
+    
+    if not isinstance(other,TT):
+        raise InvalidArguments(&#39;Second operand has to be TT object.&#39;)
+    if not self.__is_ttm or other.is_ttm:
+        raise IncompatibleTypes(&#39;First operand should be a TT matrix and second a TT vector.&#39;)
+        
+    return dmrg_matvec(self, other, y0 = initial, eps = eps, verb = verb, nswp = nswp, use_cpp = use_cpp)</code></pre>
+</details>
+</dd>
+<dt id="torchtt.TT.full"><code class="name flex">
+<span>def <span class="ident">full</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return the full tensor.
+In case of a TTM, the result has the shape M1 x M2 x &hellip; x Md x N1 x N2 x &hellip; x Nd.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>torch.tensor</code></dt>
+<dd>the full tensor.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def full(self):       
+    &#34;&#34;&#34;
+    Return the full tensor.
+    In case of a TTM, the result has the shape M1 x M2 x ... x Md x N1 x N2 x ... x Nd.
+
+    Returns:
+        torch.tensor: the full tensor.
+    &#34;&#34;&#34;
+    if self.__is_ttm:
+        # the case of tt-matrix
+        tfull = self.cores[0][0,:,:,:]
+        for i in  range(1,len(self.cores)-1) :
+            tfull = tn.einsum(&#39;...i,ijkl-&gt;...jkl&#39;,tfull,self.cores[i])
+        if len(self.__N) != 1:
+            tfull = tn.einsum(&#39;...i,ijk-&gt;...jk&#39;,tfull,self.cores[-1][:,:,:,0])
+            tfull = tn.permute(tfull,list(np.arange(len(self.__N))*2)+list(np.arange(len(self.N))*2+1))
+        else:
+            tfull = tfull[:,:,0]
+    else:
+        # the case of a normal tt
+        tfull = self.cores[0][0,:,:]
+        for i in  range(1,len(self.cores)-1) :
+            tfull = tn.einsum(&#39;...i,ijk-&gt;...jk&#39;,tfull,self.cores[i])
+        if len(self.__N) != 1:
+            tfull = tn.einsum(&#39;...i,ij-&gt;...j&#39;,tfull,self.cores[-1][:,:,0])
+        else:
+            tfull = tn.squeeze(tfull)
+    return tfull</code></pre>
+</details>
+</dd>
+<dt id="torchtt.TT.is_cuda"><code class="name flex">
+<span>def <span class="ident">is_cuda</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return True if the tensor is on GPU.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>bool</code></dt>
+<dd>Is the torchtt.TT on GPU or not.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_cuda(self):
+    &#34;&#34;&#34;
+    Return True if the tensor is on GPU.
+
+    Returns:
+        bool: Is the torchtt.TT on GPU or not.
+    &#34;&#34;&#34;
+    return all([c.is_cuda for c in self.core])</code></pre>
+</details>
+</dd>
+<dt id="torchtt.TT.mprod"><code class="name flex">
+<span>def <span class="ident">mprod</span></span>(<span>self, factor_matrices, mode)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>n-mode product.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>factor_matrices</code></strong> :&ensp;<code>torch.tensor</code> or <code>list[torch.tensor]</code></dt>
+<dd>either a single matrix is directly provided or a list of matrices for product along multiple modes.</dd>
+<dt><strong><code>mode</code></strong> :&ensp;<code>int</code> or <code>list[int]</code></dt>
+<dd>the mode for the product. If factor_matrices is a torch.tensor then mode is an integer and the multiplication will be performed along a single mode.
+If factor_matrices is a list, the mode has to be list[int] of equal size.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>InvalidArguments</code></dt>
+<dd>Invalid arguments.</dd>
+<dt><code>ShapeMismatch</code></dt>
+<dd>The n-th mode of the tensor must be equal with the 2nd mode of the matrix.</dd>
+<dt><code>IncompatibleTypes</code></dt>
+<dd>n-model product works only with TT-tensors and not TT matrices.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the result</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def mprod(self, factor_matrices, mode):
+    &#34;&#34;&#34;
+    n-mode product.
+
+    Args:
+        factor_matrices (torch.tensor or list[torch.tensor]): either a single matrix is directly provided or a list of matrices for product along multiple modes.
+        mode (int or list[int]): the mode for the product. If factor_matrices is a torch.tensor then mode is an integer and the multiplication will be performed along a single mode.
+                                 If factor_matrices is a list, the mode has to be list[int] of equal size.
+
+    Raises:
+        InvalidArguments: Invalid arguments.
+        ShapeMismatch: The n-th mode of the tensor must be equal with the 2nd mode of the matrix.
+        IncompatibleTypes: n-model product works only with TT-tensors and not TT matrices.
+        
+    Returns:
+        torchtt.TT: the result
+    &#34;&#34;&#34;
+    if self.__is_ttm:
+        raise IncompatibleTypes(&#34;n-model product works only with TT-tensors and not TT matrices.&#34;)
+
+    if isinstance(factor_matrices,list) and isinstance(mode, list):
+        cores_new = [c.clone() for c in self.cores]
+        for i in range(len(factor_matrices)):
+            if cores_new[mode[i]].shape[1] != factor_matrices[i].shape[1]:
+                raise ShapeMismatch(&#34;The n-th mode of the tensor must be equal with the 2nd mode of the matrix.&#34;)
+            cores_new[mode[i]] =  tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode[i]],factor_matrices[i]) # if self.__is_ttm else tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode[i]],factor_matrices[i]) 
+    elif isinstance(mode, int) and tn.is_tensor(factor_matrices):
+        cores_new = [c.clone() for c in self.cores]
+        if cores_new[mode].shape[1] != factor_matrices.shape[1]:
+            raise ShapeMismatch(&#34;The n-th mode of the tensor must be equal with the 2nd mode of the matrix.&#34;)
+        cores_new[mode] =  tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode],factor_matrices) # if self.__is_ttm else tn.einsum(&#39;ijk,lj-&gt;ilk&#39;,cores_new[mode],factor_matrices) 
+    else:
+        raise InvalidArguments(&#39;Invalid arguments.&#39;)
+    
+    return TT(cores_new)        </code></pre>
+</details>
+</dd>
+<dt id="torchtt.TT.norm"><code class="name flex">
+<span>def <span class="ident">norm</span></span>(<span>self, squared=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Computes the frobenius norm of a TT object.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>squared</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>returns the square of the norm if True. Defaults to False.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>torch.tensor</code></dt>
+<dd>the norm.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def norm(self,squared=False):
+    &#34;&#34;&#34;
+    Computes the frobenius norm of a TT object.
+
+    Args:
+        squared (bool, optional): returns the square of the norm if True. Defaults to False.
+
+    Returns:
+        torch.tensor: the norm.
+    &#34;&#34;&#34;
+    
+    if any([c.requires_grad or c.grad_fn != None for c in self.cores]):
+        norm = tn.tensor([[1.0]],dtype = self.cores[0].dtype, device=self.cores[0].device)
+        
+        if self.__is_ttm:
+            for i in range(len(self.__N)):
+                norm = tn.einsum(&#39;ab,aijm,bijn-&gt;mn&#39;,norm, self.cores[i], tn.conj(self.cores[i]))
+            norm = tn.squeeze(norm)
+        else:
+                       
+            for i in range(len(self.__N)):
+                norm = tn.einsum(&#39;ab,aim,bin-&gt;mn&#39;,norm, self.cores[i], tn.conj(self.cores[i]))
+            norm = tn.squeeze(norm)
+        if squared:
+            return norm
+        else:
+            return tn.sqrt(tn.abs(norm))
+
+    else:        
+        d = len(self.cores)
+
+        core_now = self.cores[0]
+        for i in range(d-1):
+            if self.__is_ttm:
+                mode_shape = [core_now.shape[1],core_now.shape[2]]
+                core_now = tn.reshape(core_now,[core_now.shape[0]*core_now.shape[1]*core_now.shape[2],-1])
+            else:
+                mode_shape = [core_now.shape[1]]
+                core_now = tn.reshape(core_now,[core_now.shape[0]*core_now.shape[1],-1])
+                
+            # perform QR
+            Qmat, Rmat = QR(core_now)
+                 
+            # take next core
+            core_next = self.cores[i+1]
+            shape_next = list(core_next.shape[1:])
+            core_next = tn.reshape(core_next,[core_next.shape[0],-1])
+            core_next = Rmat @ core_next
+            core_next = tn.reshape(core_next,[Qmat.shape[1]]+shape_next)
+            
+            # update the cores
+            
+            core_now = core_next
+        if squared:
+            return tn.linalg.norm(core_next)**2
+        else:
+            return tn.linalg.norm(core_next)</code></pre>
+</details>
+</dd>
+<dt id="torchtt.TT.numpy"><code class="name flex">
+<span>def <span class="ident">numpy</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return the full tensor as a numpy.array.
+In case of a TTM, the result has the shape M1 x M2 x &hellip; x Md x N1 x N2 x &hellip; x Nd.
+If it is involved in an AD graph, an error will occur.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>numpy.array</code></dt>
+<dd>the full tensor in numpy.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def numpy(self):
+    &#34;&#34;&#34;
+    Return the full tensor as a numpy.array.
+    In case of a TTM, the result has the shape M1 x M2 x ... x Md x N1 x N2 x ... x Nd.
+    If it is involved in an AD graph, an error will occur.
+    
+    Returns:
+        numpy.array: the full tensor in numpy.
+    &#34;&#34;&#34;
+    return self.full().cpu().numpy()</code></pre>
+</details>
+</dd>
+<dt id="torchtt.TT.qtt_to_tens"><code class="name flex">
+<span>def <span class="ident">qtt_to_tens</span></span>(<span>self, original_shape)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Transform a tensor back from QTT.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>original_shape</code></strong> :&ensp;<code>list</code></dt>
+<dd>the original shape.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>InvalidArguments</code></dt>
+<dd>Original shape must be a list.</dd>
+<dt><code>ShapeMismatch</code></dt>
+<dd>Mode sizes do not match.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the folded tensor.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def qtt_to_tens(self, original_shape):
+    &#34;&#34;&#34;
+    Transform a tensor back from QTT.
+
+    Args:
+        original_shape (list): the original shape.
+
+    Raises:
+        InvalidArguments: Original shape must be a list.
+        ShapeMismatch: Mode sizes do not match.
+
+    Returns:
+        torchtt.TT: the folded tensor.
+    &#34;&#34;&#34;
+    
+    if not isinstance(original_shape,list):
+        raise InvalidArguments(&#34;Original shape must be a list.&#34;)
+
+    core = None
+    cores_new = []
+    
+    if self.__is_ttm:
+        pass
+    else:
+        k = 0
+        for c in self.cores:
+            if core==None:
+                core = c
+                so_far = core.shape[1]
+            else:
+                core = tn.einsum(&#39;...i,ijk-&gt;...jk&#39;,core,c)
+                so_far *= c.shape[1]
+            if so_far==original_shape[k]:
+                core = tn.reshape(core,[core.shape[0],-1,core.shape[-1]])
+                cores_new.append(core)
+                core = None
+                k += 1
+        if k!= len(original_shape):
+            raise ShapeMismatch(&#39;Mode sizes do not match.&#39;)
+    return TT(cores_new)</code></pre>
+</details>
+</dd>
+<dt id="torchtt.TT.reduce_dims"><code class="name flex">
+<span>def <span class="ident">reduce_dims</span></span>(<span>self, exclude=[])</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Reduces the size 1 modes of the TT-object.
+At least one mode should be larger than 1.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>exclude</code></strong> :&ensp;<code>list</code>, optional</dt>
+<dd>Indices to exclude. Defaults to [].</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def reduce_dims(self, exclude = []):
+    &#34;&#34;&#34;
+    Reduces the size 1 modes of the TT-object.
+    At least one mode should be larger than 1.
+
+    Args:
+        exclude (list, optional): Indices to exclude. Defaults to [].
+    &#34;&#34;&#34;
+    
+    # TODO: implement a version that reduces the rank also. by spliting the cores with modes 1 into 2 using the SVD.
+    
+    if self.__is_ttm:
+        cores_new = []
+        
+        for i in range(len(self.__N)):
+            
+            if self.cores[i].shape[1] == 1 and self.cores[i].shape[2] == 1 and not i in exclude:
+                if self.cores[i].shape[0] &gt; self.cores[i].shape[3] or i == len(self.__N)-1:
+                    # multiply to the left
+                    if len(cores_new) &gt; 0:
+                        cores_new[-1] = tn.einsum(&#39;ijok,kl-&gt;ijol&#39;,cores_new[-1], self.cores[i][:,0,0,:])
+                    else: 
+                        # there is no core to the left. Multiply right.
+                        if i != len(self.__N)-1:
+                            self.cores[i+1] = tn.einsum(&#39;ij,jkml-&gt;ikml&#39;, self.cores[i][:,0,0,:],self.cores[i+1])
+                        else:
+                            cores_new.append(self.cores[i])
+                        
+                else:
+                    # multiply to the right. Set the carry 
+                    self.cores[i+1] = tn.einsum(&#39;ij,jkml-&gt;ikml&#39;,self.cores[i][:,0,0,:],self.cores[i+1])
+                    
+            else:
+                cores_new.append(self.cores[i])
+                
+        # update the cores and ranks and shape
+        self.__N = []
+        self.__M = []
+        self.__R = [1]
+        for i in range(len(cores_new)):
+            self.__N.append(cores_new[i].shape[2])
+            self.__M.append(cores_new[i].shape[1])
+            self.__R.append(cores_new[i].shape[3])
+        self.cores = cores_new
+    else:
+        cores_new = []
+        
+        for i in range(len(self.__N)):
+            
+            if self.cores[i].shape[1] == 1 and not i in exclude:
+                if self.cores[i].shape[0] &gt; self.cores[i].shape[2] or i == len(self.__N)-1:
+                    # multiply to the left
+                    if len(cores_new) &gt; 0:
+                        cores_new[-1] = tn.einsum(&#39;ijk,kl-&gt;ijl&#39;,cores_new[-1], self.cores[i][:,0,:])
+                    else: 
+                        # there is no core to the left. Multiply right.
+                        if i != len(self.__N)-1:
+                            self.cores[i+1] = tn.einsum(&#39;ij,jkl-&gt;ikl&#39;, self.cores[i][:,0,:],self.cores[i+1])
+                        else:
+                            cores_new.append(self.cores[i])
+                            
+                        
+                else:
+                    # multiply to the right. Set the carry 
+                    self.cores[i+1] = tn.einsum(&#39;ij,jkl-&gt;ikl&#39;,self.cores[i][:,0,:],self.cores[i+1])
+                    
+            else:
+                cores_new.append(self.cores[i])
+        
+        
+        # update the cores and ranks and shape
+        self.__N = []
+        self.__R = [1]
+        for i in range(len(cores_new)):
+            self.__N.append(cores_new[i].shape[1])
+            self.__R.append(cores_new[i].shape[2])
+        self.cores = cores_new
+                
+                
+    self.shape = [ (m,n) for m,n in zip(self.__M,self.__N) ] if self.__is_ttm else [n for n in self.N] </code></pre>
+</details>
+</dd>
+<dt id="torchtt.TT.round"><code class="name flex">
+<span>def <span class="ident">round</span></span>(<span>self, eps=1e-12, rmax=9223372036854775807)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Implements the rounding operations within a given tolerance epsilon.
+The maximum rank is also provided.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>eps</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>the relative accuracy. Defaults to 1e-12.</dd>
+<dt><strong><code>rmax</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>the maximum rank. Defaults to the maximum possible integer.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the result.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def round(self, eps=1e-12, rmax = sys.maxsize): 
+    &#34;&#34;&#34;
+    Implements the rounding operations within a given tolerance epsilon.
+    The maximum rank is also provided.
+
+    Args:
+        eps (float, optional): the relative accuracy. Defaults to 1e-12.
+        rmax (int, optional): the maximum rank. Defaults to the maximum possible integer.
+
+    Returns:
+        torchtt.TT: the result.
+    &#34;&#34;&#34;
+    
+    # rmax is not list
+    if not isinstance(rmax,list):
+        rmax = [1] + len(self.__N)*[rmax] + [1]
+        
+    # call the round function
+    tt_cores, R = round_tt(self.cores, self.__R.copy(), eps, rmax,self.__is_ttm)
+    # creates a new TT and return it
+    T = TT(tt_cores)
+           
+    return T</code></pre>
+</details>
+</dd>
+<dt id="torchtt.TT.sum"><code class="name flex">
+<span>def <span class="ident">sum</span></span>(<span>self, index=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Contracts a tensor in the TT format along the given indices and retuyrns the resulting tensor in the TT format.
+If no index list is given, the sum over all indices is performed.</p>
+<h2 id="examples">Examples</h2>
+<pre><code>a = torchtt.ones([3,4,5,6,7])
+print(a.sum()) 
+print(a.sum([0,2,4]))
+print(a.sum([1,2]))
+print(a.sum([0,1,2,3,4]))
+</code></pre>
+<h2 id="args">Args</h2>
+<p>index (int | list[int] | None, optional): the indices along which the summation is performed. None selects all of them. Defaults to None.</p>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>InvalidArguments</code></dt>
+<dd>Invalid index.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>torchtt.TT/torch.tensor: the result.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def sum(self,index = None):
+    &#34;&#34;&#34;
+    Contracts a tensor in the TT format along the given indices and retuyrns the resulting tensor in the TT format.
+    If no index list is given, the sum over all indices is performed.
+
+    Examples:
+        ```
+        a = torchtt.ones([3,4,5,6,7])
+        print(a.sum()) 
+        print(a.sum([0,2,4]))
+        print(a.sum([1,2]))
+        print(a.sum([0,1,2,3,4]))
+        ```
+        
+    Args:
+        index (int | list[int] | None, optional): the indices along which the summation is performed. None selects all of them. Defaults to None.
+
+    Raises:
+        InvalidArguments: Invalid index.
+
+    Returns:
+        torchtt.TT/torch.tensor: the result.
+    &#34;&#34;&#34;
+    
+    if index != None and isinstance(index,int):
+        index = [index]
+    if not isinstance(index,list) and index != None:
+        raise InvalidArguments(&#39;Invalid index.&#39;)
+         
+    if index == None: 
+        # the case we need to sum over all modes
+        if self.__is_ttm:
+            C = tn.reduce_sum(self.cores[0],[0,1,2])
+            for i in range(1,len(self.__N)):
+                C = tn.sum(tn.einsum(&#39;i,ijkl-&gt;jkl&#39;,C,self.cores[i]),[0,1])
+            S = tn.sum(C)
+        else:
+            C = tn.sum(self.cores[0],[0,1])
+            for i in range(1,len(self.__N)):
+                C = tn.sum(tn.einsum(&#39;i,ijk-&gt;jk&#39;,C,self.cores[i]),0)
+            S = tn.sum(C)
+    else:
+        # we return the TT-tensor with summed indices
+        cores = []
+        
+        if self.__is_ttm:
+            tmp = [1,2]
+        else:
+            tmp = [1]
+            
+        for i in range(len(self.__N)):
+            if i in index:
+                C = tn.sum(self.cores[i], tmp, keepdim = True)
+                cores.append(C)
+            else:
+                cores.append(self.cores[i])
+                    
+        S = TT(cores)
+        S.reduce_dims()
+        if len(S.cores)==1 and tn.numel(S.cores[0])==1:
+            S = tn.squeeze(S.cores[0])
+    return S</code></pre>
+</details>
+</dd>
+<dt id="torchtt.TT.t"><code class="name flex">
+<span>def <span class="ident">t</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns the transpose of a given TT matrix.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the transpose.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>InvalidArguments</code></dt>
+<dd>Has to be TT matrix.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def t(self):
+    &#34;&#34;&#34;
+    Returns the transpose of a given TT matrix.
+            
+                
+    Returns:
+        torchtt.TT: the transpose.
+        
+    Raises:
+        InvalidArguments: Has to be TT matrix.
+    &#34;&#34;&#34; 
+    if not self.__is_ttm:
+        raise InvalidArguments(&#39;Has to be TT matrix.&#39;)
+        
+    cores_new = [tn.permute(c,[0,2,1,3]) for c in self.cores]
+    
+    return TT(cores_new)</code></pre>
+</details>
+</dd>
+<dt id="torchtt.TT.to"><code class="name flex">
+<span>def <span class="ident">to</span></span>(<span>self, device=None, dtype=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Moves the TT instance to the given device with the given dtype.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>device</code></strong> :&ensp;<code>torch.device</code>, optional</dt>
+<dd>The desired device. If none is provided, the device is the CPU. Defaults to None.</dd>
+<dt><strong><code>dtype</code></strong> :&ensp;<code>torch.dtype</code>, optional</dt>
+<dd>The desired dtype (torch.float64, torch.float32,&hellip;). If None is provided the dtype is not changed. Defaults to None.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def to(self, device = None, dtype = None):
+    &#34;&#34;&#34;
+    Moves the TT instance to the given device with the given dtype.
+
+    Args:
+        device (torch.device, optional): The desired device. If none is provided, the device is the CPU. Defaults to None.
+        dtype (torch.dtype, optional): The desired dtype (torch.float64, torch.float32,...). If None is provided the dtype is not changed. Defaults to None.
+    &#34;&#34;&#34;
+    return TT( [ c.to(device=device,dtype=dtype) for c in self.cores])</code></pre>
+</details>
+</dd>
+<dt id="torchtt.TT.to_qtt"><code class="name flex">
+<span>def <span class="ident">to_qtt</span></span>(<span>self, eps=1e-12, mode_size=2, rmax=9223372036854775807)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Converts a tensor to the QTT format: N1 x N2 x &hellip; x Nd -&gt; mode_size x mode_size x &hellip; x mode_size.
+The product of the mode sizes should be a power of mode_size.
+The tensor in QTT can be converted back using the qtt_to_tens() method.</p>
+<h2 id="examples">Examples</h2>
+<pre><code>x = torchtt.random([16,8,64,128],[1,2,10,12,1])
+x_qtt = x.to_qtt()
+print(x_qtt)
+xf = x_qtt.qtt_to_tens(x.N) # a TT-rounding is recommended.
+</code></pre>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>eps</code></strong> :&ensp;<code>float</code>,optional</dt>
+<dd>the accuracy. Defaults to 1e-12.</dd>
+<dt><strong><code>mode_size</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>the size of the modes. Defaults to 2.</dd>
+<dt><strong><code>rmax</code></strong> :&ensp;<code>int</code></dt>
+<dd>the maximum rank. Defaults to the maximum possible integer.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>ShapeMismatch</code></dt>
+<dd>Only quadratic TTM can be tranformed to QTT.</dd>
+<dt><code>ShapeMismatch</code></dt>
+<dd>Reshaping error: check if the dimensions are powers of the desired mode size.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></dt>
+<dd>the resulting reshaped tensor.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def to_qtt(self, eps = 1e-12, mode_size = 2, rmax = sys.maxsize):
+    &#34;&#34;&#34;
+    Converts a tensor to the QTT format: N1 x N2 x ... x Nd -&gt; mode_size x mode_size x ... x mode_size.
+    The product of the mode sizes should be a power of mode_size.
+    The tensor in QTT can be converted back using the qtt_to_tens() method.
+
+    Examples:
+        ```
+        x = torchtt.random([16,8,64,128],[1,2,10,12,1])
+        x_qtt = x.to_qtt()
+        print(x_qtt)
+        xf = x_qtt.qtt_to_tens(x.N) # a TT-rounding is recommended.
+        ```
+        
+    Args:
+        eps (float,optional): the accuracy. Defaults to 1e-12.
+        mode_size (int, optional): the size of the modes. Defaults to 2.
+        rmax (int): the maximum rank. Defaults to the maximum possible integer.
+        
+
+    Raises:
+        ShapeMismatch: Only quadratic TTM can be tranformed to QTT.
+        ShapeMismatch: Reshaping error: check if the dimensions are powers of the desired mode size.
+
+    Returns:
+        torchtt.TT: the resulting reshaped tensor.
+                   
+    &#34;&#34;&#34;
+   
+    cores_new = []
+    if self.__is_ttm:
+        shape_new = []
+        for i in range(len(self.__N)):
+            if self.__N[i]!=self.__M[i]:
+                raise ShapeMismatch(&#39;Only quadratic TTM can be tranformed to QTT.&#39;)
+            if self.__N[i]==mode_size**int(math.log(self.N[i],mode_size)):
+                shape_new += [(mode_size,mode_size)]*int(math.log(self.__N[i],mode_size))
+            else:
+                raise ShapeMismatch(&#39;Reshaping error: check if the dimensions are powers of the desired mode size:\r\ncore size &#39;+str(list(self.cores[i].shape))+&#39; cannot be reshaped.&#39;)
+            
+        result = reshape(self, shape_new, eps, rmax)
+    else:
+        for core in self.cores:
+            if int(math.log(core.shape[1],mode_size))&gt;1:
+                Nnew = [core.shape[0]*mode_size]+[mode_size]*(int(math.log(core.shape[1],mode_size))-2)+[core.shape[2]*mode_size]
+                try:
+                    core = tn.reshape(core,Nnew)
+                except:
+                    raise ShapeMismatch(&#39;Reshaping error: check if the dimensions care powers of the desired mode size:\r\ncore size &#39;+str(list(core.shape))+&#39; cannot be reshaped to &#39;+str(Nnew))
+                cores,_ = to_tt(core,Nnew,eps,rmax,is_sparse=False)
+                cores_new.append(tn.reshape(cores[0],[-1,mode_size,cores[0].shape[-1]]))
+                cores_new += cores[1:-1]
+                cores_new.append(tn.reshape(cores[-1],[cores[-1].shape[0],mode_size,-1]))
+            else: 
+                cores_new.append(core)
+        result = TT(cores_new)
+        
+    return result</code></pre>
+</details>
+</dd>
+<dt id="torchtt.TT.to_ttm"><code class="name flex">
+<span>def <span class="ident">to_ttm</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Converts a TT-tensor to the TT-matrix format. In the tensor has the shape N1 x &hellip; x Nd, the result has the shape
+N1 x &hellip; x Nd x 1 x &hellip; x 1.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>torch.TT</code></dt>
+<dd>the result</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def to_ttm(self):
+    &#34;&#34;&#34;
+    Converts a TT-tensor to the TT-matrix format. In the tensor has the shape N1 x ... x Nd, the result has the shape 
+    N1 x ... x Nd x 1 x ... x 1.
+
+    Returns:
+        torch.TT: the result
+    &#34;&#34;&#34;
+
+    cores_new = [tn.reshape(c,(c.shape[0],c.shape[1],1,c.shape[2])) for c in self.cores]
+    return TT(cores_new)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
 </section>
 </article>
 <nav id="sidebar">
@@ -128,13 +4216,71 @@ The TT class implements tensors in the TT format as …</p></div>
 <ul id="index">
 <li><h3><a href="#header-submodules">Sub-modules</a></h3>
 <ul>
+<li><code><a title="torchtt.cpp" href="cpp.html">torchtt.cpp</a></code></li>
 <li><code><a title="torchtt.errors" href="errors.html">torchtt.errors</a></code></li>
 <li><code><a title="torchtt.grad" href="grad.html">torchtt.grad</a></code></li>
 <li><code><a title="torchtt.interpolate" href="interpolate.html">torchtt.interpolate</a></code></li>
 <li><code><a title="torchtt.manifold" href="manifold.html">torchtt.manifold</a></code></li>
 <li><code><a title="torchtt.nn" href="nn.html">torchtt.nn</a></code></li>
 <li><code><a title="torchtt.solvers" href="solvers.html">torchtt.solvers</a></code></li>
-<li><code><a title="torchtt.torchtt" href="torchtt.html">torchtt.torchtt</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="two-column">
+<li><code><a title="torchtt.bilinear_form" href="#torchtt.bilinear_form">bilinear_form</a></code></li>
+<li><code><a title="torchtt.cat" href="#torchtt.cat">cat</a></code></li>
+<li><code><a title="torchtt.diag" href="#torchtt.diag">diag</a></code></li>
+<li><code><a title="torchtt.dot" href="#torchtt.dot">dot</a></code></li>
+<li><code><a title="torchtt.elementwise_divide" href="#torchtt.elementwise_divide">elementwise_divide</a></code></li>
+<li><code><a title="torchtt.eye" href="#torchtt.eye">eye</a></code></li>
+<li><code><a title="torchtt.kron" href="#torchtt.kron">kron</a></code></li>
+<li><code><a title="torchtt.load" href="#torchtt.load">load</a></code></li>
+<li><code><a title="torchtt.meshgrid" href="#torchtt.meshgrid">meshgrid</a></code></li>
+<li><code><a title="torchtt.numel" href="#torchtt.numel">numel</a></code></li>
+<li><code><a title="torchtt.ones" href="#torchtt.ones">ones</a></code></li>
+<li><code><a title="torchtt.pad" href="#torchtt.pad">pad</a></code></li>
+<li><code><a title="torchtt.permute" href="#torchtt.permute">permute</a></code></li>
+<li><code><a title="torchtt.randn" href="#torchtt.randn">randn</a></code></li>
+<li><code><a title="torchtt.random" href="#torchtt.random">random</a></code></li>
+<li><code><a title="torchtt.rank1TT" href="#torchtt.rank1TT">rank1TT</a></code></li>
+<li><code><a title="torchtt.reshape" href="#torchtt.reshape">reshape</a></code></li>
+<li><code><a title="torchtt.save" href="#torchtt.save">save</a></code></li>
+<li><code><a title="torchtt.shape_mn_to_tuple" href="#torchtt.shape_mn_to_tuple">shape_mn_to_tuple</a></code></li>
+<li><code><a title="torchtt.shape_tuple_to_mn" href="#torchtt.shape_tuple_to_mn">shape_tuple_to_mn</a></code></li>
+<li><code><a title="torchtt.zeros" href="#torchtt.zeros">zeros</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="torchtt.TT" href="#torchtt.TT">TT</a></code></h4>
+<ul class="two-column">
+<li><code><a title="torchtt.TT.M" href="#torchtt.TT.M">M</a></code></li>
+<li><code><a title="torchtt.TT.N" href="#torchtt.TT.N">N</a></code></li>
+<li><code><a title="torchtt.TT.R" href="#torchtt.TT.R">R</a></code></li>
+<li><code><a title="torchtt.TT.apply_mask" href="#torchtt.TT.apply_mask">apply_mask</a></code></li>
+<li><code><a title="torchtt.TT.clone" href="#torchtt.TT.clone">clone</a></code></li>
+<li><code><a title="torchtt.TT.conj" href="#torchtt.TT.conj">conj</a></code></li>
+<li><code><a title="torchtt.TT.cpu" href="#torchtt.TT.cpu">cpu</a></code></li>
+<li><code><a title="torchtt.TT.cuda" href="#torchtt.TT.cuda">cuda</a></code></li>
+<li><code><a title="torchtt.TT.detach" href="#torchtt.TT.detach">detach</a></code></li>
+<li><code><a title="torchtt.TT.fast_matvec" href="#torchtt.TT.fast_matvec">fast_matvec</a></code></li>
+<li><code><a title="torchtt.TT.full" href="#torchtt.TT.full">full</a></code></li>
+<li><code><a title="torchtt.TT.is_cuda" href="#torchtt.TT.is_cuda">is_cuda</a></code></li>
+<li><code><a title="torchtt.TT.is_ttm" href="#torchtt.TT.is_ttm">is_ttm</a></code></li>
+<li><code><a title="torchtt.TT.mprod" href="#torchtt.TT.mprod">mprod</a></code></li>
+<li><code><a title="torchtt.TT.norm" href="#torchtt.TT.norm">norm</a></code></li>
+<li><code><a title="torchtt.TT.numpy" href="#torchtt.TT.numpy">numpy</a></code></li>
+<li><code><a title="torchtt.TT.qtt_to_tens" href="#torchtt.TT.qtt_to_tens">qtt_to_tens</a></code></li>
+<li><code><a title="torchtt.TT.reduce_dims" href="#torchtt.TT.reduce_dims">reduce_dims</a></code></li>
+<li><code><a title="torchtt.TT.round" href="#torchtt.TT.round">round</a></code></li>
+<li><code><a title="torchtt.TT.sum" href="#torchtt.TT.sum">sum</a></code></li>
+<li><code><a title="torchtt.TT.t" href="#torchtt.TT.t">t</a></code></li>
+<li><code><a title="torchtt.TT.to" href="#torchtt.TT.to">to</a></code></li>
+<li><code><a title="torchtt.TT.to_qtt" href="#torchtt.TT.to_qtt">to_qtt</a></code></li>
+<li><code><a title="torchtt.TT.to_ttm" href="#torchtt.TT.to_ttm">to_ttm</a></code></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

@@ -1,7 +1,12 @@
+
+<p align="center">
+<img src="https://github.com/ion-g-ion/torchTT/blob/main/logo.png?raw=true" width="400px" >
+</p>
+
 # torchTT
 Tensor-Train decomposition in `pytorch`
 
-Tensor-Train decomposition package written only in Python on top of `pytorch`. Supports GPU acceleration and automatic differentiation.
+Tensor-Train decomposition package written in Python on top of `pytorch`. Supports GPU acceleration and automatic differentiation.
 It also contains routines for solving linear systems in the TT format and performing adaptive cross approximation  (the AMEN solver/cross interpolation is inspired form the [MATLAB TT-Toolbox](https://github.com/oseledets/TT-Toolbox)).
 Some routines are implemented in C++ for an increased execution speed.
 
@@ -29,7 +34,7 @@ One can also clone the repository and manually install the package:
 
 ```
 git clone https://github.com/ion-g-ion/torchTT
-cd torchtt
+cd torchTT
 python setup.py install
 ``` 
 
@@ -40,7 +45,7 @@ python setup.py install
 ## Components
 
 The main modules/submodules that can be accessed after importing `torchtt` are briefly desctibed in the following table.
-Detailed description can be found [here](https://ion-g-ion.github.io/torchTT/torchtt/index.html).
+Detailed description can be found [here](https://ion-g-ion.github.io/torchTT/index.html).
 
 | Component | Description |
 | --- | --- |
@@ -61,7 +66,7 @@ python -m unittest discover tests/
 
 
 ## Documentation and examples
-The documentation ca be found [here](https://ion-g-ion.github.io/torchTT/torchtt/index.html).
+The documentation ca be found [here](https://ion-g-ion.github.io/torchTT/index.html).
 Following example scripts (as well as python notebooks) are also provied provided as part of the documentation:
 
  * [basic_tutorial.py](examples/basic_tutorial.py) / [basic_tutorial.ipynp](examples/basic_tutorial.ipynb): This contains a basic tutorial on decomposing full tensors in the TT format as well as performing rank rounding, slicing ([Try on Google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/basic_tutorial.ipynb)). 
@@ -74,10 +79,16 @@ Following example scripts (as well as python notebooks) are also provied provide
  * [basic_nn.py](examples/basic_nn.py) / [basic_nn.ipynb](examples/basic_nn.ipynb): This provides an example on how to use the TT neural network layers ([Try on Google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/basic_nn.ipynb)). 
  * [mnist_nn.py](examples/mnist_nn.py) / [mnist_nn.ipynb](examples/mnist_nn.ipynb): Example of TT layers used for image classification ([Try on Google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/mnist_nn.ipynb)). 
  
- The documentation is generated using `pdoc3` with:
+ The documentation is generated using `shpinx` with:
 
  ```
- pdoc3 --html torchtt -o docs/ --config latex_math=True --force
+ make html
+ ```
+
+ after installing the packages
+
+ ```
+ pip install sphinx sphinx_rtd_theme
  ```
 
 ## Author 

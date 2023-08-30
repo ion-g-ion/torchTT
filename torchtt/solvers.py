@@ -87,6 +87,10 @@ class _LinearOp():
             J = tn.reshape(J, [-1,J.shape[1]*J.shape[2], J.shape[3]*J.shape[4]])
             self.J = tn.reshape(tn.linalg.inv(J), sh)
             
+            if shape[0]*shape[1]*shape[2] > 2*1e4:
+                self.contraction = oe.contract_expression('lsr,smnS,LSR,rab,rnRab->lmL', Phi_left.shape, coreA.shape, Phi_right.shape, shape, self.J.shape)
+            else:
+                self.contraction = None
         # tme = datetime.datetime.now() - tme 
         # print('contr   ',tme)
     def apply_prec(self,x):
@@ -153,21 +157,23 @@ class _LinearOp():
 
 
 
-def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = 'res', local_solver = 1, local_iterations = 40, resets = 2, verbose = False, preconditioner = None, use_cpp = True):
+def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 32768, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = 'res', local_solver = 1, local_iterations = 40, resets = 2, verbose = False, preconditioner = None, use_cpp = True, use_single_precision = False):
     """
-    Solve a multilinear system \(\\mathsf{Ax} = \\mathsf{b}\) in the Tensor Train format.
+    Solve a multilinear system :math:`\\mathsf{Ax} = \\mathsf{b}` in the Tensor Train format.
     
-    This method implements the algorithm from [Sergey V Dolgov, Dmitry V Savostyanov, Alternating minimal energy methods for linear systems in higher dimensions](https://epubs.siam.org/doi/abs/10.1137/140953289).
+    This method implements the algorithm from `Sergey V Dolgov, Dmitry V Savostyanov, Alternating minimal energy methods for linear systems in higher dimensions <https://epubs.siam.org/doi/abs/10.1137/140953289>`_.
 
     Example:
-        ```
-        import torchtt
-        A = torchtt.random([(4,4),(5,5),(6,6)],[1,2,3,1]) # create random matrix
-        x = torchtt.random([4,5,6],[1,2,3,1]) # invent a random solution
-        b = A @ x # compute the rhs
-        xx = torchtt.solvers.amen_solve(A,b) # solve
-        print((xx-x).norm()/x.norm()) # error
-        ```
+        
+        .. code-block:: python
+        
+            import torchtt
+            A = torchtt.random([(4,4),(5,5),(6,6)],[1,2,3,1]) # create random matrix
+            x = torchtt.random([4,5,6],[1,2,3,1]) # invent a random solution
+            b = A @ x # compute the rhs
+            xx = torchtt.solvers.amen_solve(A,b) # solve
+            print((xx-x).norm()/x.norm()) # error
+        
     
     Args:
         A (torchtt.TT): the system matrix in TT.
@@ -175,7 +181,7 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 5
         nswp (int, optional): number of sweeps. Defaults to 22.
         x0 (torchtt.TT, optional): initial guess. In None is provided the initial guess is a ones tensor. Defaults to None.
         eps (float, optional): relative residual. Defaults to 1e-10.
-        rmax (int, optional): maximum rank. Defaults to 100.
+        rmax (int, optional): maximum rank. Defaults to 100000.
         max_full (int, optional): the maximum size of the core until direct solver is used for the local subproblem. Defaults to 500.
         kickrank (int, optional): rank enrichment. Defaults to 4.
         kick2 (int, optional): [description]. Defaults to 0.
@@ -225,10 +231,10 @@ def amen_solve(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 5
         cores = torchttcpp.amen_solve(A.cores, b.cores, x_cores, b.N, A.R, b.R, x_R, nswp, eps, rmax, max_full, kickrank, kick2, local_iterations, resets, verbose, prec)
         return torchtt.TT(list(cores))
     else:
-        return _amen_solve_python(A, b, nswp, x0, eps,rmax, max_full, kickrank, kick2, trunc_norm, local_solver, local_iterations, resets, verbose, preconditioner)
+        return _amen_solve_python(A, b, nswp, x0, eps,rmax, max_full, kickrank, kick2, trunc_norm, local_solver, local_iterations, resets, verbose, preconditioner, use_single_precision)
 
 
-def _amen_solve_python(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = 'res', local_solver = 1, local_iterations = 40, resets = 2, verbose = False, preconditioner = None):
+def _amen_solve_python(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_full = 500, kickrank = 4, kick2 = 0, trunc_norm = 'res', local_solver = 1, local_iterations = 40, resets = 2, verbose = False, preconditioner = None, use_single_precision = False):
     if verbose: time_total = datetime.datetime.now()
     
     dtype = A.cores[0].dtype 
@@ -385,30 +391,56 @@ def _amen_solve_python(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_
                     print('\t\tChoosing iterative solver %s (local size %d)....'%('GMRES' if local_solver==1 else 'BiCGSTAB_reset', rx[k]*N[k]*rx[k+1])) 
                     time_local = datetime.datetime.now()
                 shape_now = [rx[k],N[k],rx[k+1]]
-                Op = _LinearOp(Phis[k],Phis[k+1],A.cores[k],shape_now, preconditioner)
                 
-                # solution_now, flag, nit, res_new = BiCGSTAB_reset(Op, rhs,previous_solution[:], eps_local, local_iterations) 
-                eps_local = real_tol * norm_rhs
-                drhs = Op.matvec(previous_solution, False)
-                drhs = rhs-drhs
-                eps_local = eps_local / tn.linalg.norm(drhs)
-                if local_solver == 1: 
-                    solution_now, flag, nit = gmres_restart(Op, drhs, previous_solution*0, rhs.shape[0], local_iterations+1, eps_local, resets)
-                elif local_solver == 2:
-                    solution_now, flag, nit, _ = BiCGSTAB_reset(Op, drhs, previous_solution*0, eps_local, local_iterations)
-                else:
-                    raise InvalidArguments('Solver not implemented.')
+                if use_single_precision:
+                    Op = _LinearOp(Phis[k].to(tn.float32),Phis[k+1].to(tn.float32),A.cores[k].to(tn.float32),shape_now, preconditioner)
                     
-                
-                if preconditioner != None:
-                    solution_now = Op.apply_prec(tn.reshape(solution_now,shape_now))
-                    solution_now = tn.reshape(solution_now,[-1,1])
-                
-                solution_now = previous_solution + solution_now
-                res_old = tn.linalg.norm(Op.matvec(previous_solution, False)-rhs)/norm_rhs
-                res_new = tn.linalg.norm(Op.matvec(solution_now, False)-rhs)/norm_rhs
+                    # solution_now, flag, nit, res_new = BiCGSTAB_reset(Op, rhs,previous_solution[:], eps_local, local_iterations) 
+                    eps_local = real_tol * norm_rhs
+                    drhs = Op.matvec(previous_solution.to(tn.float32), False)
+                    drhs = rhs.to(tn.float32)-drhs
+                    eps_local = eps_local / tn.linalg.norm(drhs)
+                    if local_solver == 1: 
+                        solution_now, flag, nit = gmres_restart(Op, drhs, previous_solution.to(tn.float32)*0, rhs.shape[0], local_iterations+1, eps_local, resets)
+                    elif local_solver == 2:
+                        solution_now, flag, nit, _ = BiCGSTAB_reset(Op, drhs, previous_solution.to(tn.float32)*0, eps_local, local_iterations)
+                    else:
+                        raise InvalidArguments('Solver not implemented.')
+                        
+                    
+                    if preconditioner != None:
+                        solution_now = Op.apply_prec(tn.reshape(solution_now,shape_now))
+                        solution_now = tn.reshape(solution_now,[-1,1])
+                    
+                    solution_now = previous_solution + solution_now.to(dtype)
+                    res_old = tn.linalg.norm(Op.matvec(previous_solution.to(tn.float32), False).to(dtype)-rhs)/norm_rhs
+                    res_new = tn.linalg.norm(Op.matvec(solution_now.to(tn.float32), False).to(dtype)-rhs)/norm_rhs
+                else:
+                    Op = _LinearOp(Phis[k],Phis[k+1],A.cores[k],shape_now, preconditioner)
+                    
+                    # solution_now, flag, nit, res_new = BiCGSTAB_reset(Op, rhs,previous_solution[:], eps_local, local_iterations) 
+                    eps_local = real_tol * norm_rhs
+                    drhs = Op.matvec(previous_solution, False)
+                    drhs = rhs-drhs
+                    eps_local = eps_local / tn.linalg.norm(drhs)
+                    if local_solver == 1: 
+                        solution_now, flag, nit = gmres_restart(Op, drhs, previous_solution*0, rhs.shape[0], local_iterations+1, eps_local, resets)
+                    elif local_solver == 2:
+                        solution_now, flag, nit, _ = BiCGSTAB_reset(Op, drhs, previous_solution*0, eps_local, local_iterations)
+                    else:
+                        raise InvalidArguments('Solver not implemented.')
+                        
+                    
+                    if preconditioner != None:
+                        solution_now = Op.apply_prec(tn.reshape(solution_now,shape_now))
+                        solution_now = tn.reshape(solution_now,[-1,1])
+                    
+                    solution_now = previous_solution + solution_now
+                    res_old = tn.linalg.norm(Op.matvec(previous_solution, False)-rhs)/norm_rhs
+                    res_new = tn.linalg.norm(Op.matvec(solution_now, False)-rhs)/norm_rhs
+                    
                 if verbose:
-                    print('\t\tFinished with flag %d after %d iterations with relres %g (from %g)'%(flag,nit,res_new,eps_local)) 
+                    print('\t\tFinished with flag %d after %d iterations with relres %g (from %g)'%(flag,nit,res_new, real_tol * norm_rhs)) 
                     time_local = datetime.datetime.now() - time_local
                     print('\t\tTime needed ',time_local)
             # residual damp check
@@ -442,7 +474,7 @@ def _amen_solve_python(A, b, nswp = 22, x0 = None, eps = 1e-10,rmax = 1024, max_
                             res = tn.linalg.norm(B@tn.reshape(solution,[-1,1])-rhs)/norm_rhs
                         else:
                             # res = tn.linalg.norm(tn.reshape(local_product(Phis[k+1],Phis[k],A.cores[k],tn.reshape(solution,[rx[k],N[k],rx[k+1]]),solution_now.shape),[-1,1]) - rhs)/norm_rhs
-                            res = tn.linalg.norm(Op.matvec(solution)-rhs)/norm_rhs
+                            res = tn.linalg.norm(Op.matvec(solution.to(tn.float32 if use_single_precision else dtype)).to(dtype)-rhs)/norm_rhs
                         if res > max(real_tol*damp,res_new):
                             break
                     r += 1

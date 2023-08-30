@@ -9,7 +9,11 @@ It also has linear solvers in TT and cross approximation as well as automatic di
 
 """
 
-from .torchtt import TT, eye, zeros, kron, ones, random, randn, reshape, meshgrid , dot, elementwise_divide, numel, rank1TT, bilinear_form, diag, permute, load, save, cat 
+
+from ._tt_base import TT 
+from ._extras import eye, zeros, kron, ones, random, randn, reshape, meshgrid , dot, elementwise_divide, numel, rank1TT, bilinear_form, diag, permute, load, save, cat, pad, shape_mn_to_tuple, shape_tuple_to_mn 
+# from .torchtt import TT, eye, zeros, kron, ones, random, randn, reshape, meshgrid , dot, elementwise_divide, numel, rank1TT, bilinear_form, diag, permute, load, save, cat, pad 
+from ._dmrg import dmrg_hadamard 
 from ._amen import amen_mm, amen_mv
 from . import solvers
 from . import grad
@@ -17,6 +21,7 @@ from . import grad
 from . import manifold
 from . import interpolate
 from . import nn
+from . import cpp
 # from .errors import *
 
 try:
@@ -38,4 +43,4 @@ def cpp_enabled():
     """
     return _flag_use_cpp
 
-__all__ = ['TT', 'eye', 'zeros', 'kron', 'ones', 'random', 'randn', 'reshape', 'meshgrid' , 'dot', 'elementwise_divide', 'numel', 'rank1TT', 'bilinear_form', 'diag', 'permute', 'load', 'save', 'cat', 'amen_mm', 'amen_mv', 'cpp_available']
+__all__ = ['TT', 'eye', 'zeros', 'kron', 'ones', 'random', 'randn', 'reshape', 'meshgrid' , 'dot', 'elementwise_divide', 'numel', 'rank1TT', 'bilinear_form', 'diag', 'permute', 'load', 'save', 'cat', 'amen_mm', 'amen_mv', 'cpp_available', 'pad', 'shape_mn_to_tuple', 'shape_tuple_to_mn', 'dmrg_hadamard']

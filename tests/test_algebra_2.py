@@ -15,6 +15,27 @@ def err_rel(t, ref): return tn.linalg.norm(t-ref).numpy() / \
 class TestLinalgAdvanced(unittest.TestCase):
 
     basic_dtype = tn.float64
+    
+    def test_dmrg_hadamard(self):
+        """
+        Test hadamard product using DMRG.
+        """
+        n = 32
+        z = tntt.random([n]*8,[1]+7*[3]+[1], dtype = tn.float64)
+        zm = z + z
+        
+        x = tntt.random([n]*8,[1]+7*[5]+[1], dtype = tn.float64)
+        xm = x + x
+        xm = xm + xm
+        
+        # conventional method 
+        y = 8 * (z * x).round(1e-12)
+        
+        yf = tntt.dmrg_hadamard(zm, xm, eps = 1e-12, verb = False)
+        
+        rel_error = (y-yf).norm().numpy()/y.norm().numpy()
+        
+        self.assertLess(rel_error,1e-12,"DMRG elementwise multiplication.")
 
     def test_dmrg_matvec(self):
         """
@@ -35,9 +56,27 @@ class TestLinalgAdvanced(unittest.TestCase):
         yf = Am.fast_matvec(xm)
 
         rel_error = (y-yf).norm().numpy()/y.norm().numpy()
+        
+        self.assertLess(rel_error,1e-12,"DMRG matrix vector problem: square matrix.")
+        
+        n = 32
+        A = tntt.random([(n+2,n)]*8,[1]+7*[3]+[1], dtype = tn.complex128)
+        Am = A + A 
+        
+        x = tntt.random([n]*8,[1]+7*[5]+[1], dtype = tn.complex128)
+        xm = x + x
+        xm = xm + xm
+ 
+        # conventional method 
+        y = 8 * (A @ x).round(1e-12)
 
-        self.assertLess(rel_error, 1e-12, "DMRG matrix vector problem.")
+        # dmrg matvec
+        yf = Am.fast_matvec(xm)
 
+        rel_error = (y-yf).norm().numpy()/y.norm().numpy()
+        
+        self.assertLess(rel_error,1e-12,"DMRG matrix vector problem: not square matrix.")
+      
     def test_amen_division(self):
         """
         Test the division between tensors performed with AMEN optimization.
