@@ -10,6 +10,7 @@ from torchtt._decomposition import rank_chop, QR, SVD
 import datetime
 import opt_einsum as oe
 
+
 try:
     import torchttcpp 
     _flag_use_cpp = True
@@ -62,32 +63,39 @@ def dmrg_matvec_python(A, x, y0 = None, nswp = 20, eps = 1e-12, rmax = 32768, ki
     """
     if y0 == None:
         y0 = torchtt.random(A.M,2, dtype=A.cores[0].dtype, device = A.cores[0].device)
+
     y_cores = y0.cores
     Ry = y0.R.copy()
-    
+
     d = len(x.N)
-    if isinstance(rmax,int):
+    if isinstance(rmax, int):
         rmax = [1] + [rmax]*(d-1) + [1]
-        
+
     N = x.N
     M = A.M
     r_enlarge = [2]*d
-    
-    Phis = [tn.ones((1,1,1),dtype=A.cores[0].dtype, device = A.cores[0].device)] + [None]*(d-1) + [tn.ones((1,1,1),dtype=A.cores[0].dtype, device = A.cores[0].device)]
+
+    Phis = [tn.ones((1, 1, 1), dtype=A.cores[0].dtype, device=A.cores[0].device)] + \
+        [None]*(d-1) + [tn.ones((1, 1, 1),
+                                dtype=A.cores[0].dtype, device=A.cores[0].device)]
     delta_cores = [1.0]*(d-1)
     delta_cores_prev = [1.0]*(d-1)
     last = False
-    
+
     for i in range(nswp):
-        if verb: print('sweep ',i)
-        
+        if verb:
+            print('sweep ', i)
+
         # TME = datetime.datetime.now()
-        for k in range(d-1,0,-1):
+        for k in range(d-1, 0, -1):
             core = y_cores[k]
+
             core = tn.reshape(tn.permute(core,[1,2,0]),[M[k]*Ry[k+1],Ry[k]])
+
             Q, R = QR(core)
-            rnew = min([core.shape[0],core.shape[1]])
+            rnew = min([core.shape[0], core.shape[1]])
             # update current core
+
             y_cores[k] = (tn.reshape(Q.T,[rnew,M[k],-1]))
             Ry[k] = rnew
             # and the k-1 one
@@ -100,10 +108,11 @@ def dmrg_matvec_python(A, x, y0 = None, nswp = 20, eps = 1e-12, rmax = 32768, ki
             Phi = tn.einsum('ijkl,mjk->mil',Phi,y_cores[k]) # shape  rk-1 x rAk-1 x rxk-1
             
             # Phi = tn.einsum('YAX,amnA,ymY,xnX->yax', Phis[k+1], tn.conj(A.cores[k]), y_cores[k], x.cores[k])
+
             Phis[k] = Phi
-        # TME = datetime.datetime.now()-TME    
+        # TME = datetime.datetime.now()-TME
         # print('first ',TME.total_seconds())
-        
+
         # DMRG
         for k in range(d-1):
               if verb: print('\tcore ',k)
@@ -188,13 +197,14 @@ def dmrg_matvec_python(A, x, y0 = None, nswp = 20, eps = 1e-12, rmax = 32768, ki
         
         if last : break
         
+
         if max(delta_cores) < eps:
             last = True
 
         delta_cores_prev = delta_cores.copy()
-        
-        
+
     return torchtt.TT(y_cores)
+
               
 
 def dmrg_hadamard(x, y, z0 = None, nswp = 20, eps = 1e-12, rmax = 32768, kickrank = 4, verb = False, use_cpp = True):
@@ -375,3 +385,4 @@ def dmrg_hadamard_python(z, x, y0 = None, nswp = 20, eps = 1e-12, rmax = 32768, 
         
     return torchtt.TT(y_cores)
               
+
