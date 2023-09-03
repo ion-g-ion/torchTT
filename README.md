@@ -61,7 +61,7 @@ Detailed description can be found [here](https://ion-g-ion.github.io/torchTT/ind
 The directory [tests/](tests/) from the root folder contains all the `unittests`. To run them use the command:
 
 ```
-python -m unittest discover tests/
+pytest tests/
 ```
 
 

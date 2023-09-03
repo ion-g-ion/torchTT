@@ -44,5 +44,5 @@ The directory `tests/ <tests/>`_ from the root folder contains all the `unittest
 
 ::
 
-    python -m unittest discover tests/
+    pytest tests/
 

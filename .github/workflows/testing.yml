@@ -18,4 +18,4 @@ jobs:
       - name: Install torchTT
         run: pip install . 
       - name: Run Test
-        run: python -m unittest discover tests/
+        run: python -m pytest tests/
