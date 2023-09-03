@@ -29,7 +29,7 @@ if os_name == 'Linux' or os_name == 'Darwin':
     author_email='ion.ion.gabriel@gmail.com',
     license='MIT',
     packages=['torchtt'],
-    install_requires=['numpy>=1.18','torch>=1.7','opt_einsum'],
+    install_requires=['pytest', 'numpy>=1.18','torch>=1.7','opt_einsum'],
     ext_modules=[
         CppExtension('torchttcpp', ['cpp/cpp_ext.cpp'], extra_compile_args=['-lblas', '-llapack', '-std=c++14', '-Wno-c++11-narrowing', '-g', '-w', '-O3']),
     ],

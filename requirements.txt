@@ -1,3 +1,4 @@
 torch>=1.7.0
 numpy>=1.18
 opt_einsum
+pytest
