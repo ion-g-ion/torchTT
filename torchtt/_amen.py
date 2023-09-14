@@ -33,15 +33,15 @@ def cpp_enabled():
     return _flag_use_cpp
 
 
-def _local_AB(Phi_left, Phi_right, coreA, coreB):
+def _local_AB(Phi_left, Phi_right, coreA, coreB, bandA = -1, bandB = -1):
     """
     PErfomrs the contraction for the right side of amen mm
 
     Args:
-        Phi_left (torch.tensor): _description_
-        Phi_right (torch.tensor): _description_
-        coreA (torch.tensor): _description_
-        coreB (torch.tensor): _description_
+        Phi_left (torch.tensor): left phi
+        Phi_right (torch.tensor): right phi
+        coreA (torch.tensor): core of A
+        coreB (torch.tensor): core of B
 
     Returns:
         torch.tensor: _description_
