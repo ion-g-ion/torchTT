@@ -23,6 +23,6 @@ jobs:
       - name: Show installed
         run: pip list
       - name: Install torchtt
-        run: pip install --user ./
+        run: python setup.py install
       - name: Run Test
         run: python -m pytest tests/
