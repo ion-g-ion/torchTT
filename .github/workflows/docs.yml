@@ -25,7 +25,7 @@ jobs:
 
       # ADJUST THIS: install all dependencies 
       - run: pip install torch
-      - run: pip install -e .
+      - run: python setup.py install
       - run: pip install sphinx sphinx_rtd_theme
       # ADJUST THIS: build your documentation into docs/.
       # We use a custom build script for pdoc itself, ideally you just run `pdoc -o docs/ ...` here.
