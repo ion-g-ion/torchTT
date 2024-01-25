@@ -1,11 +1,11 @@
 name: Continuous Integration
 on: [push]
 jobs:
-  build:
+  buildandtest:
     strategy:
       matrix:
         python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
-        os: [ubuntu-latest] #, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -14,13 +14,15 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
  #         architecture: x64
-      - name: Install pytorch
-        run: pip install torch torchvision torchaudio
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      - name: Install torchTT
-        run: pip install . 
+      - name: Install pytorch
+        run: pip install torch torchvision torchaudio
+      - name: Show installed
+        run: pip list
+      - name: Install torchtt
+        run: python setup.py install
       - name: Run Test
         run: python -m pytest tests/
