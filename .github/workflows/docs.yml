@@ -18,12 +18,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
-      # ADJUST THIS: install all dependencies (including pdoc)
+      # ADJUST THIS: install all dependencies 
       - run: pip install torch
       - run: pip install -e .
       - run: pip install sphinx sphinx_rtd_theme
