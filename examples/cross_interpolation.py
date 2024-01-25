@@ -4,7 +4,7 @@
 Using the `torchtt.TT` constructor, a TT decomposition of a given tensor can be obtained. 
 However, in the cases where the entries of the tensor are computed using a given function, building full tensors becomes unfeasible. 
 It is possible to construct a TT decomposition using only a part of the entries of the full tensor. 
-This is called the cress approximation method.
+This is called the cross approximation method.
 """
 
 #%% Imports
