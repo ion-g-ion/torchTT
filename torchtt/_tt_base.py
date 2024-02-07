@@ -83,6 +83,8 @@ class TT():
         This class implements basic operators such as `+,-,*,/,@,**` (add, subtract, elementwise multiplication, elementwise division, matrix vector product and Kronecker product) between TT instances.
         The `examples\` folder server as a tutorial for all the possibilities of the toolbox.
 
+        Be aware of the dtype of the inputs since it can affect the accuracy. Recommended is to work with float64.
+        
         Examples:
 
             .. code-block:: python

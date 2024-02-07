@@ -14,7 +14,7 @@ import torchtt as tntt
 # We now create a 4d `torch.tensor` which we will use later
 tens_full = tn.reshape(tn.arange(32*16*8*10, dtype = tn.float64),[32,16,8,10])
 
-# The TT approximation of a given tensor is $\mathsf{x}_{i_1i_2...i_d} \approx \sum\limits_{r_1,...,r_{d-1}=1}^{R_1,...,R_{d-1}} \mathsf{g}^{(1)}_{1i_1r_1}\cdots\mathsf{g}^{(d)}_{r_{d-1}i_d1} $. Using the constructor `torchtt.TT()` a full tensor can be decomposed in the TT format.
+# The TT approximation of a given tensor is $\mathsf{x}_{i_1i_2...i_d} \approx \sum\limits_{r_1,...,r_{d-1}=1}^{R_1,...,R_{d-1}} \mathsf{g}^{(1)}_{1i_1r_1}\cdots\mathsf{g}^{(d)}_{r_{d-1}i_d1} $. Using the constructor `torchtt.TT()` a full tensor can be decomposed in the TT format. The `dtype` of the input will be passed to the TT cores.
 tens_tt = tntt.TT(tens_full)
 
 # The newly instantiated object contains the cores as a list, the mode sizes and the rank.
