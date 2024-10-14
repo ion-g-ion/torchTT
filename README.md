@@ -66,7 +66,7 @@ pytest tests/
 
 
 ## Documentation and examples
-The documentation ca be found [here](https://ion-g-ion.github.io/torchTT/index.html).
+The documentation can be found [here](https://ion-g-ion.github.io/torchTT/index.html).
 Following example scripts (as well as python notebooks) are also provied provided as part of the documentation:
 
  * [basic_tutorial.py](examples/basic_tutorial.py) / [basic_tutorial.ipynp](examples/basic_tutorial.ipynb): This contains a basic tutorial on decomposing full tensors in the TT format as well as performing rank rounding, slicing ([Try on Google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/basic_tutorial.ipynb)). 
