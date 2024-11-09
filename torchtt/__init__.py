@@ -10,11 +10,13 @@ It also has linear solvers in TT and cross approximation as well as automatic di
 """
 
 
-from ._tt_base import TT 
-from ._extras import eye, zeros, kron, ones, random, randn, reshape, meshgrid , dot, elementwise_divide, numel, rank1TT, bilinear_form, diag, permute, load, save, cat, pad, shape_mn_to_tuple, shape_tuple_to_mn 
-# from .torchtt import TT, eye, zeros, kron, ones, random, randn, reshape, meshgrid , dot, elementwise_divide, numel, rank1TT, bilinear_form, diag, permute, load, save, cat, pad 
-from ._dmrg import dmrg_hadamard 
+from ._tt_base import TT
+from ._extras import eye, zeros, kron, ones, random, randn, reshape, meshgrid, dot, elementwise_divide, numel, rank1TT, bilinear_form, diag, permute, load, save, cat, pad, shape_mn_to_tuple, shape_tuple_to_mn
+# from .torchtt import TT, eye, zeros, kron, ones, random, randn, reshape, meshgrid , dot, elementwise_divide, numel, rank1TT, bilinear_form, diag, permute, load, save, cat, pad
+from ._dmrg import dmrg_hadamard
+from ._fast_mult import fast_hadammard, fast_mm, fast_mv
 from ._amen import amen_mm, amen_mv
+from ._custom_timer import Timer
 from . import solvers
 from . import grad
 # from .grad import grad, watch, unwatch
@@ -43,4 +45,7 @@ def cpp_enabled():
     """
     return _flag_use_cpp
 
-__all__ = ['TT', 'eye', 'zeros', 'kron', 'ones', 'random', 'randn', 'reshape', 'meshgrid' , 'dot', 'elementwise_divide', 'numel', 'rank1TT', 'bilinear_form', 'diag', 'permute', 'load', 'save', 'cat', 'amen_mm', 'amen_mv', 'cpp_available', 'pad', 'shape_mn_to_tuple', 'shape_tuple_to_mn', 'dmrg_hadamard']
+
+__all__ = ['TT', 'eye', 'zeros', 'kron', 'ones', 'random', 'randn', 'reshape', 'meshgrid', 'dot', 'elementwise_divide', 'numel', 'rank1TT', 'bilinear_form',
+           'diag', 'permute', 'load', 'save', 'cat', 'amen_mm', 'amen_mv', 'cpp_available', 'pad', 'shape_mn_to_tuple', 'shape_tuple_to_mn', 'dmrg_hadamard']
+__all__ += ["fast_hadamard", "fast_mv", "fast_mm", "Timer"]

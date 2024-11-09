@@ -43,6 +43,16 @@ print('Time DMRG    ', tme)
 # Check if the error is the same (debugging purpose).
 print('Relative error ',(y-yf).norm().numpy()/y.norm().numpy())
 
+# A second routine is the `torchtt.fast_mv()`. The method is described in `https://arxiv.org/pdf/2410.19747`. This works well for tensors in QTT.
+A = tntt.random([(2,2)]*8,[1]+7*[6]+[1]) # random array
+x = tntt.random([2]*8,[1]+7*[5]+[1]) # random tensor 
+for _ in range(8): A+=A
+for _ in range(8): x+=x
+
+tme = datetime.datetime.now()
+yf2 = tntt.fast_mv(A, x)
+tme = datetime.datetime.now() - tme 
+print('Time fast 2  ', tme)
 
 #%% Elementwise division in the TT format
 # One other basic linear algebra function that cannot be done without optimization is the elementwise division of two tensors in the TT format.
