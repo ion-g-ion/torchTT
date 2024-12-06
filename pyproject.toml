@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=61", "setuptools-scm>=8.0", "wheel", "torch>=1.7", "numpy>=1.18", "opt_einsum", "ninja", "scipy>=0.16"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.package-data]
+torchtt = ["cpp/*"]
+
+[tool.setuptools]
+py-modules = []
+
+[project]
+name = "torchTT"
+version = "0.1"
+description = "Tensor-Train decomposition in pytorch."
+readme = "README.md"
+requires-python = ">=3.7"
+dependencies = [
+    "torch>=1.7", 
+    "numpy>=1.18", 
+    "opt_einsum", 
+    "scipy>=0.16",
+    "ninja"
+]
+license = {file = "LICENSE"}
+authors = [
+    { name = "Ion Gabriel Ion", email = "ion.ion.gabriel@gmail.com" }
+]
+keywords = ["pytorch", "tensor-train decomposition"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = [
+    "tests",
+]
