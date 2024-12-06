@@ -21,8 +21,7 @@ print()
 print(logo_ascii)
 print()
 
-def python_install():
-    
+def python_install(): 
     import warnings
     warnings.warn("\x1B[33m\nC++ implementation not available. Using pure Python.\n\033[0m")
     
