@@ -25,8 +25,13 @@ You can install the package using the `pip` command:
 
 :: 
 
-    pip install git+https://github.com/ion-g-ion/torchTT
+    pip install torchTT
 
+The latest github version can be installed using:
+
+::
+
+    pip install git+https://github.com/ion-g-ion/torchTT
 
 One can also clone the repository and manually install the package: 
 

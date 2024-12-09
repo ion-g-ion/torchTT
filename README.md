@@ -27,6 +27,12 @@ The GPU (if available) version of pytorch is recommended to be installed. Read t
 You can install the package using the `pip` command:
 
 ```
+pip install torchTT
+```
+
+The latest github version can be installed using:
+
+```
 pip install git+https://github.com/ion-g-ion/torchTT
 ```
 
