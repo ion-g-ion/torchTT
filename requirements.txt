@@ -1,4 +1,5 @@
-torch>=1.7.0
+torch>=1.7 
 numpy>=1.18
 opt_einsum
-pytest
+scipy>=0.16
+ninja

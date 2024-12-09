@@ -5,12 +5,12 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.package-data]
 torchtt = ["cpp/*"]
 
-[tool.setuptools]
-py-modules = []
+[tool.setuptools.packages]
+find = {}  # Scan the project directory with the default parameters
 
 [project]
 name = "torchTT"
-version = "0.1"
+version = "0.3"
 description = "Tensor-Train decomposition in pytorch."
 readme = "README.md"
 requires-python = ">=3.7"
