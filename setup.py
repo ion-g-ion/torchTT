@@ -47,11 +47,12 @@ if os_name in ['Linux', 'Darwin']:
                     'torchttcpp',
                     ['cpp/cpp_ext.cpp'],
                     include_dirs=["cpp"],
+                    libraries=["blas", "lapack", "stdc++"],
                     extra_compile_args=[
                         '-std=c++17',
-                        '-Wno-c++11-narrowing', '-g', '-w', '-O3'
+                        '-Wno-c++11-narrowing', '-w', '-O3',
                     ],
-                    is_python_module=True  # Ensures linking with PyTorch's C++ libraries
+                    extra_link_args=['-Wl,--no-as-needed', '-lm'],
                 )
             ],
         )
