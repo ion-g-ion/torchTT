@@ -1,7 +1,7 @@
 #include "define.h"
 
 
-
+/*
 template <typename T> 
 class AMENsolveMV_cpu{
 
@@ -126,7 +126,7 @@ public:
     }
 
 }; 
-
+*/
 template <typename T> class AMENsolveMV{
 
 private:

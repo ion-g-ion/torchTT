@@ -5,8 +5,7 @@ on:
   push:
     branches:
       - main
-    # Alternative: only build for tags.
-    tags:
+    tags-ignore:
       - '*'
 
 # security: restrict permissions for CI jobs.

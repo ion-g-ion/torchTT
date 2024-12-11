@@ -47,8 +47,9 @@ if os_name in ['Linux', 'Darwin']:
                     'torchttcpp',
                     ['cpp/cpp_ext.cpp'],
                     include_dirs=["cpp"],
-                    libraries=["blas", "lapack", "stdc++"],
+                    #libraries=["blas", "lapack", "stdc++"],
                     extra_compile_args=[
+                        #'-lblas', '-llapack',
                         '-std=c++17',
                         '-Wno-c++11-narrowing', '-w', '-O3',
                     ],
@@ -59,7 +60,7 @@ if os_name in ['Linux', 'Darwin']:
     except Exception as e:
         warn("\x1B[33m\nC++ implementation not available. Falling back to pure Python.\n\033[0m")
         print(f"Error: {e}")
-        #setup()
+        setup()
 else:
     warn("\x1B[33m\nC++ implementation not supported on this OS. Falling back to pure Python.\n\033[0m")
-    #setup()
+    setup()

@@ -160,7 +160,7 @@ void gmres(at::Tensor &solution, int &flag, int &nit, AMENsolveMV<T> &Op, at::Te
     }
 }
 
-
+/*
 void gmres_double_cpu(double *solution, 
                       int &flag, 
                       int &nit, 
@@ -307,4 +307,4 @@ void gmres_double_cpu(double *solution,
     delete [] work1;
     delete [] H;
     delete [] piv_tmp;
-}
+}*/
