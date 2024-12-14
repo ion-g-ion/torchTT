@@ -21,6 +21,17 @@ def test_dmrg_cross_interpolation():
 
     assert err_rel(x.full(), x_ref) < 1e-6
 
+def test_dmrg_cross_interpolation_nonvect():
+    """
+    Test the DMRG cross interpolation method for non vectorized function.
+    """
+    func1 = lambda I,J,K,L: 1 / (6 + I + J + K + L)
+    N = [20] * 4
+    x = tntt.interpolate.dmrg_cross(func1, N, eps=1e-7, eval_vect=False)
+    Is = tntt.meshgrid([tn.arange(0, n, dtype=tn.float64) for n in N])
+    x_ref = 1 / (2 + Is[0].full() + Is[1].full() + Is[2].full() + Is[3].full() + 4)
+
+    assert err_rel(x.full(), x_ref) < 1e-6
 
 def test_function_interpolate_multivariable():
     """

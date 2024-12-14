@@ -425,7 +425,7 @@ def test_qtt(dtype):
     xq = x.to_qtt()
     xx = xq.qtt_to_tens(N)
 
-    assert np.abs((x-xx).norm(True)/x.norm(True)) < 1e-12, 'TT to QTT and back not working.'
+    assert tn.abs((x-xx).norm(True)/x.norm(True)) < 1e-12, 'TT to QTT and back not working.'
 
 @pytest.mark.parametrize("dtype", parameters)
 def test_reshape(dtype):
