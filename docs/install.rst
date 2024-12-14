@@ -9,7 +9,7 @@ Requirements
 
 The requirements are the following:
 
-- ``python>=3.6``
+- ``python>=3.8``
 - ``torch>=1.7.0``
 - ``numpy>=1.18``
 - ``opt_einsum`` (https://pypi.org/project/opt-einsum/)

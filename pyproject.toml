@@ -13,7 +13,7 @@ name = "torchTT"
 version = "0.3"
 description = "Tensor-Train decomposition in pytorch."
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 dependencies = [
     "torch>=1.7", 
     "numpy>=1.18", 

@@ -16,7 +16,7 @@ Some routines are implemented in C++ for an increased execution speed.
 ### Requirements
 Following requirements are needed:
 
-- `python>=3.6`
+- `python>=3.8`
 - `torch>=1.7.0`
 - `numpy>=1.18`
 - [`opt_einsum`](https://pypi.org/project/opt-einsum/)
