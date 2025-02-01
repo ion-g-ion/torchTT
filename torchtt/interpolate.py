@@ -23,10 +23,8 @@ def _LU(M):
         tuple[torch.tensor,torch.tensor,torch.tensor]: L, U, P
     """
     LU, P = tn.linalg.lu_factor(M)
-    P, L, U = tn.lu_unpack(LU, P)  # P transpose or not transpose?
-    P = P@tn.reshape(tn.arange(P.shape[1],
-                     dtype=P.dtype, device=P.device), [-1, 1])
-    # P = tn.reshape(tn.arange(P.shape[1],dtype=P.dtype,device=P.device),[1,-1]) @ P
+    P, L, U = tn.lu_unpack(LU, P)
+    P = tn.reshape(tn.arange(P.shape[1],dtype=P.dtype,device=P.device),[1,-1]) @ P
 
     return L, U, tn.squeeze(P).to(tn.int64)
 
