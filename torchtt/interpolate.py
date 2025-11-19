@@ -22,11 +22,12 @@ def _LU(M):
     Returns:
         tuple[torch.tensor,torch.tensor,torch.tensor]: L, U, P
     """
-    LU, P = tn.linalg.lu_factor(M)
-    P, L, U = tn.lu_unpack(LU, P)  # P transpose or not transpose?
-    P = P@tn.reshape(tn.arange(P.shape[1],
-                     dtype=P.dtype, device=P.device), [-1, 1])
-    # P = tn.reshape(tn.arange(P.shape[1],dtype=P.dtype,device=P.device),[1,-1]) @ P
+    P,L,U = tn.linalg.lu(M)
+    #LU, P = tn.linalg.lu_factor(M)
+    #P, L, U = tn.lu_unpack(LU, P)  # P transpose or not transpose?
+    # P = P@tn.reshape(tn.arange(P.shape[1],
+    #                 dtype=P.dtype, device=P.device), [-1, 1])
+    P = tn.reshape(tn.arange(P.shape[1],dtype=P.dtype,device=P.device),[1,-1]) @ P
 
     return L, U, tn.squeeze(P).to(tn.int64)
 
@@ -613,7 +614,7 @@ def dmrg_cross(function, N, eps=1e-9, nswp=10, x_start=None, kick=2, dtype=tn.fl
             V = tn.diag(S) @ V
             UK = tn.randn((U.shape[0], kick), dtype=dtype, device=device)
             U, Rtemp = QR(tn.cat((U, UK), 1))
-            radd = U.shape[1] - rnew
+            radd = Rtemp.shape[1] - rnew
             if radd > 0:
                 V = tn.cat(
                     (V, tn.zeros((radd, V.shape[1]), dtype=dtype, device=device)), 0)

@@ -22,6 +22,9 @@
 :ref:`about-tt-label`
 ---------------------
 
+:ref:`tutorial-label`
+--------------------
+
 :ref:`reference-label`
 ----------------------
 
@@ -36,6 +39,7 @@
    ./docs/intro_page.rst
    ./docs/install.rst
    ./docs/package-overview.rst
+   ./docs/tutorial.rst
    ./docs/modules
 
 
