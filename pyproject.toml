@@ -32,6 +32,15 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.0",
+    "sphinx",
+    "sphinx_rtd_theme",
+    "ipykernel",
+    "matplotlib",
+]
+
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = "-ra -q"

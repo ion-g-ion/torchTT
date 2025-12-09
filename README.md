@@ -44,9 +44,53 @@ cd torchTT
 python setup.py install
 ``` 
 
-### Using conda
+### Using [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
-**TODO**
+You can install the package using `uv`:
+
+```
+uv pip install torchTT
+```
+
+The latest github version can be installed using:
+
+```
+uv pip install git+https://github.com/ion-g-ion/torchTT
+```
+
+One can also clone the repository and install the package using `uv`:
+
+```
+git clone https://github.com/ion-g-ion/torchTT
+cd torchTT
+uv sync
+```
+
+Or install in editable mode:
+
+```
+uv pip install -e .
+```
+
+### Development Installation
+
+For development, you may want to install the package with additional development dependencies (pytest, sphinx, ipykernel, matplotlib):
+
+**Using pip:**
+```
+pip install -e ".[dev]"
+```
+
+**Using uv:**
+```
+uv sync --extra dev
+```
+or
+```
+uv pip install -e ".[dev]"
+```
+
+This will install the package in editable mode along with all development tools needed for testing, building documentation, and working with Jupyter notebooks.
 
 ## Components
 
@@ -84,14 +128,17 @@ Following example scripts (as well as python notebooks) are also provied provide
  * [cuda.py](examples/cuda.py) / [cuda.ipynb](examples/cuda.ipynb): This provides an example on how to use the GPU acceleration ([Try on Google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/cuda.ipynb)). 
  * [basic_nn.py](examples/basic_nn.py) / [basic_nn.ipynb](examples/basic_nn.ipynb): This provides an example on how to use the TT neural network layers ([Try on Google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/basic_nn.ipynb)). 
  * [mnist_nn.py](examples/mnist_nn.py) / [mnist_nn.ipynb](examples/mnist_nn.ipynb): Example of TT layers used for image classification ([Try on Google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/mnist_nn.ipynb)). 
+ * [manifold.py](examples/manifold.py) / [manifold.ipynb](examples/manifold.ipynb): This demonstrates Riemannian gradient descent on manifolds of tensors with fixed TT rank ([Try on Google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/manifold.ipynb)). 
+ * [random_tt.py](examples/random_tt.py): This script shows how to generate random TT tensors with different variances ([Try on Google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/random_tt.py)). 
+ * [tensor_completion.py](examples/tensor_completion.py): This example demonstrates tensor completion using manifold learning with Riemannian gradient descent ([Try on Google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/tensor_completion.py)).
  
- The documentation is generated using `shpinx` with:
+ The documentation is generated using `sphinx` with:
 
  ```
  make html
  ```
 
- after installing the packages
+ after installing the development dependencies (see Development Installation above) or manually:
 
  ```
  pip install sphinx sphinx_rtd_theme

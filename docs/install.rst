@@ -38,8 +38,64 @@ One can also clone the repository and manually install the package:
 ::
 
     git clone https://github.com/ion-g-ion/torchTT
-    cd torchtt
+    cd torchTT
     pip install .
+
+
+Using uv
+--------
+
+You can install the package using `uv`:
+
+::
+
+    uv pip install torchTT
+
+The latest github version can be installed using:
+
+::
+
+    uv pip install git+https://github.com/ion-g-ion/torchTT
+
+One can also clone the repository and install the package using `uv`:
+
+::
+
+    git clone https://github.com/ion-g-ion/torchTT
+    cd torchTT
+    uv sync
+
+Or install in editable mode:
+
+::
+
+    uv pip install -e .
+
+
+Development Installation
+------------------------
+
+For development, you may want to install the package with additional development dependencies (pytest, sphinx, ipykernel, matplotlib):
+
+**Using pip:**
+
+::
+
+    pip install -e ".[dev]"
+
+**Using uv:**
+
+::
+
+    uv sync --extra dev
+
+or
+
+::
+
+    uv pip install -e ".[dev]"
+
+This will install the package in editable mode along with all development tools needed for testing, building documentation, and working with Jupyter notebooks.
 
 
 Tests 
