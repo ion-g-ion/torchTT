@@ -25,6 +25,9 @@
 :ref:`reference-label`
 ----------------------
 
+:ref:`examples-label`
+---------------------
+
 :ref:`index-label`
 ------------------
 
@@ -37,5 +40,6 @@
    ./docs/install.rst
    ./docs/package-overview.rst
    ./docs/modules
+   ./docs/examples
 
 

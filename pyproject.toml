@@ -39,6 +39,8 @@ dev = [
     "sphinx_rtd_theme",
     "ipykernel",
     "matplotlib",
+    "nbsphinx",
+    "torchvision",
 ]
 
 [tool.pytest.ini_options]

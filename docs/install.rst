@@ -107,3 +107,25 @@ The directory `tests/ <tests/>`_ from the root folder contains all the `unittest
 
     pytest tests/
 
+
+Building Documentation
+----------------------
+
+To build the documentation locally, you need:
+
+1. **Install development dependencies** (see Development Installation above)
+
+2. **Install pandoc** (required for rendering Jupyter notebooks in the documentation):
+
+   - Ubuntu/Debian: ``sudo apt install pandoc``
+   - macOS: ``brew install pandoc``
+   - Windows: ``choco install pandoc`` or download from https://pandoc.org/installing.html
+
+3. **Build the documentation:**
+
+   ::
+
+       make html
+
+The generated documentation will be in ``_build/html/``.
+

@@ -13,7 +13,7 @@ import math
 from abc import ABC, abstractmethod
 
 
-class BaseBasis(ABC):
+class BaseBasis(ABC, torch.nn.Module):
     """
     Abstract base class for all basis functions.
     

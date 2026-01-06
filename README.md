@@ -132,17 +132,23 @@ Following example scripts (as well as python notebooks) are also provied provide
  * [random_tt.py](examples/random_tt.py): This script shows how to generate random TT tensors with different variances ([Try on Google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/random_tt.py)). 
  * [tensor_completion.py](examples/tensor_completion.py): This example demonstrates tensor completion using manifold learning with Riemannian gradient descent ([Try on Google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/tensor_completion.py)).
  
- The documentation is generated using `sphinx` with:
+### Building Documentation
 
- ```
- make html
- ```
+The documentation is generated using `sphinx`. To build it locally, you need:
 
- after installing the development dependencies (see Development Installation above) or manually:
+1. **Install development dependencies** (see Development Installation above)
 
- ```
- pip install sphinx sphinx_rtd_theme
- ```
+2. **Install pandoc** (required for rendering Jupyter notebooks):
+   - Ubuntu/Debian: `sudo apt install pandoc`
+   - macOS: `brew install pandoc`
+   - Windows: `choco install pandoc` or download from https://pandoc.org/installing.html
+
+3. **Build the documentation:**
+   ```
+   make html
+   ```
+
+The generated documentation will be in `_build/html/`.
 
 ## Author 
 Ion Gabriel Ion, e-mail: ion.ion.gabriel@gmail.com
