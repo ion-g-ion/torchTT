@@ -1,12 +1,14 @@
 name: website
 
-# build the documentation whenever there are new commits on main
+# build the documentation whenever there are new commits on main or tags are pushed
+# only after tests pass
 on:
-  push:
+  workflow_run:
+    workflows: ["Continuous Integration"]
+    types:
+      - completed
     branches:
       - main
-    tags-ignore:
-      - '*'
 
 # security: restrict permissions for CI jobs.
 permissions:
@@ -16,6 +18,7 @@ jobs:
   # Build the documentation and upload the static HTML files as an artifact.
   build:
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
