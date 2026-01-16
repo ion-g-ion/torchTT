@@ -11,6 +11,7 @@ import torch
 import numpy as np
 import math
 from abc import ABC, abstractmethod
+from typing import Tuple
 
 
 class BaseBasis(ABC, torch.nn.Module):
@@ -68,7 +69,7 @@ class BaseBasis(ABC, torch.nn.Module):
         pass
     
     @abstractmethod
-    def interpolating_points(self) -> tuple[torch.Tensor, torch.Tensor]:
+    def interpolating_points(self) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Return the interpolating points and the basis evaluated at these points.
         
@@ -78,7 +79,7 @@ class BaseBasis(ABC, torch.nn.Module):
         coefficients of the basis expansion by solving the linear system.
         
         Returns:
-            tuple[torch.Tensor, torch.Tensor]: 
+            Tuple[torch.Tensor, torch.Tensor]: 
                 - points: the interpolating points as a vector of shape `(n,)`
                 - matrix: the basis evaluated at these points, shape `(n, n)`, invertible
         """
@@ -174,12 +175,12 @@ class BSplineBasis(BaseBasis):
         return self._deg
     
     @property
-    def interval(self) -> tuple[float, float]:
+    def interval(self) -> Tuple[float, float]:
         """
         The interval on which the basis is defined.
         
         Returns:
-            tuple[float, float]: (start, end) of the interval.
+            Tuple[float, float]: (start, end) of the interval.
         """
         return self._interval
     
@@ -351,7 +352,7 @@ class BSplineBasis(BaseBasis):
         """
         return f"BSplineBasis(n={self._n}, deg={self._deg}, interval={self._interval})"
     
-    def interpolating_points(self) -> tuple[torch.Tensor, torch.Tensor]:
+    def interpolating_points(self) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Return the interpolating points (Greville abscissae) and the basis matrix.
         
@@ -369,7 +370,7 @@ class BSplineBasis(BaseBasis):
         where B(x_i) is the invertible matrix returned by this method.
         
         Returns:
-            tuple[torch.Tensor, torch.Tensor]:
+            Tuple[torch.Tensor, torch.Tensor]:
                 - points: the Greville abscissae as a vector of shape `(n,)`
                 - matrix: the basis evaluated at these points, shape `(n, n)`, 
                   which is guaranteed to be invertible
@@ -505,7 +506,7 @@ class GaussianBasis(BaseBasis):
     def __repr__(self) -> str:
         return f"GaussianBasis(n={self._n}, delta_overlap={self._delta_overlap})"
         
-    def interpolating_points(self) -> tuple[torch.Tensor, torch.Tensor]:
+    def interpolating_points(self) -> Tuple[torch.Tensor, torch.Tensor]:
         # Use centers as interpolating points
         pts = self._centers
         with torch.no_grad():
