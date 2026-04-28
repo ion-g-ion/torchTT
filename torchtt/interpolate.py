@@ -10,6 +10,8 @@ from torchtt._decomposition import QR, SVD, rank_chop, lr_orthogonal, rl_orthogo
 from torchtt._iterative_solvers import BiCGSTAB_reset, gmres_restart
 import opt_einsum as oe
 import sys
+from ._dmrg import _function_interpolate_dmrg, _maxvol
+from ._amen_approx import amen_approx, AmenCallbacks
 
 
 def _LU(M):
@@ -75,61 +77,232 @@ def _maxvol(M):
     return idx
 
 
-def function_interpolate(function, x, eps=1e-9, start_tens=None, nswp=20, kick=2, dtype=tn.float64, rmax=sys.maxsize, verbose=False):
-    """
-    Appication of a nonlinear function on a tensor in the TT format (using DMRG). Two cases are distinguished:
+def function_interpolate(function, x, eps=1e-9, start_tens=None, nswp=20, kick=2, dtype=tn.float64, rmax=sys.maxsize, method='dmrg', verbose=False):
+    if method == 'dmrg':
+        return _function_interpolate_dmrg(function, x, eps, start_tens, nswp, kick, dtype, rmax, verbose)
+    elif method == 'amen':
+        return _function_interpolate_amen(function, x, eps, start_tens, nswp, kick, dtype, rmax, verbose)
+    else:
+        raise ValueError("Method must be 'dmrg' or 'amen'.")
 
-    * Univariate interpoaltion:
+class AmenCrossCallbacks(AmenCallbacks):
+    def __init__(self, function, eval_mv, x, N, dtype, device):
+        self.function = function
+        self.eval_mv = eval_mv
+        self.x = x
+        self.N = N
+        self.d = len(N)
+        self.dtype = dtype
+        self.device = device
+        self.n_eval = 0
 
-    Let :math:`f:\\mathbb{R}\\rightarrow\\mathbb{R}` be a function and :math:`\\mathsf{x}\\in\\mathbb{R}^{N_1\\times\\cdots\\times N_d}` be a tensor with a known TT approximation.
-    The goal is to determine the TT approximation of :math:`\\mathsf{y}_{i_1...i_d}=f(\\mathsf{x}_{i_1...i_d})` within a prescribed relative accuracy `eps`. 
+    def _eval_function(self, I_left, I_curr, I_right, k):
+        I_left = I_left.to(device=self.device)
+        I_curr = I_curr.to(device=self.device)
+        I_right = I_right.to(device=self.device)
+        rank_l = I_left.shape[0] if I_left.shape[1] > 0 else 1
+        rank_r = I_right.shape[1] if I_right.shape[0] > 0 else 1
+        nk = I_curr.shape[0]
 
-    * Multivariate interpolation
+        I1 = tn.reshape(tn.kron(tn.kron(tn.ones(rank_l, dtype=tn.int64, device=self.device), I_curr), tn.ones(rank_r, dtype=tn.int64, device=self.device)), [-1, 1])
 
-    Let :math:`f:\\mathbb{R}\\rightarrow\\mathbb{R}` be a function and :math:`\\mathsf{x}^{(1)},...,\\mathsf{x}^{(d)}\\in\\mathbb{R}^{N_1\\times\\cdots\\times N_d}` be tensors with a known TT approximation. The goal is to determine the TT approximation of :math:`\\mathsf{y}_{i_1...i_d}=f(\\mathsf{x}_{i_1...i_d}^{(1)},...,\\mathsf{x}^{(d)})_{i_1...i_d}` within a prescribed relative accuracy `eps`.
+        if I_left.shape[1] > 0:
+            I3 = I_left[tn.kron(tn.kron(tn.arange(rank_l, dtype=tn.int64, device=self.device), tn.ones(nk, dtype=tn.int64, device=self.device)), tn.ones(rank_r, dtype=tn.int64, device=self.device)), :]
+        else:
+            I3 = tn.zeros((rank_l * nk * rank_r, 0), dtype=tn.int64, device=self.device)
+
+        if I_right.shape[0] > 0:
+            I4 = I_right[:, tn.kron(tn.kron(tn.ones(rank_l, dtype=tn.int64, device=self.device), tn.ones(nk, dtype=tn.int64, device=self.device)), tn.arange(rank_r, dtype=tn.int64, device=self.device))].t()
+        else:
+            I4 = tn.zeros((rank_l * nk * rank_r, 0), dtype=tn.int64, device=self.device)
+
+        eval_index = tn.concat((I3, I1, I4), 1).to(dtype=tn.int64)
+
+        if self.eval_mv:
+            ev = tn.zeros((eval_index.shape[0], 0), dtype=self.dtype, device=self.device)
+            for j in range(len(self.x)):
+                core = self.x[j].cores[0][0, eval_index[:, 0], :]
+                for i in range(1, self.d):
+                    core = tn.einsum('ij,jil->il', core, self.x[j].cores[i][:, eval_index[:, i], :])
+                core = tn.reshape(core[..., 0], [-1, 1])
+                ev = tn.hstack((ev, core))
+            res = tn.reshape(self.function(ev), [rank_l, nk, rank_r])
+            self.n_eval += eval_index.shape[0]
+        else:
+            core = self.x.cores[0][0, eval_index[:, 0], :]
+            for i in range(1, self.d):
+                core = tn.einsum('ij,jil->il', core, self.x.cores[i][:, eval_index[:, i], :])
+            core = core[..., 0]
+            res = tn.reshape(self.function(core), [rank_l, nk, rank_r])
+            self.n_eval += eval_index.shape[0]
+
+        return res
+
+    def compute_x_fwd(self, k, state_dict, x_cores, z_cores):
+        I_left = state_dict['Jy_left'][k]
+        I_right = state_dict['Jy_right'][k+1]
+        I_curr = tn.arange(self.N[k], dtype=tn.int64)
+
+        res = self._eval_function(I_left, I_curr, I_right, k)
+        res = tn.linalg.solve(state_dict['Ps_left'][k], tn.reshape(res, [x_cores[k].shape[0], -1]))
+        res = tn.linalg.solve(state_dict['Ps_right'][k+1].t(), tn.reshape(res, [-1, x_cores[k].shape[3]]).t()).t()
+        res = tn.reshape(res, [x_cores[k].shape[0], 1, self.N[k], x_cores[k].shape[3]])
+
+        norm_res = tn.linalg.norm(res)
+        return res, norm_res
+
+    def compute_x_bck(self, k, state_dict, x_cores, z_cores):
+        I_left = state_dict['Jy_left'][k]
+        I_right = state_dict['Jy_right'][k+1]
+        I_curr = tn.arange(self.N[k], dtype=tn.int64)
+
+        res = self._eval_function(I_left, I_curr, I_right, k)
+        res = tn.linalg.solve(state_dict['Ps_left'][k], tn.reshape(res, [x_cores[k].shape[0], -1]))
+        res = tn.linalg.solve(state_dict['Ps_right'][k+1].t(), tn.reshape(res, [-1, x_cores[k].shape[3]]).t()).t()
+        res = tn.reshape(res, [x_cores[k].shape[0], 1, self.N[k], x_cores[k].shape[3]])
+
+        norm_res = tn.linalg.norm(res)
+        return res, norm_res
+
+    def compute_z_bck(self, k, state_dict, x_cores, z_cores):
+        I_left = state_dict['Jz_left'][k]
+        I_right = state_dict['Jz_right'][k+1]
+        I_curr = tn.arange(self.N[k], dtype=tn.int64)
+
+        fz = self._eval_function(I_left, I_curr, I_right, k)
+        fz = tn.linalg.solve(state_dict['Ps_z_left'][k], tn.reshape(fz, [z_cores[k].shape[0], -1]))
+        fz = tn.linalg.solve(state_dict['Ps_z_right'][k+1].t(), tn.reshape(fz, [-1, z_cores[k].shape[3]]).t()).t()
+        fz = tn.reshape(fz, [z_cores[k].shape[0], self.N[k], z_cores[k].shape[3]])
+
+        cryz = tn.einsum('zl,lmn,nr->zmr', state_dict['phizy_left'][k], tn.reshape(x_cores[k], [x_cores[k].shape[0], self.N[k], x_cores[k].shape[3]]), state_dict['phizy_right'][k+1])
+
+        return fz - cryz
+
+    def compute_z_fwd(self, k, state_dict, x_cores, z_cores, u, v):
+        I_left = state_dict['Jz_left'][k]
+        I_right = state_dict['Jz_right'][k+1]
+        I_curr = tn.arange(self.N[k], dtype=tn.int64)
+
+        fz = self._eval_function(I_left, I_curr, I_right, k)
+        fz = tn.linalg.solve(state_dict['Ps_z_left'][k], tn.reshape(fz, [z_cores[k].shape[0], -1]))
+        fz = tn.linalg.solve(state_dict['Ps_z_right'][k+1].t(), tn.reshape(fz, [-1, z_cores[k].shape[3]]).t()).t()
+        fz = tn.reshape(fz, [z_cores[k].shape[0], self.N[k], z_cores[k].shape[3]])
+
+        rx_k = u.shape[0] // self.N[k]
+        rx_k1 = v.shape[0]
+        core_u = tn.reshape(u@v.t(), [rx_k, self.N[k], rx_k1])
+        cryz = tn.einsum('zl,lmn,nr->zmr', state_dict['phizy_left'][k], core_u, state_dict['phizy_right'][k+1])
+        
+        cz_new = fz - cryz
+        return cz_new
+
+    def compute_enrichment(self, k, state_dict, x_cores, z_cores, u, v):
+        I_left = state_dict['Jy_left'][k]
+        I_right = state_dict['Jz_right'][k+1]
+        I_curr = tn.arange(self.N[k], dtype=tn.int64)
+
+        fz = self._eval_function(I_left, I_curr, I_right, k)
+        fz = tn.linalg.solve(state_dict['Ps_left'][k], tn.reshape(fz, [x_cores[k].shape[0], -1]))
+        fz = tn.linalg.solve(state_dict['Ps_z_right'][k+1].t(), tn.reshape(fz, [-1, z_cores[k].shape[3]]).t()).t()
+        fs = tn.reshape(fz, [x_cores[k].shape[0], self.N[k], z_cores[k].shape[3]])
+
+        rx_k = u.shape[0] // self.N[k]
+        rx_k1 = v.shape[0]
+        core_u = tn.reshape(u@v.t(), [rx_k, self.N[k], rx_k1])
+        crys = tn.einsum('lmn,nr->lmr', core_u, state_dict['phizy_right'][k+1])
+
+        return fs - crys
+
+    def update_phis_bck(self, k, state_dict, x_cores, z_cores, swp, last):
+        core = tn.einsum('ijkl,lm->ijkm', x_cores[k], state_dict['Ps_right'][k+1])
+        core = tn.reshape(core, [x_cores[k].shape[0], -1]).t()
+        idx = _maxvol(core)
+        try:
+            tmp = tn.unravel_index(idx[:x_cores[k].shape[0]], (self.N[k], x_cores[k].shape[3]))
+        except:
+            tmp = np.unravel_index(idx[:x_cores[k].shape[0]], (self.N[k], x_cores[k].shape[3]))
+
+        idx_new = tn.tensor(np.vstack((tmp[0].reshape([1, -1]), state_dict['Jy_right'][k+1][:, tmp[1]])))
+        state_dict['Jy_right'][k] = idx_new
+        Ps_new = core[idx[:x_cores[k].shape[0]], :].t()
+        s = tn.linalg.svdvals(Ps_new)
+        min_s = tn.clamp(tn.min(s), min=1e-16)
+        norm_factor = 1.0 # Removed scaling
+        # Ps_new = Ps_new * norm_factor
+        state_dict['Ps_right'][k] = Ps_new
+        
+        if 'normx' in state_dict:
+            normx_val = norm_factor
+            state_dict['normx'][k-1] = normx_val
 
 
-    Example:
 
-        * Univariate interpolation:
+        if not last:
+            core_z = tn.einsum('ijkl,lm->ijkm', z_cores[k], state_dict['Ps_z_right'][k+1])
+            core_z = tn.reshape(core_z, [z_cores[k].shape[0], -1]).t()
+            idx_z = _maxvol(core_z)
+            try:
+                tmp_z = tn.unravel_index(idx_z[:z_cores[k].shape[0]], (self.N[k], z_cores[k].shape[3]))
+            except:
+                tmp_z = np.unravel_index(idx_z[:z_cores[k].shape[0]], (self.N[k], z_cores[k].shape[3]))
 
-        .. code-block:: python
+            idx_new_z = tn.tensor(np.vstack((tmp_z[0].reshape([1, -1]), state_dict['Jz_right'][k+1][:, tmp_z[1]])))
+            state_dict['Jz_right'][k] = idx_new_z
+            state_dict['Ps_z_right'][k] = core_z[idx_z[:z_cores[k].shape[0]], :].t()
 
-            func = lambda t: torch.log(t)
-            y = tntt.interpolate.function_interpolate(func, x, 1e-9) # the tensor x is chosen such that y has an afforbable low rank structure
+            core_y = tn.reshape(x_cores[k], [x_cores[k].shape[0], self.N[k], x_cores[k].shape[3]])
+            cry = tn.einsum('lmr,rt->lmt', core_y, state_dict['phizy_right'][k+1])
+            cry = tn.reshape(cry, [x_cores[k].shape[0], -1]).t()
+            state_dict['phizy_right'][k] = tn.linalg.solve(state_dict['Ps_z_right'][k], cry[idx_z[:z_cores[k].shape[0]], :]).t()
 
-        * Multivariate interpolation:
+    def update_phis_fwd(self, k, state_dict, x_cores, z_cores, swp, last):
+        core = tn.einsum('ij,jklm->iklm', state_dict['Ps_left'][k], x_cores[k])
+        core = tn.reshape(core, [-1, x_cores[k].shape[3]])
+        idx = _maxvol(core)
+        try:
+            tmp = tn.unravel_index(idx[:x_cores[k].shape[3]], (x_cores[k].shape[0], self.N[k]))
+        except:
+            tmp = np.unravel_index(idx[:x_cores[k].shape[3]], (x_cores[k].shape[0], self.N[k]))
 
-        .. code-block:: python
+        idx_new = tn.tensor(np.hstack((state_dict['Jy_left'][k][tmp[0], :], tmp[1].reshape([-1, 1]))))
+        state_dict['Jy_left'][k+1] = idx_new
+        
+        Ps_new = core[idx[:x_cores[k].shape[3]], :]
+        s = tn.linalg.svdvals(Ps_new)
+        min_s = tn.clamp(tn.min(s), min=1e-16)
+        state_dict['Ps_left'][k+1] = Ps_new
+        
+        if 'normx' in state_dict:
+            state_dict['normx'][k] = 1.0
 
-            xs = tntt.meshgrid([tn.arange(0,n,dtype=torch.float64) for n in N])
-            func = lambda x: 1/(2+tn.sum(x,1).to(dtype=torch.float64))
-            z = tntt.interpolate.function_interpolate(func, xs)
+
+        if not last:
+            core_z = tn.einsum('ij,jklm->iklm', state_dict['Ps_z_left'][k], z_cores[k])
+            core_z = tn.reshape(core_z, [-1, z_cores[k].shape[3]])
+            idx_z = _maxvol(core_z)
+            try:
+                tmp_z = tn.unravel_index(idx_z[:z_cores[k].shape[3]], (z_cores[k].shape[0], self.N[k]))
+            except:
+                tmp_z = np.unravel_index(idx_z[:z_cores[k].shape[3]], (z_cores[k].shape[0], self.N[k]))
+
+            idx_new_z = tn.tensor(np.hstack((state_dict['Jz_left'][k][tmp_z[0], :], tmp_z[1].reshape([-1, 1]))))
+            state_dict['Jz_left'][k+1] = idx_new_z
+            state_dict['Ps_z_left'][k+1] = core_z[idx_z[:z_cores[k].shape[3]], :]
+
+            core_y = tn.reshape(x_cores[k], [x_cores[k].shape[0], self.N[k], x_cores[k].shape[3]])
+            cry = tn.einsum('tl,lmr->tmr', state_dict['phizy_left'][k], core_y)
+            cry = tn.reshape(cry, [-1, x_cores[k].shape[3]])
+            state_dict['phizy_left'][k+1] = tn.linalg.solve(state_dict['Ps_z_left'][k+1], cry[idx_z[:z_cores[k].shape[3]], :])
 
 
-    Args:
-        function (Callable): function handle. If the argument `x` is a `torchtt.TT` instance, the the function handle has to be appliable elementwise on torch tensors.
-                             If a list is passed as `x`, the function handle takes as argument a :math:`M\times d` torch.tensor and every of the :math:`M` lines corresponds to an evaluation of the function :math:`f` at a certain tensor entry. The function handle returns a torch tensor of length M.
-        x (torchtt.TT or list[torchtt.TT]): the argument/arguments of the function.
-        eps (float, optional): the relative accuracy. Defaults to 1e-9.
-        start_tens (torchtt.TT, optional): initial approximation of the output tensor (None coresponds to random initialization). Defaults to None.
-        nswp (int, optional): number of iterations. Defaults to 20.
-        kick (int, optional): enrichment rank. Defaults to 2.
-        dtype (torch.dtype, optional): the dtype of the result. Defaults to tn.float64.
-        rmax (int, optional): the maximum rank. Defaults to the maximum possible integer.
-        verbose (bool, optional): display debug information to the console. Defaults to False.
-
-    Returns:
-        torchtt.TT: the result.
-    """
-
+def _function_interpolate_amen(function, x, eps=1e-9, start_tens=None, nswp=20, kick=2, dtype=tn.float64, rmax=sys.maxsize, verbose=False):
     if isinstance(x, list) or isinstance(x, tuple):
         eval_mv = True
         N = x[0].N
     else:
         eval_mv = False
         N = x.N
-    device = None
+    device = x[0].cores[0].device if eval_mv else x.cores[0].device
 
     if not eval_mv and len(N) == 1:
         return torchtt.TT(function(x.full())).to(device)
@@ -139,324 +312,54 @@ def function_interpolate(function, x, eps=1e-9, start_tens=None, nswp=20, kick=2
 
     d = len(N)
 
-    # random init of the tensor
-    if start_tens == None:
+    if start_tens is None:
         rank_init = 2
         cores = torchtt.random(N, rank_init, dtype, device).cores
-        rank = [1]+[rank_init]*(d-1)+[1]
+        rx = [1]+[rank_init]*(d-1)+[1]
     else:
-        rank = start_tens.R.copy()
+        rx = start_tens.R.copy()
         cores = [c+0 for c in start_tens.cores]
-    # cores = (ones(N,dtype=dtype)).cores
 
-    cores, rank = rl_orthogonal(cores, rank, False)
-    cores, rank = lr_orthogonal(cores, rank, False)
-    Mats = []*(d+1)
+    M_dummy = [1] * d
+    N_list = list(N)
 
-    Ps = [tn.ones((1, 1), dtype=dtype, device=device)]+(d-1) * \
-        [None] + [tn.ones((1, 1), dtype=dtype, device=device)]
-    # ortho
-    Rm = tn.ones((1, 1), dtype=dtype, device=device)
-    Idx = [tn.zeros((1, 0), dtype=tn.int64)]+(d-1)*[None] + \
-        [tn.zeros((0, 1), dtype=tn.int64)]
-    for k in range(d-1, 0, -1):
+    Jy_left = [tn.zeros((1, 0), dtype=tn.int64)] + [None]*d
+    Jy_right = [None]*d + [tn.zeros((0, 1), dtype=tn.int64)]
+    Jz_left = [tn.zeros((1, 0), dtype=tn.int64)] + [None]*d
+    Jz_right = [None]*d + [tn.zeros((0, 1), dtype=tn.int64)]
 
-        tmp = tn.einsum('ijk,kl->ijl', cores[k], Rm)
-        tmp = tn.reshape(tmp, [rank[k], -1]).t()
-        core, Rmat = QR(tmp)
+    phizy_left = [tn.ones((1, 1), dtype=dtype, device=device)] + [None]*d
+    phizy_right = [None]*d + [tn.ones((1, 1), dtype=dtype, device=device)]
 
-        rnew = min(N[k]*rank[k+1], rank[k])
-        Jk = _maxvol(core)
-        # print(Jk)
-        try:
-            tmp = tn.unravel_index(Jk[:rnew], (rank[k+1], N[k]))
-        except:
-            tmp = np.unravel_index(Jk[:rnew], (rank[k+1], N[k]))
-        # if k==d-1:
-        #    idx_new = tn.tensor(tmp[1].reshape([1,-1]))
-        # else:
-        idx_new = tn.tensor(
-            np.vstack((tmp[1].reshape([1, -1]), Idx[k+1][:, tmp[0]])))
+    state_dict = {
+        'Jy_left': Jy_left,
+        'Jy_right': Jy_right,
+        'Jz_left': Jz_left,
+        'Jz_right': Jz_right,
+        'phizy_left': phizy_left,
+        'phizy_right': phizy_right,
+        'Ps_left': [tn.ones((1, 1), dtype=dtype, device=device)] + [None] * d,
+        'Ps_right': [None] * d + [tn.ones((1, 1), dtype=dtype, device=device)],
+        'Ps_z_left': [tn.ones((1, 1), dtype=dtype, device=device)] + [None] * d,
+        'Ps_z_right': [None] * d + [tn.ones((1, 1), dtype=dtype, device=device)],
+        'normx': np.ones((d-1)),
+        'enable_x_bck': False
+    }
 
-        Idx[k] = idx_new+0
+    callbacks = AmenCrossCallbacks(function, eval_mv, x, N_list, dtype, device)
 
-        Rm = core[Jk, :]
+    rz = [1]+(d-1)*[kick]+[1]
 
-        core = tn.linalg.solve(Rm.T, core.T)
-        Rm = (Rm@Rmat).t()
-        cores[k] = tn.reshape(core, [rnew, N[k], rank[k+1]])
+    x_cores = [tn.reshape(c, [c.shape[0], 1, c.shape[1], c.shape[2]]) for c in cores]
 
-        core = tn.reshape(core, [-1, rank[k+1]]) @ Ps[k+1]
+    x_cores, rx = amen_approx(M_dummy, N_list, d, x_cores, rx, rz, state_dict, callbacks,
+                              nswp=nswp, eps=eps, rmax=rmax, kickrank=kick, kick2=0, verbose=verbose)
 
-        core = tn.reshape(core, [rank[k], -1]).t()
-        _, Ps[k] = QR(core)
-    cores[0] = tn.einsum('ijk,kl->ijl', cores[0], Rm)
-
-    # for p in Ps:
-    #     print(p)
-    # for i in Idx:
-    #     print(i)
-    # return
-    n_eval = 0
-
-    for swp in range(nswp):
-
-        max_err = 0.0
-        if verbose:
-            print('Sweep %d: ' % (swp+1))
-        # left to right
-        for k in range(d-1):
-            if verbose:
-                print('\tLR supercore %d,%d' % (k+1, k+2))
-            I1 = tn.reshape(tn.kron(tn.kron(tn.ones(rank[k], dtype=tn.int64), tn.arange(N[k], dtype=tn.int64)), tn.kron(
-                tn.ones(N[k+1], dtype=tn.int64), tn.ones(rank[k+2], dtype=tn.int64))), [-1, 1])
-            I2 = tn.reshape(tn.kron(tn.kron(tn.ones(rank[k], dtype=tn.int64), tn.ones(N[k], dtype=tn.int64)), tn.kron(
-                tn.arange(N[k+1], dtype=tn.int64), tn.ones(rank[k+2], dtype=tn.int64))), [-1, 1])
-            I3 = Idx[k][tn.kron(tn.kron(tn.arange(rank[k], dtype=tn.int64), tn.ones(N[k], dtype=tn.int64)), tn.kron(
-                tn.ones(N[k+1], dtype=tn.int64), tn.ones(rank[k+2], dtype=tn.int64))), :]
-            I4 = Idx[k+2][:, tn.kron(tn.kron(tn.ones(rank[k], dtype=tn.int64), tn.ones(N[k], dtype=tn.int64)),
-                                     tn.kron(tn.ones(N[k+1], dtype=tn.int64), tn.arange(rank[k+2], dtype=tn.int64)))].t()
-
-            eval_index = tn.concat((I3, I1, I2, I4), 1)
-            eval_index = tn.reshape(eval_index, [-1, d]).to(dtype=tn.int64)
-
-            if verbose:
-                print('\t\tnumber evaluations', eval_index.shape[0])
-
-            if eval_mv:
-                ev = tn.zeros((eval_index.shape[0], 0), dtype=dtype)
-                for j in range(d):
-                    core = x[j].cores[0][0, eval_index[:, 0], :]
-                    for i in range(1, d):
-                        core = tn.einsum('ij,jil->il', core,
-                                         x[j].cores[i][:, eval_index[:, i], :])
-                    core = tn.reshape(core[..., 0], [-1, 1])
-                    ev = tn.hstack((ev, core))
-                supercore = tn.reshape(
-                    function(ev), [rank[k], N[k], N[k+1], rank[k+2]])
-                n_eval += core.shape[0]
-            else:
-                core = x.cores[0][0, eval_index[:, 0], :]
-                for i in range(1, d):
-                    core = tn.einsum('ij,jil->il', core,
-                                     x.cores[i][:, eval_index[:, i], :])
-                core = core[..., 0]
-                supercore = tn.reshape(
-                    function(core), [rank[k], N[k], N[k+1], rank[k+2]])
-                n_eval += core.shape[0]
-
-            # multiply with P_k left and right
-            supercore = tn.einsum('ij,jklm,mn->ikln',
-                                  Ps[k], supercore.to(dtype=dtype), Ps[k+2])
-            rank[k] = supercore.shape[0]
-            rank[k+2] = supercore.shape[3]
-            supercore = tn.reshape(
-                supercore, [supercore.shape[0]*supercore.shape[1], -1])
-
-            # split the super core with svd
-            U, S, V = SVD(supercore)
-            rnew = rank_chop(S.cpu().numpy(), tn.linalg.norm(
-                S).cpu().numpy()*eps/np.sqrt(d-1))+1
-            rnew = min(S.shape[0], rnew)
-            rnew = min(rmax, rnew)
-            U = U[:, :rnew]
-            S = S[:rnew]
-            V = V[:rnew, :]
-            # print('kkt new',tn.linalg.norm(supercore-U@tn.diag(S)@V))
-            # kick the rank
-            V = tn.diag(S) @ V
-            UK = tn.randn((U.shape[0], kick), dtype=dtype, device=device)
-            U, Rtemp = QR(tn.cat((U, UK), 1))
-            radd = Rtemp.shape[1] - rnew
-            if radd > 0:
-                V = tn.cat(
-                    (V, tn.zeros((radd, V.shape[1]), dtype=dtype, device=device)), 0)
-                V = Rtemp @ V
-
-            # print('kkt new',tn.linalg.norm(supercore-U@V))
-            # compute err (dx)
-            super_prev = tn.einsum('ijk,kmn->ijmn', cores[k], cores[k+1])
-            super_prev = tn.einsum(
-                'ij,jklm,mn->ikln', Ps[k], super_prev, Ps[k+2])
-            err = tn.linalg.norm(
-                supercore.flatten()-super_prev.flatten())/tn.linalg.norm(supercore)
-            max_err = max(max_err, err)
-            # update the rank
-            if verbose:
-                print('\t\trank updated %d -> %d, local error %e' %
-                      (rank[k+1], U.shape[1], err))
-            rank[k+1] = U.shape[1]
-
-            U = tn.linalg.solve(Ps[k], tn.reshape(U, [rank[k], -1]))
-            V = tn.linalg.solve(
-                Ps[k+2].t(), tn.reshape(V, [rank[k+1]*N[k+1], rank[k+2]]).t()).t()
-
-            # U = tn.einsum('ij,jkl->ikl',tn.linalg.inv(Ps[k]),tn.reshape(U,[rank[k],N[k],-1]))
-            # V = tn.einsum('ijk,kl->ijl',tn.reshape(V,[-1,N[k+1],rank[k+2]]),tn.linalg.inv(Ps[k+2]))
-
-            V = tn.reshape(V, [rank[k+1], -1])
-            U = tn.reshape(U, [-1, rank[k+1]])
-
-            # split cores
-            Qmat, Rmat = QR(U)
-            idx = _maxvol(Qmat)
-            Sub = Qmat[idx, :]
-            core = tn.linalg.solve(Sub.T, Qmat.T).t()
-            core_next = Sub@Rmat@V
-            cores[k] = tn.reshape(core, [rank[k], N[k], rank[k+1]])
-            cores[k+1] = tn.reshape(core_next, [rank[k+1], N[k+1], rank[k+2]])
-            # calc Ps
-            tmp = tn.einsum('ij,jkl->ikl', Ps[k], cores[k])
-            _, Ps[k+1] = QR(tn.reshape(tmp, [rank[k]*N[k], rank[k+1]]))
-
-            # calc Idx
-            try:
-                tmp = tn.unravel_index(idx[:rank[k+1]], (rank[k], N[k]))
-            except:
-                tmp = np.unravel_index(idx[:rank[k+1]], (rank[k], N[k]))
-            idx_new = tn.tensor(
-                np.hstack((Idx[k][tmp[0], :], tmp[1].reshape([-1, 1]))))
-            Idx[k+1] = idx_new+0
-
-        # right to left
-
-        for k in range(d-2, -1, -1):
-            if verbose:
-                print('\tRL supercore %d,%d' % (k+1, k+2))
-            I1 = tn.reshape(tn.kron(tn.kron(tn.ones(rank[k], dtype=tn.int64), tn.arange(N[k], dtype=tn.int64)), tn.kron(
-                tn.ones(N[k+1], dtype=tn.int64), tn.ones(rank[k+2], dtype=tn.int64))), [-1, 1])
-            I2 = tn.reshape(tn.kron(tn.kron(tn.ones(rank[k], dtype=tn.int64), tn.ones(N[k], dtype=tn.int64)), tn.kron(
-                tn.arange(N[k+1], dtype=tn.int64), tn.ones(rank[k+2], dtype=tn.int64))), [-1, 1])
-            I3 = Idx[k][tn.kron(tn.kron(tn.arange(rank[k], dtype=tn.int64), tn.ones(N[k], dtype=tn.int64)), tn.kron(
-                tn.ones(N[k+1], dtype=tn.int64), tn.ones(rank[k+2], dtype=tn.int64))), :]
-            I4 = Idx[k+2][:, tn.kron(tn.kron(tn.ones(rank[k], dtype=tn.int64), tn.ones(N[k], dtype=tn.int64)),
-                                     tn.kron(tn.ones(N[k+1], dtype=tn.int64), tn.arange(rank[k+2], dtype=tn.int64)))].t()
-
-            eval_index = tn.concat((I3, I1, I2, I4), 1)
-            eval_index = tn.reshape(eval_index, [-1, d]).to(dtype=tn.int64)
-
-            if verbose:
-                print('\t\tnumber evaluations', eval_index.shape[0])
-
-            if eval_mv:
-                ev = tn.zeros((eval_index.shape[0], 0), dtype=dtype)
-                for j in range(d):
-                    core = x[j].cores[0][0, eval_index[:, 0], :]
-                    for i in range(1, d):
-                        core = tn.einsum('ij,jil->il', core,
-                                         x[j].cores[i][:, eval_index[:, i], :])
-                    core = tn.reshape(core[..., 0], [-1, 1])
-                    ev = tn.hstack((ev, core))
-                supercore = tn.reshape(
-                    function(ev), [rank[k], N[k], N[k+1], rank[k+2]])
-                n_eval += core.shape[0]
-            else:
-                core = x.cores[0][0, eval_index[:, 0], :]
-                for i in range(1, d):
-                    core = tn.einsum('ij,jil->il', core,
-                                     x.cores[i][:, eval_index[:, i], :])
-                core = core[..., 0]
-                supercore = tn.reshape(
-                    function(core), [rank[k], N[k], N[k+1], rank[k+2]])
-                n_eval += core.shape[0]
-
-            # multiply with P_k left and right
-            supercore = tn.einsum('ij,jklm,mn->ikln',
-                                  Ps[k], supercore.to(dtype=dtype), Ps[k+2])
-            rank[k] = supercore.shape[0]
-            rank[k+2] = supercore.shape[3]
-            supercore = tn.reshape(
-                supercore, [supercore.shape[0]*supercore.shape[1], -1])
-
-            # split the super core with svd
-            U, S, V = SVD(supercore)
-            rnew = rank_chop(S.cpu().numpy(), tn.linalg.norm(
-                S).cpu().numpy()*eps/np.sqrt(d-1))+1
-            rnew = min(S.shape[0], rnew)
-            rnew = min(rmax, rnew)
-            U = U[:, :rnew]
-            S = S[:rnew]
-            V = V[:rnew, :]
-            # print('kkt new',tn.linalg.norm(supercore-U@tn.diag(S)@V))
-
-            # kick the rank
-            # print('u before', U.shape)
-            U = U @ tn.diag(S)
-            VK = tn.randn((kick, V.shape[1]), dtype=dtype, device=device)
-            # print('V enrich', V.shape)
-            V, Rtemp = QR(tn.cat((V, VK), 0).t())
-            radd = Rtemp.shape[1] - rnew
-            # print('V after QR',V.shape,Rtemp.shape,radd)
-            if radd > 0:
-                U = tn.cat(
-                    (U, tn.zeros((U.shape[0], radd), dtype=dtype, device=device)), 1)
-                U = U @ Rtemp.T
-                V = V.t()
-
-            # print('kkt new',tn.linalg.norm(supercore-U@V))
-            # compute err (dx)
-            super_prev = tn.einsum('ijk,kmn->ijmn', cores[k], cores[k+1])
-            super_prev = tn.einsum(
-                'ij,jklm,mn->ikln', Ps[k], super_prev, Ps[k+2])
-            err = tn.linalg.norm(
-                supercore.flatten()-super_prev.flatten())/tn.linalg.norm(supercore)
-            max_err = max(max_err, err)
-            # update the rank
-            if verbose:
-                print('\t\trank updated %d -> %d, local error %e' %
-                      (rank[k+1], U.shape[1], err))
-            rank[k+1] = U.shape[1]
-
-            U = tn.linalg.solve(Ps[k], tn.reshape(U, [rank[k], -1]))
-            V = tn.linalg.solve(
-                Ps[k+2].t(), tn.reshape(V, [rank[k+1]*N[k+1], rank[k+2]]).t()).t()
-
-            # U = tn.einsum('ij,jkl->ikl',tn.linalg.inv(Ps[k]),tn.reshape(U,[rank[k],N[k],-1]))
-            # V = tn.einsum('ijk,kl->ijl',tn.reshape(V,[-1,N[k+1],rank[k+2]]),tn.linalg.inv(Ps[k+2]))
-
-            V = tn.reshape(V, [rank[k+1], -1])
-            U = tn.reshape(U, [-1, rank[k+1]])
-
-            # split cores
-            Qmat, Rmat = QR(V.T)
-            idx = _maxvol(Qmat)
-            Sub = Qmat[idx, :]
-            core_next = tn.linalg.solve(Sub.T, Qmat.T)
-            core = U@(Sub@Rmat).t()
-            cores[k] = tn.reshape(core, [rank[k], N[k], -1])
-            cores[k+1] = tn.reshape(core_next, [-1, N[k+1], rank[k+2]])
-
-            # calc Ps
-            tmp = tn.einsum('ijk,kl->ijl', cores[k+1], Ps[k+2])
-            _, tmp = QR(tn.reshape(tmp, [rank[k+1], -1]).t())
-            Ps[k+1] = tmp
-            # calc Idx
-            try:
-                tmp = tn.unravel_index(idx[:rank[k+1]], (N[k+1], rank[k+2]))
-            except:
-                tmp = np.unravel_index(idx[:rank[k+1]], (N[k+1], rank[k+2]))
-            idx_new = tn.tensor(
-                np.vstack((tmp[0].reshape([1, -1]), Idx[k+2][:, tmp[1]])))
-            Idx[k+1] = idx_new+0
-        # xxx = TT(cores)
-        # print('#            ',xxx[1,2,3,4])
-
-        # exit condition
-
-        if max_err < eps:
-            if verbose:
-                print('Max error %e < %e  ---->  DONE' % (max_err, eps))
-            break
-        else:
-            if verbose:
-                print('Max error %g' % (max_err))
     if verbose:
-        print('number of function calls ', n_eval)
-        print()
+        print('number of function calls ', callbacks.n_eval)
 
-    return torchtt.TT(cores)
-
-
+    x_cores = [tn.reshape(c, [c.shape[0], c.shape[2], c.shape[3]]) for c in x_cores]
+    return torchtt.TT(x_cores)
 def dmrg_cross(function, N, eps=1e-9, nswp=10, x_start=None, kick=2, dtype=tn.float64, device=None, eval_vect=True, rmax=sys.maxsize, verbose=False):
     """
     Approximate a tensor in the TT format given that the individual entries are given using a function.

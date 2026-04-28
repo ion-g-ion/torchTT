@@ -132,7 +132,7 @@ def test_polynomial_interpolation(basis_factory, deg):
     # Note: matrix has shape (n, n) where matrix[i, j] = B_i(x_j)
     # We need to solve sum_i c_i * B_i(x_j) = f(x_j) for all j
     # This is matrix.T @ c = f_vals
-    coeffs = torch.linalg.solve(matrix.T, f_vals)
+    coeffs = torch.linalg.solve(matrix, f_vals)
     
     # Evaluate approximation at test points
     x_test = torch.linspace(0, 1, 100, dtype=torch.float64)
@@ -361,7 +361,7 @@ def test_interpolation_on_device(device):
     
     # Solve for coefficients
     f_vals = poly_func(pts)
-    coeffs = torch.linalg.solve(matrix.T, f_vals)
+    coeffs = torch.linalg.solve(matrix, f_vals)
     
     # Evaluate on device
     x_test = torch.linspace(0, 1, 100, dtype=torch.float64, device=device)

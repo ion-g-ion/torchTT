@@ -383,7 +383,7 @@ class BSplineBasis(BaseBasis):
         
         # Evaluate basis at these points (detached for stability)
         with torch.no_grad():
-            matrix = self(pts)
+            matrix = self(pts).t()
         
         return pts, matrix
     
