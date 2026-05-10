@@ -260,7 +260,7 @@ class TT():
         Returns:
             bool: Is the torchtt.TT on GPU or not.
         """
-        return all([c.is_cuda for c in self.core])
+        return all([c.is_cuda for c in self.cores])
 
     def to(self, device=None, dtype=None):
         """

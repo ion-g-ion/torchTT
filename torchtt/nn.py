@@ -317,4 +317,75 @@ class LinearLayerTT(nn.Module):
         return result+self.bias
 
 
- 
+class CompressedTTLayer(nn.Module):
+    """
+    A Tensor Train (TT) neural network layer that operates directly on TT objects and applies nonlinear activation between TT cores during multiplication.
+    
+    This layer is inspired by Nonlinear Tensor Train formats for deep neural networks. Instead of computing the full dense tensor, it performs a fast matrix-vector-like multiplication of the layer's TTM weights with the input TT object. The layer natively applies a nonlinear activation and an optional bias to the intermediate core representations during the contraction sweep. The intermediate representations are orthogonalized and truncated to maintain the compression, ensuring the output TT object's rank is strictly bounded by `rmax`.
+    """
+    def __init__(self, N_in, N_out, R_layer, rmax, activation=tn.relu, bias=True, dtype=tn.float32):
+        """
+        Initialize the CompressedTTLayer.
+        
+        Args:
+            N_in (list[int]): Mode sizes for the input dimensions.
+            N_out (list[int]): Mode sizes for the output dimensions.
+            R_layer (list[int]): TT ranks of the layer's TTM weight operator.
+            rmax (int): The maximum TT rank allowed for the output TT object. The forward pass guarantees the output ranks will not exceed this value.
+            activation (callable, optional): The nonlinear activation function to apply between cores during multiplication. Defaults to `torch.relu`.
+            bias (bool, optional): If True, a trainable per-mode bias is added to the intermediate core representations. Defaults to True.
+            dtype (torch.dtype, optional): Data type for the layer's weights. Defaults to torch.float32.
+        """
+        super().__init__()
+        self.size_in = N_in
+        self.size_out = N_out
+        self.rank = R_layer
+        self.rmax = rmax
+        self.activation = activation
+        self.dtype = dtype
+
+        t = torchtt.randn([(s2, s1) for s1, s2 in zip(N_in, N_out)], R_layer, dtype=dtype, var=2/tn.prod(tn.tensor([s1 for s1 in N_in])))
+        self.cores = nn.ParameterList([nn.Parameter(c) for c in t.cores])
+        
+        if bias:
+            b_cores = []
+            for i in range(len(N_out)):
+                b_cores.append(nn.Parameter(tn.zeros(1, N_out[i], 1, dtype=dtype)))
+            self.bias = nn.ParameterList(b_cores)
+        else:
+            self.register_parameter('bias', None)
+
+    def forward(self, x):
+        """
+        Forward pass for the CompressedTTLayer.
+        
+        Computes the operation by multiplying the input TT with the layer's TTM using a right-to-left sweep. 
+        During this sweep, the intermediate bias is added and the activation is applied to the core before 
+        the core is orthogonalized and truncated (using SVD) to strictly enforce the `rmax` limit.
+
+        Args:
+            x (torchtt.TT): The input Tensor Train object.
+            
+        Returns:
+            torchtt.TT: The output Tensor Train object representing the nonlinearly compressed forward pass, with maximum rank strictly bounded by `rmax`.
+        """
+        d = len(self.size_in)
+        from ._fast_mult import swap_cores
+        
+        cores = [tn.permute(c, [2, 1, 0]) for c in x.cores[::-1]]
+        for i in range(d):
+            cores[0] = oe.contract("mabk,kbn->man", self.cores[d-i-1], cores[0])
+            
+            if self.bias is not None:
+                cores[0] = cores[0] + self.bias[d-i-1]
+                
+            if self.activation is not None:
+                cores[0] = self.activation(cores[0])
+                
+            if i != d-1:
+                for j in range(i, -1, -1):
+                    cores[j], cores[j+1] = swap_cores(cores[j], cores[j+1], 0.0, self.rmax)
+                    
+        cores = [tn.permute(c, [2, 1, 0]) for c in cores[::-1]]
+        
+        return torchtt.TT(cores)

@@ -3,9 +3,25 @@ AMEN approximation skeleton for tensor computations.
 """
 import torch as tn
 import torchtt
-from torchtt._decomposition import QR, SVD, rl_orthogonal, rank_chop
+from torchtt._decomposition import QR, SVD, rl_orthogonal
 import numpy as np
 import datetime
+
+
+def _rank_chop_torch(s, eps):
+    if tn.linalg.norm(s) == 0.0:
+        return 1
+
+    eps = tn.as_tensor(eps, dtype=s.dtype, device=s.device)
+    if eps <= 0.0:
+        return s.numel()
+
+    sc = tn.cumsum(tn.abs(tn.flip(s, dims=[0]))**2, dim=0)
+    sc = tn.flip(sc, dims=[0])
+    r = int(tn.argmax((sc < eps**2).to(tn.int64)).item())
+    r = r if r > 0 else 1
+    return s.numel() if sc[-1] > eps**2 else r
+
 
 class AmenCallbacks:
     """
@@ -152,7 +168,7 @@ def amen_approx(M, N, d, x_cores, rx, rz, state_dict, callbacks: AmenCallbacks,
 
             if k < d-1:
                 u, s, v = SVD(solution_now)
-                r = rank_chop(s.cpu().numpy(), (norm_solution.cpu() * eps / (d**(0.5 if last else 1.5))).numpy())
+                r = _rank_chop_torch(s, norm_solution * eps / (d**(0.5 if last else 1.5)))
                 r = min([r, tn.numel(s), rmax[k+1]])
             else:
                 u, v = QR(solution_now)
@@ -160,7 +176,7 @@ def amen_approx(M, N, d, x_cores, rx, rz, state_dict, callbacks: AmenCallbacks,
                 s = tn.ones(r, dtype=dtype, device=device)
 
             u = u[:, :r]
-            v = v[:, :r] @ tn.diag(s[:r])
+            v = v[:, :r] * s[:r][None, :]
 
             if not last:
                 cz_new = callbacks.compute_z_fwd(k, state_dict, x_cores, z_cores, u, v)
@@ -195,7 +211,7 @@ def amen_approx(M, N, d, x_cores, rx, rz, state_dict, callbacks: AmenCallbacks,
                 callbacks.update_phis_fwd(k, state_dict, x_cores, z_cores, swp, last)
 
             else:
-                x_cores[k] = tn.reshape(u @ tn.diag(s[:r]) @ v[:r, :].t(), [rx[k], M[k], N[k], rx[k+1]])
+                x_cores[k] = tn.reshape((u * s[:r][None, :]) @ v[:r, :].t(), [rx[k], M[k], N[k], rx[k+1]])
 
         if verbose:
             print('Solution rank is', rx)

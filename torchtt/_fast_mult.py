@@ -10,7 +10,7 @@ from torchtt._decomposition import rank_chop, QR, SVD
 import opt_einsum as oe
 from torchtt.errors import *
 
-def swap_cores(core_a, core_b, eps):
+def swap_cores(core_a, core_b, eps, rmax=None):
     """
     Swap two condsecutive TT or TTM cores.
 
@@ -21,6 +21,7 @@ def swap_cores(core_a, core_b, eps):
         core_a (torch.Tensor): first TT/TTM core
         core_b (torch.Tensor): second TT/TTM core
         eps (float): accuracy
+        rmax (int, optional): maximum rank. Defaults to None.
 
     Raises:
         Exception: The cores must be wither 3d or 4d tensors.
@@ -38,10 +39,12 @@ def swap_cores(core_a, core_b, eps):
         raise Exception("The cores must be wither 3d or 4d tensors.")
     
     if S.is_cuda:
-        r_now = min([rank_chop(S.cpu().numpy(),tn.linalg.norm(S).cpu().numpy()*eps)])
+        r_now = min([rank_chop(S.detach().cpu().numpy(),tn.linalg.norm(S).detach().cpu().numpy()*eps)])
     else:
-        r_now = min([rank_chop(S.numpy(),tn.linalg.norm(S).numpy()*eps)])
+        r_now = min([rank_chop(S.detach().numpy(),tn.linalg.norm(S).detach().numpy()*eps)])
                 
+    if rmax is not None:
+        r_now = min(r_now, rmax)
     US = U[:,:r_now] @ tn.diag(S[:r_now])
     V = V[:r_now,:]
     
@@ -52,7 +55,7 @@ def swap_cores(core_a, core_b, eps):
         return tn.reshape(US, (core_a.shape[0], core_b.shape[1], core_b.shape[2], -1)), tn.reshape(V, (-1, core_a.shape[1], core_a.shape[2], core_b.shape[3]))
 
 
-def fast_hadammard(tt_a, tt_b, eps=1e-10):
+def fast_hadammard(tt_a, tt_b, eps=1e-10, rmax=None):
     """
     Performs the elementwise multiplication between two TTs to TTMs and tround the result.
     Equivalent to `(tt_a * tt_b).round(eps)`.
@@ -62,6 +65,7 @@ def fast_hadammard(tt_a, tt_b, eps=1e-10):
         tt_a (torchtt.TT): first operand.
         tt_b (torchtt.TT): second operand.
         eps (float, optional): relative tolerance. Defaults to 1e-10.
+        rmax (int, optional): maximum rank. Defaults to None.
 
     Returns:
         torchtt.TT: the result.
@@ -81,7 +85,7 @@ def fast_hadammard(tt_a, tt_b, eps=1e-10):
             
             if i != d-1:
                 for j in range(i, -1, -1):
-                    cores[j], cores[j+1] = swap_cores(cores[j], cores[j+1], eps)
+                    cores[j], cores[j+1] = swap_cores(cores[j], cores[j+1], eps, rmax)
                 
                 
         #cores[1], cores[2] = swap_cores(cores[1], cores[2], 1e-8)
@@ -99,14 +103,14 @@ def fast_hadammard(tt_a, tt_b, eps=1e-10):
             
             if i != d-1:
                 for j in range(i, -1, -1):
-                    cores[j], cores[j+1] = swap_cores(cores[j], cores[j+1], eps)
+                    cores[j], cores[j+1] = swap_cores(cores[j], cores[j+1], eps, rmax)
                 
                 
         #cores[1], cores[2] = swap_cores(cores[1], cores[2], 1e-8)
             
         return torchtt.TT(cores)
 
-def fast_mv(tt_a, tt_b, eps=1e-10):
+def fast_mv(tt_a, tt_b, eps=1e-10, rmax=None):
     """
     Performs the matvec product between a TTM and a TT.
     Equivalent to `(tt_a * tt_b).round(eps)`.
@@ -116,6 +120,7 @@ def fast_mv(tt_a, tt_b, eps=1e-10):
         tt_a (torchtt.TT): the first operand. Must be a TTM.
         tt_b (torchtt.TT): the second operand. Must be TT.
         eps (float, optional): Relative tolerance. Defaults to 1e-10.
+        rmax (int, optional): maximum rank. Defaults to None.
 
     Raises:
         InvalidArguments: The first should be e TTM and the second a TT.
@@ -139,14 +144,14 @@ def fast_mv(tt_a, tt_b, eps=1e-10):
         
         if i != d-1:
             for j in range(i, -1, -1):
-                cores[j], cores[j+1] = swap_cores(cores[j], cores[j+1], eps)
+                cores[j], cores[j+1] = swap_cores(cores[j], cores[j+1], eps, rmax)
             
             
     #cores[1], cores[2] = swap_cores(cores[1], cores[2], 1e-8)
         
     return torchtt.TT(cores) 
 
-def fast_mm(tt_a, tt_b, eps=1e-10):
+def fast_mm(tt_a, tt_b, eps=1e-10, rmax=None):
     """
     Performs the matmat product between a TTM and a TTM.
     Equivalent to `(tt_a * tt_b).round(eps)`.
@@ -156,6 +161,7 @@ def fast_mm(tt_a, tt_b, eps=1e-10):
         tt_a (torchtt.TT): the first operand. Must be a TTM.
         tt_b (torchtt.TT): the second operand. Must be TTM.
         eps (float, optional): Relative tolerance. Defaults to 1e-10.
+        rmax (int, optional): maximum rank. Defaults to None.
 
     Raises:
         InvalidArguments: Both arguments should be TTMs.
@@ -179,7 +185,7 @@ def fast_mm(tt_a, tt_b, eps=1e-10):
         
         if i != d-1:
             for j in range(i, -1, -1):
-                cores[j], cores[j+1] = swap_cores(cores[j], cores[j+1], eps)
+                cores[j], cores[j+1] = swap_cores(cores[j], cores[j+1], eps, rmax)
             
             
     #cores[1], cores[2] = swap_cores(cores[1], cores[2], 1e-8)

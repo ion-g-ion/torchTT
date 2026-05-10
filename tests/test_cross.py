@@ -62,6 +62,32 @@ def test_function_interpolate_multivariable(method):
     assert err_rel(y.full(), x_ref) < 1e-7
 
 
+@pytest.mark.skipif(not tn.cuda.is_available(), reason="CUDA device is not available.")
+def test_function_interpolate_amen_cuda_multivariable():
+    """
+    AMEN interpolation should keep index state on CUDA when inputs are CUDA tensors.
+    """
+    N = [4, 5]
+    Is = tntt.meshgrid([tn.linspace(0, 1, n, dtype=tn.float64, device="cuda") for n in N])
+    start_tens = tntt.ones(N, dtype=tn.float64, device="cuda")
+
+    func = lambda values: values[:, 0] + 2 * values[:, 1]
+    y = tntt.interpolate.function_interpolate(
+        func,
+        Is,
+        eps=1e-4,
+        start_tens=start_tens,
+        nswp=2,
+        kick=1,
+        method="amen",
+    )
+
+    ref = Is[0].full() + 2 * Is[1].full()
+    rel_err = tn.linalg.norm(y.full() - ref) / tn.linalg.norm(ref)
+    assert y.is_cuda()
+    assert rel_err.item() < 1e-3
+
+
 @pytest.mark.parametrize("method", ["dmrg", "amen"])
 def test_function_interpolate_multivariable_fewer_args(method):
     """
