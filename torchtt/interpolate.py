@@ -169,9 +169,9 @@ def function_interpolate(function, x, eps=1e-9, start_tens=None, nswp=20, kick=2
         Jk = _maxvol(core)
         # print(Jk)
         try:
-            tmp = tn.unravel_index(Jk[:rnew], (rank[k+1], N[k]))
+            tmp = tn.unravel_index(Jk[:rnew].cpu(), (rank[k+1], N[k]))
         except:
-            tmp = np.unravel_index(Jk[:rnew], (rank[k+1], N[k]))
+            tmp = np.unravel_index(Jk[:rnew].cpu(), (rank[k+1], N[k]))
         # if k==d-1:
         #    idx_new = tn.tensor(tmp[1].reshape([1,-1]))
         # else:
@@ -311,9 +311,9 @@ def function_interpolate(function, x, eps=1e-9, start_tens=None, nswp=20, kick=2
 
             # calc Idx
             try:
-                tmp = tn.unravel_index(idx[:rank[k+1]], (rank[k], N[k]))
+                tmp = tn.unravel_index(idx[:rank[k+1]].cpu(), (rank[k], N[k]))
             except:
-                tmp = np.unravel_index(idx[:rank[k+1]], (rank[k], N[k]))
+                tmp = np.unravel_index(idx[:rank[k+1]].cpu(), (rank[k], N[k]))
             idx_new = tn.tensor(
                 np.hstack((Idx[k][tmp[0], :], tmp[1].reshape([-1, 1]))))
             Idx[k+1] = idx_new+0
@@ -432,9 +432,9 @@ def function_interpolate(function, x, eps=1e-9, start_tens=None, nswp=20, kick=2
             Ps[k+1] = tmp
             # calc Idx
             try:
-                tmp = tn.unravel_index(idx[:rank[k+1]], (N[k+1], rank[k+2]))
+                tmp = tn.unravel_index(idx[:rank[k+1]].cpu(), (N[k+1], rank[k+2]))
             except:
-                tmp = np.unravel_index(idx[:rank[k+1]], (N[k+1], rank[k+2]))
+                tmp = np.unravel_index(idx[:rank[k+1]].cpu(), (N[k+1], rank[k+2]))
             idx_new = tn.tensor(
                 np.vstack((tmp[0].reshape([1, -1]), Idx[k+2][:, tmp[1]])))
             Idx[k+1] = idx_new+0
@@ -523,9 +523,9 @@ def dmrg_cross(function, N, eps=1e-9, nswp=10, x_start=None, kick=2, dtype=tn.fl
         Jk = _maxvol(core)
         # print(Jk)
         try:
-            tmp = tn.unravel_index(Jk[:rnew], (rank[k+1], N[k]))
+            tmp = tn.unravel_index(Jk[:rnew].cpu(), (rank[k+1], N[k]))
         except:
-            tmp = np.unravel_index(Jk[:rnew], (rank[k+1], N[k]))
+            tmp = np.unravel_index(Jk[:rnew].cpu(), (rank[k+1], N[k]))
         # if k==d-1:
         #    idx_new = tn.tensor(tmp[1].reshape([1,-1]))
         # else:
@@ -654,9 +654,9 @@ def dmrg_cross(function, N, eps=1e-9, nswp=10, x_start=None, kick=2, dtype=tn.fl
 
             # calc Idx
             try:
-                tmp = tn.unravel_index(idx[:rank[k+1]], (rank[k], N[k]))
+                tmp = tn.unravel_index(idx[:rank[k+1]].cpu(), (rank[k], N[k]))
             except:
-                tmp = np.unravel_index(idx[:rank[k+1]], (rank[k], N[k]))
+                tmp = np.unravel_index(idx[:rank[k+1]].cpu(), (rank[k], N[k]))
             idx_new = tn.tensor(
                 np.hstack((Idx[k][tmp[0], :], tmp[1].reshape([-1, 1]))))
             Idx[k+1] = idx_new+0
@@ -759,9 +759,9 @@ def dmrg_cross(function, N, eps=1e-9, nswp=10, x_start=None, kick=2, dtype=tn.fl
             Ps[k+1] = tmp
             # calc Idx
             try:
-                tmp = tn.unravel_index(idx[:rank[k+1]], (N[k+1], rank[k+2]))
+                tmp = tn.unravel_index(idx[:rank[k+1]].cpu(), (N[k+1], rank[k+2]))
             except:
-                tmp = np.unravel_index(idx[:rank[k+1]], (N[k+1], rank[k+2]))
+                tmp = np.unravel_index(idx[:rank[k+1]].cpu(), (N[k+1], rank[k+2]))
             idx_new = tn.tensor(
                 np.vstack((tmp[0].reshape([1, -1]), Idx[k+2][:, tmp[1]])))
             Idx[k+1] = idx_new+0
