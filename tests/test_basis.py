@@ -433,6 +433,334 @@ def test_bspline_single_point():
     assert abs(B.sum().item() - 1.0) < 1e-12
 
 
+@pytest.mark.parametrize("deg", DEGREES)
+def test_bspline_mass_matrix(deg):
+    """Test mass matrix properties."""
+    basis = make_bspline_basis(deg)
+    M = basis.mass_matrix()
+    
+    # Check shape
+    assert M.shape == (basis.n, basis.n)
+    
+    # Mass matrix must be symmetric
+    assert torch.allclose(M, M.T, atol=1e-12), "Mass matrix is not symmetric"
+    
+    # Sum of rows should equal integration weights (partition of unity)
+    # sum_j M_ij = sum_j int B_i B_j dx = int B_i sum_j B_j dx = int B_i dx
+    row_sums = M.sum(dim=1)
+    expected_weights = basis.integration_weights()
+    assert torch.allclose(row_sums, expected_weights, atol=1e-12), "Mass matrix row sums do not match integration weights"
+
+
+@pytest.mark.parametrize("deg", [2, 3])  # Need deg >= 1 for meaningful derivative
+def test_bspline_stiffness_matrix(deg):
+    """Test stiffness matrix properties."""
+    basis = make_bspline_basis(deg)
+    S = basis.stiffness_matrix()
+    
+    # Check shape
+    assert S.shape == (basis.n, basis.n)
+    
+    # Stiffness matrix must be symmetric
+    assert torch.allclose(S, S.T, atol=1e-12), "Stiffness matrix is not symmetric"
+    
+    # Sum of rows should be zero (partition of unity => sum B_j = 1 => sum B'_j = 0)
+    # sum_j S_ij = int B'_i sum_j B'_j dx = 0
+    row_sums = S.sum(dim=1)
+    assert torch.allclose(row_sums, torch.zeros_like(row_sums), atol=1e-12), "Stiffness matrix row sums are not zero"
+
+
+@pytest.mark.parametrize("deg", [2, 3])  # Need deg >= 1 for meaningful derivative
+def test_bspline_advection_matrix(deg):
+    """Test advection matrix properties."""
+    basis = make_bspline_basis(deg)
+    C = basis.advection_matrix()
+    
+    # Check shape
+    assert C.shape == (basis.n, basis.n)
+    
+    # Sum of rows should be zero (sum B'_j = 0)
+    row_sums = C.sum(dim=1)
+    assert torch.allclose(row_sums, torch.zeros_like(row_sums), atol=1e-12), "Advection matrix row sums are not zero"
+    
+    # C + C^T should only have non-zeros at the boundary corners
+    # C_ij + C_ji = int B_i B'_j + B'_i B_j dx = int d/dx(B_i B_j) dx = [B_i B_j]_a^b
+    C_sym = C + C.T
+    expected_C_sym = torch.zeros_like(C_sym)
+    expected_C_sym[0, 0] = -1.0  # B_0(a) = 1, B_0(b) = 0 => 0 - 1 = -1
+    expected_C_sym[-1, -1] = 1.0  # B_n(a) = 0, B_n(b) = 1 => 1 - 0 = 1
+    
+    assert torch.allclose(C_sym, expected_C_sym, atol=1e-12), "C + C.T does not match expected boundary values"
+
+
+# =============================================================================
+# Boundary Modes (bc): "zero" and "decay"
+# =============================================================================
+
+BC_CONFIGS = [
+    ("zero", "clamped"),
+    ("clamped", "zero"),
+    ("zero", "zero"),
+    ("clamped", "decay"),
+    ("decay", "clamped"),
+    ("decay", "decay"),
+    ("zero", "decay"),
+    ("decay", "zero"),
+]
+
+
+def make_bc_basis(deg, bc, num_knots=6, decay_rate=None):
+    """Factory for BSplineBasis with boundary modes on [0, 1]."""
+    knots = torch.linspace(0, 1, num_knots, dtype=torch.float64)
+    return BSplineBasis(knots, deg=deg, bc=bc, decay_rate=decay_rate)
+
+
+@pytest.mark.parametrize("deg", DEGREES)
+@pytest.mark.parametrize("bc", [("zero", "clamped"), ("clamped", "zero"), ("zero", "zero")])
+def test_bspline_bc_zero_dimension_and_boundary_values(deg, bc):
+    """'zero' sides reduce n by one and make all basis functions vanish there."""
+    basis = make_bc_basis(deg, bc)
+    n_clamped = 5 + deg
+    n_expected = n_clamped - bc.count("zero")
+    assert basis.n == n_expected, f"Expected n={n_expected}, got n={basis.n}"
+
+    B = basis(torch.tensor([0.0, 1.0], dtype=torch.float64))
+    if bc[0] == "zero":
+        assert B[:, 0].abs().max() < 1e-14, "Basis does not vanish at the left boundary"
+    if bc[1] == "zero":
+        assert B[:, 1].abs().max() < 1e-14, "Basis does not vanish at the right boundary"
+
+
+@pytest.mark.parametrize("deg", DEGREES)
+def test_bspline_bc_zero_weights_match_clamped(deg):
+    """'zero' integration weights equal the clamped weights of the retained functions."""
+    clamped = make_bspline_basis(deg)
+    w_clamped = clamped.integration_weights()
+
+    w_left = make_bc_basis(deg, ("zero", "clamped")).integration_weights()
+    w_both = make_bc_basis(deg, ("zero", "zero")).integration_weights()
+
+    assert torch.allclose(w_left, w_clamped[1:], atol=1e-14)
+    assert torch.allclose(w_both, w_clamped[1:-1], atol=1e-14)
+
+
+@pytest.mark.parametrize("deg", DEGREES)
+@pytest.mark.parametrize("bc", [("clamped", "decay"), ("decay", "clamped"), ("decay", "decay")])
+def test_bspline_decay_partition_of_unity_deep_interior(deg, bc):
+    """'decay' sides drop the out-of-domain crossing functions, so partition of
+    unity is lost within ~deg knot spans of a decay boundary but still holds in
+    the deep interior away from such boundaries."""
+    basis = make_bc_basis(deg, bc, num_knots=12)
+    a, b = basis.interval
+    margin = deg * (b - a) / 11  # ~deg knot spans
+    lo = a + (margin if bc[0] == "decay" else 0.0)
+    hi = b - (margin if bc[1] == "decay" else 0.0)
+    x = torch.linspace(lo, hi, 200, dtype=torch.float64)
+    sums = basis(x).sum(dim=0)
+    assert torch.allclose(sums, torch.ones_like(sums), atol=1e-10), \
+        f"Partition of unity violated in the deep interior: max dev = {(sums - 1).abs().max().item():.2e}"
+
+
+@pytest.mark.parametrize("deg", DEGREES)
+@pytest.mark.parametrize("bc", [("clamped", "decay"), ("decay", "clamped"), ("decay", "decay"),
+                                ("zero", "decay"), ("decay", "zero")])
+def test_bspline_decay_no_function_centered_outside(deg, bc):
+    """No retained basis function is centered (Greville) outside [a, b]: the
+    outermost decay function peaks at the boundary and decays monotonically."""
+    basis = make_bc_basis(deg, bc)
+    a, b = basis.interval
+    pts, _ = basis.interpolating_points()
+    assert (pts >= a - 1e-9).all() and (pts <= b + 1e-9).all(), \
+        f"Some interpolating point lies outside [a, b]: {pts}"
+
+    # The outermost decay function decays monotonically past the boundary
+    if bc[1] == "decay":
+        xr = torch.linspace(b, b + 5.0 / basis.decay_rate[1], 300, dtype=torch.float64)
+        last = basis(xr)[-1]
+        assert (last[1:] <= last[:-1] + 1e-9).all(), "Right decay tail is not monotone"
+    if bc[0] == "decay":
+        xl = torch.linspace(a - 5.0 / basis.decay_rate[0], a, 300, dtype=torch.float64)
+        first = basis(xl)[0]
+        assert (first[:-1] <= first[1:] + 1e-9).all(), "Left decay tail is not monotone"
+
+
+@pytest.mark.parametrize("deg", [1, 2, 3, 4])
+def test_bspline_decay_smoothness_at_boundary(deg):
+    """The exponential tails join the spline with C^(deg-1) smoothness."""
+    basis = make_bc_basis(deg, ("clamped", "decay"))
+    eps = 1e-6
+    xl = torch.tensor([1.0 - eps], dtype=torch.float64)
+    xr = torch.tensor([1.0 + eps], dtype=torch.float64)
+
+    # Value continuity (a discontinuity would show up as an O(1) jump)
+    jump0 = (basis(xl) - basis(xr)).abs().max().item()
+    assert jump0 < 1e-4, f"Value jump at the boundary: {jump0:.2e}"
+
+    if deg >= 2:
+        # First derivative continuity (a kink would show up as an O(deg/h) jump)
+        jump1 = (basis(xl, derivative=True) - basis(xr, derivative=True)).abs().max().item()
+        assert jump1 < 1e-2, f"First derivative jump at the boundary: {jump1:.2e}"
+
+    if deg >= 3:
+        # Second derivative continuity via finite differences of the first derivative
+        eps = 1e-5
+        ts = lambda v: torch.tensor([v], dtype=torch.float64)
+        fd2_l = (basis(ts(1.0 - eps), derivative=True) - basis(ts(1.0 - 2 * eps), derivative=True)) / eps
+        fd2_r = (basis(ts(1.0 + 2 * eps), derivative=True) - basis(ts(1.0 + eps), derivative=True)) / eps
+        jump2 = (fd2_l - fd2_r).abs().max().item()
+        scale = 1.0 + max(fd2_l.abs().max().item(), fd2_r.abs().max().item())
+        assert jump2 < 1e-2 * scale, f"Second derivative jump at the boundary: {jump2:.2e}"
+
+
+@pytest.mark.parametrize("deg", DEGREES)
+@pytest.mark.parametrize("bc", [("clamped", "decay"), ("zero", "decay"), ("decay", "decay")])
+def test_bspline_decay_integration_weights_numeric(deg, bc):
+    """Integration weights over the unbounded domain match dense numerical integration."""
+    basis = make_bc_basis(deg, bc)
+    lam_l, lam_r = basis.decay_rate
+    lo = -50.0 / lam_l if lam_l else 0.0
+    hi = 1.0 + (50.0 / lam_r if lam_r else 0.0)
+    x = torch.linspace(lo, hi, 400_001, dtype=torch.float64)
+    w_numeric = torch.trapezoid(basis(x), x, dim=1)
+    w = basis.integration_weights()
+    assert torch.allclose(w, w_numeric, atol=1e-6), \
+        f"Weights mismatch: {(w - w_numeric).abs().max().item():.2e}"
+
+
+def test_bspline_decay_weight_closed_form_deg1():
+    """For deg=1 the last weight is the hat area h/2 plus the tail mass 1/lambda."""
+    basis = make_bc_basis(1, ("clamped", "decay"), decay_rate=3.0)
+    w = basis.integration_weights()
+    h = 0.2  # spacing of linspace(0, 1, 6)
+    assert abs(w[-1].item() - (h / 2 + 1 / 3.0)) < 1e-12
+
+
+@pytest.mark.parametrize("deg", [1, 2, 3, 4])
+@pytest.mark.parametrize("bc", BC_CONFIGS)
+def test_bspline_bc_interpolation_roundtrip(deg, bc):
+    """Interpolating points give a well-conditioned matrix; coefficients of any
+    function in the span are recovered exactly from its values at the points."""
+    basis = make_bc_basis(deg, bc)
+    pts, matrix = basis.interpolating_points()
+
+    assert pts.shape == (basis.n,)
+    assert matrix.shape == (basis.n, basis.n)
+    assert torch.linalg.cond(matrix) < 1e4
+
+    # 'decay' sides drop out-of-domain crossing functions, so all retained
+    # interpolating points stay within [0, 1]
+    assert (pts >= -1e-9).all() and (pts <= 1.0 + 1e-9).all(), \
+        f"Interpolating points should lie within [0, 1] after trimming, got {pts}"
+
+    gen = torch.Generator().manual_seed(42)
+    coeffs = torch.randn(basis.n, dtype=torch.float64, generator=gen)
+    f_vals = coeffs @ basis(pts)
+    coeffs_rec = torch.linalg.solve(matrix, f_vals)
+    assert torch.allclose(coeffs, coeffs_rec, atol=1e-10), \
+        f"Round-trip failed: {(coeffs - coeffs_rec).abs().max().item():.2e}"
+
+
+@pytest.mark.parametrize("deg", DEGREES)
+def test_bspline_decay_quadrature_consistency(deg):
+    """Quadrature with tail points integrates span functions to the same value
+    as the analytic integration weights."""
+    basis = make_bc_basis(deg, ("decay", "decay"))
+    gen = torch.Generator().manual_seed(0)
+    coeffs = torch.rand(basis.n, dtype=torch.float64, generator=gen)
+
+    pts, w = basis.quadrature(deg + 1)
+    integral_quad = (coeffs @ basis(pts)) @ w
+    integral_weights = coeffs @ basis.integration_weights()
+    assert abs(integral_quad.item() - integral_weights.item()) < 1e-12
+
+
+@pytest.mark.parametrize("deg", [2, 3])
+def test_bspline_decay_matrices(deg):
+    """Mass/stiffness/advection matrices with decay tails match dense numerical
+    integration over a truncated domain; the mass matrix is SPD."""
+    basis = make_bc_basis(deg, ("clamped", "decay"))
+    lam = basis.decay_rate[1]
+    x = torch.linspace(0, 1 + 40 / lam, 1_000_001, dtype=torch.float64)
+    B = basis(x)
+    Bp = basis(x, derivative=True)
+
+    M = basis.mass_matrix()
+    S = basis.stiffness_matrix()
+    C = basis.advection_matrix()
+
+    M_num = torch.trapezoid(B.unsqueeze(1) * B.unsqueeze(0), x, dim=2)
+    S_num = torch.trapezoid(Bp.unsqueeze(1) * Bp.unsqueeze(0), x, dim=2)
+    C_num = torch.trapezoid(B.unsqueeze(1) * Bp.unsqueeze(0), x, dim=2)
+
+    assert rel_err(M, M_num) < 1e-6, f"Mass matrix mismatch: {rel_err(M, M_num):.2e}"
+    assert rel_err(S, S_num) < 1e-6, f"Stiffness matrix mismatch: {rel_err(S, S_num):.2e}"
+    assert rel_err(C, C_num) < 1e-6, f"Advection matrix mismatch: {rel_err(C, C_num):.2e}"
+
+    assert torch.allclose(M, M.T, atol=1e-12), "Mass matrix is not symmetric"
+    assert torch.linalg.eigvalsh(M).min() > 0, "Mass matrix is not positive definite"
+
+
+@pytest.mark.parametrize("deg", DEGREES)
+def test_bspline_decay_mirror_symmetry(deg):
+    """A left 'decay' basis is the mirror image of a right 'decay' basis."""
+    basis_l = make_bc_basis(deg, ("decay", "clamped"), decay_rate=4.0)
+    basis_r = make_bc_basis(deg, ("clamped", "decay"), decay_rate=4.0)
+
+    # Avoid knots: B-spline derivatives are one-sided at kinks for deg=1
+    x = torch.linspace(-2, 1, 567, dtype=torch.float64) + 0.0123 / 567
+    B_l = basis_l(x)
+    B_r = basis_r(1.0 - x)
+    assert torch.allclose(B_l, B_r.flip(0), atol=1e-12), "Mirror symmetry violated"
+
+    dB_l = basis_l(x, derivative=True)
+    dB_r = basis_r(1.0 - x, derivative=True)
+    assert torch.allclose(dB_l, -dB_r.flip(0), atol=1e-10), "Mirror symmetry of derivatives violated"
+
+
+def test_bspline_decay_autograd_tail():
+    """Gradients flow through the exponential tail region and match the analytic derivative."""
+    basis = make_bc_basis(3, ("clamped", "decay"))
+    x = torch.linspace(0.5, 2.5, 100, dtype=torch.float64, requires_grad=True)
+    B = basis(x)
+    grad, = torch.autograd.grad(B.sum(), x)
+
+    assert torch.isfinite(grad).all(), "Gradient contains NaN/Inf"
+    assert grad[x.detach() > 1.0].abs().max() > 0, "Gradient vanishes in the tail region"
+
+    dB = basis(x, derivative=True).sum(dim=0)
+    assert torch.allclose(grad, dB.detach(), atol=1e-12), "Autograd disagrees with analytic derivative"
+
+
+@pytest.mark.parametrize("deg", [2, 3, 4])
+def test_bspline_decay_default_rate_tails_nearly_nonnegative(deg):
+    """With the default decay rate the tails have at most a tiny undershoot."""
+    basis = make_bc_basis(deg, ("clamped", "decay"))
+    lam = basis.decay_rate[1]
+    x = torch.linspace(1, 1 + 30 / lam, 20_001, dtype=torch.float64)
+    assert basis(x).min() > -0.02, f"Tail undershoot too large: {basis(x).min().item():.2e}"
+
+
+def test_bspline_bc_invalid_arguments():
+    """Invalid boundary mode specifications raise ValueError."""
+    knots = torch.linspace(0, 1, 6, dtype=torch.float64)
+    with pytest.raises(ValueError):
+        BSplineBasis(knots, deg=2, bc="bogus")
+    with pytest.raises(ValueError):
+        BSplineBasis(knots, deg=0, bc=("zero", "clamped"))
+    with pytest.raises(ValueError):
+        BSplineBasis(knots, deg=0, bc=("clamped", "decay"))
+    with pytest.raises(ValueError):
+        BSplineBasis(knots, deg=2, bc=("clamped", "decay"), decay_rate=-1.0)
+
+
+def test_bspline_bc_repr():
+    """Non-default boundary modes show up in the repr."""
+    basis = make_bc_basis(2, ("zero", "decay"))
+    repr_str = repr(basis)
+    assert "BSplineBasis" in repr_str
+    assert "zero" in repr_str and "decay" in repr_str
+
+
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])
 

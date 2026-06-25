@@ -34,10 +34,7 @@ def _LU(M):
 def _max_matrix(M):
 
     values, indices = M.flatten().topk(1)
-    try:
-        indices = [tn.unravel_index(i, M.shape) for i in indices]
-    except:
-        indices = [np.unravel_index(i, M.shape) for i in indices]
+    indices = [_unravel_index(i, M.shape, M.device) for i in indices]
 
     return values, indices
 
@@ -163,7 +160,7 @@ def _build_two_core_eval_index(Idx_left, Idx_right, rank_l, n_left, n_right, ran
     return tn.cat((I3, i_left, i_right, I4), 1).to(dtype=tn.int64)
 
 
-def function_interpolate(function, x, eps=1e-9, start_tens=None, nswp=20, kick=2, kick2=0, dtype=tn.float64, rmax=sys.maxsize, method='dmrg', verbose=False):
+def function_interpolate(function, x, eps=1e-9, start_tens=None, nswp=20, kick=2, kick2=0, dtype=tn.float64, rmax=sys.maxsize, method='dmrg', verbose=False, callback=None):
     """
     Interpolate a function using tensor train cross approximation.
 
@@ -179,6 +176,12 @@ def function_interpolate(function, x, eps=1e-9, start_tens=None, nswp=20, kick=2
         rmax (int, optional): Maximum allowed rank. Defaults to sys.maxsize.
         method (str, optional): Method to use ('dmrg' or 'amen'). Defaults to 'dmrg'.
         verbose (bool, optional): If True, display information. Defaults to False.
+        callback (Callable, optional): optional hook invoked at the end of every sweep as
+            ``callback(tt, sweep, error)``, where ``tt`` is the current approximation
+            (``torchtt.TT``), ``sweep`` is the 0-based sweep index (int) and ``error`` is the
+            convergence metric for that sweep (float). If it returns ``False`` the sweeping is
+            stopped early; any other return value continues. Useful for logging or custom stopping
+            criteria. Defaults to None.
 
     Raises:
         ValueError: If the method is not 'dmrg' or 'amen'.
@@ -187,9 +190,9 @@ def function_interpolate(function, x, eps=1e-9, start_tens=None, nswp=20, kick=2
         torchtt.TT: The interpolated tensor.
     """
     if method == 'dmrg':
-        return _function_interpolate_dmrg(function, x, eps, start_tens, nswp, kick, dtype, rmax, verbose)
+        return _function_interpolate_dmrg(function, x, eps, start_tens, nswp, kick, dtype, rmax, verbose, callback=callback)
     elif method == 'amen':
-        return _function_interpolate_amen(function, x, eps, start_tens, nswp, kick, kick2, dtype, rmax, verbose)
+        return _function_interpolate_amen(function, x, eps, start_tens, nswp, kick, kick2, dtype, rmax, verbose, callback=callback)
     else:
         raise ValueError("Method must be 'dmrg' or 'amen'.")
 
@@ -397,7 +400,7 @@ class AmenCrossCallbacks(AmenCallbacks):
             state_dict['phizy_left'][k+1] = _solve_projection(state_dict, 'Ps_z_left', k+1, cry[idx_z[:z_cores[k].shape[3]], :])
 
 
-def _function_interpolate_amen(function, x, eps=1e-9, start_tens=None, nswp=20, kick=2, kick2=0, dtype=tn.float64, rmax=sys.maxsize, verbose=False):
+def _function_interpolate_amen(function, x, eps=1e-9, start_tens=None, nswp=20, kick=2, kick2=0, dtype=tn.float64, rmax=sys.maxsize, verbose=False, callback=None):
     if isinstance(x, list) or isinstance(x, tuple):
         eval_mv = True
         N = x[0].N
@@ -459,7 +462,8 @@ def _function_interpolate_amen(function, x, eps=1e-9, start_tens=None, nswp=20, 
     x_cores = [tn.reshape(c, [c.shape[0], 1, c.shape[1], c.shape[2]]) for c in cores]
 
     x_cores, rx = amen_approx(M_dummy, N_list, d, x_cores, rx, rz, state_dict, callbacks,
-                              nswp=nswp, eps=eps, rmax=rmax, kickrank=kick, kick2=kick2, verbose=verbose)
+                              nswp=nswp, eps=eps, rmax=rmax, kickrank=kick, kick2=kick2, verbose=verbose,
+                              callback=callback)
 
     if verbose:
         print('number of function calls ', callbacks.n_eval)
@@ -467,7 +471,7 @@ def _function_interpolate_amen(function, x, eps=1e-9, start_tens=None, nswp=20, 
     x_cores = [tn.reshape(c, [c.shape[0], c.shape[2], c.shape[3]]) for c in x_cores]
     return torchtt.TT(x_cores)
     
-def dmrg_cross(function, N, eps=1e-9, nswp=10, x_start=None, kick=2, dtype=tn.float64, device=None, eval_vect=True, rmax=sys.maxsize, verbose=False):
+def dmrg_cross(function, N, eps=1e-9, nswp=10, x_start=None, kick=2, dtype=tn.float64, device=None, eval_vect=True, rmax=sys.maxsize, verbose=False, callback=None):
     """
     Approximate a tensor in the TT format given that the individual entries are given using a function.
     The function is given as a function handle taking as arguments a matrix of integer indices.
@@ -493,6 +497,12 @@ def dmrg_cross(function, N, eps=1e-9, nswp=10, x_start=None, kick=2, dtype=tn.fl
         eval_vect (bool, optional): not yet implemented. Defaults to True.
         rmax (int, optional): the maximum rank. Defaults to the maximum possible integer.
         verbose (bool, optional): display debug information to the console. Defaults to False.
+        callback (Callable, optional): optional hook invoked at the end of every sweep as
+            ``callback(tt, sweep, error)``, where ``tt`` is the current approximation
+            (``torchtt.TT``), ``sweep`` is the 0-based sweep index (int) and ``error`` is the
+            convergence metric for that sweep (float). If it returns ``False`` the sweeping is
+            stopped early; any other return value continues. Useful for logging or custom stopping
+            criteria. Defaults to None.
 
     Returns:
         torchtt.TT: the result.
@@ -743,7 +753,12 @@ def dmrg_cross(function, N, eps=1e-9, nswp=10, x_start=None, kick=2, dtype=tn.fl
         # xxx = TT(cores)
         # print('#            ',xxx[1,2,3,4])
 
-        # exit condition
+        # callback / exit condition
+        if callback is not None:
+            if callback(torchtt.TT([c.clone() for c in cores]), swp, float(max_err)) is False:
+                if verbose:
+                    print('Callback requested an early stop.')
+                break
 
         if max_err < eps:
             if verbose:

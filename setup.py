@@ -1,6 +1,7 @@
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 import platform
+import os
 from warnings import warn
 
 try:
@@ -23,22 +24,19 @@ os_name = platform.system()
 print("\n" + logo_ascii + "\n")
 
 if os_name in ['Linux', 'Darwin']:
+    if os_name == 'Darwin':
+        if 'CXX' not in os.environ:
+            if os.path.exists('/opt/homebrew/opt/llvm/bin/clang++'):
+                os.environ['CXX'] = '/opt/homebrew/opt/llvm/bin/clang++'
+            elif os.path.exists('/usr/local/opt/llvm/bin/clang++'):
+                os.environ['CXX'] = '/usr/local/opt/llvm/bin/clang++'
+            else:
+                os.environ['CXX'] = 'clang++'
+        extra_link_args = []
+    else:
+        extra_link_args = ['-Wl,--no-as-needed', '-lm']
+
     try:
-        # setup(
-        #    # cmdclass={'build_ext': build_ext},
-        #     ext_modules=[
-        #         Extension(
-        #             name='torchttcpp',
-        #             sources=['cpp/cpp_ext.cpp'],
-        #             include_dirs=torch.utils.cpp_extension.include_paths()+["cpp"],
-        #             libray_dirs = torch.utils.cpp_extension.library_paths(),
-        #             language='c++',
-        #             extra_compile_args=[
-        #                 '-lblas', '-llapack', '-std=c++17',
-        #                 '-Wno-c++11-narrowing', '-g', '-w', '-O3'
-        #             ])
-        #     ]
-        # )
         setup(
             cmdclass={'build_ext': BuildExtension},
             ext_modules=[
@@ -46,13 +44,11 @@ if os_name in ['Linux', 'Darwin']:
                     'torchttcpp',
                     ['cpp/cpp_ext.cpp'],
                     include_dirs=["cpp"],
-                    #libraries=["blas", "lapack", "stdc++"],
                     extra_compile_args=[
-                        #'-lblas', '-llapack',
                         '-std=c++17',
                         '-Wno-c++11-narrowing', '-w', '-O3',
                     ],
-                    extra_link_args=['-Wl,--no-as-needed', '-lm'],
+                    extra_link_args=extra_link_args,
                 )
             ],
         )

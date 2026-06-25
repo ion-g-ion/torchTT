@@ -242,8 +242,101 @@ plt.tight_layout()
 plt.show()
 
 
+# Boundary Modes: Zero Boundaries and Unbounded Domains
+#
+# By default the basis is *clamped*: the boundary knots are repeated and the first/last
+# basis functions reach 1 at the boundary. Two additional per-side modes are available
+# through the `bc=(left, right)` argument:
+#
+# - **"zero"**: the basis function that is nonzero at that boundary is omitted, so every
+#   function in the span vanishes there (useful for densities or Dirichlet boundary
+#   conditions). The dimension n decreases by one.
+# - **"decay"**: the domain becomes unbounded on that side. The knot vector is extended
+#   with deg phantom knots and the basis functions crossing the boundary are continued
+#   by smooth tails q_i(x) * exp(-lambda*|x - b|), where q_i is a polynomial of degree
+#   deg-1 matched in value and the first deg-1 derivatives: the basis is C^(deg-1) on the
+#   whole unbounded domain. Crossing functions whose center (Greville point) would fall
+#   outside the domain are dropped, so the outermost retained function peaks at the
+#   boundary and decays monotonically past it (no redundant bump in the tail).
+#
+# The interpolating points adapt automatically: for a "zero" side the boundary point is
+# dropped, and for a "decay" side the out-of-domain points are dropped so all interpolating
+# points stay within [a, b] (the outermost sits exactly at the boundary). Integration
+# weights include the analytic tail mass, so normalization over the unbounded domain
+# works out of the box.
+
+# --- Example 1: zero boundary at the left end ---
+knots = torch.linspace(0, 1, 8)
+basis_zero = BSplineBasis(knots, deg=2, bc=("zero", "clamped"))
+print(f"Zero-left basis: {basis_zero}")
+print(f"(the clamped basis on the same knots would have n={len(knots) + 2 - 1})")
+
+x = torch.linspace(0, 1, 500, dtype=torch.float64)
+B_zero = basis_zero(x)
+pts_zero, _ = basis_zero.interpolating_points()
+
+plt.figure(figsize=(10, 5))
+for i in range(basis_zero.n):
+    plt.plot(x.numpy(), B_zero[i].numpy(), label=f'$B_{{{i}}}$')
+plt.scatter(pts_zero.numpy(), torch.zeros_like(pts_zero).numpy(), s=90, c='red', marker='^',
+            zorder=5, edgecolors='black', label='Interpolating points')
+plt.title('bc=("zero", "clamped"): every basis function vanishes at $x=0$')
+plt.xlabel('x')
+plt.ylabel('B(x)')
+plt.legend(loc='upper right', fontsize=8, ncol=2)
+plt.show()
+
+# --- Example 2: unbounded domain to the right (smooth exponential tails) ---
+knots_d = torch.linspace(0, 2, 5)  # wide spacing h=0.5 so the tails are clearly visible
+basis_decay = BSplineBasis(knots_d, deg=2, bc=("clamped", "decay"))
+print(f"Decay-right basis: {basis_decay}")
+print(f"Integration weights sum: {basis_decay.integration_weights().sum().item():.6f} "
+      f"(interval length 2 plus the analytic tail mass)")
+
+x_ext = torch.linspace(0, 3.5, 800, dtype=torch.float64)
+B_decay = basis_decay(x_ext)
+pts_decay, M_decay = basis_decay.interpolating_points()
+print(f"Interpolating points: {pts_decay.numpy().round(4)}  <- last point sits at b=2, none beyond")
+print(f"Matrix condition number: {torch.linalg.cond(M_decay):.2f}")
+
+plt.figure(figsize=(10, 5))
+for i in range(basis_decay.n):
+    plt.plot(x_ext.numpy(), B_decay[i].numpy(), label=f'$B_{{{i}}}$')
+plt.axvline(2.0, color='gray', linestyle='--', linewidth=1, label='last knot $b=2$')
+plt.scatter(pts_decay.numpy(), torch.zeros_like(pts_decay).numpy(), s=90, c='red', marker='^',
+            zorder=5, edgecolors='black', label='Interpolating points')
+plt.title('bc=("clamped", "decay"): $C^{1}$ exponential tails beyond the last knot')
+plt.xlabel('x')
+plt.ylabel('B(x)')
+plt.legend(loc='upper right', fontsize=8, ncol=2)
+plt.show()
+
+# --- Example 3: combination for densities on [0, inf): zero at 0, unbounded right ---
+# Cubic (deg=3): the last retained function peaks exactly at b and decays monotonically,
+# with no redundant bump past b (the out-of-domain crossing functions are dropped).
+knots_pdf = torch.linspace(0, 3, 10)
+basis_pdf = BSplineBasis(knots_pdf, deg=3, bc=("zero", "decay"))
+print(f"PDF-style basis: {basis_pdf}")
+
+x_pdf = torch.linspace(0, 4.5, 900, dtype=torch.float64)
+B_pdf = basis_pdf(x_pdf)
+pts_pdf, _ = basis_pdf.interpolating_points()
+
+plt.figure(figsize=(10, 5))
+for i in range(basis_pdf.n):
+    plt.plot(x_pdf.numpy(), B_pdf[i].numpy(), label=f'$B_{{{i}}}$')
+plt.axvline(3.0, color='gray', linestyle='--', linewidth=1, label='last knot $b=3$')
+plt.scatter(pts_pdf.numpy(), torch.zeros_like(pts_pdf).numpy(), s=90, c='red', marker='^',
+            zorder=5, edgecolors='black', label='Interpolating points')
+plt.title('bc=("zero", "decay"): vanishes at $x=0$, smooth tails towards $+\\infty$')
+plt.xlabel('x')
+plt.ylabel('B(x)')
+plt.legend(loc='upper right', fontsize=8, ncol=2)
+plt.show()
+
+
 # Gaussian Basis Functions
-# 
+#
 # The `GaussianBasis` class implements a basis of Gaussian functions centered at the knots.
 # $$ \phi_i(x) = \exp\left(-\frac{(x - \mu_i)^2}{2\sigma_i^2}\right) $$
 # where $\mu_i$ are the knots and $\sigma_i$ determines the width.

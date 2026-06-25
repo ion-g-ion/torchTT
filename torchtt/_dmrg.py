@@ -392,6 +392,16 @@ import sys
 import torchtt
 from torchtt._decomposition import QR, SVD, rank_chop, lr_orthogonal, rl_orthogonal
 
+def _unravel_index(idx, shape, device):
+    idx = idx.to(device=device, dtype=tn.int64) if tn.is_tensor(idx) else tn.as_tensor(idx, dtype=tn.int64, device=device)
+    try:
+        tmp = tn.unravel_index(idx, shape)
+    except Exception:
+        tmp = np.unravel_index(idx.detach().cpu().numpy(), shape)
+        tmp = tuple(tn.as_tensor(t, dtype=tn.int64, device=device) for t in tmp)
+
+    return tuple(t.to(device=device, dtype=tn.int64) if tn.is_tensor(t) else tn.as_tensor(t, dtype=tn.int64, device=device) for t in tmp)
+
 def _maxvol(M):
     """
     Maxvol
@@ -410,10 +420,7 @@ def _maxvol(M):
 
     for i in range(100):
         values, indices = tn.abs(Mat).flatten().topk(1)
-        try:
-            indices = [tn.unravel_index(i, Mat.shape) for i in indices]
-        except:
-            indices = [np.unravel_index(i, Mat.shape) for i in indices]
+        indices = [_unravel_index(i, Mat.shape, Mat.device) for i in indices]
         idx_max = indices[0]
         val_max = values[0]
         if val_max <= 1+5e-2:
@@ -423,14 +430,14 @@ def _maxvol(M):
         idx[idx_max[1]] = idx_max[0]
     return idx
 
-def _function_interpolate_dmrg(function, x, eps=1e-9, start_tens=None, nswp=20, kick=2, dtype=tn.float64, rmax=sys.maxsize, verbose=False):
+def _function_interpolate_dmrg(function, x, eps=1e-9, start_tens=None, nswp=20, kick=2, dtype=tn.float64, rmax=sys.maxsize, verbose=False, callback=None):
     if isinstance(x, list) or isinstance(x, tuple):
         eval_mv = True
         N = x[0].N
     else:
         eval_mv = False
         N = x.N
-    device = None
+    device = x[0].cores[0].device if eval_mv else x.cores[0].device
 
     if not eval_mv and len(N) == 1:
         return torchtt.TT(function(x.full())).to(device)
@@ -454,7 +461,7 @@ def _function_interpolate_dmrg(function, x, eps=1e-9, start_tens=None, nswp=20, 
 
     Ps = [tn.ones((1, 1), dtype=dtype, device=device)]+(d-1) * [None] + [tn.ones((1, 1), dtype=dtype, device=device)]
     Rm = tn.ones((1, 1), dtype=dtype, device=device)
-    Idx = [tn.zeros((1, 0), dtype=tn.int64)]+(d-1)*[None] + [tn.zeros((0, 1), dtype=tn.int64)]
+    Idx = [tn.zeros((1, 0), dtype=tn.int64, device=device)]+(d-1)*[None] + [tn.zeros((0, 1), dtype=tn.int64, device=device)]
     for k in range(d-1, 0, -1):
 
         tmp = tn.einsum('ijk,kl->ijl', cores[k], Rm)
@@ -463,11 +470,8 @@ def _function_interpolate_dmrg(function, x, eps=1e-9, start_tens=None, nswp=20, 
 
         rnew = min(N[k]*rank[k+1], rank[k])
         Jk = _maxvol(core)
-        try:
-            tmp = tn.unravel_index(Jk[:rnew], (rank[k+1], N[k]))
-        except:
-            tmp = np.unravel_index(Jk[:rnew], (rank[k+1], N[k]))
-        idx_new = tn.tensor(np.vstack((tmp[1].reshape([1, -1]), Idx[k+1][:, tmp[0]])))
+        tmp = _unravel_index(Jk[:rnew], (rank[k+1], N[k]), device)
+        idx_new = tn.vstack((tmp[1].reshape([1, -1]), Idx[k+1][:, tmp[0]]))
 
         Idx[k] = idx_new+0
 
@@ -566,11 +570,8 @@ def _function_interpolate_dmrg(function, x, eps=1e-9, start_tens=None, nswp=20, 
             tmp = tn.einsum('ij,jkl->ikl', Ps[k], cores[k])
             _, Ps[k+1] = QR(tn.reshape(tmp, [rank[k]*N[k], rank[k+1]]))
 
-            try:
-                tmp = tn.unravel_index(idx[:rank[k+1]], (rank[k], N[k]))
-            except:
-                tmp = np.unravel_index(idx[:rank[k+1]], (rank[k], N[k]))
-            idx_new = tn.tensor(np.hstack((Idx[k][tmp[0], :], tmp[1].reshape([-1, 1]))))
+            tmp = _unravel_index(idx[:rank[k+1]], (rank[k], N[k]), device)
+            idx_new = tn.hstack((Idx[k][tmp[0], :], tmp[1].reshape([-1, 1])))
             Idx[k+1] = idx_new+0
 
         for k in range(d-2, -1, -1):
@@ -652,12 +653,15 @@ def _function_interpolate_dmrg(function, x, eps=1e-9, start_tens=None, nswp=20, 
             tmp = tn.einsum('ijk,kl->ijl', cores[k+1], Ps[k+2])
             _, tmp = QR(tn.reshape(tmp, [rank[k+1], -1]).t())
             Ps[k+1] = tmp
-            try:
-                tmp = tn.unravel_index(idx[:rank[k+1]], (N[k+1], rank[k+2]))
-            except:
-                tmp = np.unravel_index(idx[:rank[k+1]], (N[k+1], rank[k+2]))
-            idx_new = tn.tensor(np.vstack((tmp[0].reshape([1, -1]), Idx[k+2][:, tmp[1]])))
+            tmp = _unravel_index(idx[:rank[k+1]], (N[k+1], rank[k+2]), device)
+            idx_new = tn.vstack((tmp[0].reshape([1, -1]), Idx[k+2][:, tmp[1]]))
             Idx[k+1] = idx_new+0
+
+        if callback is not None:
+            if callback(torchtt.TT([c.clone() for c in cores]), swp, float(max_err)) is False:
+                if verbose:
+                    print('Callback requested an early stop.')
+                break
 
         if max_err < eps:
             if verbose:

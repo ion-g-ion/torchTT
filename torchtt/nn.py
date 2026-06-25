@@ -321,26 +321,35 @@ class CompressedTTLayer(nn.Module):
     """
     A Tensor Train (TT) neural network layer that operates directly on TT objects and applies nonlinear activation between TT cores during multiplication.
     
-    This layer is inspired by Nonlinear Tensor Train formats for deep neural networks. Instead of computing the full dense tensor, it performs a fast matrix-vector-like multiplication of the layer's TTM weights with the input TT object. The layer natively applies a nonlinear activation and an optional bias to the intermediate core representations during the contraction sweep. The intermediate representations are orthogonalized and truncated to maintain the compression, ensuring the output TT object's rank is strictly bounded by `rmax`.
+    This layer is inspired by Nonlinear Tensor Train formats for deep neural networks. Instead of computing the full dense tensor, it performs a fast matrix-vector-like multiplication of the layer's TTM weights with the input TT object. The layer natively applies a nonlinear activation and an optional bias to the intermediate core representations during the contraction sweep. The intermediate representations are orthogonalized and truncated to maintain the compression, ensuring the output TT object's ranks are strictly bounded by ``R_output``.
     """
-    def __init__(self, N_in, N_out, R_layer, rmax, activation=tn.relu, bias=True, dtype=tn.float32):
+    def __init__(self, N_in, N_out, R_layer, R_output, activation=tn.relu, bias=True, dtype=tn.float32):
         """
         Initialize the CompressedTTLayer.
         
         Args:
             N_in (list[int]): Mode sizes for the input dimensions.
             N_out (list[int]): Mode sizes for the output dimensions.
-            R_layer (list[int]): TT ranks of the layer's TTM weight operator.
-            rmax (int): The maximum TT rank allowed for the output TT object. The forward pass guarantees the output ranks will not exceed this value.
-            activation (callable, optional): The nonlinear activation function to apply between cores during multiplication. Defaults to `torch.relu`.
+            R_layer (list[int]): TT ranks of the layer's TTM weight operator (length ``len(N_in)+1``).
+            R_output (list[int]): TT ranks of the output tensor (length ``len(N_out)+1``). Must satisfy ``R_output[0] == R_output[-1] == 1``. Each entry ``R_output[k]`` bounds the rank at the k-th bond of the output TT, giving per-bond control over the compression.
+            activation (callable, optional): The nonlinear activation function to apply between cores during multiplication. Defaults to ``torch.relu``.
             bias (bool, optional): If True, a trainable per-mode bias is added to the intermediate core representations. Defaults to True.
-            dtype (torch.dtype, optional): Data type for the layer's weights. Defaults to torch.float32.
+            dtype (torch.dtype, optional): Data type for the layer's weights. Defaults to ``torch.float32``.
+        
+        Raises:
+            InvalidArguments: If ``R_output`` does not have the correct length or boundary conditions.
         """
         super().__init__()
+        d = len(N_in)
+        if len(R_output) != d + 1:
+            raise InvalidArguments(f"R_output must have length {d+1} (len(N_in)+1), got {len(R_output)}.")
+        if R_output[0] != 1 or R_output[-1] != 1:
+            raise InvalidArguments("R_output[0] and R_output[-1] must be 1.")
+        
         self.size_in = N_in
         self.size_out = N_out
         self.rank = R_layer
-        self.rmax = rmax
+        self.R_output = list(R_output)
         self.activation = activation
         self.dtype = dtype
 
@@ -361,16 +370,24 @@ class CompressedTTLayer(nn.Module):
         
         Computes the operation by multiplying the input TT with the layer's TTM using a right-to-left sweep. 
         During this sweep, the intermediate bias is added and the activation is applied to the core before 
-        the core is orthogonalized and truncated (using SVD) to strictly enforce the `rmax` limit.
+        the core is orthogonalized and truncated (using SVD) to strictly enforce the per-bond rank limits 
+        given by ``R_output``.
 
         Args:
             x (torchtt.TT): The input Tensor Train object.
             
         Returns:
-            torchtt.TT: The output Tensor Train object representing the nonlinearly compressed forward pass, with maximum rank strictly bounded by `rmax`.
+            torchtt.TT: The output Tensor Train object representing the nonlinearly compressed forward pass, with ranks bounded by ``R_output``.
         """
         d = len(self.size_in)
         from ._fast_mult import swap_cores
+        
+        # The sweep processes cores right-to-left, so the internal "cores" list
+        # is reversed: cores[j] in the sweep corresponds to bond (d-1-j) in the
+        # original ordering. We need to map swap_cores calls to the correct
+        # R_output entry for each bond.
+        # After reversal, bond between sweep-cores[j] and sweep-cores[j+1]
+        # corresponds to original bond index (d-1-j).
         
         cores = [tn.permute(c, [2, 1, 0]) for c in x.cores[::-1]]
         for i in range(d):
@@ -384,7 +401,10 @@ class CompressedTTLayer(nn.Module):
                 
             if i != d-1:
                 for j in range(i, -1, -1):
-                    cores[j], cores[j+1] = swap_cores(cores[j], cores[j+1], 0.0, self.rmax)
+                    # Bond between sweep-cores[j] and sweep-cores[j+1] maps to
+                    # original bond index (d-1-j).
+                    bond_idx = d - 1 - j
+                    cores[j], cores[j+1] = swap_cores(cores[j], cores[j+1], 0.0, self.R_output[bond_idx])
                     
         cores = [tn.permute(c, [2, 1, 0]) for c in cores[::-1]]
         

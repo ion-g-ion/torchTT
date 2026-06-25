@@ -63,9 +63,10 @@ def test_function_interpolate_multivariable(method):
 
 
 @pytest.mark.skipif(not tn.cuda.is_available(), reason="CUDA device is not available.")
-def test_function_interpolate_amen_cuda_multivariable():
+@pytest.mark.parametrize("method", ["dmrg", "amen"])
+def test_function_interpolate_cuda_multivariable(method):
     """
-    AMEN interpolation should keep index state on CUDA when inputs are CUDA tensors.
+    Interpolation should keep index state on CUDA when inputs are CUDA tensors.
     """
     N = [4, 5]
     Is = tntt.meshgrid([tn.linspace(0, 1, n, dtype=tn.float64, device="cuda") for n in N])
@@ -79,13 +80,51 @@ def test_function_interpolate_amen_cuda_multivariable():
         start_tens=start_tens,
         nswp=2,
         kick=1,
-        method="amen",
+        method=method,
     )
 
     ref = Is[0].full() + 2 * Is[1].full()
     rel_err = tn.linalg.norm(y.full() - ref) / tn.linalg.norm(ref)
     assert y.is_cuda()
     assert rel_err.item() < 1e-3
+
+
+@pytest.mark.parametrize("method", ["dmrg", "amen"])
+def test_function_interpolate_qtt_modes(method):
+    """
+    Test cross interpolation with mode sizes [2]*d.
+    """
+    d = 8
+    N = [2] * d
+
+    xs = tntt.meshgrid([tn.linspace(0, 1, n, dtype=tn.float64) for n in N])
+    func = lambda v: 1 / (1 + tn.sum(v, 1))
+    x_ref = sum(x.full() for x in xs)
+    x_ref = 1 / (1 + x_ref)
+
+    y = tntt.interpolate.function_interpolate(
+        func, xs, eps=1e-6, nswp=30, method=method
+    )
+    assert err_rel(y.full(), x_ref) < 1e-5
+
+
+@pytest.mark.parametrize("method", ["dmrg", "amen"])
+def test_function_interpolate_qtt_modes_fewer_args(method):
+    """
+    Test cross interpolation with mode sizes [2]*d where the number
+    of function arguments is less than the number of tensor dimensions.
+    """
+    d = 10
+    N = [2] * d
+
+    xs = tntt.meshgrid([tn.linspace(0, 1, n, dtype=tn.float64) for n in N])
+    func = lambda v: 1 / (1 + v[:, 0] + v[:, 1])
+    x_ref = 1 / (1 + xs[0].full() + xs[1].full())
+
+    y = tntt.interpolate.function_interpolate(
+        func, [xs[0], xs[1]], eps=1e-6, nswp=30, method=method
+    )
+    assert err_rel(y.full(), x_ref) < 1e-5
 
 
 @pytest.mark.parametrize("method", ["dmrg", "amen"])

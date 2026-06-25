@@ -6,6 +6,7 @@ import torchtt
 from torchtt._decomposition import QR, SVD, rl_orthogonal
 import numpy as np
 import datetime
+import opt_einsum as oe
 
 
 def _rank_chop_torch(s, eps):
@@ -59,7 +60,7 @@ class AmenCallbacks:
 
 
 def amen_approx(M, N, d, x_cores, rx, rz, state_dict, callbacks: AmenCallbacks,
-                nswp=22, eps=1e-10, rmax=1024, kickrank=4, kick2=0, verbose=False):
+                nswp=22, eps=1e-10, rmax=1024, kickrank=4, kick2=0, verbose=False, callback=None):
     """
     General Alternating Minimal Energy (AMEN) approximation algorithm.
 
@@ -78,6 +79,12 @@ def amen_approx(M, N, d, x_cores, rx, rz, state_dict, callbacks: AmenCallbacks,
         kickrank (int): rank enlargement for error approximation.
         kick2 (int): additional random enrichment for Z.
         verbose (bool): output debug info.
+        callback (Callable, optional): optional hook invoked at the end of every sweep as
+            ``callback(tt, sweep, error)``, where ``tt`` is the current approximation
+            (``torchtt.TT``), ``sweep`` is the 0-based sweep index (int) and ``error`` is the
+            convergence metric for that sweep (float). If it returns ``False`` the sweeping is
+            stopped early; any other return value continues. Useful for logging or custom stopping
+            criteria. Defaults to None.
     """
     dtype = x_cores[0].dtype
     device = x_cores[0].device
@@ -131,7 +138,8 @@ def amen_approx(M, N, d, x_cores, rx, rz, state_dict, callbacks: AmenCallbacks,
                 core = tn.reshape(x_cores[k], [rx[k], M[k]*N[k]*rx[k+1]]).t()
                 Qmat, Rmat = QR(core)
 
-            core_prev = tn.einsum('ijlk,km->ijlm', x_cores[k-1], Rmat.T)
+            # Direct matrix product on the last dimension is faster than einsum / opt_einsum
+            core_prev = x_cores[k-1] @ Rmat.T
             rx[k] = Qmat.shape[1]
 
             x_cores[k] = tn.reshape(Qmat.t(), [rx[k], M[k], N[k], rx[k+1]])
@@ -178,6 +186,12 @@ def amen_approx(M, N, d, x_cores, rx, rz, state_dict, callbacks: AmenCallbacks,
             u = u[:, :r]
             v = v[:, :r] * s[:r][None, :]
 
+            # When rx[k]*M[k]*N[k] < rx[k+1], the SVD produces fewer rows in v
+            # than rx[k+1].  Pad with zeros so that the enrichment concatenation
+            # (which assumes v has rx[k+1] rows) stays consistent.
+            if v.shape[0] < rx[k+1]:
+                v = tn.cat((v, tn.zeros([rx[k+1] - v.shape[0], v.shape[1]], dtype=dtype, device=device)), 0)
+
             if not last:
                 cz_new = callbacks.compute_z_fwd(k, state_dict, x_cores, z_cores, u, v)
                 uz, _, _ = SVD(tn.reshape(cz_new, [rz[k]*M[k]*N[k], rz[k+1]]))
@@ -200,7 +214,9 @@ def amen_approx(M, N, d, x_cores, rx, rz, state_dict, callbacks: AmenCallbacks,
                     v = v @ Rmat.t()
 
                 r = u.shape[1]
-                v = tn.einsum('ji,jklm->iklm', v, x_cores[k+1])
+                # Reshape + matmul is faster than einsum / opt_einsum because it avoids overhead in tight loops
+                v = tn.reshape(v.t() @ tn.reshape(x_cores[k+1], [v.shape[0], -1]),
+                               [v.shape[1], x_cores[k+1].shape[1], x_cores[k+1].shape[2], x_cores[k+1].shape[3]])
 
 
 
@@ -218,6 +234,16 @@ def amen_approx(M, N, d, x_cores, rx, rz, state_dict, callbacks: AmenCallbacks,
             print('Maxdx ', max_dx)
             tme_sweep = datetime.datetime.now() - tme_sweep
             print('Time ', tme_sweep)
+
+        if callback is not None:
+            if all(m == 1 for m in M):
+                cb_cores = [tn.reshape(c, [c.shape[0], c.shape[2], c.shape[3]]) for c in x_cores]
+            else:
+                cb_cores = [c.clone() for c in x_cores]
+            if callback(torchtt.TT(cb_cores), swp, float(max_dx)) is False:
+                if verbose:
+                    print('Callback requested an early stop.')
+                break
 
         if last:
             break

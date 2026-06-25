@@ -49,5 +49,5 @@ Advanced Topics
 
    ../examples/automatic_differentiation.ipynb
    ../examples/manifold.ipynb
-   ../examples/cuda.ipynb
+   ../examples/gpu_acceleration.ipynb
 
