@@ -468,7 +468,7 @@ def meshgrid(vectors):
     Xs = []
     dtype = vectors[0].dtype
     for i in range(len(vectors)):
-        lst = [tn.ones((1, v.shape[0], 1), dtype=dtype) for v in vectors]
+        lst = [tn.ones((1, v.shape[0], 1), dtype=dtype, device=v.device) for v in vectors]
         lst[i] = tn.reshape(vectors[i], [1, -1, 1])
         Xs.append(torchtt._tt_base.TT(lst))
     return Xs

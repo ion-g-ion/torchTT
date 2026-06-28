@@ -137,6 +137,50 @@ def test_amen_mv(dtype):
 
     assert ((C-Cr).norm()/Cr.norm()) < 1e-11
 
+
+@pytest.mark.parametrize("dtype", [tn.float64])
+def test_amen_mv_zero_operator(dtype):
+    """
+    AMEn matvec should preserve exact zero output for a zero operator.
+    """
+    N = [3, 4, 2]
+    A = tntt.zeros([(n, n) for n in N], dtype=dtype)
+    x = tntt.randn(N, [1, 2, 2, 1], dtype=dtype)
+
+    C = tntt.amen_mv(A, x, nswp=4, eps=1e-12, kickrank=2)
+
+    assert C.N == N
+    assert C.norm() < 1e-12
+
+
+@pytest.mark.parametrize("dtype", [tn.float64])
+def test_amen_mv_zero_vector(dtype):
+    """
+    AMEn matvec should handle zero right-hand tensors without NaNs.
+    """
+    N = [3, 4, 2]
+    A = tntt.eye(N, dtype=dtype)
+    x = tntt.zeros(N, dtype=dtype)
+
+    C = tntt.amen_mv(A, x, nswp=4, eps=1e-12, kickrank=2)
+
+    assert C.N == N
+    assert C.norm() < 1e-12
+
+
+@pytest.mark.parametrize("dtype", [tn.float64])
+def test_amen_mv_identity(dtype):
+    """
+    AMEn matvec should reproduce an input tensor under the identity matrix.
+    """
+    N = [3, 4, 2]
+    A = tntt.eye(N, dtype=dtype)
+    x = tntt.randn(N, [1, 2, 2, 1], dtype=dtype)
+
+    C = tntt.amen_mv(A, x, nswp=8, eps=1e-12, kickrank=2)
+
+    assert ((C - x).norm() / x.norm()) < 1e-11
+
 @pytest.mark.parametrize("dtype", [tn.float64])
 def test_amen_mm(dtype):
     """
@@ -154,6 +198,49 @@ def test_amen_mm(dtype):
     C = tntt.amen_mm(A, B)
 
     assert ((C-Cr).norm()/Cr.norm()) < 1e-11
+
+
+@pytest.mark.parametrize("dtype", [tn.float64])
+def test_amen_mm_zero_left_factor(dtype):
+    """
+    AMEn matmat should return a zero matrix when the left factor is zero.
+    """
+    A = tntt.zeros([(3, 2), (4, 3)], dtype=dtype)
+    B = tntt.randn([(2, 5), (3, 6)], [1, 2, 1], dtype=dtype)
+
+    C = tntt.amen_mm(A, B, nswp=4, eps=1e-12, kickrank=2)
+
+    assert C.M == [3, 4]
+    assert C.N == [5, 6]
+    assert C.norm() < 1e-12
+
+
+@pytest.mark.parametrize("dtype", [tn.float64])
+def test_amen_mm_zero_right_factor(dtype):
+    """
+    AMEn matmat should return a zero matrix when the right factor is zero.
+    """
+    A = tntt.eye([3, 4], dtype=dtype)
+    B = tntt.zeros([(3, 2), (4, 5)], dtype=dtype)
+
+    C = tntt.amen_mm(A, B, nswp=4, eps=1e-12, kickrank=2)
+
+    assert C.M == [3, 4]
+    assert C.N == [2, 5]
+    assert C.norm() < 1e-12
+
+
+@pytest.mark.parametrize("dtype", [tn.float64])
+def test_amen_mm_identity_left_factor(dtype):
+    """
+    AMEn matmat should reproduce the right factor under a left identity.
+    """
+    A = tntt.eye([3, 4], dtype=dtype)
+    B = tntt.randn([(3, 2), (4, 5)], [1, 2, 1], dtype=dtype)
+
+    C = tntt.amen_mm(A, B, nswp=8, eps=1e-12, kickrank=2)
+
+    assert ((C - B).norm() / B.norm()) < 1e-11
 
 
 if __name__ == '__main__':

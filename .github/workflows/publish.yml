@@ -1,11 +1,16 @@
 name: Publish torchTT to pypi
 
-on: push
+on:
+  workflow_run:
+    workflows: ["Continuous Integration"]
+    types:
+      - completed
 
 jobs:
   build:
     name: Build distribution
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
     - uses: actions/checkout@v4
@@ -30,7 +35,8 @@ jobs:
   publish-to-pypi:
     name: >-
       Publish to PyPI
-    if: startsWith(github.ref, 'refs/tags/')  # only publish to PyPI on tag pushes
+    # Only publish when triggered by a version tag (e.g., v1.0.0)
+    if: startsWith(github.event.workflow_run.head_branch, 'v') && github.event.workflow_run.event == 'push'
     needs:
     - build
     runs-on: ubuntu-latest
