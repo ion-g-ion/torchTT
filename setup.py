@@ -23,6 +23,14 @@ os_name = platform.system()
 
 print("\n" + logo_ascii + "\n")
 
+class OptionalBuildExtension(BuildExtension):
+    def build_extension(self, ext):
+        try:
+            super().build_extension(ext)
+        except Exception as e:
+            warn(f"\x1B[33m\nFailed to build C++ extension '{ext.name}'. Falling back to pure Python.\n\033[0m")
+            print(f"Error: {e}")
+
 if os_name in ['Linux', 'Darwin']:
     if os_name == 'Darwin':
         if 'CXX' not in os.environ:
@@ -38,7 +46,7 @@ if os_name in ['Linux', 'Darwin']:
 
     try:
         setup(
-            cmdclass={'build_ext': BuildExtension},
+            cmdclass={'build_ext': OptionalBuildExtension},
             ext_modules=[
                 CppExtension(
                     'torchttcpp',
