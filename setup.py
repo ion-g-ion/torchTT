@@ -46,6 +46,7 @@ if os_name in ['Linux', 'Darwin']:
 
     try:
         setup(
+            name="torchTT",
             cmdclass={'build_ext': OptionalBuildExtension},
             ext_modules=[
                 CppExtension(
