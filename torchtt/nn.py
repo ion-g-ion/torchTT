@@ -9,240 +9,307 @@ import opt_einsum as oe
 from ._aux_ops import dense_matvec
 from .errors import *
 
-class TTDensityLayer(nn.Module):
-    
-    def __init__(self, N, R, basis, linear_transformation = False, dtype = tn.float32):
-        """
-        Initialize a TT Density Layer.
-        
-        Args:
-            N (list[int]): mode sizes for each dimension.
-            R (list[int]): TT ranks (must have R[0] = R[-1] = 1).
-            basis (list[BaseBasis]): list of BaseBasis objects for each dimension.
-            linear_transformation (bool, optional): if True, input is a linear transformation. Defaults to False.
-            dtype (torch.dtype, optional): data type for the layer. Defaults to torch.float32.
-        """
+
+class Transform(nn.Module):
+    """
+    Base class for diffeomorphism transformations used in TTDensityLayer.
+    """
+    def __init__(self, dim):
         super().__init__()
+        self.dim = dim
+
+    def input_requirement(self):
+        """Returns the number of parameters required from the NN per sample."""
+        raise NotImplementedError
+
+    def forward(self, x, params):
+        """
+        Applies the transformation.
+        Args:
+            x (torch.Tensor): Input tensor of shape (..., dim).
+            params (torch.Tensor): Parameter tensor of shape (..., input_requirement).
+        Returns:
+            z (torch.Tensor): Transformed tensor.
+            det_jac (torch.Tensor or float): Determinant of the Jacobian.
+        """
+        raise NotImplementedError
+
+
+class AffineTransform(Transform):
+    """
+    Affine transformation block:
+    z = R(theta) diag(exp(a)) x + b
+
+    Where R(theta) is a rotation matrix parameterized by Givens angles.
+    det J = prod(exp(a))
+    """
+    def input_requirement(self):
+        return self.dim * (self.dim - 1) // 2 + 2 * self.dim
+
+    def _create_rotation_matrix(self, angles, device, dtype):
+        batch_shape = angles.shape[:-1]
+        R = tn.eye(self.dim, device=device, dtype=dtype)
+        view_shape = [1] * len(batch_shape) + [self.dim, self.dim]
+        R = R.view(*view_shape).repeat(*batch_shape, 1, 1)
         
+        k = 0
+        for i in range(self.dim):
+            for j in range(i + 1, self.dim):
+                theta = angles[..., k] 
+                c = tn.cos(theta).unsqueeze(-1)
+                s = tn.sin(theta).unsqueeze(-1)
+                R_i = R[..., :, i].clone()
+                R_j = R[..., :, j].clone()
+                R[..., :, i] = c * R_i + s * R_j
+                R[..., :, j] = -s * R_i + c * R_j
+                k += 1
+        return R
+
+    def forward(self, x, params):
+        n_pairs = self.dim * (self.dim - 1) // 2
+        angles = params[..., :n_pairs]
+        scales = tn.exp(params[..., n_pairs:n_pairs+self.dim])
+        offsets = params[..., n_pairs+self.dim:]
+
+        R = self._create_rotation_matrix(angles, params.device, params.dtype)
+        x = x * scales
+        z = tn.einsum('...ij,...j->...i', R, x) + offsets
+        det_jac = tn.prod(scales, dim=-1)
+        return z, det_jac
+
+
+class Rank1Shear(Transform):
+    """
+    Volume-preserving rank-1 nonlinear shear:
+    z = x + u * g(v^T x + c)
+    
+    To ensure volume preservation (det J = 1), u is projected orthogonally to v such that v^T u = 0.
+    The scalar function g(t) is a polynomial of degree D with no constant term: g(t) = sum_{p=1}^D alpha_p t^p.
+    If clipping is applied, the displacement is squashed to prevent numerical overflow: 
+    g_clip(t) = clip * tanh(g(t) / clip).
+    """
+    def __init__(self, dim, degree=2, clip=None):
+        super().__init__(dim)
+        self.degree = degree
+        self.clip = clip
+
+    def input_requirement(self):
+        return 2 * self.dim + 1 + self.degree
+
+    @staticmethod
+    def _eval_poly(coeffs, t):
+        g = tn.zeros(tn.broadcast_shapes(coeffs.shape[:-1], t.shape), dtype=t.dtype, device=t.device)
+        for p in range(coeffs.shape[-1] - 1, -1, -1):
+            g = (g + coeffs[..., p]) * t
+        return g
+
+    def forward(self, x, params):
+        u_raw = params[..., :self.dim]
+        v = params[..., self.dim:2*self.dim]
+        c = params[..., 2*self.dim]
+        alpha = params[..., 2*self.dim+1:]
+
+        u = u_raw - ((v * u_raw).sum(-1, keepdim=True) / ((v * v).sum(-1, keepdim=True) + 1e-12)) * v
+        g = self._eval_poly(alpha, (v * x).sum(-1) + c)
+        if self.clip is not None:
+            g = self.clip * tn.tanh(g / self.clip)
+        z = x + u * g.unsqueeze(-1)
+        return z, 1.0
+
+
+class TriangularShear(Transform):
+    """
+    Unit upper-triangular linear shear (completes the affine family).
+    det J = 1.
+    """
+    def input_requirement(self):
+        return self.dim * (self.dim - 1) // 2
+
+    def forward(self, x, params):
+        components = []
+        k = 0
+        for i in range(self.dim):
+            xi = x[..., i]
+            for j in range(i + 1, self.dim):
+                xi = xi + params[..., k] * x[..., j]
+                k += 1
+            components.append(xi)
+        z = tn.stack(tn.broadcast_tensors(*components), dim=-1)
+        return z, 1.0
+
+
+class TriangularPolyShear(Transform):
+    """
+    Knothe-Rosenblatt-style triangular polynomial shear:
+    z_i = x_i + sum_{j>i} q_{ij}(x_j)
+
+    Each q_{ij}(t) is a polynomial of degree D_poly with no constant term: q_{ij}(t) = sum_{p=1}^{D_poly} beta_{ij,p} t^p.
+    det J = 1.
+    """
+    def __init__(self, dim, degree):
+        super().__init__(dim)
+        self.degree = degree
+
+    def input_requirement(self):
+        return (self.dim * (self.dim - 1) // 2) * self.degree
+
+    def forward(self, x, params):
+        n_pairs = self.dim * (self.dim - 1) // 2
+        beta = params.reshape(*params.shape[:-1], n_pairs, self.degree)
+        
+        components = []
+        k = 0
+        for i in range(self.dim):
+            xi = x[..., i]
+            for j in range(i + 1, self.dim):
+                xi = xi + Rank1Shear._eval_poly(beta[..., k, :], x[..., j])
+                k += 1
+            components.append(xi)
+        z = tn.stack(tn.broadcast_tensors(*components), dim=-1)
+        return z, 1.0
+
+
+class SinhArcsinhWarp(Transform):
+    """
+    Elementwise sinh-arcsinh warp:
+    z_i = sinh(e^{s_i} asinh(x_i) + b_i)
+    """
+    def input_requirement(self):
+        return 2 * self.dim
+
+    def forward(self, x, params):
+        sa_log_scale = params[..., :self.dim]
+        sa_offset = params[..., self.dim:]
+        a = tn.exp(sa_log_scale)
+        inner = a * tn.asinh(x) + sa_offset
+        det_jac = tn.prod(a * tn.cosh(inner) / tn.sqrt(1.0 + x*x), dim=-1)
+        z = tn.sinh(inner)
+        return z, det_jac
+
+
+class ComposedTransform(Transform):
+    """
+    Chains multiple transformations.
+    """
+    def __init__(self, transforms):
+        dim = transforms[0].dim if transforms else 0
+        super().__init__(dim)
+        self.transforms = nn.ModuleList(transforms)
+
+    def input_requirement(self):
+        return sum(t.input_requirement() for t in self.transforms)
+
+    def forward(self, x, params):
+        det_jac = 1.0
+        sofar = 0
+        for t in self.transforms:
+            req = t.input_requirement()
+            p = params[..., sofar:sofar+req]
+            x, dj = t(x, p)
+            if isinstance(dj, tn.Tensor) or dj != 1.0:
+                det_jac = det_jac * dj
+            sofar += req
+        return x, det_jac
+
+
+class TTDensityLayer(nn.Module):
+    """
+    A TT Density Layer evaluating p(x) = p_ref(T(x)) * |det J_T(x)|.
+    """
+    def __init__(self, N, R, basis, transform=None, dtype=tn.float32):
+        super().__init__()
         if R[0] != 1 or R[-1] != 1 and len(R) != len(N)+1:
             raise InvalidArguments("The rank and the number of modes do not match.")
         if len(basis) != len(N):
             raise InvalidArguments("The number of bases must match the number of modes.")
-        if len(N) < 1:
-            raise InvalidArguments("The dimension of the tensor must be at least 1.")
-        
-        # Verify that N matches the basis dimensions
         for i, (n, b) in enumerate(zip(N, basis)):
             if n != b.n:
                 raise InvalidArguments(f"Mode size N[{i}]={n} does not match basis dimension {b.n}")
-        
+
         self.dim = len(N)
         self.N = N
         self.R = R
-        self.linear_transformation = linear_transformation
+        self.transform = transform
         self.dtype = dtype
         
-        # basis is a list of BaseBasis objects - get integration weights from them
         self.basis = nn.ModuleList(basis)
-        
-        # Register integration weights as buffers
         for i, b in enumerate(basis):
             self.register_buffer(f'integration_weight_{i}', b.integration_weights().to(self.dtype))
 
     @property
     def integration_weights(self):
         return [getattr(self, f'integration_weight_{i}') for i in range(self.dim)]
-        
-    @staticmethod
-    def input_requireemnt(N, R, linear_transformation = False):
-        """
-        Computes the number of input features required for the given dimensions and ranks.
 
-        Args:
-            N (list[int]): mode size every domension.
-            R (list[int]): the rank of the TT decomposition.
-            linear_transformation (bool, optional): if True, the input is a linear transformation of the input. Defaults to False.
+    @property
+    def _tt_params_size(self):
+        return sum(self.N[i]*self.R[i]*self.R[i+1] for i in range(self.dim))
 
-        Returns:
-            int: the number of input features required.
-        """
-        n_cores = sum([N[i]*R[i]*R[i+1] for i in range(len(N))])
-        if not linear_transformation:
-            return n_cores
-        else:
-            dim = len(N)
-            # Cores + Angles + Scales + Offsets
-            return n_cores + dim * (dim - 1) // 2 + 2 * dim
-        
+    def input_requirement(self):
+        total = self._tt_params_size
+        if self.transform is not None:
+            total += self.transform.input_requirement()
+        return total
+
+    # Backward compatibility
+    input_requireemnt = input_requirement
+
     def marginalize(self, tts, x, keep_indices):
-         
         pass
     
     def get_tt(self, tts):
-        """
-        Extract TT objects from flattened input.
-        
-        Args:
-            tts (torch.Tensor): flattened TT cores of shape (..., total_params) where
-                total_params = sum(N[i] * R[i] * R[i+1] for all i)
-                
-        Returns:
-            list[torchtt.TT]: list of TT objects, one for each sample in the batch
-        """
-        if not tts.shape[-1] == sum([self.N[i]*self.R[i]*self.R[i+1] for i in range(len(self.N))]):
-            raise InvalidArguments("The shape of the tensor does not match the number of modes and the ranks.")
-        
-        # Flatten all batch dimensions
         batch_shape = tts.shape[:-1]
         tts_flat = tts.reshape(-1, tts.shape[-1])
-        
         tt_list = []
         for batch_idx in range(tts_flat.shape[0]):
-            # Extract cores for this sample
             cores = []
             sofar = 0
-            for i in range(len(self.N)):
+            for i in range(self.dim):
                 core_size = self.N[i] * self.R[i] * self.R[i+1]
                 core_flat = tts_flat[batch_idx, sofar:sofar+core_size]
                 core = core_flat.view(self.R[i], self.N[i], self.R[i+1])
                 cores.append(core)
                 sofar += core_size
-            
-            # Create TT object from cores
-            tt_obj = torchtt.TT(cores)
-            tt_list.append(tt_obj)
-        
-        # If input had batch dimensions, reshape the list accordingly
-        if len(batch_shape) > 0:
-            # Return nested list structure matching batch dimensions
-            # For simplicity, return flat list - user can reshape if needed
-            pass
-        
+            tt_list.append(torchtt.TT(cores))
         return tt_list
-    
-     
-    def _create_rotation_matrix(self, angles, dim, device, dtype):
-        batch_shape = angles.shape[:-1]
-        # Start with identity
-        R = tn.eye(dim, device=device, dtype=dtype)
-        # Expand to batch
-        view_shape = [1] * len(batch_shape) + [dim, dim]
-        R = R.view(*view_shape).repeat(*batch_shape, 1, 1)
-        
-        k = 0
-        for i in range(dim):
-            for j in range(i + 1, dim):
-                theta = angles[..., k] 
-                c = tn.cos(theta)
-                s = tn.sin(theta)
-                
-                # Expand for broadcasting
-                c = c.unsqueeze(-1)
-                s = s.unsqueeze(-1)
-                
-                R_i = R[..., :, i].clone()
-                R_j = R[..., :, j].clone()
-                
-                # Update columns
-                R[..., :, i] = c * R_i + s * R_j
-                R[..., :, j] = -s * R_i + c * R_j
-                
-                k += 1
-        return R
 
     def forward(self, tts, x):
-        """
-        Forward pass: evaluate the TT density at input points x.
-        
-        The evaluation uses the basis functions to compute:
-        - Numerator: product of basis evaluations contracted with TT cores
-        - Denominator: product of integration weights contracted with TT cores (normalization)
-        - Output: normalized density value at each input point
-        
-        Args:
-            tts (torch.Tensor): flattened TT parameters of shape (..., total_params)
-            x (torch.Tensor): input points of shape (..., dim)
-            
-        Returns:
-            torch.Tensor: density values at input points, shape (...)
-        """
         if not isinstance(x, tn.Tensor):
             x = tn.tensor(x, dtype=self.dtype, device=tts.device)
         else:
-             x = x.to(dtype=self.dtype)
+            x = x.to(dtype=self.dtype)
              
-        if not tts.shape[-1] == self.input_requireemnt(self.N, self.R, self.linear_transformation):
-            raise InvalidArguments("The shape of the tensor does not match the number of modes and the ranks.")
+        if tts.shape[-1] != self.input_requirement():
+            raise InvalidArguments("The shape of the tensor does not match the input requirement.")
         if self.dim != x.shape[-1]:
             raise InvalidArguments("The dimension of the tensor does not match the dimension of the input.")
         
-        # Extract cores from flattened input
         sofar = 0
         cores = []
-        for i in range(len(self.N)):
+        for i in range(self.dim):
             core_size = self.N[i]*self.R[i]*self.R[i+1]
-            # Reshape: (..., R[i], N[i], R[i+1])
             cores.append(tts[..., sofar:sofar+core_size].view(*tts.shape[:-1], self.R[i], self.N[i], self.R[i+1]).to(self.dtype))
             sofar += core_size
         
         det_jac = 1.0
-        if self.linear_transformation:
-            # Angles
-            n_angles = self.dim * (self.dim - 1) // 2
-            angles = tts[..., sofar:sofar+n_angles]
-            sofar += n_angles
-            
-            # Scales
-            n_scales = self.dim
-            scales = tn.exp(tts[..., sofar:sofar+n_scales])
-            sofar += n_scales
-            
-            # Offsets
-            n_offsets = self.dim
-            offsets = tts[..., sofar:sofar+n_offsets]
-            sofar += n_offsets
-            
-            # Create A = R * S
-            R = self._create_rotation_matrix(angles, self.dim, tts.device, tts.dtype)
-            
-            # Apply transformation z = R * S * x + b
-            x = x * scales
-            x = tn.einsum('...ij,...j->...i', R, x)
-            x = x + offsets
-            
-            # Jacobian det = prod(scales)
-            det_jac = tn.prod(scales, dim=-1)
-            
-        # Evaluate basis functions at input points
-        # Bevals[i] has shape (N[i], ...) where ... is the shape of x[..., i]
+        if self.transform is not None:
+            transform_params = tts[..., sofar:]
+            x, det_jac = self.transform(x, transform_params)
+
         Bevals = [self.basis[i](x[..., i]).to(self.dtype) for i in range(self.dim)]
         
-        # Compute denominator (normalization): contract with integration weights
-        # Start with first mode: integrate over mode 0
-        # "n,...nb,...nd->...bd" means: sum over n (mode index), contract cores
         denominator = oe.contract("n,...nb,...nd->...bd", self.integration_weights[0], cores[0][...,0,:,:], cores[0][...,0,:,:])
-        
         for i in range(1, self.dim):
-            # Continue contracting: "...ab,n,...anc,...bne->...ce"
             denominator = oe.contract("...ab,n,...anc,...bne->...ce", denominator, self.integration_weights[i], cores[i], cores[i])
         
-        # Compute numerator: contract with basis evaluations at x
-        # Bevals[0] has shape (N[0], ...) and cores[0] has shape (..., R[0], N[0], R[1])
-        # We need to align dimensions properly
         nominator = oe.contract("n...,...nb,...nd->...bd", Bevals[0], cores[0][...,0,:,:], cores[0][...,0,:,:])
-        
         for i in range(1, self.dim):
             nominator = oe.contract("...ab,n...,...anc,...bne->...ce", nominator, Bevals[i], cores[i], cores[i])
         
-        # Extract final values (squeeze last dimensions which should be 1x1)
         pdf_eval = nominator[..., 0, 0] / denominator[..., 0, 0]
-        
-        if self.linear_transformation:
+        if isinstance(det_jac, tn.Tensor) or det_jac != 1.0:
             pdf_eval = pdf_eval * det_jac
-            
+
         return pdf_eval
-        
-        
 
 class LinearLayerTT(nn.Module):
     """
