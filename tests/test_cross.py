@@ -47,6 +47,64 @@ def test_dmrg_cross_zero_function():
     assert x.N == N
     assert x.norm() < 1e-12
 
+
+@pytest.mark.parametrize("N", [[10, 11, 12, 13], [4, 5, 6, 7], [2, 3, 4, 5], [20, 4, 4, 20]])
+def test_dmrg_cross_small_modes(N):
+    """
+    Regression test for small or asymmetric mode sizes.
+
+    The supercore split enriches the left factor with `kick` random columns and
+    re-orthogonalizes it. When `rank[k] * N[k]` is smaller than the numerical
+    rank plus `kick`, the QR is rank deficient and Q has fewer columns than R,
+    so the right factor has to be padded to the column count of R and not of Q.
+    Getting that wrong raised `mat1 and mat2 shapes cannot be multiplied`.
+    """
+    func = lambda I: 1 / (2 + tn.sum(I, 1).to(dtype=tn.float64))
+    Is = tntt.meshgrid([tn.arange(0, n, dtype=tn.float64) for n in N])
+    x_ref = 1 / (2 + sum(I.full() for I in Is))
+
+    x = tntt.interpolate.dmrg_cross(func, N, eps=1e-9)
+
+    assert x.N == N
+    assert err_rel(x.full(), x_ref) < 1e-6
+
+
+@pytest.mark.parametrize("kick", [0, 1, 2, 4])
+def test_dmrg_cross_kick(kick):
+    """
+    The rank enrichment has to stay consistent for every enrichment size.
+    With `kick == 0` the R factor of the re-orthogonalization used to be dropped
+    instead of being applied to the other factor, which silently returned a
+    completely wrong tensor rather than raising.
+    """
+    N = [12] * 4
+    func = lambda I: 1 / (2 + tn.sum(I, 1).to(dtype=tn.float64))
+    Is = tntt.meshgrid([tn.arange(0, n, dtype=tn.float64) for n in N])
+    x_ref = 1 / (2 + sum(I.full() for I in Is))
+
+    x = tntt.interpolate.dmrg_cross(func, N, eps=1e-9, kick=kick)
+
+    assert err_rel(x.full(), x_ref) < 1e-6
+
+
+@pytest.mark.parametrize("kick", [0, 1, 2, 4])
+def test_function_interpolate_dmrg_kick(kick):
+    """
+    Same enrichment consistency check for the DMRG engine behind
+    `function_interpolate`. `kick == 0` used to drop the R factor and silently
+    return a wrong tensor. The AMEn engine is excluded: it needs a non-zero
+    enrichment rank to build the residual and does not accept `kick == 0`.
+    """
+    N = [12] * 4
+    Is = tntt.meshgrid([tn.arange(0, n, dtype=tn.float64) for n in N])
+    x_ref = 1 / (2 + sum(I.full() for I in Is))
+
+    y = tntt.interpolate.function_interpolate(
+        lambda t: 1 / (2 + t), sum(Is).round(1e-14), eps=1e-9, kick=kick, method="dmrg")
+
+    assert err_rel(y.full(), x_ref) < 1e-6
+
+
 @pytest.mark.parametrize("method", ["dmrg", "amen"])
 def test_function_interpolate_multivariable(method):
     """
@@ -67,26 +125,63 @@ def test_function_interpolate_multivariable(method):
 def test_function_interpolate_cuda_multivariable(method):
     """
     Interpolation should keep index state on CUDA when inputs are CUDA tensors.
+    More than two modes are needed: for d == 2 every supercore touches both ends
+    of the train, so the left/right index blocks are empty and never get stacked
+    together with the mode indices.
     """
-    N = [4, 5]
+    N = [4, 5, 3, 4]
     Is = tntt.meshgrid([tn.linspace(0, 1, n, dtype=tn.float64, device="cuda") for n in N])
     start_tens = tntt.ones(N, dtype=tn.float64, device="cuda")
 
-    func = lambda values: values[:, 0] + 2 * values[:, 1]
+    func = lambda values: values[:, 0] + 2 * values[:, 1] + values[:, 2] * values[:, 3]
     y = tntt.interpolate.function_interpolate(
         func,
         Is,
-        eps=1e-4,
+        eps=1e-6,
         start_tens=start_tens,
-        nswp=2,
+        nswp=4,
         kick=1,
         method=method,
     )
 
-    ref = Is[0].full() + 2 * Is[1].full()
+    ref = Is[0].full() + 2 * Is[1].full() + Is[2].full() * Is[3].full()
     rel_err = tn.linalg.norm(y.full() - ref) / tn.linalg.norm(ref)
     assert y.is_cuda()
-    assert rel_err.item() < 1e-3
+    assert rel_err.item() < 1e-5
+
+
+@pytest.mark.skipif(not tn.cuda.is_available(), reason="CUDA device is not available.")
+@pytest.mark.parametrize("method", ["dmrg", "amen"])
+def test_function_interpolate_cuda_single_tensor(method):
+    """
+    Same as above for the single tensor input (the function is applied elementwise).
+    """
+    N = [6, 5, 4, 5]
+    Is = tntt.meshgrid([tn.linspace(0, 1, n, dtype=tn.float64, device="cuda") for n in N])
+    x = (Is[0] + Is[1] + Is[2] + Is[3]).round(1e-12)
+
+    y = tntt.interpolate.function_interpolate(lambda t: tn.exp(-t**2), x, eps=1e-8, method=method)
+
+    ref = tn.exp(-x.full()**2)
+    rel_err = tn.linalg.norm(y.full() - ref) / tn.linalg.norm(ref)
+    assert y.is_cuda()
+    assert rel_err.item() < 1e-7
+
+
+@pytest.mark.skipif(not tn.cuda.is_available(), reason="CUDA device is not available.")
+def test_dmrg_cross_interpolation_cuda():
+    """
+    DMRG cross should build the index sets on the requested device.
+    """
+    func1 = lambda I: 1 / (2 + tn.sum(I + 1, 1).to(dtype=tn.float64))
+    N = [12] * 4
+    x = tntt.interpolate.dmrg_cross(func1, N, eps=1e-7, device="cuda")
+    Is = tntt.meshgrid([tn.arange(0, n, dtype=tn.float64, device="cuda") for n in N])
+    x_ref = 1 / (2 + Is[0].full() + Is[1].full() + Is[2].full() + Is[3].full() + 4)
+
+    rel_err = tn.linalg.norm(x.full() - x_ref) / tn.linalg.norm(x_ref)
+    assert x.is_cuda()
+    assert rel_err.item() < 1e-6
 
 
 @pytest.mark.parametrize("method", ["dmrg", "amen"])

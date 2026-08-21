@@ -10,7 +10,7 @@ from torchtt._decomposition import QR, SVD, lr_orthogonal, rl_orthogonal
 from torchtt._iterative_solvers import BiCGSTAB_reset, gmres_restart
 import opt_einsum as oe
 import sys
-from ._dmrg import _function_interpolate_dmrg, _maxvol
+from ._dmrg import _function_interpolate_dmrg, _maxvol, _build_two_core_eval_index
 from ._amen_approx import amen_approx, AmenCallbacks
 
 
@@ -137,27 +137,6 @@ def _build_one_core_eval_index(I_left, I_curr, I_right, rank_l, rank_r, device):
         I4 = tn.zeros((n_eval, 0), dtype=tn.int64, device=device)
 
     return tn.cat((I3, curr_col, I4), 1).to(dtype=tn.int64)
-
-
-def _build_two_core_eval_index(Idx_left, Idx_right, rank_l, n_left, n_right, rank_r, device):
-    n_eval = rank_l * n_left * n_right * rank_r
-
-    left_rows = tn.arange(rank_l, dtype=tn.int64, device=device).repeat_interleave(n_left * n_right * rank_r)
-    i_left = tn.arange(n_left, dtype=tn.int64, device=device).repeat_interleave(n_right * rank_r).repeat(rank_l).reshape(-1, 1)
-    i_right = tn.arange(n_right, dtype=tn.int64, device=device).repeat_interleave(rank_r).repeat(rank_l * n_left).reshape(-1, 1)
-    right_cols = tn.arange(rank_r, dtype=tn.int64, device=device).repeat(rank_l * n_left * n_right)
-
-    if Idx_left.shape[1] > 0:
-        I3 = Idx_left[left_rows, :]
-    else:
-        I3 = tn.zeros((n_eval, 0), dtype=tn.int64, device=device)
-
-    if Idx_right.shape[0] > 0:
-        I4 = Idx_right[:, right_cols].t()
-    else:
-        I4 = tn.zeros((n_eval, 0), dtype=tn.int64, device=device)
-
-    return tn.cat((I3, i_left, i_right, I4), 1).to(dtype=tn.int64)
 
 
 def function_interpolate(function, x, eps=1e-9, start_tens=None, nswp=20, kick=2, kick2=0, dtype=tn.float64, rmax=sys.maxsize, method='dmrg', verbose=False, callback=None):
@@ -596,7 +575,7 @@ def dmrg_cross(function, N, eps=1e-9, nswp=10, x_start=None, kick=2, dtype=tn.fl
 
             # multiply with P_k left and right
             supercore = tn.einsum('ij,jklm,mn->ikln',
-                                  Ps[k], supercore.to(dtype=dtype), Ps[k+2])
+                                  Ps[k], supercore.to(dtype=dtype, device=device), Ps[k+2])
             rank[k] = supercore.shape[0]
             rank[k+2] = supercore.shape[3]
             supercore = tn.reshape(
@@ -615,11 +594,14 @@ def dmrg_cross(function, N, eps=1e-9, nswp=10, x_start=None, kick=2, dtype=tn.fl
             V = S[:, None] * V
             UK = tn.randn((U.shape[0], kick), dtype=dtype, device=device)
             U, Rtemp = QR(tn.cat((U, UK), 1))
-            radd = U.shape[1] - rnew
+            # Rtemp always has rnew+kick columns, but QR is rank limited: when the
+            # enriched block has fewer rows than columns, U (and hence the new rank)
+            # is narrower. V has to be padded to match Rtemp's columns, not U's.
+            radd = Rtemp.shape[1] - rnew
             if radd > 0:
                 V = tn.cat(
                     (V, tn.zeros((radd, V.shape[1]), dtype=dtype, device=device)), 0)
-                V = Rtemp @ V
+            V = Rtemp @ V
             # print('kkt new',tn.linalg.norm(supercore-U@V))
             # compute err (dx)
             super_prev = tn.einsum('ijk,kmn->ijmn', cores[k], cores[k+1])
@@ -672,7 +654,7 @@ def dmrg_cross(function, N, eps=1e-9, nswp=10, x_start=None, kick=2, dtype=tn.fl
                 print('\t\tnumber evaluations', eval_index.shape[0])
 
             if eval_vect:
-                supercore = tn.reshape(function(eval_index).to(dtype=dtype), [
+                supercore = tn.reshape(function(eval_index).to(dtype=dtype, device=device), [
                                        rank[k], N[k], N[k+1], rank[k+2]])
                 n_eval += eval_index.shape[0]
             else:
@@ -684,7 +666,7 @@ def dmrg_cross(function, N, eps=1e-9, nswp=10, x_start=None, kick=2, dtype=tn.fl
 
             # multiply with P_k left and right
             supercore = tn.einsum('ij,jklm,mn->ikln',
-                                  Ps[k], supercore.to(dtype=dtype), Ps[k+2])
+                                  Ps[k], supercore.to(dtype=dtype, device=device), Ps[k+2])
             rank[k] = supercore.shape[0]
             rank[k+2] = supercore.shape[3]
             supercore = tn.reshape(
@@ -707,8 +689,8 @@ def dmrg_cross(function, N, eps=1e-9, nswp=10, x_start=None, kick=2, dtype=tn.fl
             if radd > 0:
                 U = tn.cat(
                     (U, tn.zeros((U.shape[0], radd), dtype=dtype, device=device)), 1)
-                U = U @ Rtemp.T
-                V = V.t()
+            U = U @ Rtemp.T
+            V = V.t()
 
             # compute err (dx)
             super_prev = tn.einsum('ijk,kmn->ijmn', cores[k], cores[k+1])

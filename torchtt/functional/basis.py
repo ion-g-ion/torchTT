@@ -118,8 +118,8 @@ class BSplineBasis(BaseBasis):
         - ``"decay"``: the domain becomes unbounded on that side. The knot vector
           is extended with `deg` uniformly spaced phantom knots and the basis
           functions whose support crosses the boundary knot are continued beyond
-          it by tails of the form q(x) * exp(-rate * |x - boundary|), where q is a
-          polynomial of degree deg-1 matched in value and the first deg-1
+          it by tails of the form sum_{j=1..deg} a_j * exp(-j * rate * |x - boundary|),
+          with the `deg` coefficients matched in value and the first deg-1
           derivatives. The basis is therefore C^(deg-1) on the whole unbounded
           domain and all integrals remain finite. The crossing functions whose
           Greville center would fall *outside* [a, b] are dropped, so the
@@ -147,17 +147,35 @@ class BSplineBasis(BaseBasis):
         >>> x_batch = torch.rand(32, 10, requires_grad=True)
         >>> B_batch = basis(x_batch)  # shape: (n, 32, 10)
         >>>
+        >>> # Sparse evaluation: only the deg+1 functions that are nonzero at
+        >>> # each point, plus their indices -- never forms the (n, ...) matrix
+        >>> values, indices = basis.eval_sparse(x)  # both shape: (deg+1, 100)
+        >>>
         >>> # Density-friendly variant: vanishes at 0, unbounded to the right
         >>> basis_pdf = BSplineBasis(knots, deg=3, bc=("zero", "decay"))
 
     Note:
+        Evaluation is local: the knot span of each point is found by a binary
+        search and only the `deg + 1` B-splines that are nonzero there are
+        computed, by a vectorised de Boor recursion. The cost is `O(deg^2)` per
+        point and is independent of the number of knots, and the whole recursion
+        is a handful of elementwise tensor operations, which keeps it fast on
+        both CPU and GPU and differentiable through autograd. `eval_sparse`
+        returns that compressed result directly; `__call__` scatters it into the
+        dense `(n, ...)` matrix. The mass, stiffness and advection matrices are
+        assembled from the same local blocks, so they too scale linearly in `n`.
+
+    Note:
         For ``"decay"`` sides the exponential tails are matched to the spline jet
-        at the boundary. With the default rate `deg / h` the tails are essentially
-        non-negative (for deg >= 3 a negative undershoot below 1% of the basis
-        peak remains). Rates much smaller than `deg / h` make the matched
-        polynomial factor dominate over a long range and produce large negative
-        undershoots in the tails; prefer increasing the spacing of the boundary
-        knots over lowering the rate if heavier tails are needed.
+        at the boundary. The tails are the general polynomial in the mapped
+        variable `t = 1 - exp(-rate * |x - boundary|)`, which sends the unbounded
+        side onto `[0, 1)`, constrained to vanish at `t = 1` so that they stay
+        integrable; in `x` this is a sum of `deg` geometrically spaced decaying
+        exponentials with no growing factor. With the default rate `deg / h` the
+        tails are non-negative and monotone to machine precision. Rates much
+        smaller than `deg / h` can still produce a small negative undershoot;
+        prefer increasing the spacing of the boundary knots over lowering the
+        rate if heavier tails are needed.
     """
 
     _BC_MODES = ("clamped", "zero", "decay")
@@ -177,9 +195,10 @@ class BSplineBasis(BaseBasis):
                 A single string applies to both sides. Modes other than
                 "clamped" require deg >= 1. Defaults to "clamped".
             decay_rate (float or tuple[float, float], optional): exponential decay
-                rate(s) for "decay" sides; the tails behave like
-                exp(-decay_rate * |x - boundary|). A None entry uses the default
-                `deg / h`, where h is the adjacent knot spacing. Defaults to None.
+                rate(s) for "decay" sides; the slowest term of a tail behaves like
+                exp(-decay_rate * |x - boundary|), so this sets the far-field rate.
+                A None entry uses the default `deg / h`, where h is the adjacent
+                knot spacing. Defaults to None.
         """
         super().__init__()
         if not isinstance(knots, torch.Tensor):
@@ -209,6 +228,8 @@ class BSplineBasis(BaseBasis):
         rates = []
         for side in range(2):
             if bc[side] == "decay":
+                if self._h[side] <= 0:
+                    raise ValueError("A 'decay' side needs a positive adjacent knot spacing.")
                 rate = decay_rate[side]
                 rate = self._deg / self._h[side] if rate is None else float(rate)
                 if rate <= 0:
@@ -237,6 +258,16 @@ class BSplineBasis(BaseBasis):
         self.register_buffer('_interior_knots', knots.clone())
 
         self._interval = (float(knots[0].item()), float(knots[-1].item()))
+
+        # Gather offsets used by the local evaluation:
+        # tw[a] = t[k - deg + a] for the knot window, and the basis indices
+        # k - deg .. k of the deg+1 B-splines that are nonzero on span k
+        self.register_buffer('_win_offsets',
+                             torch.arange(-self._deg, self._deg + 2), persistent=False)
+        self.register_buffer('_idx_offsets',
+                             torch.arange(-self._deg, 1), persistent=False)
+        # Span search bounds, resolved lazily per dtype (see _span_bounds)
+        self._span_bounds_cache = None
 
         # Retained range [_lo, _hi) of the extended B-spline set:
         #   - "zero" drops the single boundary function (it is the only one
@@ -267,14 +298,13 @@ class BSplineBasis(BaseBasis):
         if self._n < 1:
             raise ValueError("Too few knots for the requested degree and boundary modes.")
 
-        # Polynomial factors (in the scaled tail variable) of the smooth
-        # exponential tails for each "decay" side
-        for side, name in enumerate(('_tail_q_left', '_tail_q_right')):
+        # Coefficients of the exponential-sum tails for each "decay" side
+        for side, name in enumerate(('_tail_a_left', '_tail_a_right')):
             if bc[side] == "decay":
-                q = self._compute_tail_coefficients(side)
+                a = self._compute_tail_coefficients(side)
             else:
-                q = torch.zeros(0, 0, dtype=torch.float64)
-            self.register_buffer(name, q)
+                a = torch.zeros(0, 0, dtype=torch.float64)
+            self.register_buffer(name, a)
     
     @property
     def n(self) -> int:
@@ -337,16 +367,135 @@ class BSplineBasis(BaseBasis):
         """
         return self._decay_rates
     
+    def _apply(self, *args, **kwargs):
+        """
+        Invalidate the cached span bounds whenever the buffers are moved or cast.
+
+        `nn.Module.to`, `.float()`, `.double()`, `.cuda()` and friends all funnel
+        through `_apply`. A cast can collapse neighbouring knots (and is not
+        undone by casting back), so which spans are degenerate has to be
+        re-derived from the knots as they are stored afterwards.
+        """
+        self._span_bounds_cache = None
+        return super()._apply(*args, **kwargs)
+
+    def _span_bounds(self) -> Tuple[int, int]:
+        """
+        First and last knot span that covers [a, b] and is non-degenerate.
+
+        Points outside [a, b] have no span of their own and are attached to the
+        nearest of these two, so both must be non-degenerate for the Cox-de Boor
+        denominators to stay positive. Degeneracy is a property of the knots as
+        they are currently stored: casting the basis to a coarser dtype can
+        collapse two neighbouring knots onto the same value, so the bounds are
+        resolved against `self._knots` and cached per dtype rather than fixed at
+        construction time.
+
+        Returns:
+            Tuple[int, int]: the (first, last) usable span index.
+        """
+        if self._span_bounds_cache is None or self._span_bounds_cache[0] != self._knots.dtype:
+            gaps = ((self._knots[1:] - self._knots[:-1]) > 0)[self._deg:self._n_splines]
+            gaps = gaps.nonzero().flatten()
+            if gaps.numel() == 0:
+                raise ValueError(
+                    f"The knot vector has no non-degenerate span in {self._knots.dtype}.")
+            self._span_bounds_cache = (self._knots.dtype,
+                                       self._deg + int(gaps[0]), self._deg + int(gaps[-1]))
+        return self._span_bounds_cache[1], self._span_bounds_cache[2]
+
+    def _spans(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Locate the knot span of every point.
+
+        Returns the index `k` with `t_k <= x < t_{k+1}` on the extended knot
+        vector. Only the `deg + 1` B-splines `B_{k-deg}, ..., B_k` are nonzero on
+        that span; this is what makes the evaluation cost independent of the
+        number of knots.
+
+        The search is a pure ordering decision -- no arithmetic and no tolerance
+        -- so the interval a point is assigned to is exact, and a point sitting
+        exactly on a knot lands in the span starting there (the right-continuous
+        convention). Because the search returns the *last* knot not exceeding x,
+        the span it reports is always non-degenerate; only points outside [a, b],
+        which are clamped onto a boundary span, need the bounds of
+        `_span_bounds` to guarantee the same.
+
+        Args:
+            x (torch.Tensor): flattened points of shape (m,).
+
+        Returns:
+            torch.Tensor: integer span indices of shape (m,).
+        """
+        t = self._knots
+        dtype = torch.promote_types(x.dtype, t.dtype)
+        k = torch.searchsorted(t.to(dtype).contiguous(), x.to(dtype).contiguous(), right=True)
+        return (k - 1).clamp_(*self._span_bounds())
+
+    def _local_values(self, x: torch.Tensor, k: torch.Tensor, derivative: bool = False) -> torch.Tensor:
+        """
+        Cox-de Boor recursion restricted to the deg+1 B-splines that are nonzero
+        on the span of each point.
+
+        The triangular scheme of de Boor is run in parallel over all points, with
+        Python loops of length `deg` only: the work per point is O(deg^2) and
+        does not grow with the number of knots. Every quantity is a slice of a
+        single gathered knot window, so the whole recursion is a handful of
+        elementwise kernels on tensors of shape (<= deg+1, m).
+
+        For derivatives the recursion stops one level early and the last level
+        applies B'_{i,p} = p * [B_{i,p-1}/(t_{i+p}-t_i) - B_{i+1,p-1}/(t_{i+p+1}-t_{i+1})].
+
+        The x-dependence cancels in every denominator, leaving knot differences
+        that always straddle the (non-degenerate) span of the point and are
+        therefore strictly positive: no division guard is needed, and repeated
+        knots cannot produce NaNs.
+
+        Args:
+            x (torch.Tensor): flattened points of shape (m,), inside [a, b].
+            k (torch.Tensor): span indices of shape (m,), as returned by `_spans`.
+            derivative (bool, optional): if True, evaluate the first derivative.
+
+        Returns:
+            torch.Tensor: values of shape (deg+1, m); row q holds the value of
+                the B-spline with index `k - deg + q`.
+        """
+        p = self._deg
+        m = x.shape[0]
+        dtype = torch.promote_types(x.dtype, self._knots.dtype)
+
+        # Degree 0 is piecewise constant: its derivative vanishes
+        if derivative and p == 0:
+            return torch.zeros(1, m, dtype=dtype, device=x.device)
+
+        # Knot window of every point: tw[a] = t[k - deg + a] for a = 0..2*deg+1.
+        # One gather; all knots used below are contiguous slices of it.
+        tw = self._knots.to(dtype)[self._win_offsets.unsqueeze(1) + k.unsqueeze(0)]
+        xr = x.to(dtype).unsqueeze(0)
+
+        # Degree 0: the single B-spline that is nonzero on the span
+        N = torch.ones(1, m, dtype=dtype, device=x.device)
+
+        for j in range(1, (p - 1 if derivative else p) + 1):
+            lo = tw[p + 1 - j:p + 1]          # t_{k+r+1-j}, r = 0..j-1
+            hi = tw[p + 1:p + 1 + j]          # t_{k+r+1},   r = 0..j-1
+            tmp = N / (hi - lo)
+            N = (torch.nn.functional.pad((hi - xr) * tmp, (0, 0, 0, 1))
+                 + torch.nn.functional.pad((xr - lo) * tmp, (0, 0, 1, 0)))
+
+        if derivative:
+            g = N / (tw[p + 1:2 * p + 1] - tw[1:p + 1])
+            N = p * (torch.nn.functional.pad(g, (0, 0, 1, 0))
+                     - torch.nn.functional.pad(g, (0, 0, 0, 1)))
+
+        return N
+
     def _eval_spline_raw(self, x: torch.Tensor, derivative: bool = False) -> torch.Tensor:
         """
-        Evaluate all B-splines of the extended knot vector via Cox-de Boor recursion.
+        Evaluate all B-splines of the extended knot vector (dense, no boundary modes).
 
-        No boundary modes are applied here: no basis functions are dropped, and
-        for "decay" sides the values on the phantom spans are the polynomial
-        continuations, not the exponential tails.
-
-        For derivatives, the last recursion level applies the formula:
-        B'_{i,p}(x) = p * [B_{i,p-1}(x)/(t_{i+p}-t_i) - B_{i+1,p-1}(x)/(t_{i+p+1}-t_{i+1})]
+        No basis functions are dropped and no exponential tails are added; the
+        values are those of the polynomial B-splines on [a, b] and zero outside.
 
         Args:
             x (torch.Tensor): flattened points of shape (m,)
@@ -355,84 +504,43 @@ class BSplineBasis(BaseBasis):
         Returns:
             torch.Tensor: values of shape (n_splines, m).
         """
-        m = x.shape[0]
-        num_intervals = self._knots.shape[0] - 1
-
-        # Degree 0: derivative is zero everywhere (piecewise constant)
-        if derivative and self._deg == 0:
-            return torch.zeros(self._n_splines, m, dtype=x.dtype, device=x.device)
-
-        # For a clamped/zero right boundary the last basis function must include
-        # the right endpoint; for "decay" the boundary knot is interior-like and
-        # x = b is seeded in the first phantom span instead.
-        inclusive_last = self._bc[1] != "decay"
-
-        # Initialize degree-0 basis functions (piecewise constant)
-        # result[i, j] = 1 if knots[i] <= x[j] < knots[i+1], else 0
-        result = torch.zeros(num_intervals, m, dtype=x.dtype, device=x.device)
-
-        for i in range(num_intervals):
-            if inclusive_last and i == self._n_splines - 1:
-                mask = (x >= self._knots[i]) & (x <= self._knots[i + 1])
-            else:
-                mask = (x >= self._knots[i]) & (x < self._knots[i + 1])
-            result[i] = torch.where(mask, torch.ones_like(x), torch.zeros_like(x))
-
-        # Cox-de Boor recursion
-        for d in range(self._deg):
-            new_result = torch.zeros_like(result)
-            for i in range(num_intervals - d - 1):
-                denom1 = self._knots[i + d + 1] - self._knots[i]
-                denom2 = self._knots[i + d + 2] - self._knots[i + 1]
-
-                if derivative and d == self._deg - 1:
-                    # At the last recursion level, apply the derivative formula
-                    if denom1 != 0:
-                        a = self._deg * result[i] / denom1
-                    else:
-                        a = torch.zeros_like(x)
-
-                    if denom2 != 0:
-                        b = -self._deg * result[i + 1] / denom2
-                    else:
-                        b = torch.zeros_like(x)
-                else:
-                    # First term: B_{i,d}(x) * (x - t_i) / (t_{i+d+1} - t_i)
-                    if denom1 != 0:
-                        a = result[i] * (x - self._knots[i]) / denom1
-                    else:
-                        a = torch.zeros_like(x)
-
-                    # Second term: B_{i+1,d}(x) * (t_{i+d+2} - x) / (t_{i+d+2} - t_{i+1})
-                    if denom2 != 0:
-                        b = result[i + 1] * (self._knots[i + d + 2] - x) / denom2
-                    else:
-                        b = torch.zeros_like(x)
-
-                new_result[i] = a + b
-
-            result = new_result
-
-        return result[:self._n_splines]
+        a, b = self._interval
+        k = self._spans(x)
+        vals = self._local_values(x.clamp(a, b), k, derivative)
+        vals = vals * ((x >= a) & (x <= b)).unsqueeze(0)
+        idx = k.unsqueeze(0) + self._idx_offsets.unsqueeze(1)
+        out = torch.zeros(self._n_splines, x.shape[0], dtype=vals.dtype, device=x.device)
+        return out.scatter_add_(0, idx, vals).to(x.dtype)
 
     def _compute_tail_coefficients(self, side: int) -> torch.Tensor:
         """
-        Compute the polynomial factors of the smooth exponential tails.
+        Compute the coefficients of the exponential-sum tails.
 
         For a "decay" side, the `deg` basis functions whose support crosses the
-        boundary are continued beyond it by q(s) * exp(-mu * s), where
-        s = |x - boundary| / h is the scaled distance to the boundary. The
-        polynomial q (degree deg-1) is chosen so that the value and the first
-        deg-1 derivatives match the spline at the boundary, which is equivalent
-        to q(s) = (boundary spline piece in s) * exp(+mu * s) truncated at
-        degree deg-1.
+        boundary are continued beyond it by
+
+            T(s) = sum_{j=1..deg} a_j * exp(-j * mu * s),
+
+        where s = |x - boundary| / h is the scaled distance to the boundary and
+        mu = rate * h. This is the general polynomial in the mapped variable
+        t = 1 - exp(-mu * s), which sends the unbounded side onto [0, 1),
+        constrained to vanish at t = 1 (i.e. at infinity) so that the tail is
+        integrable. Vanishing at t = 1 is what drops the constant term of the
+        polynomial, so no term of T(s) is a bare exponential multiplied by a
+        growing factor: every term decays. That is what keeps the matched tails
+        non-negative and monotone at the default rate.
+
+        The `deg` coefficients are fixed by matching the value and the first
+        deg-1 derivatives of the spline at the boundary, so the basis stays
+        C^(deg-1) across it. Writing the boundary jet as J_k = d^k/ds^k, the
+        conditions are the Vandermonde system sum_j a_j * (-j*mu)^k = J_k.
 
         Args:
             side (int): 0 for the left boundary, 1 for the right.
 
         Returns:
-            torch.Tensor: tail coefficients of shape (deg, deg); row j holds the
-                monomial coefficients of q for the j-th crossing basis function.
+            torch.Tensor: tail coefficients of shape (deg, deg); row i holds
+                (a_1, ..., a_deg) for the i-th crossing basis function.
         """
         p = self._deg
         mu = self._mu[side]
@@ -453,12 +561,14 @@ class BSplineBasis(BaseBasis):
         V = s.unsqueeze(1) ** torch.arange(p + 1, dtype=torch.float64)
         piece = torch.linalg.solve(V, vals.t()).t()
 
-        # Truncated product with the exponential series exp(+mu*s)
-        U = torch.zeros(p, p, dtype=torch.float64)
-        for r in range(p):
-            for k in range(r, p):
-                U[r, k] = mu ** (k - r) / math.factorial(k - r)
-        return piece[:, :p] @ U
+        # Boundary jet in s: J_k = d^k/ds^k at s = 0 = k! * piece_k
+        factorials = torch.tensor([float(math.factorial(k)) for k in range(p)], dtype=torch.float64)
+        jet = piece[:, :p] * factorials
+
+        # Match the jet: A_{kj} = (-j*mu)^k, solve A @ a = jet^T
+        rates = -mu * torch.arange(1, p + 1, dtype=torch.float64)
+        A = rates.unsqueeze(0) ** torch.arange(p, dtype=torch.float64).unsqueeze(1)
+        return torch.linalg.solve(A, jet.t()).t()
 
     def _eval_tail(self, x: torch.Tensor, side: int, derivative: bool = False) -> torch.Tensor:
         """
@@ -476,7 +586,7 @@ class BSplineBasis(BaseBasis):
         mu = self._mu[side]
         h = self._h[side]
         boundary = self._interval[side]
-        q = (self._tail_q_right if side == 1 else self._tail_q_left).to(dtype=x.dtype, device=x.device)
+        a = (self._tail_a_right if side == 1 else self._tail_a_left).to(dtype=x.dtype, device=x.device)
 
         # relu keeps the exponent bounded for points inside the interval so no
         # overflow (and no NaN gradient) can leak through the mask
@@ -489,75 +599,123 @@ class BSplineBasis(BaseBasis):
             outside = x < boundary
             dfac = -1.0 / h
 
+        j_idx = torch.arange(1, p + 1, dtype=x.dtype, device=x.device)
         if derivative:
-            # d/dx [q(s) e^{-mu s}] = dfac * (q'(s) - mu q(s)) e^{-mu s}
-            coef = -mu * q
-            if p > 1:
-                coef[:, :-1] += q[:, 1:] * torch.arange(1, p, dtype=q.dtype, device=q.device)
+            # d/dx [a_j e^{-j mu s}] = dfac * (-j mu) a_j e^{-j mu s}
+            coef = a * (-mu * j_idx)
         else:
             dfac = 1.0
-            coef = q
+            coef = a
 
-        powers = s.unsqueeze(0) ** torch.arange(p, dtype=x.dtype, device=x.device).unsqueeze(1)
-        return dfac * (coef @ powers) * torch.exp(-mu * s) * outside
+        # exponents are <= 0 on the tail side, so no overflow is possible
+        E = torch.exp(-mu * j_idx.unsqueeze(1) * s.unsqueeze(0))
+        return dfac * (coef @ E) * outside
 
-    def _eval_basis_modes(self, x: torch.Tensor, original_shape: tuple, derivative: bool) -> torch.Tensor:
+    def eval_sparse(self, x: torch.Tensor, derivative: bool = False) -> Tuple[torch.Tensor, torch.Tensor]:
         """
-        Evaluate the basis (or its derivative) with the boundary modes applied.
+        Sparse (compressed) evaluation of the basis.
+
+        At most `deg + 1` basis functions are nonzero at any point, so instead of
+        the dense `(n, ...)` matrix returned by `__call__` this returns only those
+        values together with the index of the basis function each one belongs to.
+        Both the work and the memory are `O(deg^2)` per point and do **not** grow
+        with the number of knots (or basis functions), which is what makes the
+        evaluation cheap for fine knot vectors. It is fully differentiable in `x`
+        and runs as a handful of elementwise kernels, so it is fast on CPU and GPU
+        alike.
 
         Args:
-            x (torch.Tensor): flattened points of shape (m,)
-            original_shape (tuple): original shape of input for reshaping output
-            derivative (bool): if True, evaluate the first derivative.
+            x (torch.Tensor): points where the basis is evaluated. Arbitrary
+                shape `(...)`.
+            derivative (bool, optional): if True, evaluate the first derivative
+                of the basis functions. Defaults to False.
 
         Returns:
-            torch.Tensor: basis values of shape (n, *original_shape)
+            Tuple[torch.Tensor, torch.Tensor]:
+                - values: shape `(deg+1, ...)`, the nonzero basis values.
+                - indices: shape `(deg+1, ...)`, integer indices into `[0, n)`
+                  of the corresponding basis functions.
+
+            Slots that carry no basis function (points outside the domain, or
+            functions dropped by a "zero"/"decay" boundary) have value exactly 0
+            and an in-range but otherwise meaningless index, so the pair can be
+            gathered or scattered without any further masking.
+
+        Example:
+            >>> basis = BSplineBasis(torch.linspace(0, 1, 1000), deg=3)
+            >>> x = torch.rand(10000, requires_grad=True)
+            >>> v, i = basis.eval_sparse(x)     # (4, 10000) instead of (1001, 10000)
+            >>> f = (c[i] * v).sum(0)           # == c @ basis(x), for coefficients c
+            >>> f.sum().backward()              # gradients flow through
         """
-        result = self._eval_spline_raw(x, derivative=derivative)
+        if not isinstance(x, torch.Tensor):
+            x = torch.tensor(x, dtype=self._knots.dtype)
 
-        # On "decay" sides discard the polynomial continuation on the phantom
-        # spans and add the smooth exponential tails instead
-        if self._bc[1] == "decay":
-            result = result * (x <= self._interval[1])
-        if self._bc[0] == "decay":
-            result = result * (x >= self._interval[0])
-        if self._bc[1] == "decay":
-            tail = self._eval_tail(x, side=1, derivative=derivative)
-            result = result + torch.cat([result.new_zeros(self._n_splines - self._deg, x.shape[0]), tail])
-        if self._bc[0] == "decay":
-            tail = self._eval_tail(x, side=0, derivative=derivative)
-            result = result + torch.cat([tail, result.new_zeros(self._n_splines - self._deg, x.shape[0])])
+        p = self._deg
+        a, b = self._interval
+        shape = x.shape
+        xw = x.reshape(-1).to(torch.promote_types(x.dtype, self._knots.dtype))
 
-        # "zero" sides drop the boundary basis function
-        return result[self._lo:self._hi].view(self._n, *original_shape)
-    
+        # Polynomial part: clamping keeps the (masked out) values of far away
+        # points finite, so no inf * 0 = NaN can leak into the gradient
+        k = self._spans(xw)
+        vals = self._local_values(xw.clamp(a, b), k, derivative)
+        vals = vals * ((xw >= a) & (xw <= b)).unsqueeze(0)
+
+        # On "decay" sides the crossing functions continue past the boundary as
+        # exponential tails. Points beyond the boundary have their span clamped
+        # to the boundary span, so the tails land on the right slots: the deg
+        # crossing functions are the last (right) / first (left) deg of them.
+        if self._bc[1] == "decay":
+            tail = self._eval_tail(xw, side=1, derivative=derivative)
+            vals = vals + torch.nn.functional.pad(tail, (0, 0, 1, 0))
+        if self._bc[0] == "decay":
+            tail = self._eval_tail(xw, side=0, derivative=derivative)
+            vals = vals + torch.nn.functional.pad(tail, (0, 0, 0, 1))
+
+        idx = k.unsqueeze(0) + self._idx_offsets.unsqueeze(1) - self._lo
+
+        # Boundary modes drop basis functions at the ends: blank out the slots
+        # that would refer to them and park their index on a valid entry
+        if self._lo != 0 or self._hi != self._n_splines:
+            vals = vals * ((idx >= 0) & (idx < self._n))
+            idx = idx.clamp(0, self._n - 1)
+
+        return vals.to(x.dtype).view(p + 1, *shape), idx.view(p + 1, *shape)
+
     def __call__(self, x: torch.Tensor, derivative: bool = False) -> torch.Tensor:
         """
         Evaluate the B-spline basis functions at the given points.
-        
+
         Each basis function is evaluated at every point in `x`, and the results
         are stacked along a new first dimension. This method is fully differentiable 
         via PyTorch autograd.
-        
+
+        Only `deg + 1` basis functions are nonzero at any point: they are computed
+        by `eval_sparse` in `O(deg^2)` per point, independently of the number of
+        knots, and scattered into the dense output. Use `eval_sparse` directly to
+        skip the dense `(n, ...)` result altogether.
+
         Args:
             x (torch.Tensor): points where the basis is evaluated. 
                 Arbitrary shape `(...)`.
             derivative (bool, optional): if True, evaluate the first derivative 
                 of the basis functions. Defaults to False.
-                
+
         Returns:
             torch.Tensor: the B-splines evaluated at x. Shape `(n, ...)` where n 
                 is the number of basis functions and `...` is the shape of the input.
         """
         if not isinstance(x, torch.Tensor):
-            x = torch.tensor(x, dtype=torch.float64)
+            x = torch.tensor(x, dtype=self._knots.dtype)
 
-        # Store original shape for output reshaping
-        original_shape = x.shape
-        x_flat = x.flatten()
+        vals, idx = self.eval_sparse(x, derivative)
 
-        return self._eval_basis_modes(x_flat, original_shape, derivative)
-    
+        m = x.numel()
+        dense = torch.zeros(self._n, m, dtype=vals.dtype, device=vals.device)
+        dense.scatter_add_(0, idx.reshape(self._deg + 1, m), vals.reshape(self._deg + 1, m))
+        return dense.view(self._n, *x.shape)
+
     def __repr__(self) -> str:
         """
         Return a string representation of the B-spline basis.
@@ -601,11 +759,14 @@ class BSplineBasis(BaseBasis):
                 - matrix: the basis evaluated at these points, shape `(n, n)`,
                   which is guaranteed to be invertible
         """
-        # Compute Greville abscissae of the retained basis functions
-        pts = torch.stack([
-            self._knots[i + 1:i + self._deg + 1].sum() / self._deg
-            for i in range(self._lo, self._hi)
-        ])
+        # Greville abscissae of the retained basis functions: the sliding mean
+        # of deg consecutive knots, as one windowed reduction (no Python loop).
+        # For deg = 0 the basis functions are span indicators, whose natural
+        # interpolating points are the span midpoints.
+        if self._deg == 0:
+            pts = (0.5 * (self._knots[:-1] + self._knots[1:]))[self._lo:self._hi]
+        else:
+            pts = (self._knots[1:].unfold(0, self._deg, 1).sum(1) / self._deg)[self._lo:self._hi]
         
         # Evaluate basis at these points (detached for stability)
         with torch.no_grad():
@@ -634,29 +795,31 @@ class BSplineBasis(BaseBasis):
                 each B-spline basis function.
         """
         device = self._knots.device
+        dtype = self._knots.dtype
         if "decay" not in self._bc:
-            # Analytical formula for B-spline integrals of the retained functions
-            integrals = torch.zeros(self._n, dtype=torch.float64, device=device)
-            for j, i in enumerate(range(self._lo, self._hi)):
-                # Integral of B_{i,p}(x) = (t_{i+p+1} - t_i) / (p+1)
-                knot_diff = self._knots[i + self._deg + 1] - self._knots[i]
-                integrals[j] = knot_diff / (self._deg + 1)
-            return integrals
+            # Analytical formula for B-spline integrals of the retained functions:
+            # int B_{i,p}(x) dx = (t_{i+p+1} - t_i) / (p + 1)
+            t = self._knots
+            return (t[self._lo + self._deg + 1:self._hi + self._deg + 1]
+                    - t[self._lo:self._hi]) / (self._deg + 1)
 
-        # Bounded part (exact: Gauss-Legendre with deg+1 points per knot span)
+        # Bounded part (exact: Gauss-Legendre with deg+1 points per knot span),
+        # accumulated from the sparse evaluation so the cost stays linear in n
         pts, w = self._quadrature_bounded(self._deg + 1)
-        integrals = self(pts) @ w
+        v, i = self.eval_sparse(pts)
+        integrals = torch.zeros(self._n, dtype=dtype, device=device)
+        integrals.scatter_add_(0, i.reshape(-1), (v * w).reshape(-1))
 
-        # Analytic tail mass: ∫_0^∞ s^j e^{-mu s} h ds = h * j! / mu^{j+1}
+        # Analytic tail mass: ∫_0^∞ e^{-j mu s} h ds = h / (j mu)
         for side in (0, 1):
             if self._bc[side] != "decay":
                 continue
             mu = self._mu[side]
-            q = self._tail_q_right if side == 1 else self._tail_q_left
-            moments = torch.tensor([math.factorial(j) / mu ** (j + 1) for j in range(self._deg)],
-                                   dtype=torch.float64, device=device)
-            tail_mass = self._h[side] * (q @ moments)
-            # Only the retained crossing functions receive tail mass. The q rows
+            a = self._tail_a_right if side == 1 else self._tail_a_left
+            moments = torch.tensor([1.0 / ((j + 1) * mu) for j in range(self._deg)],
+                                   dtype=dtype, device=device)
+            tail_mass = self._h[side] * (a @ moments)
+            # Only the retained crossing functions receive tail mass. The a rows
             # are ordered from the innermost crossing function outwards, so the
             # retained ones are the innermost `keep` (side 1) / outermost-dropped
             # `deg - keep` excluded (side 0).
@@ -691,35 +854,26 @@ class BSplineBasis(BaseBasis):
         # "decay" sides are excluded; tails are handled separately)
         unique_knots = torch.unique(self._interior_knots)
 
-        points = []
-        weights = []
+        # Map the reference rule onto every span at once (span-major ordering)
+        a = unique_knots[:-1].unsqueeze(1)
+        b = unique_knots[1:].unsqueeze(1)
+        half = 0.5 * (b - a)
 
-        for i in range(len(unique_knots) - 1):
-            a = unique_knots[i]
-            b = unique_knots[i+1]
+        points = (half * x_ref + 0.5 * (a + b)).reshape(-1)
+        weights = (half * w_ref).reshape(-1)
 
-            # Map points and weights to [a, b]
-            x_scaled = 0.5 * (b - a) * x_ref + 0.5 * (a + b)
-            w_scaled = 0.5 * (b - a) * w_ref
-
-            points.append(x_scaled)
-            weights.append(w_scaled)
-
-        if len(points) == 0:
-             return torch.empty(0, dtype=self._knots.dtype, device=self._knots.device), \
-                    torch.empty(0, dtype=self._knots.dtype, device=self._knots.device)
-
-        return torch.cat(points), torch.cat(weights)
+        return points, weights
 
     def quadrature(self, degree: int) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Compute quadrature points and weights for integrating functions in the B-spline basis.
 
         It computes Gauss-Legendre quadrature points and weights for each non-zero
-        length interval between the knots. For "decay" sides, mapped Gauss-Laguerre
-        points are appended on the unbounded tail; the resulting rule is exact for
-        the basis tails themselves and rapidly convergent for products of tails
-        (e.g. mass matrix entries).
+        length interval between the knots. For "decay" sides, points mapped through
+        the tail variable t = 1 - exp(-rate * |x - boundary|) are appended on the
+        unbounded tail. In t the tails are polynomials vanishing at t = 1, so with
+        `degree` >= deg the rule is exact both for the basis tails themselves and
+        for their pairwise products (e.g. mass matrix entries).
 
         Args:
             degree (int): the number of quadrature points per interval (and per tail).
@@ -733,19 +887,24 @@ class BSplineBasis(BaseBasis):
         if "decay" not in self._bc:
             return points, weights
 
-        # Gauss-Laguerre rule mapped to the tail: ∫_b^∞ f dx ≈ Σ_j (w_j e^{u_j} / λ) f(b + u_j/λ)
-        u_np, w_np = np.polynomial.laguerre.laggauss(degree)
-        u = torch.tensor(u_np, dtype=self._knots.dtype, device=self._knots.device)
-        total = torch.tensor(w_np * np.exp(u_np), dtype=self._knots.dtype, device=self._knots.device)
+        # Substituting t = 1 - e^{-λ|x-b|} maps the tail onto the unit interval:
+        #   ∫_b^∞ f dx = (1/λ) ∫_0^1 f(b - ln(e)/λ) de/e,   e = 1 - t = e^{-λ(x-b)}
+        # The tails are polynomials in t vanishing at t = 1, hence polynomials in e
+        # with no constant term, so f/e is a polynomial and Gauss-Legendre is exact.
+        u_np, w_np = np.polynomial.legendre.leggauss(degree)
+        eps = torch.tensor(0.5 * (u_np + 1.0), dtype=self._knots.dtype, device=self._knots.device)
+        w_eps = torch.tensor(0.5 * w_np, dtype=self._knots.dtype, device=self._knots.device)
+        offset = -torch.log(eps)
 
         if self._bc[1] == "decay":
             lam = self._decay_rates[1]
-            points = torch.cat([points, self._interval[1] + u / lam])
-            weights = torch.cat([weights, total / lam])
+            # e ascending -> x descending, so flip to keep the points ascending
+            points = torch.cat([points, torch.flip(self._interval[1] + offset / lam, [0])])
+            weights = torch.cat([weights, torch.flip(w_eps / (lam * eps), [0])])
         if self._bc[0] == "decay":
             lam = self._decay_rates[0]
-            points = torch.cat([torch.flip(self._interval[0] - u / lam, [0]), points])
-            weights = torch.cat([torch.flip(total / lam, [0]), weights])
+            points = torch.cat([self._interval[0] - offset / lam, points])
+            weights = torch.cat([w_eps / (lam * eps), weights])
 
         return points, weights
 
@@ -755,9 +914,10 @@ class BSplineBasis(BaseBasis):
         advection matrices.
 
         Only the `deg` crossing basis functions are nonzero beyond the boundary,
-        so each matrix receives a (deg, deg) block. With T_i = q_i(s) e^{-mu s}
-        and the moments ∫_0^∞ s^m e^{-2 mu s} ds = m! / (2 mu)^{m+1}, the blocks
-        are bilinear forms in the tail polynomial coefficients.
+        so each matrix receives a (deg, deg) block. With tails
+        T_i(s) = sum_j a_ij e^{-j mu s} the single moment ∫_0^∞ e^{-(j+l) mu s} ds
+        = 1 / ((j+l) mu) turns every block into a closed-form bilinear form in the
+        tail coefficients.
 
         Args:
             side (int): 0 for the left boundary, 1 for the right.
@@ -769,22 +929,20 @@ class BSplineBasis(BaseBasis):
         p = self._deg
         mu = self._mu[side]
         h = self._h[side]
-        q = self._tail_q_right if side == 1 else self._tail_q_left
+        a = self._tail_a_right if side == 1 else self._tail_a_left
 
-        # Coefficients of the polynomial factor of the tail derivative: q'(s) - mu q(s)
-        r = -mu * q
-        if p > 1:
-            r[:, :-1] += q[:, 1:] * torch.arange(1, p, dtype=q.dtype, device=q.device)
-
-        # Hankel moment matrix H_kl = (k+l)! / (2 mu)^{k+l+1}
-        H = torch.tensor([[math.factorial(k + l) / (2 * mu) ** (k + l + 1) for l in range(p)]
-                          for k in range(p)], dtype=q.dtype, device=q.device)
+        j_idx = torch.arange(1, p + 1, dtype=a.dtype, device=a.device)
+        # S_{jl} = j + l, the exponent index of the product of two tail terms
+        S = j_idx.unsqueeze(1) + j_idx.unsqueeze(0)
 
         # dx = h ds on both sides; d/dx = ±(1/h) d/ds
         dfac = 1.0 / h if side == 1 else -1.0 / h
-        mass = h * (q @ H @ q.t())
-        stiffness = (h * dfac * dfac) * (r @ H @ r.t())
-        advection = (h * dfac) * (q @ H @ r.t())
+        # mass:      h * ∫ e^{-(j+l) mu s} ds           = h / ((j+l) mu)
+        # stiffness: dfac^2 h mu^2 j l * 1/((j+l) mu)   = dfac^2 h mu * j l / (j+l)
+        # advection: dfac h mu (-l) * 1/((j+l) mu)      = dfac h * (-l) / (j+l)
+        mass = h * (a @ (1.0 / (S * mu)) @ a.t())
+        stiffness = (dfac * dfac * h * mu) * (a @ ((j_idx.unsqueeze(1) * j_idx.unsqueeze(0)) / S) @ a.t())
+        advection = (dfac * h) * (a @ (-j_idx.unsqueeze(0) / S) @ a.t())
         return mass, stiffness, advection
 
     def _add_tail_blocks(self, matrix: torch.Tensor, which: int) -> torch.Tensor:
@@ -814,6 +972,36 @@ class BSplineBasis(BaseBasis):
                 matrix[:keep, :keep] = matrix[:keep, :keep] + block[self._deg - keep:, self._deg - keep:]
         return matrix
 
+    def _gram_matrix(self, degree: int, d_row: bool, d_col: bool) -> torch.Tensor:
+        """
+        Assemble int D^a B_i(x) D^b B_j(x) dx over the bounded interval [a, b].
+
+        The matrix is banded: at a quadrature point only deg+1 basis functions
+        are nonzero, so the sparse evaluation gives the (deg+1) x (deg+1) block
+        each point contributes and the blocks are scattered into the result. The
+        cost is O(deg^2) per quadrature point instead of the O(n^2) of a dense
+        `B @ diag(w) @ B.T` product, so assembly scales linearly in the number
+        of basis functions.
+
+        Args:
+            degree (int): the number of quadrature points per knot span.
+            d_row (bool): differentiate the row (test) functions.
+            d_col (bool): differentiate the column (trial) functions.
+
+        Returns:
+            torch.Tensor: matrix of shape (n, n) over the bounded part.
+        """
+        pts, w = self._quadrature_bounded(degree)
+        vr, ir = self.eval_sparse(pts, derivative=d_row)
+        vc, ic = (vr, ir) if d_row == d_col else self.eval_sparse(pts, derivative=d_col)
+
+        # Outer product of the two local blocks at every quadrature point,
+        # accumulated into the flattened (n, n) matrix
+        blocks = (vr * w).unsqueeze(1) * vc.unsqueeze(0)
+        flat_idx = ir.unsqueeze(1) * self._n + ic.unsqueeze(0)
+        out = torch.zeros(self._n * self._n, dtype=blocks.dtype, device=blocks.device)
+        return out.scatter_add_(0, flat_idx.reshape(-1), blocks.reshape(-1)).view(self._n, self._n)
+
     def mass_matrix(self, degree: int = None) -> torch.Tensor:
         """
         Compute the mass matrix M_ij = int B_i(x) B_j(x) dx.
@@ -835,14 +1023,8 @@ class BSplineBasis(BaseBasis):
             # So 2k - 1 >= 2p => k >= p + 1.
             degree = self._deg + 1
 
-        pts, w = self._quadrature_bounded(degree)
-
-        # Evaluate basis at quadrature points
-        B = self(pts)  # Shape: (n, num_pts)
-
-        # M_ij = sum_k B_i(x_k) B_j(x_k) w_k
-        # Equivalent to B @ diag(w) @ B.T
-        M = B @ (w.unsqueeze(1) * B.t())
+        # M_ij = sum_k B_i(x_k) B_j(x_k) w_k, assembled band by band
+        M = self._gram_matrix(degree, d_row=False, d_col=False)
 
         return self._add_tail_blocks(M, 0)
 
@@ -863,13 +1045,8 @@ class BSplineBasis(BaseBasis):
         if degree is None:
             degree = self._deg + 1
 
-        pts, w = self._quadrature_bounded(degree)
-
-        # Evaluate basis derivatives at quadrature points
-        B_prime = self(pts, derivative=True)  # Shape: (n, num_pts)
-
-        # S_ij = sum_k B'_i(x_k) B'_j(x_k) w_k
-        S = B_prime @ (w.unsqueeze(1) * B_prime.t())
+        # S_ij = sum_k B'_i(x_k) B'_j(x_k) w_k, assembled band by band
+        S = self._gram_matrix(degree, d_row=True, d_col=True)
 
         return self._add_tail_blocks(S, 1)
 
@@ -890,15 +1067,8 @@ class BSplineBasis(BaseBasis):
         if degree is None:
             degree = self._deg + 1
 
-        pts, w = self._quadrature_bounded(degree)
-
-        # Evaluate basis and derivatives at quadrature points
-        B = self(pts)  # Shape: (n, num_pts)
-        B_prime = self(pts, derivative=True)  # Shape: (n, num_pts)
-
-        # C_ij = sum_k B_i(x_k) B'_j(x_k) w_k
-        # Equivalent to B @ diag(w) @ B_prime.T
-        C = B @ (w.unsqueeze(1) * B_prime.t())
+        # C_ij = sum_k B_i(x_k) B'_j(x_k) w_k, assembled band by band
+        C = self._gram_matrix(degree, d_row=False, d_col=True)
 
         return self._add_tail_blocks(C, 2)
 

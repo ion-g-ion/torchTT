@@ -253,11 +253,16 @@ plt.show()
 #   conditions). The dimension n decreases by one.
 # - **"decay"**: the domain becomes unbounded on that side. The knot vector is extended
 #   with deg phantom knots and the basis functions crossing the boundary are continued
-#   by smooth tails q_i(x) * exp(-lambda*|x - b|), where q_i is a polynomial of degree
-#   deg-1 matched in value and the first deg-1 derivatives: the basis is C^(deg-1) on the
-#   whole unbounded domain. Crossing functions whose center (Greville point) would fall
-#   outside the domain are dropped, so the outermost retained function peaks at the
-#   boundary and decays monotonically past it (no redundant bump in the tail).
+#   by smooth tails sum_j a_j * exp(-j*lambda*|x - b|), j = 1..deg, with the deg
+#   coefficients matched in value and the first deg-1 derivatives: the basis is C^(deg-1)
+#   on the whole unbounded domain. Equivalently, the map t = 1 - exp(-lambda*|x - b|)
+#   sends the unbounded side onto [0, 1) and the tail is the general polynomial in t that
+#   vanishes at t = 1, which is what keeps it integrable. Because there is no growing
+#   polynomial factor, the tails stay non-negative and monotone at the default rate --
+#   what a density expansion with non-negative coefficients needs. Crossing functions
+#   whose center (Greville point) would fall outside the domain are dropped, so the
+#   outermost retained function peaks at the boundary and decays monotonically past it
+#   (no redundant bump in the tail).
 #
 # The interpolating points adapt automatically: for a "zero" side the boundary point is
 # dropped, and for a "decay" side the out-of-domain points are dropped so all interpolating
