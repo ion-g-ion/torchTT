@@ -9,7 +9,13 @@
 project = 'torchtt'
 copyright = '2023, Ion Gabriel Ion'
 author = 'Ion Gabriel Ion'
-release = '2.0'
+try:  # keep the documented version in sync with the installed package
+    from importlib.metadata import version as _pkg_version
+
+    release = _pkg_version('torchTT')
+except Exception:  # package not installed (e.g. plain `make html` in a checkout)
+    release = '0.5.0'
+version = release
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

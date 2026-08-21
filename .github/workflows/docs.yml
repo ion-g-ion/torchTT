@@ -1,7 +1,9 @@
 name: website
 
-# build the documentation whenever there are new commits on main or tags are pushed
-# only after tests pass
+# Build the documentation whenever there are new commits on main or a release
+# tag is pushed, and only after the tests pass. `workflow_run.head_branch` holds
+# the tag name for a tag push, so `v*` below is what makes a release rebuild the
+# docs. Can also be triggered by hand from the Actions tab.
 on:
   workflow_run:
     workflows: ["Continuous Integration"]
@@ -9,6 +11,8 @@ on:
       - completed
     branches:
       - main
+      - 'v*'
+  workflow_dispatch:
 
 # security: restrict permissions for CI jobs.
 permissions:
@@ -18,9 +22,15 @@ jobs:
   # Build the documentation and upload the static HTML files as an artifact.
   build:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # A workflow_run job checks out the default branch by default, which
+          # would document main's tip instead of the commit that was tagged.
+          # Empty for workflow_dispatch, where the default is what we want.
+          ref: ${{ github.event.workflow_run.head_sha }}
+
       - uses: actions/setup-python@v4
         with:
           python-version: '3.10'
@@ -28,13 +38,13 @@ jobs:
 
       # Upgrade pip, setuptools, and wheel
       - run: pip install --upgrade pip setuptools wheel
-      
+
       # Install torch first (required by setup.py)
       - run: pip install torch
-      
+
       # Install the package with [dev] dependencies (includes sphinx, sphinx_rtd_theme, nbsphinx, etc.)
       - run: pip install -e ".[dev]"
-      
+
       # Build the documentation
       - run: make html
 

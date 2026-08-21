@@ -10,10 +10,19 @@ jobs:
   build:
     name: Build distribution
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    # Only build for a pushed release tag. `workflow_run.head_branch` carries
+    # the tag name for a tag push.
+    if: >-
+      github.event.workflow_run.conclusion == 'success'
+      && github.event.workflow_run.event == 'push'
+      && startsWith(github.event.workflow_run.head_branch, 'v')
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        # A workflow_run job checks out the default branch by default, which
+        # would package main's tip rather than the commit that was tagged.
+        ref: ${{ github.event.workflow_run.head_sha }}
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -84,7 +93,7 @@ jobs:
         GITHUB_TOKEN: ${{ github.token }}
       run: >-
         gh release create
-        '${{ github.ref_name }}'
+        '${{ github.event.workflow_run.head_branch }}'
         --repo '${{ github.repository }}'
         --generate-notes
     - name: Upload artifact signatures to GitHub Release
@@ -95,5 +104,5 @@ jobs:
       # sigstore-produced signatures and certificates.
       run: >-
         gh release upload
-        '${{ github.ref_name }}' dist/**
+        '${{ github.event.workflow_run.head_branch }}' dist/**
         --repo '${{ github.repository }}'

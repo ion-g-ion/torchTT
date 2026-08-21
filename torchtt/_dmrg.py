@@ -407,7 +407,7 @@ def _maxvol(M):
     Maxvol
     """
     if M.shape[1] >= M.shape[0]:
-        idx = tn.tensor(range(M.shape[0]), dtype=tn.int64)
+        idx = tn.arange(M.shape[0], dtype=tn.int64, device=M.device)
         return idx
     else:
         LU, P = tn.linalg.lu_factor(M)
@@ -429,6 +429,27 @@ def _maxvol(M):
         Mat += tn.outer(Mat[:, idx_max[1]], Mat[idx[idx_max[1]]] - Mat[idx_max[0], :])/Mat[idx_max[0], idx_max[1]]
         idx[idx_max[1]] = idx_max[0]
     return idx
+
+def _build_two_core_eval_index(Idx_left, Idx_right, rank_l, n_left, n_right, rank_r, device):
+    n_eval = rank_l * n_left * n_right * rank_r
+
+    left_rows = tn.arange(rank_l, dtype=tn.int64, device=device).repeat_interleave(n_left * n_right * rank_r)
+    i_left = tn.arange(n_left, dtype=tn.int64, device=device).repeat_interleave(n_right * rank_r).repeat(rank_l).reshape(-1, 1)
+    i_right = tn.arange(n_right, dtype=tn.int64, device=device).repeat_interleave(rank_r).repeat(rank_l * n_left).reshape(-1, 1)
+    right_cols = tn.arange(rank_r, dtype=tn.int64, device=device).repeat(rank_l * n_left * n_right)
+
+    if Idx_left.shape[1] > 0:
+        I3 = Idx_left[left_rows, :]
+    else:
+        I3 = tn.zeros((n_eval, 0), dtype=tn.int64, device=device)
+
+    if Idx_right.shape[0] > 0:
+        I4 = Idx_right[:, right_cols].t()
+    else:
+        I4 = tn.zeros((n_eval, 0), dtype=tn.int64, device=device)
+
+    return tn.cat((I3, i_left, i_right, I4), 1).to(dtype=tn.int64)
+
 
 def _function_interpolate_dmrg(function, x, eps=1e-9, start_tens=None, nswp=20, kick=2, dtype=tn.float64, rmax=sys.maxsize, verbose=False, callback=None):
     if isinstance(x, list) or isinstance(x, tuple):
@@ -497,19 +518,13 @@ def _function_interpolate_dmrg(function, x, eps=1e-9, start_tens=None, nswp=20, 
         for k in range(d-1):
             if verbose:
                 print('\tLR supercore %d,%d' % (k+1, k+2))
-            I1 = tn.reshape(tn.kron(tn.kron(tn.ones(rank[k], dtype=tn.int64), tn.arange(N[k], dtype=tn.int64)), tn.kron(tn.ones(N[k+1], dtype=tn.int64), tn.ones(rank[k+2], dtype=tn.int64))), [-1, 1])
-            I2 = tn.reshape(tn.kron(tn.kron(tn.ones(rank[k], dtype=tn.int64), tn.ones(N[k], dtype=tn.int64)), tn.kron(tn.arange(N[k+1], dtype=tn.int64), tn.ones(rank[k+2], dtype=tn.int64))), [-1, 1])
-            I3 = Idx[k][tn.kron(tn.kron(tn.arange(rank[k], dtype=tn.int64), tn.ones(N[k], dtype=tn.int64)), tn.kron(tn.ones(N[k+1], dtype=tn.int64), tn.ones(rank[k+2], dtype=tn.int64))), :]
-            I4 = Idx[k+2][:, tn.kron(tn.kron(tn.ones(rank[k], dtype=tn.int64), tn.ones(N[k], dtype=tn.int64)), tn.kron(tn.ones(N[k+1], dtype=tn.int64), tn.arange(rank[k+2], dtype=tn.int64)))].t()
-
-            eval_index = tn.concat((I3, I1, I2, I4), 1)
-            eval_index = tn.reshape(eval_index, [-1, d]).to(dtype=tn.int64)
+            eval_index = _build_two_core_eval_index(Idx[k], Idx[k+2], rank[k], N[k], N[k+1], rank[k+2], device)
 
             if verbose:
                 print('\t\tnumber evaluations', eval_index.shape[0])
 
             if eval_mv:
-                ev = tn.zeros((eval_index.shape[0], 0), dtype=dtype)
+                ev = tn.zeros((eval_index.shape[0], 0), dtype=dtype, device=device)
                 for j in range(len(x)):
                     core = x[j].cores[0][0, eval_index[:, 0], :]
                     for i in range(1, d):
@@ -526,7 +541,7 @@ def _function_interpolate_dmrg(function, x, eps=1e-9, start_tens=None, nswp=20, 
                 supercore = tn.reshape(function(core), [rank[k], N[k], N[k+1], rank[k+2]])
                 n_eval += core.shape[0]
 
-            supercore = tn.einsum('ij,jklm,mn->ikln', Ps[k], supercore.to(dtype=dtype), Ps[k+2])
+            supercore = tn.einsum('ij,jklm,mn->ikln', Ps[k], supercore.to(dtype=dtype, device=device), Ps[k+2])
             rank[k] = supercore.shape[0]
             rank[k+2] = supercore.shape[3]
             supercore = tn.reshape(supercore, [supercore.shape[0]*supercore.shape[1], -1])
@@ -544,7 +559,7 @@ def _function_interpolate_dmrg(function, x, eps=1e-9, start_tens=None, nswp=20, 
             radd = Rtemp.shape[1] - rnew
             if radd > 0:
                 V = tn.cat((V, tn.zeros((radd, V.shape[1]), dtype=dtype, device=device)), 0)
-                V = Rtemp @ V
+            V = Rtemp @ V
 
             super_prev = tn.einsum('ijk,kmn->ijmn', cores[k], cores[k+1])
             super_prev = tn.einsum('ij,jklm,mn->ikln', Ps[k], super_prev, Ps[k+2])
@@ -577,19 +592,13 @@ def _function_interpolate_dmrg(function, x, eps=1e-9, start_tens=None, nswp=20, 
         for k in range(d-2, -1, -1):
             if verbose:
                 print('\tRL supercore %d,%d' % (k+1, k+2))
-            I1 = tn.reshape(tn.kron(tn.kron(tn.ones(rank[k], dtype=tn.int64), tn.arange(N[k], dtype=tn.int64)), tn.kron(tn.ones(N[k+1], dtype=tn.int64), tn.ones(rank[k+2], dtype=tn.int64))), [-1, 1])
-            I2 = tn.reshape(tn.kron(tn.kron(tn.ones(rank[k], dtype=tn.int64), tn.ones(N[k], dtype=tn.int64)), tn.kron(tn.arange(N[k+1], dtype=tn.int64), tn.ones(rank[k+2], dtype=tn.int64))), [-1, 1])
-            I3 = Idx[k][tn.kron(tn.kron(tn.arange(rank[k], dtype=tn.int64), tn.ones(N[k], dtype=tn.int64)), tn.kron(tn.ones(N[k+1], dtype=tn.int64), tn.ones(rank[k+2], dtype=tn.int64))), :]
-            I4 = Idx[k+2][:, tn.kron(tn.kron(tn.ones(rank[k], dtype=tn.int64), tn.ones(N[k], dtype=tn.int64)), tn.kron(tn.ones(N[k+1], dtype=tn.int64), tn.arange(rank[k+2], dtype=tn.int64)))].t()
-
-            eval_index = tn.concat((I3, I1, I2, I4), 1)
-            eval_index = tn.reshape(eval_index, [-1, d]).to(dtype=tn.int64)
+            eval_index = _build_two_core_eval_index(Idx[k], Idx[k+2], rank[k], N[k], N[k+1], rank[k+2], device)
 
             if verbose:
                 print('\t\tnumber evaluations', eval_index.shape[0])
 
             if eval_mv:
-                ev = tn.zeros((eval_index.shape[0], 0), dtype=dtype)
+                ev = tn.zeros((eval_index.shape[0], 0), dtype=dtype, device=device)
                 for j in range(len(x)):
                     core = x[j].cores[0][0, eval_index[:, 0], :]
                     for i in range(1, d):
@@ -606,7 +615,7 @@ def _function_interpolate_dmrg(function, x, eps=1e-9, start_tens=None, nswp=20, 
                 supercore = tn.reshape(function(core), [rank[k], N[k], N[k+1], rank[k+2]])
                 n_eval += core.shape[0]
 
-            supercore = tn.einsum('ij,jklm,mn->ikln', Ps[k], supercore.to(dtype=dtype), Ps[k+2])
+            supercore = tn.einsum('ij,jklm,mn->ikln', Ps[k], supercore.to(dtype=dtype, device=device), Ps[k+2])
             rank[k] = supercore.shape[0]
             rank[k+2] = supercore.shape[3]
             supercore = tn.reshape(supercore, [supercore.shape[0]*supercore.shape[1], -1])
@@ -625,8 +634,8 @@ def _function_interpolate_dmrg(function, x, eps=1e-9, start_tens=None, nswp=20, 
             radd = Rtemp.shape[1] - rnew
             if radd > 0:
                 U = tn.cat((U, tn.zeros((U.shape[0], radd), dtype=dtype, device=device)), 1)
-                U = U @ Rtemp.T
-                V = V.t()
+            U = U @ Rtemp.T
+            V = V.t()
 
             super_prev = tn.einsum('ijk,kmn->ijmn', cores[k], cores[k+1])
             super_prev = tn.einsum('ij,jklm,mn->ikln', Ps[k], super_prev, Ps[k+2])

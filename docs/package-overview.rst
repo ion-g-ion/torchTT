@@ -84,4 +84,55 @@ Following example scripts (as well as python notebooks) are also provied provide
  - `system_solvers.py <https://github.com/ion-g-ion/torchTT/tree/main/examples/system_solvers.py>`_ / `system_solvers.ipynb <https://github.com/ion-g-ion/torchTT/tree/main/examples/system_solvers.ipynb>`_: This contains the bais ussage of the multilinear solvers. `Try on Google Colab <https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/system_solvers.ipynb>`_. 
  - `gpu_acceleration.py <https://github.com/ion-g-ion/torchTT/tree/main/examples/gpu_acceleration.py>`_ / `gpu_acceleration.ipynb <https://github.com/ion-g-ion/torchTT/tree/main/examples/gpu_acceleration.ipynb>`_: This provides an example on how to use the GPU acceleration. `Try on Google Colab <https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/gpu_acceleration.ipynb>`_.
  - `basic_nn.py <https://github.com/ion-g-ion/torchTT/tree/main/examples/basic_nn.py>`_ / `basic_nn.ipynb  <https://github.com/ion-g-ion/torchTT/tree/main/examples/basic_nn.ipynb>`_: This provides an example on how to use the TT neural network layers. `Try on Google Colab <https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/basic_nn.ipynb>`_. 
- - `mnist_nn.py  <https://github.com/ion-g-ion/torchTT/tree/main/examples/mnist_nn.py>`_ / `mnist_nn.ipynb  <https://github.com/ion-g-ion/torchTT/tree/main/examples/mnist_nn.ipynb>`_: Example of TT layers used for image classification. `Try on Google Colab <https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/mnist_nn.ipynb>`_. 
+  - `mnist_nn.py  <https://github.com/ion-g-ion/torchTT/tree/main/examples/mnist_nn.py>`_ / `mnist_nn.ipynb  <https://github.com/ion-g-ion/torchTT/tree/main/examples/mnist_nn.ipynb>`_: Example of TT layers used for image classification. `Try on Google Colab <https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/mnist_nn.ipynb>`_. 
+
+Nonlinear Transformations for TTDensityLayer
+--------------------------------------------
+
+The ``torchtt.nn.TTDensityLayer`` models a conditional probability density function. To reduce the tensor train rank required for complex, curved distributions (like banana or C-shapes), the layer can apply a learnable change-of-variables before evaluating the TT cores. We implement several modular transformations:
+
+**Affine Transform**
+
+The simplest transformation is an affine map:
+
+.. math::
+    \mathbf{z} = R(\boldsymbol{\theta}) \text{diag}(e^{\mathbf{a}}) \mathbf{x} + \mathbf{b}
+
+Here, :math:`R(\boldsymbol{\theta})` is a rotation matrix assembled from Givens rotations parameterized by angles :math:`\boldsymbol{\theta}`, :math:`\mathbf{a}` are log-scales, and :math:`\mathbf{b}` are offsets. 
+The Jacobian determinant is :math:`| \det J | = \prod e^{a_i}`.
+
+**Rank-1 Volume-Preserving Shear**
+
+To straighten curved ridges, we apply a rank-1 nonlinear shear:
+
+.. math::
+    \mathbf{z} = \mathbf{x} + \mathbf{u} g(\mathbf{v}^\top \mathbf{x} + c)
+
+To ensure the transformation is volume-preserving (i.e., :math:`| \det J | = 1`), we project :math:`\mathbf{u}` such that :math:`\mathbf{v}^\top \mathbf{u} = 0`. 
+The scalar function :math:`g(t)` is a polynomial of degree :math:`D` with no constant term:
+
+.. math::
+    g(t) = \sum_{p=1}^D \alpha_p t^p
+
+Optionally, the displacement can be squashed with a hyperbolic tangent to prevent numerical overflow: :math:`\tilde{g}(t) = c_{clip} \tanh(g(t) / c_{clip})`.
+
+**Triangular Polynomial Shear**
+
+A Knothe-Rosenblatt-style mapping that is also volume-preserving:
+
+.. math::
+    z_i = x_i + \sum_{j>i} q_{ij}(x_j)
+
+The Jacobian is unit upper-triangular, so :math:`\det J = 1` identically. Each :math:`q_{ij}(t)` is a polynomial of degree :math:`D_{poly}` with no constant term:
+
+.. math::
+    q_{ij}(t) = \sum_{p=1}^{D_{poly}} \beta_{ij,p} t^p
+
+**Sinh-Arcsinh Warp**
+
+An elementwise bijection used to model asymmetric skewness and heavy tails:
+
+.. math::
+    z_i = \sinh\left(e^{s_i} \text{asinh}(x_i) + b_i\right)
+
+where :math:`s_i` is the log-scale and :math:`b_i` is the offset.
