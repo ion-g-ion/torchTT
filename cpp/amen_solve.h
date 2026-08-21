@@ -394,7 +394,14 @@ std::vector<at::Tensor> amen_solve(
                         res = torch::norm(Op.matvec(tmp_tens, false)-rhs).item<double>()/norm_rhs;
                     }
 
-                    if(res>(res_new > real_tol*damp ? res_new : real_tol*damp))
+                    // On the final sweep the residual enrichment is disabled, so any
+                    // accuracy given away here can no longer be recovered. Budget the
+                    // truncation against what the local solve just achieved instead of
+                    // against the global tolerance. This does less rank reduction on
+                    // that sweep, so the returned ranks may be higher than before.
+                    double trunc_budget = last ? res_new*damp
+                                               : (res_new > real_tol*damp ? res_new : real_tol*damp);
+                    if(res>trunc_budget)
                         break;
                     --r;
                 }

@@ -208,7 +208,7 @@ class _LinearOp():
         return tn.reshape(w, [-1, 1])
 
 
-def amen_solve(A, b, nswp=22, x0=None, eps=1e-10, rmax=32768, max_full=500, kickrank=4, kick2=0, trunc_norm='res', local_solver=1, local_iterations=40, resets=2, verbose=False, preconditioner=None, use_cpp=True, band_diagonal=-1, use_single_precision=False):
+def amen_solve(A, b, nswp=22, x0=None, eps=1e-10, rmax=32768, max_full=256, kickrank=4, kick2=0, trunc_norm='res', local_solver=1, local_iterations=40, resets=2, verbose=False, preconditioner=None, use_cpp=True, band_diagonal=-1, use_single_precision=False):
     """
     Solve a multilinear system :math:`\\mathsf{Ax} = \\mathsf{b}` in the Tensor Train format.
 
@@ -233,7 +233,8 @@ def amen_solve(A, b, nswp=22, x0=None, eps=1e-10, rmax=32768, max_full=500, kick
         x0 (torchtt.TT, optional): initial guess. In None is provided the initial guess is a ones tensor. Defaults to None.
         eps (float, optional): relative residual. Defaults to 1e-10.
         rmax (int, optional): maximum rank. Defaults to 100000.
-        max_full (int, optional): the maximum size of the core until direct solver is used for the local subproblem. Defaults to 500.
+        max_full (int, optional): local systems strictly smaller than this are solved
+            directly, larger ones with the iterative local solver. Defaults to 256.
         kickrank (int, optional): rank enrichment. Defaults to 4.
         kick2 (int, optional): [description]. Defaults to 0.
         trunc_norm (str, optional): [description]. Defaults to 'res'.
@@ -287,7 +288,7 @@ def amen_solve(A, b, nswp=22, x0=None, eps=1e-10, rmax=32768, max_full=500, kick
         return _amen_solve_python(A, b, nswp, x0, eps, rmax, max_full, kickrank, kick2, trunc_norm, local_solver, local_iterations, resets, verbose, preconditioner, use_single_precision, band_diagonal)
 
 
-def _amen_solve_python(A, b, nswp=22, x0=None, eps=1e-10, rmax=1024, max_full=500, kickrank=4, kick2=0, trunc_norm='res', local_solver=1, local_iterations=40, resets=2, verbose=False, preconditioner=None, use_single_precision=False, band_diagonal=-1):
+def _amen_solve_python(A, b, nswp=22, x0=None, eps=1e-10, rmax=1024, max_full=256, kickrank=4, kick2=0, trunc_norm='res', local_solver=1, local_iterations=40, resets=2, verbose=False, preconditioner=None, use_single_precision=False, band_diagonal=-1):
     if verbose:
         time_total = datetime.datetime.now()
 
@@ -553,7 +554,10 @@ def _amen_solve_python(A, b, nswp=22, x0=None, eps=1e-10, rmax=1024, max_full=50
                 else:
                     # search for a rank such that offeres small enough residuum
                     # TODO: binary search?
-                    r = 0
+                    # A scan that never exceeds the budget means rank 1 already
+                    # suffices; incrementing the exhausted loop variable instead
+                    # floored the rank at 2 and left a spurious direction behind.
+                    r_trunc = 1
                     for r in range(u.shape[1]-1, 0, -1):
                         # solution has the same size
                         solution = u[:, :r] @ tn.diag(s[:r]) @ v[:r, :]
@@ -566,11 +570,17 @@ def _amen_solve_python(A, b, nswp=22, x0=None, eps=1e-10, rmax=1024, max_full=50
                             # res = tn.linalg.norm(tn.reshape(local_product(Phis[k+1],Phis[k],A.cores[k],tn.reshape(solution,[rx[k],N[k],rx[k+1]]),solution_now.shape),[-1,1]) - rhs)/norm_rhs
                             res = tn.linalg.norm(Op.matvec(solution.to(
                                 tn.float32 if use_single_precision else dtype)).to(dtype)-rhs)/norm_rhs
-                        if res > max(real_tol*damp, res_new):
+                        # On the final sweep the residual enrichment is disabled, so any
+                        # accuracy given away here can no longer be recovered. Budget the
+                        # truncation against what the local solve just achieved instead of
+                        # against the global tolerance. This does less rank reduction on
+                        # that sweep, so the returned ranks may be higher than before;
+                        # round the result if compression matters more than the accuracy.
+                        if res > (res_new*damp if last else max(real_tol*damp, res_new)):
+                            r_trunc = r + 1
                             break
-                    r += 1
 
-                    r = min([r, tn.numel(s), rmax[k+1]])
+                    r = min([r_trunc, tn.numel(s), rmax[k+1]])
             else:
                 u, v = QR(solution_now)
                 # v = v.t()
