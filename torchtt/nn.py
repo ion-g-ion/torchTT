@@ -213,8 +213,8 @@ class ComposedTransform(Transform):
 
 
 class TTDensityLayer(nn.Module):
-    """
-    A TT Density Layer evaluating p(x) = p_ref(T(x)) * |det J_T(x)|.
+    r"""
+    A TT Density Layer evaluating :math:`p(x) = p_{\mathrm{ref}}(T(x)) \, |\det J_T(x)|`.
     """
     def __init__(self, N, R, basis, transform=None, dtype=tn.float32):
         super().__init__()
