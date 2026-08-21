@@ -30,6 +30,7 @@ Cross Interpolation
    :maxdepth: 1
 
    ../examples/cross_interpolation.ipynb
+   ../examples/basis.ipynb
 
 Neural Networks
 ---------------
@@ -40,6 +41,7 @@ Neural Networks
    ../examples/basic_nn.ipynb
    ../examples/mnist_nn.ipynb
    ../examples/deep_tt_density.ipynb
+   ../examples/fokker_planck_pinn.ipynb
 
 Advanced Topics
 ---------------
@@ -50,4 +52,5 @@ Advanced Topics
    ../examples/automatic_differentiation.ipynb
    ../examples/manifold.ipynb
    ../examples/gpu_acceleration.ipynb
+   ../examples/bayesian_inversion.ipynb
 
