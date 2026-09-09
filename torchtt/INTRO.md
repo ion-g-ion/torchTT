@@ -22,7 +22,7 @@ import torchtt
 tt = torchtt.TT(tens, 1e-10)
 ```
 The rank of the object `tt` can be inspected using the `print()` function or can accessed using `tt.R`. The tensor can be converted back to the full format using `tt.full()`.
-The TT class implements tensors in the TT format as well as tensors operators in TT format. Once in the TT format, linear algebra operations (`+`, `-`, `*`, `@`, `/`) can be performed without resorting to the full format. The format and the operations is similat to the one implemented in `torch`.
+The TT class implements tensors in the TT format as well as tensors operators in TT format. Once in the TT format, linear algebra operations (`+`, `-`, `*`, `@`, `/`) can be performed without resorting to the full format. The format and the operations is similar to the one implemented in `torch`.
 As an example, we have the following code where 3 tensors in the TT format are involved in algebra operations:
 
 ```
