@@ -17,8 +17,6 @@ def test_init(dtype):
     Checks the constructor and the TT.full() function. 
     A list of cores is passed and is checked if the recomposed tensor is correct.
     """
-
-    # print('Testing: Initialization from list of cores.')
     cores = [tn.rand([1, 20, 3], dtype=dtype), tn.rand(
         [3, 10, 4], dtype=dtype), tn.rand([4, 5, 1], dtype=dtype)]
 
@@ -36,7 +34,6 @@ def test_decomposition_random(dtype):
     '''
     Perform a TT decomposition of a random full random tensor and check if the decomposition is accurate.
     '''
-    # print('Testing: TT-decomposition from full (random tensor).')
     T_ref = tn.rand([10, 20, 30, 5], dtype=dtype)
 
     T = tntt.TT(T_ref, eps=1e-19, rmax=1000)
@@ -52,7 +49,6 @@ def test_decomposition_lowrank(dtype):
     Check the decomposition of a tensor which is already in the low rank format.
 
     """
-    # print('Testing: TT-decomposition from full (already low-rank).')
     cores = [tn.rand([1, 200, 30], dtype=dtype), tn.rand(
         [30, 100, 4], dtype=dtype), tn.rand([4, 50, 1], dtype=dtype)]
     T_ref = tn.squeeze(tn.einsum('ijk,klm,mno->ijlno',
@@ -75,7 +71,6 @@ def test_decomposition_highd(dtype):
     None.
 
     """
-    # print('Testing: TT-decomposition from full (long  20d TT).')
     cores = [tn.rand([1, 2, 16], dtype=dtype)] + [tn.rand([16, 2, 16], dtype=dtype)
                                                   for i in range(18)] + [tn.rand([16, 2, 1], dtype=dtype)]
     T_ref = tntt.TT(cores).full()
@@ -112,7 +107,6 @@ def test_decomposition_orthogonal(dtype):
     """
     Checks the lr_orthogonal function. The reconstructed tensor should remain the same.
     """
-    # print('Testing: TT-orthogonalization.')
     cores = [tn.rand([1, 20, 3], dtype=dtype), tn.rand([3, 10, 4], dtype=dtype), tn.rand(
         [4, 5, 20], dtype=dtype), tn.rand([20, 5, 2], dtype=dtype), tn.rand([2, 10, 1], dtype=dtype)]
     T = tntt.TT(cores)
@@ -181,7 +175,6 @@ def test_decomposition_rounding(dtype):
     Testing the rounding of a TT-tensor.
     A rank-4tensor is constructed and successive approximations are performed.
     """
-    # print('Testing: TT-rounding.')
 
     T1 = tn.einsum('i,j,k->ijk', tn.rand([20], dtype=dtype),
                    tn.rand([30], dtype=dtype), tn.rand([32], dtype=dtype))

@@ -26,12 +26,10 @@ def test_hadamard(dtype):
     X = x.clone()
     X = X + X
     X = X + X
-#    X += 1e2*x 
 
     Y = y.clone()
     Y = Y + Y
     Y = Y + Y
- #   Y += 1e2*x   
     
     z_ref = 16*x*y 
 
@@ -55,12 +53,10 @@ def test_hadamard_ttm(dtype):
     X = x.clone()
     X = X + X
     X = X + X
-#    X += 1e2*x 
 
     Y = y.clone()
     Y = Y + Y
     Y = Y + Y
- #   Y += 1e2*x   
     
     z_ref = 16*x*y 
 
@@ -85,12 +81,10 @@ def test_mv(dtype):
     X = x.clone()
     X = X + X
     X = X + X
-#    X += 1e2*x 
 
     Y = y.clone()
     Y = Y + Y
     Y = Y + Y
- #   Y += 1e2*x   
     
     z_ref = 16*x@y 
 
@@ -117,12 +111,10 @@ def test_mm(dtype):
     X = x.clone()
     X = X + X
     X = X + X
-#    X += 1e2*x 
 
     Y = y.clone()
     Y = Y + Y
     Y = Y + Y
- #   Y += 1e2*x   
     
     z_ref = 16*x@y 
 

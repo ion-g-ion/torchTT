@@ -11,7 +11,6 @@ import math
 from torchtt._dmrg import dmrg_matvec
 from torchtt._aux_ops import apply_mask, dense_matvec, bilinear_form_aux
 from torchtt.errors import *
-# from ._tt_base import TT
 import torchtt._tt_base
 import sys
 
@@ -536,8 +535,6 @@ def dot(a, b, axis=None):
         if len(a.N) < len(b.N):
             raise ShapeMismatch(
                 'Number of the modes of the first tensor must be equal with the second.')
-        # if a.N[axis] != b.N:
-        #     raise Exception('Dimension mismatch.')
 
         k = 0  # index for the tensor b
         cores_new = []
@@ -726,8 +723,6 @@ def permute(input, dims, eps=1e-12):
 
                 indices[i] = i2
                 indices[i+1] = i1
-
-                # print(indices,' permute ', i1, i2)
 
                 last_idx = i
                 if input.is_ttm:
@@ -956,10 +951,6 @@ def cat(tensors, dim=0):
                         offset1 += t.cores[i].shape[0]
                     if i < len(tensors[0].N)-1:
                         offset3 += t.cores[i].shape[2]
-        # for i in range(len(self.__N)):
-        #    pad1 = (0,0 if i == len(self.__N)-1 else other.R[i+1] , 0,0 , 0,0 if i==0 else other.R[i])
-        #    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)
-        #    cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(other.cores[i],pad2))
     return torchtt._tt_base.TT(cores)
 
 

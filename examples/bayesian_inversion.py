@@ -349,12 +349,6 @@ for k in range(nt//n_obs):
         total_lik_time += time.perf_counter() - counter
         return posterior
 
-    #Ps = torchtt.meshgrid([p for p in ps])
-    #args = torch.concat([p.full().reshape([-1, 1]) for p in Ps] + [post.full().reshape([-1,1])], dim = 1)
-    #tmp = update_handle(args.cuda()).cpu().reshape(post.N)
-    #tmp = torch.nan_to_num(tmp, nan=0.0)
-    #post = torchtt.TT(tmp, eps=1e-2)
-
     post = torchtt.interpolate.function_interpolate(update_handle, torchtt.meshgrid(interpolation_pts) + [post], start_tens = post, eps = 1e-3, method='amen', verbose=0, kick=6)
     print(f"N evals {nt_eval} {nt_eval/np.prod(post.N)*100} %")
     norm = (B_eval_inv @ post * Ws).sum()
@@ -424,7 +418,6 @@ for idx in range(5):
     B = bases[idx](xplot)
     BB = bases[idx](interpolation_pts[idx])
     tmp = torchtt.dot(post, other_ws, other_dims).full()
-  #  tmp = torch.linalg.solve(BB @ BB.T, BB @ tmp)
     po = B.t() @ tmp
     pr = B.t() @ torchtt.dot(prior, other_ws, other_dims).full()
     plt.plot(xplot.numpy(), po.numpy(), label='Posterior')
@@ -435,5 +428,3 @@ for idx in range(5):
     plt.title(f'Marginal posterior: {param_names[idx]}')
     plt.legend()
     plt.grid(True, alpha=0.3)
-
-

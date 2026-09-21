@@ -341,14 +341,12 @@ class LinearLayerTT(nn.Module):
         self.size_in, self.size_out, self.rank = size_in, size_out, rank
         if initializer=='He':
             t = torchtt.randn([(s2,s1) for s1,s2 in zip(size_in,size_out)], rank, dtype=dtype, var = 2/tn.prod(tn.tensor([s1 for s1 in size_in])))
-            #self.cores = [nn.Parameter(tn.Tensor(c.clone())) for c in t.cores] 
             self.cores = nn.ParameterList([nn.Parameter(c) for c in t.cores])
             #bias
             bias = tn.zeros(size_out, dtype = dtype) 
             self.bias = nn.Parameter(bias)
         elif initializer=='Glo':
             t = torchtt.randn([(s2,s1) for s1,s2 in zip(size_in,size_out)], rank, dtype=dtype, var = 1/(tn.prod(tn.tensor([s1 for s1 in size_in]))+tn.prod(tn.tensor([s1 for s1 in size_out]))) )
-            #self.cores = [nn.Parameter(tn.Tensor(c.clone())) for c in t.cores] 
             self.cores = nn.ParameterList([nn.Parameter(c) for c in t.cores])
             #bias
             bias = tn.zeros(size_out, dtype = dtype) 
@@ -369,8 +367,6 @@ class LinearLayerTT(nn.Module):
         Returns:
             torch.tensor: output of the layer.
         """
-        
-        # return dense_matvec(self.cores,x) + self.bias
         
         result = tn.unsqueeze(x,-1)
 

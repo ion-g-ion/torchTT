@@ -49,8 +49,6 @@ L_tt = L_tt.round(1e-14)
 
 # The right hand site of the finite difference system is also computed in the TT format
 b1d = tn.ones(n, dtype=dtype)
-#b1d[0] = 0
-#b1d[-1] = 0
 b1d = tntt.TT(b1d)
 b_tt = b1d
 for i in range(d-1):

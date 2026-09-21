@@ -86,9 +86,6 @@ def fast_hadammard(tt_a, tt_b, eps=1e-10, rmax=None):
             if i != d-1:
                 for j in range(i, -1, -1):
                     cores[j], cores[j+1] = swap_cores(cores[j], cores[j+1], eps, rmax)
-                
-                
-        #cores[1], cores[2] = swap_cores(cores[1], cores[2], 1e-8)
             
         return torchtt.TT(cores)
     else:
@@ -104,9 +101,6 @@ def fast_hadammard(tt_a, tt_b, eps=1e-10, rmax=None):
             if i != d-1:
                 for j in range(i, -1, -1):
                     cores[j], cores[j+1] = swap_cores(cores[j], cores[j+1], eps, rmax)
-                
-                
-        #cores[1], cores[2] = swap_cores(cores[1], cores[2], 1e-8)
             
         return torchtt.TT(cores)
 
@@ -145,9 +139,6 @@ def fast_mv(tt_a, tt_b, eps=1e-10, rmax=None):
         if i != d-1:
             for j in range(i, -1, -1):
                 cores[j], cores[j+1] = swap_cores(cores[j], cores[j+1], eps, rmax)
-            
-            
-    #cores[1], cores[2] = swap_cores(cores[1], cores[2], 1e-8)
         
     return torchtt.TT(cores) 
 
@@ -186,8 +177,5 @@ def fast_mm(tt_a, tt_b, eps=1e-10, rmax=None):
         if i != d-1:
             for j in range(i, -1, -1):
                 cores[j], cores[j+1] = swap_cores(cores[j], cores[j+1], eps, rmax)
-            
-            
-    #cores[1], cores[2] = swap_cores(cores[1], cores[2], 1e-8)
         
-    return torchtt.TT(cores) 
+    return torchtt.TT(cores)

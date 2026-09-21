@@ -17,9 +17,6 @@ import sys
 
 class TT():
 
-    # cores : list[tn.tensor]
-    # """ The TT cores as a list of `torch.tensor` instances."""
-
     @property
     def is_ttm(self):
         """
@@ -708,7 +705,6 @@ class TT():
         if isinstance(other, TT):
             if self.__is_ttm and other.is_ttm:
                 if self.__N == other.N and self.__M == other.M:
-                    # raise ShapeMismatch('Shapes must be equal.')
 
                     cores_new = []
 
@@ -720,11 +716,6 @@ class TT():
                 else:
                     raise ShapeMismatch("Shapes are incompatible: first operand is %s x %s, second operand is %s x %s." % (
                         str(self.M), str(self.N), str(other.M), str(other.N)))
-                    # if len(self.__N) < len(other.N):
-                    #     raise ShapeMismatch("Shapes are incompatible: first operand is %s x %s, second operand is %s x %s."%(str(self.M), str(self.N), str(other.M), str(other.N)))
-
-                    # cores_new = []
-                    # raise NotImplementedError("Not yet implemented.")
 
             elif self.__is_ttm == False and other.is_ttm == False:
                 # broadcasting rul;es have to be applied. Sperate if else to make the non-broadcasting case the fastest.
@@ -770,7 +761,6 @@ class TT():
             else:
                 result = TT([tn.zeros((1, self.M[i], self.N[i], 1) if self.is_ttm else (
                     1, self.N[i], 1), device=self.cores[0].device, dtype=self.cores[0].dtype) for i in range(len(self.N))])
-                # result = zeros([(m,n) for m,n in zip(self.M,self.N)] if self.is_ttm else self.N, device=self.cores[0].device)
         else:
             raise InvalidArguments(
                 'Second operand must be of type: TT, float, int, complex or tensorflow Tensor.')
@@ -957,7 +947,6 @@ class TT():
             torchtt.TT: the result.
         """
         if isinstance(other, int) or isinstance(other, float) or (tn.is_tensor(other) and other.numel() == 1):
-            # ones(self.__N,dtype=self.cores[0].dtype,device = self.cores[0].device)
             o = TT([tn.ones((1, n, 1), dtype=self.cores[0].dtype,
                    device=self.cores[0].device) for n in self.__N])
             o.cores[0] *= other
@@ -1275,8 +1264,6 @@ class TT():
                     raise InvalidArguments('Slice size is invalid.')
 
             else:
-                # if len(index) != len(self.__N):
-                #    raise InvalidArguments('Slice size is invalid.')
                 num_none = sum([i is None for i in index])
 
                 if index[0] == Ellipsis:
@@ -1311,8 +1298,6 @@ class TT():
             sliced.reduce_dims(exclude)
             if (sliced.is_ttm == False and sliced.N == [1]) or (sliced.is_ttm and sliced.N == [1] and sliced.M == [1]):
                 sliced = tn.squeeze(sliced.cores[0])
-
-            # cores = None
 
         elif isinstance(index, int):
             # tensor is 1d and one element is retrived
@@ -1587,7 +1572,6 @@ class TT():
                 if cores_new[mode[i]].shape[1] != factor_matrices[i].shape[1]:
                     raise ShapeMismatch(
                         "The n-th mode of the tensor must be equal with the 2nd mode of the matrix.")
-                # if self.__is_ttm else tn.einsum('ijk,lj->ilk',cores_new[mode[i]],factor_matrices[i])
                 cores_new[mode[i]] = tn.einsum(
                     'ijk,lj->ilk', cores_new[mode[i]], factor_matrices[i])
         elif isinstance(mode, int) and tn.is_tensor(factor_matrices):
@@ -1595,7 +1579,6 @@ class TT():
             if cores_new[mode].shape[1] != factor_matrices.shape[1]:
                 raise ShapeMismatch(
                     "The n-th mode of the tensor must be equal with the 2nd mode of the matrix.")
-            # if self.__is_ttm else tn.einsum('ijk,lj->ilk',cores_new[mode],factor_matrices)
             cores_new[mode] = tn.einsum(
                 'ijk,lj->ilk', cores_new[mode], factor_matrices)
         else:

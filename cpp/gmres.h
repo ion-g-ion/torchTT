@@ -85,24 +85,11 @@ void gmres_single(at::Tensor &solution, int &flag, int &nit, AMENsolveMV<T> &Op,
 
     int k;
     for(k = 0; k<iters; k++){
-        
-       // std::cout <<"\n";
-      //  auto ts = std::chrono::high_resolution_clock::now();
         at::Tensor q = Op.matvec(Q[k]);
-     //   auto diff_time = std::chrono::high_resolution_clock::now() - ts;
-      //  std::cout << " MV   " << (double)(std::chrono::duration_cast<std::chrono::microseconds>(diff_time)).count()/1000 << std::endl;
-
-      //  ts = std::chrono::high_resolution_clock::now();
-        
-       // #pragma omp parallel for num_threads(32)
         for(int i=0;i<k+1;i++){
             HA[i][k] = at::dot(q.squeeze(), Q[i]).item<T>();
             q -= (HA[i][k] * Q[i]).reshape({-1,1});
         }
-      //  diff_time = std::chrono::high_resolution_clock::now() - ts;
-      //  std::cout << " PROJ " << (double)(std::chrono::duration_cast<std::chrono::microseconds>(diff_time)).count()/1000 << std::endl;
-
-     //   ts = std::chrono::high_resolution_clock::now();
         T h = torch::norm(q).item<T>();
 
         q /= h;
@@ -120,8 +107,6 @@ void gmres_single(at::Tensor &solution, int &flag, int &nit, AMENsolveMV<T> &Op,
         betaA[k+1] = -sn[k]*betaA[k];
         betaA[k] = cs[k]*betaA[k];
         error = std::abs(betaA[k+1])/b_norm;
-       // diff_time = std::chrono::high_resolution_clock::now() - ts;
-     // std::cout << " REST " << (double)(std::chrono::duration_cast<std::chrono::microseconds>(diff_time)).count()/1000 << std::endl;
         if(error<=threshold)
         {
             flag = 1;
@@ -159,152 +144,3 @@ void gmres(at::Tensor &solution, int &flag, int &nit, AMENsolveMV<T> &Op, at::Te
         xs = solution.clone();
     }
 }
-
-/*
-void gmres_double_cpu(double *solution, 
-                      int &flag, 
-                      int &nit, 
-                      std::function<void(double*,double*)> matvec,
-                      double *rhs, 
-                      int64_t size, 
-                      int64_t max_iters, 
-                      double threshold, 
-                      int64_t resets,
-                      bool debug)
-{
-
-    nit = 0;
-    flag = 0;
-
-    int64_t inc1 = 1;
-    char transN = 'N';
-    double alpha1 = 1.0;
-    double alpham1 = -1.0;
-
-    double *sn = new double[max_iters];
-    double *cs = new double[max_iters];
-
-    double *Q = nullptr;
-    //double *q = new double[size];
-    double *H = new double[max_iters*(max_iters+1)];
-    double *beta = new double[max_iters+1];
-    double *work1 = new double [max_iters+1];
-    
-    int64_t *piv_tmp = new int64_t[size];
-
-    double b_norm;
-    double error;
-
-    b_norm = BLAS::nrm2(&size, rhs, &inc1);
-
-    if(b_norm <= 0)
-    {   
-        double alpha0 = 0.0;
-        BLAS::scal(&size, &alpha0, solution, &inc1);
-        nit = 1;
-        flag = 1;
-    }
-    else
-    {
-
-        if(Q == nullptr)
-            Q = new double[size*(max_iters+1)]; 
-
-        for(uint64_t r=0; r<resets; r++)
-        {
-            int k;
-            // compute residual
-            matvec(solution, Q);
-            BLAS::scal<double>(&size, &alpham1, Q, &inc1);
-            BLAS::axpy(&size, &alpha1, rhs, &inc1, Q, &inc1);
-    
-            auto r_norm = BLAS::nrm2(&size, Q, &inc1);
-    
-            if( ! r_norm>0 )
-            {
-                flag = 1;
-                nit = 0;
-                break;
-            }
-
-            double tmp = 1/r_norm;
-            BLAS::scal(&size, &tmp, Q, &inc1);
-    
-            //if(Q == nullptr)
-            //    Q = new double[size*(max_iters+1)]; 
-
-            // fill with 0
-            std::fill_n(beta, max_iters+1, 0);
-            std::fill_n(cs, max_iters+1, 0);
-            std::fill_n(sn, max_iters+1, 0);
-            std::fill_n(H, (max_iters+1)*max_iters, 0);
-
-
-            error = r_norm / b_norm;
-            beta[0] = r_norm;
-    
-            for(k = 0; k<max_iters; k++)
-            {
-            
-                // matvec 
-                matvec(Q+k*size, Q+(k+1)*size);
-    
-                // 
-                for(int i=0;i<k+1;i++){
-                    H[i+(max_iters+1)*k] = BLAS::dot(&size, Q+(k+1)*size, &inc1, Q+i*size, &inc1);
-                    double s = -H[i+k*(max_iters+1)];
-                    BLAS::axpy(&size, &s, Q+i*size, &inc1, Q+(k+1)*size, &inc1);
-                }
-    
-                double h = BLAS::nrm2(&size, Q+(k+1)*size, &inc1);
-    
-                double oh = 1/h;
-                BLAS::scal(&size, &oh, Q+(k+1)*size, &inc1);
-    
-                H[k+1+(max_iters+1)*k] = h;
-    
-                // >>>
-                double c,s;
-                apply_givens_rotation_cpu(H+k*(max_iters+1), cs, sn, k+1, c, s);
-                cs[k] = c;
-                sn[k] = s;
-    
-                beta[k+1] = -sn[k]*beta[k];
-                beta[k] = cs[k]*beta[k];
-                error = std::abs(beta[k+1])/b_norm;
-
-                if(debug)
-                    std::cout << "Iteration " << k << " error " << error << std::endl; 
-                if(error<=threshold)
-                {
-                    flag = 1;
-                    break;
-                }
-            }
-    
-            k = k<max_iters ? k : max_iters-1;
-
-            
-            int64_t info = LAPACK::gesv(k+1, 1, H, max_iters+1, piv_tmp, beta, k+1);
-
-            //if(info != 0)
-            //    throw std::runtime_error("Error in GMRES, Hy=beta is singular.");
-
-            for(int i = 0; i<k+1; ++i)
-                BLAS::axpy(&size, beta+i, Q+i*size, &inc1, solution, &inc1);
-
-            nit += k+1;
-    
-            if(flag==1){
-                break;
-            }
-        }
-    }
-    delete [] sn;
-    delete [] cs;
-    if(Q != nullptr)
-        delete [] Q;
-    delete [] work1;
-    delete [] H;
-    delete [] piv_tmp;
-}*/

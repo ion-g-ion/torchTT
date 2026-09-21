@@ -317,7 +317,6 @@ class AmenCrossCallbacks(AmenCallbacks):
         state_dict['Jy_right'][k] = idx_new
         Ps_new = core[idx[:x_cores[k].shape[0]], :].t()
         norm_factor = 1.0 # Removed scaling
-        # Ps_new = Ps_new * norm_factor
         state_dict['Ps_right'][k] = Ps_new
         state_dict['Ps_right_lu'][k] = _factorize_projection(Ps_new)
         
@@ -500,7 +499,6 @@ def dmrg_cross(function, N, eps=1e-9, nswp=10, x_start=None, kick=2, dtype=tn.fl
     else:
         rank = x_start.R.copy()
         cores = [c+0 for c in x_start.cores]
-    # cores = (ones(N,dtype=dtype)).cores
 
     cores, rank = lr_orthogonal(cores, rank, False)
 
@@ -520,11 +518,7 @@ def dmrg_cross(function, N, eps=1e-9, nswp=10, x_start=None, kick=2, dtype=tn.fl
 
         rnew = min(N[k]*rank[k+1], rank[k])
         Jk = _maxvol(core)
-        # print(Jk)
         tmp = _unravel_index(Jk[:rnew], (rank[k+1], N[k]), device)
-        # if k==d-1:
-        #    idx_new = tn.tensor(tmp[1].reshape([1,-1]))
-        # else:
         idx_new = tn.vstack((tmp[1].reshape([1, -1]), Idx[k+1][:, tmp[0]]))
 
         Idx[k] = idx_new+0
@@ -532,20 +526,12 @@ def dmrg_cross(function, N, eps=1e-9, nswp=10, x_start=None, kick=2, dtype=tn.fl
         Rm = core[Jk, :]
 
         core = tn.linalg.solve(Rm.T, core.T)
-        # core = tn.linalg.solve(Rm,core.T)
         Rm = (Rm@Rmat).t()
-        # core = core.t()
         cores[k] = tn.reshape(core, [rnew, N[k], rank[k+1]])
         core = tn.reshape(core, [-1, rank[k+1]]) @ Ps[k+1]
         core = tn.reshape(core, [rank[k], -1]).t()
         _, Ps[k] = QR(core)
     cores[0] = tn.einsum('ijk,kl->ijl', cores[0], Rm)
-
-    # for p in Ps:
-    #     print(p)
-    # for i in Idx:
-    #     print(i)
-    # return
     n_eval = 0
 
     for swp in range(nswp):
@@ -589,7 +575,6 @@ def dmrg_cross(function, N, eps=1e-9, nswp=10, x_start=None, kick=2, dtype=tn.fl
             U = U[:, :rnew]
             S = S[:rnew]
             V = V[:rnew, :]
-            # print('kkt new',tn.linalg.norm(supercore-U@tn.diag(S)@V))
             # kick the rank
             V = S[:, None] * V
             UK = tn.randn((U.shape[0], kick), dtype=dtype, device=device)
@@ -602,7 +587,6 @@ def dmrg_cross(function, N, eps=1e-9, nswp=10, x_start=None, kick=2, dtype=tn.fl
                 V = tn.cat(
                     (V, tn.zeros((radd, V.shape[1]), dtype=dtype, device=device)), 0)
             V = Rtemp @ V
-            # print('kkt new',tn.linalg.norm(supercore-U@V))
             # compute err (dx)
             super_prev = tn.einsum('ijk,kmn->ijmn', cores[k], cores[k+1])
             super_prev = tn.einsum(
@@ -619,9 +603,6 @@ def dmrg_cross(function, N, eps=1e-9, nswp=10, x_start=None, kick=2, dtype=tn.fl
             U = tn.linalg.solve(Ps[k], tn.reshape(U, [rank[k], -1]))
             V = tn.linalg.solve(
                 Ps[k+2].t(), tn.reshape(V, [rank[k+1]*N[k+1], rank[k+2]]).t()).t()
-
-            # U = tn.einsum('ij,jkl->ikl',tn.linalg.inv(Ps[k]),tn.reshape(U,[rank[k],N[k],-1]))
-            # V = tn.einsum('ijk,kl->ijl',tn.reshape(V,[-1,N[k+1],rank[k+2]]),tn.linalg.inv(Ps[k+2]))
 
             V = tn.reshape(V, [rank[k+1], -1])
             U = tn.reshape(U, [-1, rank[k+1]])
@@ -709,9 +690,6 @@ def dmrg_cross(function, N, eps=1e-9, nswp=10, x_start=None, kick=2, dtype=tn.fl
             V = tn.linalg.solve(
                 Ps[k+2].t(), tn.reshape(V, [rank[k+1]*N[k+1], rank[k+2]]).t()).t()
 
-            # U = tn.einsum('ij,jkl->ikl',tn.linalg.inv(Ps[k]),tn.reshape(U,[rank[k],N[k],-1]))
-            # V = tn.einsum('ijk,kl->ijl',tn.reshape(V,[-1,N[k+1],rank[k+2]]),tn.linalg.inv(Ps[k+2]))
-
             V = tn.reshape(V, [rank[k+1], -1])
             U = tn.reshape(U, [-1, rank[k+1]])
 
@@ -732,8 +710,6 @@ def dmrg_cross(function, N, eps=1e-9, nswp=10, x_start=None, kick=2, dtype=tn.fl
             tmp = _unravel_index(idx[:rank[k+1]], (N[k+1], rank[k+2]), device)
             idx_new = tn.vstack((tmp[0].reshape([1, -1]), Idx[k+2][:, tmp[1]]))
             Idx[k+1] = idx_new+0
-        # xxx = TT(cores)
-        # print('#            ',xxx[1,2,3,4])
 
         # callback / exit condition
         if callback is not None:

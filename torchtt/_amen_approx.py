@@ -251,9 +251,4 @@ def amen_approx(M, N, d, x_cores, rx, rz, state_dict, callbacks: AmenCallbacks,
         if max_dx < eps:
             last = True
 
-    # Apply cumulative norm factor back to cores
-    # normx_scalar = np.exp(np.sum(np.log(normx))/d)
-    # for k in range(d):
-    #     x_cores[k] = x_cores[k] * normx_scalar
-
     return x_cores, rx

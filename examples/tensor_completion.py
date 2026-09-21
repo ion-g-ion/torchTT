@@ -51,17 +51,3 @@ print('Number of observations %d, tensor shape %s, percentage of entries observe
 print('Number of unknowns %d, number of observations %d, DoF/observations %.6f'%(tntt.numel(x),M,tntt.numel(x)/M))
 
 print('Rank after rounding',x.round(1e-6))
-
-#%% Classical gradient descent w.r.t. TT-cores
-# x = tnt.random([N]*4,[1,5,5,5,1])
-# 
-# for i in range(100):
-#     tnt.grad.watch(x)
-#     loss_val =loss(x)
-#     cores_update = tnt.grad.grad(loss_val,x)
-#     tnt.grad.unwatch(x)
-#     x = tnt.TT([c1-0.015*c2 for c1,c2 in zip(x.cores,cores_update)])
-# 
-#     print('Iteration %4d loss value %e error %e'%(i+1,loss_val.detach().numpy(),(x-target).norm()/target.norm()))
-
-

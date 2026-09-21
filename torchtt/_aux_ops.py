@@ -18,13 +18,6 @@ def apply_mask(cores, R, indices):
     d = len(cores)
     dt = cores[0].dtype
     M = len(indices)
-    # result = tn.zeros((M), dtype = dt)
-
-    # for i in range(M):
-    #     tmp = tn.ones(1)
-    #     for k in range(d):
-    #         tmp = tn.einsum('i,ik->k',tmp,cores[k][:,indices[i][k],:])
-    #     result[i] = tn.sum(tmp)
 
     result = tn.ones((M,1), dtype = dt)
     for i in range(d):
@@ -77,5 +70,3 @@ def bilinear_form_aux(x_cores, A_cores, y_cores, d):
         result = tn.einsum('LSrn,rnR->LSR',result,y_cores[i]) 
         
     return tn.squeeze(result)
-
-

@@ -40,7 +40,6 @@ def dmrg_matvec(A, x, y0 = None,nswp = 20, eps = 1e-12, rmax = 32768, kickrank =
     """
     if _flag_use_cpp and use_cpp:
         return torchtt.TT(torchttcpp.dmrg_mv(A.cores, x.cores, [] if y0 is None else y0.cores, A.M, A.N, x.R, [] if y0 is None else y0.R, nswp, eps, rmax, kickrank, verb))
-        #return dmrg_matvec_python(A, x, y0, nswp, eps, rmax, kickrank, verb)
     else:
         return dmrg_matvec_python(A, x, y0, nswp, eps, rmax, kickrank, verb)
     
@@ -85,8 +84,6 @@ def dmrg_matvec_python(A, x, y0 = None, nswp = 20, eps = 1e-12, rmax = 32768, ki
     for i in range(nswp):
         if verb:
             print('sweep ', i)
-
-        # TME = datetime.datetime.now()
         for k in range(d-1, 0, -1):
             core = y_cores[k]
 
@@ -106,19 +103,13 @@ def dmrg_matvec_python(A, x, y0 = None, nswp = 20, eps = 1e-12, rmax = 32768, ki
             Phi = tn.einsum('ijk,mnk->ijmn',Phis[k+1],tn.conj(x.cores[k])) # shape  rk x rAk x rxk-1 x Nk
             Phi = tn.einsum('ijkl,mlnk->ijmn',tn.conj(A.cores[k]),Phi) # shape  rAk-1 x Nk x rk x rxk-1
             Phi = tn.einsum('ijkl,mjk->mil',Phi,y_cores[k]) # shape  rk-1 x rAk-1 x rxk-1
-            
-            # Phi = tn.einsum('YAX,amnA,ymY,xnX->yax', Phis[k+1], tn.conj(A.cores[k]), y_cores[k], x.cores[k])
 
             Phis[k] = Phi
-        # TME = datetime.datetime.now()-TME
-        # print('first ',TME.total_seconds())
 
         # DMRG
         for k in range(d-1):
               if verb: print('\tcore ',k)
               W_prev = tn.einsum('ijk,klm->ijlm',y_cores[k],y_cores[k+1])
-              
-              # TME = datetime.datetime.now()
               if not last:
                   # from left
                   W1 = tn.einsum('ijk,klm->ijlm',Phis[k],tn.conj(x.cores[k])) # shape rk-1 x rAk-1 x Nk x rxk
@@ -163,9 +154,6 @@ def dmrg_matvec_python(A, x, y0 = None, nswp = 20, eps = 1e-12, rmax = 32768, ki
               W1 = U[:,:r_new]
               
               W2 = ( V[:r_new,:].T @ tn.diag(S[:r_new]))
-              
-              
-              # TME = datetime.datetime.now()
               if i < nswp-1:
                   # kick-rank
                   W1, Rmat = QR(tn.cat((W1,tn.randn((W1.shape[0],kickrank),dtype=W1.dtype,device=A.cores[0].device)),axis=1))
@@ -174,26 +162,15 @@ def dmrg_matvec_python(A, x, y0 = None, nswp = 20, eps = 1e-12, rmax = 32768, ki
                   r_new = W1.shape[1]
               else:
                   W2 = W2.t()       
-              # TME = datetime.datetime.now()-TME   
-              # print('\t\t ',TME.total_seconds())
-              
-              # TME = datetime.datetime.now()
               if verb: print('\tcore ',k,': delta ',delta_cores[k],' rank ',Ry[k+1],' ->',r_new)
               Ry[k+1] = r_new 
-              # print(k,W1.shape,W2.shape,Ry,N)
               y_cores[k] = tn.conj(tn.reshape(W1,[Ry[k],M[k],r_new]))
               y_cores[k+1] = tn.conj(tn.reshape(W2,[r_new,M[k+1],Ry[k+2]]))
-              
-              #Wc = tn.einsum('ijk,klm->ijlm', tn.conj(y_cores[k]), tn.conj(y_cores[k+1]))
-              
-              # print('decomposition ',tn.linalg.norm(Wc-W)/tn.linalg.norm(W))
               Phi_next = tn.einsum('ijk,kmn->ijmn',Phis[k],tn.conj(x.cores[k])) # shape rk-1 x rAk-1 x Nk x rxk
               Phi_next = tn.einsum('ijkl,jmkn->imnl',Phi_next,tn.conj(A.cores[k])) # shape  rk-1 x Mk x rAk x rxk
               Phi_next = tn.einsum('ijm,ijkl->mkl',y_cores[k],Phi_next) # shape rk x rAk x rxk
               
               Phis[k+1] = Phi_next+0
-              # TME = datetime.datetime.now()-TME   
-              # print('\t\t ',TME.total_seconds())
         
         if last : break
         
@@ -228,7 +205,6 @@ def dmrg_hadamard(x, y, z0 = None, nswp = 20, eps = 1e-12, rmax = 32768, kickran
     """
     if False and _flag_use_cpp and use_cpp:
         return torchtt.TT(torchttcpp.dmrg_mv(A.cores, x.cores, [] if y0 is None else y0.cores, A.M, A.N, x.R, [] if y0 is None else y0.R, nswp, eps, rmax, kickrank, verb))
-        #return dmrg_matvec_python(A, x, y0, nswp, eps, rmax, kickrank, verb)
     else:
         return dmrg_hadamard_python(x, y, z0, nswp, eps, rmax, kickrank, verb)
     
@@ -269,8 +245,6 @@ def dmrg_hadamard_python(z, x, y0 = None, nswp = 20, eps = 1e-12, rmax = 32768, 
     
     for i in range(nswp):
         if verb: print('sweep ',i)
-        
-        # TME = datetime.datetime.now()
         for k in range(d-1,0,-1):
             core = y_cores[k]
             core = tn.reshape(tn.permute(core,[1,2,0]),[M[k]*Ry[k+1],Ry[k]])
@@ -287,18 +261,12 @@ def dmrg_hadamard_python(z, x, y0 = None, nswp = 20, eps = 1e-12, rmax = 32768, 
             Phi = tn.einsum('ijk,mnk->ijmn',Phis[k+1],tn.conj(x.cores[k])) # shape  rk x rAk x rxk-1 x Nk
             Phi = tn.einsum('ikl,mlnk->ikmn',tn.conj(z.cores[k]),Phi) # shape  rAk-1 x Nk x rk x rxk-1
             Phi = tn.einsum('ijkl,mjk->mil',Phi,y_cores[k]) # shape  rk-1 x rAk-1 x rxk-1
-            
-            # Phi = tn.einsum('YAX,amnA,ymY,xnX->yax', Phis[k+1], tn.conj(A.cores[k]), y_cores[k], x.cores[k])
             Phis[k] = Phi
-        # TME = datetime.datetime.now()-TME    
-        # print('first ',TME.total_seconds())
         
         # DMRG
         for k in range(d-1):
               if verb: print('\tcore ',k)
               W_prev = tn.einsum('ijk,klm->ijlm',y_cores[k],y_cores[k+1])
-              
-              # TME = datetime.datetime.now()
               if not last:
                   # from left
                   W1 = tn.einsum('ijk,klm->ijlm',Phis[k],tn.conj(x.cores[k])) # shape rk-1 x rAk-1 x Nk x rxk
@@ -343,9 +311,6 @@ def dmrg_hadamard_python(z, x, y0 = None, nswp = 20, eps = 1e-12, rmax = 32768, 
               W1 = U[:,:r_new]
               
               W2 = ( V[:r_new,:].T @ tn.diag(S[:r_new]))
-              
-              
-              # TME = datetime.datetime.now()
               if i < nswp-1:
                   # kick-rank
                   W1, Rmat = QR(tn.cat((W1,tn.randn((W1.shape[0],kickrank),dtype=W1.dtype,device=z.cores[0].device)),axis=1))
@@ -354,26 +319,15 @@ def dmrg_hadamard_python(z, x, y0 = None, nswp = 20, eps = 1e-12, rmax = 32768, 
                   r_new = W1.shape[1]
               else:
                   W2 = W2.t()       
-              # TME = datetime.datetime.now()-TME   
-              # print('\t\t ',TME.total_seconds())
-              
-              # TME = datetime.datetime.now()
               if verb: print('\tcore ',k,': delta ',delta_cores[k],' rank ',Ry[k+1],' ->',r_new)
               Ry[k+1] = r_new 
-              # print(k,W1.shape,W2.shape,Ry,N)
               y_cores[k] = tn.conj(tn.reshape(W1,[Ry[k],M[k],r_new]))
               y_cores[k+1] = tn.conj(tn.reshape(W2,[r_new,M[k+1],Ry[k+2]]))
-              
-              #Wc = tn.einsum('ijk,klm->ijlm', tn.conj(y_cores[k]), tn.conj(y_cores[k+1]))
-              
-              # print('decomposition ',tn.linalg.norm(Wc-W)/tn.linalg.norm(W))
               Phi_next = tn.einsum('ijk,kmn->ijmn',Phis[k],tn.conj(x.cores[k])) # shape rk-1 x rAk-1 x Nk x rxk
               Phi_next = tn.einsum('ijkl,jkn->iknl',Phi_next,tn.conj(z.cores[k])) # shape  rk-1 x Mk x rAk x rxk
               Phi_next = tn.einsum('ijm,ijkl->mkl',y_cores[k],Phi_next) # shape rk x rAk x rxk
               
               Phis[k+1] = Phi_next+0
-              # TME = datetime.datetime.now()-TME   
-              # print('\t\t ',TME.total_seconds())
         
         if last : break
         

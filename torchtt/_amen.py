@@ -94,9 +94,6 @@ def amen_mv(A, b, nswp=22, x0=None, eps=1e-10, rmax=1024, kickrank=4, kick2=0, v
         else:
             x_cores = x0.cores
             x_R = x0.R
-
-        # cores = torchttcpp.amen_solve(A_cores, B_cores, x_cores, b.N, A.R, b.R, x_R, nswp, eps, rmax, max_full, kickrank, kick2, local_iterations, resets, verbose, prec)
-        # return torchtt.TT(list(cores))
     else:
         return _amen_mm_python(A.cores, [c[:, :, None, :] for c in b.cores], A.M, [1]*len(A.M), A.N, False, nswp, x0.cores if x0 is not None else None, x0.R if x0 is not None else None, eps, rmax, kickrank, kick2, verbose)
 
@@ -240,10 +237,6 @@ def _amen_mm_python(A_cores, B_cores, M, N, K, to_ttm, nswp=22, X0_cores=None, r
                 Phis_rhs[k+1], A_cores[k], B_cores[k], x_cores[k])
 
             # ... and norms
-            # norm = tn.linalg.norm(Phis[k])
-            # norm = norm if norm > 0 else 1.0
-            # normA[k-1] = norm
-            # Phis[k] = Phis[k] / norm
             norm = tn.linalg.norm(Phis_rhs[k])
             norm = norm if norm > 0 else 1.0
             normb[k-1] = norm
@@ -265,7 +258,7 @@ def _amen_mm_python(A_cores, B_cores, M, N, K, to_ttm, nswp=22, X0_cores=None, r
         for k in range(d):
             if verbose:
                 print('\tCore', k)
-            previous_solution = x_cores[k]  # tn.reshape(x_cores[k], [-1, 1])
+            previous_solution = x_cores[k]
 
             # compute new approximation
             solution_now = _local_AB(
@@ -290,7 +283,6 @@ def _amen_mm_python(A_cores, B_cores, M, N, K, to_ttm, nswp=22, X0_cores=None, r
                 r = min([r, tn.numel(s), rmax[k+1]])
             else:
                 u, v = QR(solution_now)
-                # v = v.t()
                 r = u.shape[1]
                 s = tn.ones(r,  dtype=dtype, device=device)
 
@@ -360,10 +352,6 @@ def _amen_mm_python(A_cores, B_cores, M, N, K, to_ttm, nswp=22, X0_cores=None, r
                     Phis_rhs[k], A_cores[k], B_cores[k], x_cores[k])
 
                 # ... and norms
-                # norm = tn.linalg.norm(Phis[k+1])
-                # norm = norm if norm > 0 else 1.0
-                # normA[k] = norm
-                # Phis[k+1] = Phis[k+1] / norm
                 norm = tn.linalg.norm(Phis_rhs[k+1])
                 norm = norm if norm > 0 else 1.0
                 normb[k] = norm

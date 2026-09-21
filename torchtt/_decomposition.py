@@ -53,8 +53,6 @@ def SVD(mat):
         except:
             u, s, v = np.linalg.svd((mat.t()).numpy(),full_matrices=False)
             return  tn.tensor(v.t(), dtype = mat.dtype, device = mat.device), tn.tensor(s, dtype = mat.dtype, device = mat.device), tn.tensor(u.t(), dtype = mat.dtype, device = mat.device)
-    # u, s, v = tn.linalg.svd(mat,full_matrices=False)
-    # return u, s, v
 
 
 
@@ -146,12 +144,10 @@ def rl_orthogonal(tt_cores, R, is_ttm, no_gpu = False):
         # perform QR
         
         Qmat, Rmat = QR(core_now)
-            # print('QR ',list(Qmat.shape),list(Rmat.shape))
         rnew = min([core_now.shape[0],core_now.shape[1]])
         rnew = Rmat.shape[0]
         # update current core
         cores_new[i] = tn.reshape(Qmat.T,[rnew]+mode_shape+[-1])
-        # print('R ',tt_cores[i].shape,cores_new[i].shape,tt_cores[i-1].shape)
         R[i] = cores_new[i].shape[0]
         # and the k-1 one
         if is_ttm:
@@ -312,11 +308,6 @@ def rank_chop(s,eps):
    
     sc = np.cumsum(np.abs(s[::-1])**2)[::-1]
     R = np.argmax(sc<eps**2)
-   #  print(sc,eps**2,sc<eps**2,R)
-   #  while R>0:
-   #      if np.sum(s[R:]**2) >= eps**2:
-   #          break;
-   #      R -= 1
         
     R = R if R>0 else 1
     R = s.size if sc[-1]>eps**2 else R
@@ -371,16 +362,9 @@ def to_tt(A,N=None,eps=1e-14,rmax=100,is_sparse=False):
         
         # reshape C to a matrix 
         C = tn.reshape(C, [m,-1])
-        
-        # tme = datetime.datetime.now()
         # perform svd 
         
         u, s, v = SVD(C)
-        
-        # tme = datetime.datetime.now()-tme
-        # print('time1',tme)
-      
-        # tme = datetime.datetime.now()
         # choose the rank according to eps tolerance
         r1 = rank_chop(s.cpu().numpy(), ep*tn.linalg.norm(s).cpu().numpy())
         r1 = min([r1,rmax[i+1]])
@@ -399,8 +383,5 @@ def to_tt(A,N=None,eps=1e-14,rmax=100,is_sparse=False):
         v = tn.diag(s) @ v
 
         C = v
-        # tme = datetime.datetime.now()-tme
-        # print('time2',tme)
     cores.append(tn.reshape(C,[r[-2],N[-1],-1]))
     return cores, r
-    

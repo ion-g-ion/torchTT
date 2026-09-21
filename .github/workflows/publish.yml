@@ -87,7 +87,6 @@ jobs:
       with:
         inputs: >-
           ./dist/*.tar.gz
-        #  ./dist/*.whl
     - name: Create GitHub Release
       env:
         GITHUB_TOKEN: ${{ github.token }}

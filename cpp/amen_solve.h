@@ -3,8 +3,6 @@
 #include <cmath>
 #include "matvecs.h"
 #include "gmres.h"
-
-//torch::NoGradGuard no_grad;
 /**
  * @brief Compute thelocal matvec product in the AMEn: lsr,smnS,LSR,rnR->lmL
  * 
@@ -40,7 +38,6 @@ at::Tensor compute_phi_bck_A(at::Tensor &Phi_now, at::Tensor &core_left, at::Ten
     // 5           GEMM          lML,LSR->lMSR                    sMNS,rNR,lMSR->lsr
     // 6           TDOT        lMSR,sMNS->lRsN                         rNR,lRsN->lsr
     // 5           TDOT          lRsN,rNR->lsr                              lsr->lsr
-    //Phi = oe.contract('LSR,lML,sMNS,rNR->lsr',Phi_now,core_left,core_A,core_right)
     Phi = at::tensordot(core_left, Phi_now, {2}, {0});
     Phi = at::tensordot(Phi, core_A, {1,2}, {1,3}); // lRsN
     return at::tensordot(Phi, core_right, {1,3}, {2,1});
@@ -60,7 +57,6 @@ at::Tensor compute_phi_fwd_A(at::Tensor &Phi_now, at::Tensor &core_left, at::Ten
 //    5           GEMM          lML,lsr->MLsr                    sMNS,rNR,MLsr->LSR
 //    6           TDOT        MLsr,sMNS->LrNS                         rNR,LrNS->LSR
 //    5           TDOT          LrNS,rNR->LSR                              LSR->LSR
-    //Phi_next = oe.contract('lsr,lML,sMNS,rNR->LSR',Phi_now,core_left,core_A,core_right)
     Phi_next = at::tensordot(core_left, Phi_now, {0}, {0}); // MLsr
     Phi_next = at::tensordot(Phi_next, core_A, {0,2}, {1,0}); // LrNS
     Phi_next = at::tensordot(Phi_next, core_right, {1,2}, {0,1});
@@ -152,8 +148,6 @@ std::vector<at::Tensor> amen_solve(
         std::cout << "\n\tlocal preconditioner : " << prec_char;
         std::cout << std::endl << std::endl;
     } 
-
-    //at::TensorBase::device dtype = A_cores[0].dtype;
     auto options = A_cores[0].options();
     uint64_t d = N.size();
     std::vector<at::Tensor> x_cores;
@@ -176,7 +170,6 @@ std::vector<at::Tensor> amen_solve(
         z_cores[i] = torch::randn({rz[i], N[i], rz[i + 1]}, options);
 
     rl_orthogonal_this(z_cores, N, rz);
-    //std::cout<<"\n\n\nINSIDE "<<b_cores[0]<<"\n\n\n";
 
     // the interface matrices
     std::vector<at::Tensor> Phiz(d+1);
@@ -425,11 +418,9 @@ std::vector<at::Tensor> amen_solve(
             if(!last){
                 at::Tensor czA, czy;
                 at::Tensor tmp = at::linalg_matmul(u, v.t()).reshape({rx[k], N[k], rx[k+1]});
-                //std::cout << Phiz[k+1].sizes() << "  ---  "<<Phiz[k].sizes()<< "    -----    "<<A_cores[k].sizes() << "   ---   " << tmp.sizes() <<"\n";
                 czA = local_product(Phiz[k+1], Phiz[k], A_cores[k], tmp);
                 czy = at::tensordot(Phiz_b[k], nrmsc * b_cores[k], {0}, {0});
                 czy = at::tensordot(czy, Phiz_b[k+1], {2}, {0});
-                //czy *= nrmsc;
                 tmp = (czy - czA).reshape({rz[k]*N[k], rz[k+1]});
                 
                 

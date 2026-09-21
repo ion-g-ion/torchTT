@@ -73,10 +73,7 @@ def riemannian_gradient(x,func):
     Ghats = _delta2cores(x.cores, R, Rs, is_ttm = is_ttm,ortho = [l_cores,r_cores])
     fval = func(TT(Ghats))
     fval.backward() 
-
-    # Sds = tape.gradient(fval, Rs)
     Sds = [r.grad for r in Rs]
-    # print('Sds ',Sds)
   
     
     # compute Sdeltas
@@ -85,10 +82,6 @@ def riemannian_gradient(x,func):
         UL = tn.reshape(l_cores[k],[-1,R[k+1]])
         D = D - UL @ (UL.T @ D)
         Sds[k] = tn.reshape(D,l_cores[k].shape)
-        
-        
-        
-    # print([tf.einsum('ijk,ijl->kl',l_cores[i],Sds[i]).numpy() for i in range(d-1)])
     # delta to TT
     grad_cores = _delta2cores(x.cores, R, Sds, is_ttm,ortho = [l_cores,r_cores])
     return TT(grad_cores)
@@ -119,8 +112,6 @@ def riemannian_projection(Xspace,z):
     d = len(Xspace.N)
 
     N = Xspace.N
-    
-    # Pleft = [tf.ones((1,1,1),dtype=Xspace.cores[0].dtype)]
     Pleft = []
     tmp = tn.ones((1,1),dtype=Xspace.cores[0].dtype, device = Xspace.cores[0].device)
     for k in range(d-1):

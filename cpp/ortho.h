@@ -55,11 +55,10 @@ void rl_orthogonal_this(std::vector<at::Tensor> &cores, std::vector<uint64_t> &s
         core_now = cores[i].reshape({cores[i].sizes()[0],  cores[i].sizes()[1]* cores[i].sizes()[2]}).t();
 
         // perform QR
-        // perform_QR(Q,R,core_now);
         std::tuple <at::Tensor, at::Tensor> QR = at::linalg_qr(core_now);
 
 
-        uint64_t r_new; // = core_now.sizes()[0] < core_now.sizes()[1] ? core_now.sizes()[0] : core_now.sizes()[1];
+        uint64_t r_new;
         r_new = std::get<1>(QR).sizes()[0];
 
         cores[i] = std::get<0>(QR).t().reshape({r_new,shape[i],-1});
@@ -85,7 +84,6 @@ void lr_orthogonal(std::vector<at::Tensor> &cores, std::vector<uint64_t> &shape,
         core_now = cores[i].reshape({cores[i].sizes()[0]*cores[i].sizes()[1], cores[i].sizes()[2]});
 
         // perform QR
-        //perform_QR(Q,R,core_now);
         std::tuple <at::Tensor, at::Tensor> QR = at::linalg_qr(core_now);
        
         rank[i+1] = std::get<0>(QR).sizes()[1];

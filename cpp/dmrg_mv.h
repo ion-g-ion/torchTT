@@ -100,10 +100,6 @@ std::vector<at::Tensor> dmrg_mv(
             Phi  = at::tensordot(at::conj(A_cores[k]), Phi, {2,3}, {3,1});
             Phi = at::tensordot(y_cores[k], Phi, {1,2}, {1,2});
 
-            //auto Phi = at::einsum("ijk,mnk->ijmn",{Phis[k+1],at::conj(x_cores[k])});
-            //Phi = at::einsum("ijkl,mlnk->ijmn",{at::conj(A_cores[k]),Phi});
-            //Phi = at::einsum("ijkl,mjk->mil",{Phi,y_cores[k]}); 
-
             Phis[k] = Phi.contiguous().clone();
             
         }
@@ -130,14 +126,6 @@ std::vector<at::Tensor> dmrg_mv(
                 W = at::tensordot(W1, W2, {1,3}, {0, 3});
                 W = W.permute({1,0,2,3});
 
-                // auto W1 = at::einsum("ijk,klm->ijlm",{Phis[k],at::conj(x_cores[k])});
-                // W1 = at::einsum("ijkl,mikn->mjln",{at::conj(A_cores[k]),W1}); 
-                //   
-                // auto W2 = at::einsum("ijk,mnk->njmi",{Phis[k+2],at::conj(x_cores[k+1])});
-                // W2 = at::einsum("ijkl,klmn->ijmn",{at::conj(A_cores[k+1]),W2});
-                //   
-                // W = at::einsum("ijkl,kmln->ijmn",{W1,W2});
-
             }
             else
                 W = at::conj(W_prev);
@@ -162,8 +150,6 @@ std::vector<at::Tensor> dmrg_mv(
             std::tie(U, S, V) = at::linalg_svd(W.reshape({W.sizes()[0]*W.sizes()[1], -1}), false);
 
             int64_t r_new = rank_chop(S.cpu(), b*eps/(std::pow((double)d, last ? 0.5 : 1.5)) ); //<<<<<<<<<<<<
-            
-            //  r_new = rank_chop(S.cpu().numpy(),(b.cpu()*eps/(d**(0.5 if last else 1.5))).numpy())
 
             if(!last)
                 r_new += r_enlarge[k];
@@ -195,16 +181,10 @@ std::vector<at::Tensor> dmrg_mv(
             y_cores[k] = at::conj(W1.reshape({ry[k], M[k], r_new}));
             y_cores[k+1] = at::conj(W2.reshape({r_new, M[k+1], ry[k+2]}));
 
-            // auto Wc = at::conj(at::tensordot(y_cores[k]), y_cores[k+1], {2}, {0}));
-
             auto Phi_next = at::tensordot(Phis[k], at::conj(x_cores[k]), {2}, {0});
             Phi_next = at::tensordot(Phi_next, at::conj(A_cores[k]), {1,2}, {0, 2}); // result ilmn
             Phi_next = at::tensordot(y_cores[k], Phi_next, {0,1}, {0,2});
             Phi_next = Phi_next.permute({0,2,1});
-           
-            // auto Phi_next = at::einsum("ijk,kmn->ijmn",{Phis[k],at::conj(x_cores[k])}); // # shape rk-1 x rAk-1 x Nk x rxk
-            // Phi_next = at::einsum("ijkl,jmkn->imnl",{Phi_next,at::conj(A_cores[k])}); //# shape  rk-1 x Mk x rAk x rxk
-            // Phi_next = at::einsum("ijm,ijkl->mkl",{y_cores[k],Phi_next});
 
             Phis[k+1] = Phi_next.contiguous().clone();
         }
@@ -228,4 +208,4 @@ std::vector<at::Tensor> dmrg_mv(
 
 
     return y_cores;
-} 
+}

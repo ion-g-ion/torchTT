@@ -10,19 +10,16 @@ It also has linear solvers in TT and cross approximation as well as automatic di
 
 from ._tt_base import TT
 from ._extras import eye, zeros, kron, ones, random, randn, reshape, meshgrid, dot, elementwise_divide, numel, rank1TT, bilinear_form, diag, permute, load, save, cat, pad, shape_mn_to_tuple, shape_tuple_to_mn
-# from .torchtt import TT, eye, zeros, kron, ones, random, randn, reshape, meshgrid , dot, elementwise_divide, numel, rank1TT, bilinear_form, diag, permute, load, save, cat, pad
 from ._dmrg import dmrg_hadamard
 from ._fast_mult import fast_hadammard, fast_mm, fast_mv
 from ._amen import amen_mm, amen_mv
 from ._custom_timer import Timer
 from . import solvers
 from . import grad
-# from .grad import grad, watch, unwatch
 from . import manifold
 from . import interpolate
 from . import nn
 from . import cpp
-# from .errors import *
 
 try:
     import torchttcpp
