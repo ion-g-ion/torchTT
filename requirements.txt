@@ -2,5 +2,4 @@ torch>=1.7
 numpy>=1.18
 opt_einsum
 scipy>=0.16
-ninja
 pytest
