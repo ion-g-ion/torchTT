@@ -28,6 +28,11 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
+[project.urls]
+Documentation = "https://ion-g-ion.github.io/torchTT/stable/"
+Repository = "https://github.com/ion-g-ion/torchTT"
+Issues = "https://github.com/ion-g-ion/torchTT/issues"
+
 [project.optional-dependencies]
 dev = [
     "pytest>=6.0",

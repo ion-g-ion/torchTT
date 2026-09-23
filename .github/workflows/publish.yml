@@ -90,11 +90,12 @@ jobs:
     - name: Create GitHub Release
       env:
         GITHUB_TOKEN: ${{ github.token }}
-      run: >-
-        gh release create
-        '${{ github.event.workflow_run.head_branch }}'
-        --repo '${{ github.repository }}'
-        --generate-notes
+        RELEASE_TAG: ${{ github.event.workflow_run.head_branch }}
+        RELEASE_REPOSITORY: ${{ github.repository }}
+      run: |
+        printf 'Documentation: https://ion-g-ion.github.io/torchTT/%s/\n' "$RELEASE_TAG" > "$RUNNER_TEMP/release-notes.md"
+        gh release create "$RELEASE_TAG" --repo "$RELEASE_REPOSITORY" \
+          --notes-file "$RUNNER_TEMP/release-notes.md" --generate-notes
     - name: Upload artifact signatures to GitHub Release
       env:
         GITHUB_TOKEN: ${{ github.token }}
@@ -105,3 +106,16 @@ jobs:
         gh release upload
         '${{ github.event.workflow_run.head_branch }}' dist/**
         --repo '${{ github.repository }}'
+
+
+  documentation:
+    needs: github-release
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    # Calling explicitly works for releases created with GITHUB_TOKEN, which
+    # do not trigger another workflow through release: published.
+    uses: ./.github/workflows/docs-build.yml
+    with:
+      version: ${{ github.event.workflow_run.head_branch }}
