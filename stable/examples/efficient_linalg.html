@@ -1,0 +1,356 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AMEN and DMRG for fast TT operations &mdash; torchTT v0.5.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e663822d"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Linear solvers in the TT format" href="system_solvers.html" />
+    <link rel="prev" title="Basic linear algebra in torchTT" href="basic_linalg.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            torchtt
+              <img src="https://github.com/ion-g-ion/torchTT/blob/main/logo_small.png?raw=true" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../docs/intro_page.html">Welcome to torchTT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/install.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/package-overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/modules.html">API reference</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../docs/examples.html">Examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#getting-started">Getting Started</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../docs/examples.html#linear-algebra-solvers">Linear Algebra &amp; Solvers</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">AMEN and DMRG for fast TT operations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Efficient-matrix-vector-product">Efficient matrix vector product</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Elementwise-division-in-the-TT-format">Elementwise division in the TT format</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="system_solvers.html">Linear solvers in the TT format</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#cross-interpolation">Cross Interpolation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#neural-networks">Neural Networks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#advanced-topics">Advanced Topics</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">torchtt</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../docs/examples.html">Examples</a></li>
+      <li class="breadcrumb-item active">AMEN and DMRG for fast TT operations</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/examples/efficient_linalg.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT v0.5.0</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="AMEN-and-DMRG-for-fast-TT-operations">
+<h1>AMEN and DMRG for fast TT operations<a class="headerlink" href="#AMEN-and-DMRG-for-fast-TT-operations" title="Link to this heading"></a></h1>
+<p>The torchtt package includes DMRG and AMEN schemes for fast matrix vector product and elementwise inversion in the TT format.</p>
+<p>Imports:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><br/><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tn</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tn</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">torchtt</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tntt</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'Installing torchTT...'</span><span class="p">)</span>
+    <span class="o">%</span><span class="k">pip</span> install git+https://github.com/ion-g-ion/torchTT
+    <span class="kn">import</span><span class="w"> </span><span class="nn">torchtt</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tntt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+</pre></div>
+</div>
+</div>
+<section id="Efficient-matrix-vector-product">
+<h2>Efficient matrix vector product<a class="headerlink" href="#Efficient-matrix-vector-product" title="Link to this heading"></a></h2>
+<p>When performing the multiplication between a a TT matrix and a TT tensor the rank of the result is the product of the ranks of the inputs. Therefore rank rounding has to be performed. This increases the complexity to <span class="math notranslate nohighlight">\(\mathcal{O}(Ndr^6)\)</span>. In order to overcome this, Oseledets proposed in “DMRG Approach to Fast Linear Algebra in the TT-Format” the DMRG optimization scheme to reduce the complexity. This feature is implemented in torchtt by the member function fast_matvec() of the TT class. An
+example is showed in the following.</p>
+<p>Create a random TT object and a TT matrix.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">n</span> <span class="o">=</span> <span class="mi">32</span> <span class="c1"># mode size</span>
+<span class="n">A</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">random</span><span class="p">([(</span><span class="n">n</span><span class="p">,</span><span class="n">n</span><span class="p">)]</span><span class="o">*</span><span class="mi">8</span><span class="p">,[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">7</span><span class="o">*</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span><span class="o">+</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="c1"># random array</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">random</span><span class="p">([</span><span class="n">n</span><span class="p">]</span><span class="o">*</span><span class="mi">8</span><span class="p">,[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">7</span><span class="o">*</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">+</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="c1"># random tensor</span>
+</pre></div>
+</div>
+</div>
+<p>Increase the rank without adding redundant information. The multiplication performed in this case is actually equivalent to <span class="math notranslate nohighlight">\(32\mathbf{\mathsf{Ax}}\)</span>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">A</span> <span class="o">=</span> <span class="n">A</span> <span class="o">+</span> <span class="n">A</span> <span class="o">+</span> <span class="n">A</span> <span class="o">+</span> <span class="n">A</span> <span class="o">-</span> <span class="n">A</span> <span class="o">+</span> <span class="n">A</span> <span class="o">-</span> <span class="n">A</span> <span class="o">+</span> <span class="n">A</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="n">x</span> <span class="o">+</span> <span class="n">x</span> <span class="o">+</span> <span class="n">x</span> <span class="o">+</span> <span class="n">x</span> <span class="o">+</span> <span class="n">x</span> <span class="o">+</span> <span class="n">x</span> <span class="o">+</span> <span class="n">x</span> <span class="o">-</span> <span class="n">x</span> <span class="o">+</span> <span class="n">x</span> <span class="o">-</span> <span class="n">x</span> <span class="o">+</span> <span class="n">x</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+TT-matrix with sizes and ranks:
+M = [32, 32, 32, 32, 32, 32, 32, 32]
+N = [32, 32, 32, 32, 32, 32, 32, 32]
+R = [1, 48, 48, 48, 48, 48, 48, 48, 1]
+Device: cpu, dtype: torch.float64
+#entries 14254080 compression 1.179069862577986e-17
+
+TT with sizes and ranks:
+N = [32, 32, 32, 32, 32, 32, 32, 32]
+R = [1, 60, 60, 60, 60, 60, 60, 60, 1]
+
+Device: cpu, dtype: torch.float64
+#entries 695040 compression 6.32135197520256e-07
+
+</pre></div></div>
+</div>
+<p>Perform the TT matvec directly and round the result. The runtime is reported.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tme</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+<span class="n">y</span> <span class="o">=</span> <span class="p">(</span><span class="n">A</span> <span class="o">@</span> <span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mf">1e-12</span><span class="p">)</span>
+<span class="n">tme</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">tme</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Time classic '</span><span class="p">,</span> <span class="n">tme</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Time classic  0:01:16.990921
+</pre></div></div>
+</div>
+<p>This time run the fast matvec routine.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tme</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+<span class="n">yf</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">fast_matvec</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">tme</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">tme</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Time DMRG    '</span><span class="p">,</span> <span class="n">tme</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Time DMRG     0:00:03.134253
+</pre></div></div>
+</div>
+<p>Check if the error is the same (debugging purpose).</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s1">'Relative error '</span><span class="p">,(</span><span class="n">y</span><span class="o">-</span><span class="n">yf</span><span class="p">)</span><span class="o">.</span><span class="n">norm</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">/</span><span class="n">y</span><span class="o">.</span><span class="n">norm</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Relative error  1.762527613735165e-14
+</pre></div></div>
+</div>
+<p>A second routine is the <code class="docutils literal notranslate"><span class="pre">torchtt.fast_mv()</span></code>. The method is described in <a class="reference external" href="https://arxiv.org/pdf/2410.19747">https://arxiv.org/pdf/2410.19747</a>. This works well for tensors in QTT.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">A</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">random</span><span class="p">([(</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">)]</span><span class="o">*</span><span class="mi">8</span><span class="p">,[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">7</span><span class="o">*</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span><span class="o">+</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="c1"># random array</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">random</span><span class="p">([</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="mi">8</span><span class="p">,[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">7</span><span class="o">*</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">+</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="c1"># random tensor</span>
+<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">8</span><span class="p">):</span> <span class="n">A</span><span class="o">+=</span><span class="n">A</span>
+<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">8</span><span class="p">):</span> <span class="n">x</span><span class="o">+=</span><span class="n">x</span>
+
+<span class="n">tme</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+<span class="n">yf2</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">fast_mv</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+<span class="n">tme</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">tme</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Time fast 2  '</span><span class="p">,</span> <span class="n">tme</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Time fast 2   0:00:01.307426
+</pre></div></div>
+</div>
+</section>
+<section id="Elementwise-division-in-the-TT-format">
+<h2>Elementwise division in the TT format<a class="headerlink" href="#Elementwise-division-in-the-TT-format" title="Link to this heading"></a></h2>
+<p>One other basic linear algebra function that cannot be done without optimization is the elementwise division of two tensors in the TT format. In contrast to the elemntwise multiplication (where the resulting TT cores can be explicitly computed), the elementwise inversion has to be solved by means of an optimization problem (the method of choice is AMEN).</p>
+<p>The operator “/” can be used for elemntwise division between tensors. Moreover one can use “/” between a scalar and a torchtt.TT instance.</p>
+<p>Create 2 tensors:</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(\mathsf{x}_{i_1i_2i_3i_4} = 2 + i_1\)</span></p></li>
+<li><p><span class="math notranslate nohighlight">\(\mathsf{y}_{i_1i_2i_3i_4} = i_1^2+i_2+i_3+1\)</span></p></li>
+</ul>
+<p>and express them in the TT format. For both of them a TT decomposition of the elemmentwise inverse cannot be explicitly formed.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">N</span> <span class="o">=</span> <span class="p">[</span><span class="mi">32</span><span class="p">,</span><span class="mi">50</span><span class="p">,</span><span class="mi">44</span><span class="p">,</span><span class="mi">64</span><span class="p">]</span>
+<span class="n">I</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">([</span><span class="n">tn</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="n">dtype</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">N</span><span class="p">])</span>
+<span class="n">x</span> <span class="o">=</span> <span class="mi">2</span><span class="o">+</span><span class="n">I</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mf">1e-15</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">I</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">I</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">I</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">I</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">+</span><span class="n">I</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mf">1e-15</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>Perform <span class="math notranslate nohighlight">\(\mathsf{z}_{\mathbf{i}} = \frac{\mathsf{x}_{\mathbf{i}}}{\mathsf{z}_{\mathbf{i}}}\)</span> and report the relative error.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">z</span> <span class="o">=</span> <span class="n">x</span><span class="o">/</span><span class="n">y</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Relative error'</span><span class="p">,</span> <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">full</span><span class="p">()</span><span class="o">-</span><span class="n">x</span><span class="o">.</span><span class="n">full</span><span class="p">()</span><span class="o">/</span><span class="n">y</span><span class="o">.</span><span class="n">full</span><span class="p">())</span><span class="o">/</span><span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">full</span><span class="p">()))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Relative error tensor(3.3539e-11, dtype=torch.float64)
+</pre></div></div>
+</div>
+<p>Perform <span class="math notranslate nohighlight">\(\mathsf{u}_{\mathbf{i}} = \frac{1}{\mathsf{z}_{\mathbf{i}}}\)</span> and report the relative error.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">u</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="n">y</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Relative error'</span><span class="p">,</span> <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">u</span><span class="o">.</span><span class="n">full</span><span class="p">()</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="n">y</span><span class="o">.</span><span class="n">full</span><span class="p">())</span><span class="o">/</span><span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">u</span><span class="o">.</span><span class="n">full</span><span class="p">()))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Relative error tensor(1.1624e-11, dtype=torch.float64)
+</pre></div></div>
+</div>
+<p>Following are also possible:</p>
+<ul class="simple">
+<li><p>scalar (float, int) divided elementwise by a tensor in the TT format.</p></li>
+<li><p>torch.tensor with 1 element divided elementwise by a tensor in the TT format.</p></li>
+</ul>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">w</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="n">y</span>
+<span class="n">a</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span><span class="o">/</span><span class="n">y</span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="basic_linalg.html" class="btn btn-neutral float-left" title="Basic linear algebra in torchTT" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="system_solvers.html" class="btn btn-neutral float-right" title="Linear solvers in the TT format" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Ion Gabriel Ion.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

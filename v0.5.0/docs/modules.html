@@ -1,0 +1,284 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API reference &mdash; torchTT v0.5.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e663822d"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="torchtt package" href="torchtt.html" />
+    <link rel="prev" title="Overview" href="package-overview.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            torchtt
+              <img src="https://github.com/ion-g-ion/torchTT/blob/main/logo_small.png?raw=true" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro_page.html">Welcome to torchTT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="package-overview.html">Overview</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">API reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="torchtt.html">torchtt package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">torchtt</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">API reference</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/docs/modules.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT v0.5.0</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="api-reference">
+<span id="reference-label"></span><h1>API reference<a class="headerlink" href="#api-reference" title="Link to this heading"></a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="torchtt.html">torchtt package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="torchtt.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="torchtt.html#module-torchtt.cpp">torchtt.cpp module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.cpp.cpp_avaible"><code class="docutils literal notranslate"><span class="pre">cpp_avaible()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="torchtt.html#module-torchtt.errors">torchtt.errors module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.errors.IncompatibleTypes"><code class="docutils literal notranslate"><span class="pre">IncompatibleTypes</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.errors.InvalidArguments"><code class="docutils literal notranslate"><span class="pre">InvalidArguments</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.errors.RankMismatch"><code class="docutils literal notranslate"><span class="pre">RankMismatch</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.errors.ShapeMismatch"><code class="docutils literal notranslate"><span class="pre">ShapeMismatch</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="torchtt.html#module-torchtt.grad">torchtt.grad module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.grad.grad"><code class="docutils literal notranslate"><span class="pre">grad()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.grad.grad_list"><code class="docutils literal notranslate"><span class="pre">grad_list()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.grad.unwatch"><code class="docutils literal notranslate"><span class="pre">unwatch()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.grad.watch"><code class="docutils literal notranslate"><span class="pre">watch()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.grad.watch_list"><code class="docutils literal notranslate"><span class="pre">watch_list()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="torchtt.html#module-torchtt.interpolate">torchtt.interpolate module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.interpolate.AmenCrossCallbacks"><code class="docutils literal notranslate"><span class="pre">AmenCrossCallbacks</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.interpolate.AmenCrossCallbacks.compute_enrichment"><code class="docutils literal notranslate"><span class="pre">AmenCrossCallbacks.compute_enrichment()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.interpolate.AmenCrossCallbacks.compute_x_bck"><code class="docutils literal notranslate"><span class="pre">AmenCrossCallbacks.compute_x_bck()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.interpolate.AmenCrossCallbacks.compute_x_fwd"><code class="docutils literal notranslate"><span class="pre">AmenCrossCallbacks.compute_x_fwd()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.interpolate.AmenCrossCallbacks.compute_z_bck"><code class="docutils literal notranslate"><span class="pre">AmenCrossCallbacks.compute_z_bck()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.interpolate.AmenCrossCallbacks.compute_z_fwd"><code class="docutils literal notranslate"><span class="pre">AmenCrossCallbacks.compute_z_fwd()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.interpolate.AmenCrossCallbacks.update_phis_bck"><code class="docutils literal notranslate"><span class="pre">AmenCrossCallbacks.update_phis_bck()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.interpolate.AmenCrossCallbacks.update_phis_fwd"><code class="docutils literal notranslate"><span class="pre">AmenCrossCallbacks.update_phis_fwd()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.interpolate.dmrg_cross"><code class="docutils literal notranslate"><span class="pre">dmrg_cross()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.interpolate.function_interpolate"><code class="docutils literal notranslate"><span class="pre">function_interpolate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="torchtt.html#module-torchtt.manifold">torchtt.manifold module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.manifold.riemannian_gradient"><code class="docutils literal notranslate"><span class="pre">riemannian_gradient()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.manifold.riemannian_projection"><code class="docutils literal notranslate"><span class="pre">riemannian_projection()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="torchtt.html#module-torchtt.nn">torchtt.nn module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.nn.AffineTransform"><code class="docutils literal notranslate"><span class="pre">AffineTransform</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.nn.AffineTransform.forward"><code class="docutils literal notranslate"><span class="pre">AffineTransform.forward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.nn.AffineTransform.input_requirement"><code class="docutils literal notranslate"><span class="pre">AffineTransform.input_requirement()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.nn.ComposedTransform"><code class="docutils literal notranslate"><span class="pre">ComposedTransform</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.nn.ComposedTransform.forward"><code class="docutils literal notranslate"><span class="pre">ComposedTransform.forward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.nn.ComposedTransform.input_requirement"><code class="docutils literal notranslate"><span class="pre">ComposedTransform.input_requirement()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.nn.CompressedTTLayer"><code class="docutils literal notranslate"><span class="pre">CompressedTTLayer</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.nn.CompressedTTLayer.forward"><code class="docutils literal notranslate"><span class="pre">CompressedTTLayer.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.nn.LinearLayerTT"><code class="docutils literal notranslate"><span class="pre">LinearLayerTT</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.nn.LinearLayerTT.forward"><code class="docutils literal notranslate"><span class="pre">LinearLayerTT.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.nn.Rank1Shear"><code class="docutils literal notranslate"><span class="pre">Rank1Shear</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.nn.Rank1Shear.forward"><code class="docutils literal notranslate"><span class="pre">Rank1Shear.forward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.nn.Rank1Shear.input_requirement"><code class="docutils literal notranslate"><span class="pre">Rank1Shear.input_requirement()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.nn.SinhArcsinhWarp"><code class="docutils literal notranslate"><span class="pre">SinhArcsinhWarp</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.nn.SinhArcsinhWarp.forward"><code class="docutils literal notranslate"><span class="pre">SinhArcsinhWarp.forward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.nn.SinhArcsinhWarp.input_requirement"><code class="docutils literal notranslate"><span class="pre">SinhArcsinhWarp.input_requirement()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.nn.TTDensityLayer"><code class="docutils literal notranslate"><span class="pre">TTDensityLayer</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.nn.TTDensityLayer.forward"><code class="docutils literal notranslate"><span class="pre">TTDensityLayer.forward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.nn.TTDensityLayer.get_tt"><code class="docutils literal notranslate"><span class="pre">TTDensityLayer.get_tt()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.nn.TTDensityLayer.input_requireemnt"><code class="docutils literal notranslate"><span class="pre">TTDensityLayer.input_requireemnt()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.nn.TTDensityLayer.input_requirement"><code class="docutils literal notranslate"><span class="pre">TTDensityLayer.input_requirement()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.nn.TTDensityLayer.integration_weights"><code class="docutils literal notranslate"><span class="pre">TTDensityLayer.integration_weights</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.nn.TTDensityLayer.marginalize"><code class="docutils literal notranslate"><span class="pre">TTDensityLayer.marginalize()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.nn.Transform"><code class="docutils literal notranslate"><span class="pre">Transform</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.nn.Transform.forward"><code class="docutils literal notranslate"><span class="pre">Transform.forward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.nn.Transform.input_requirement"><code class="docutils literal notranslate"><span class="pre">Transform.input_requirement()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.nn.TriangularPolyShear"><code class="docutils literal notranslate"><span class="pre">TriangularPolyShear</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.nn.TriangularPolyShear.forward"><code class="docutils literal notranslate"><span class="pre">TriangularPolyShear.forward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.nn.TriangularPolyShear.input_requirement"><code class="docutils literal notranslate"><span class="pre">TriangularPolyShear.input_requirement()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.nn.TriangularShear"><code class="docutils literal notranslate"><span class="pre">TriangularShear</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.nn.TriangularShear.forward"><code class="docutils literal notranslate"><span class="pre">TriangularShear.forward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.nn.TriangularShear.input_requirement"><code class="docutils literal notranslate"><span class="pre">TriangularShear.input_requirement()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="torchtt.html#module-torchtt.solvers">torchtt.solvers module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.solvers.amen_solve"><code class="docutils literal notranslate"><span class="pre">amen_solve()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.solvers.cpp_enabled"><code class="docutils literal notranslate"><span class="pre">cpp_enabled()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="torchtt.html#module-torchtt">Module contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.TT"><code class="docutils literal notranslate"><span class="pre">TT</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.TT.M"><code class="docutils literal notranslate"><span class="pre">TT.M</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.TT.N"><code class="docutils literal notranslate"><span class="pre">TT.N</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.TT.R"><code class="docutils literal notranslate"><span class="pre">TT.R</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.TT.apply_mask"><code class="docutils literal notranslate"><span class="pre">TT.apply_mask()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.TT.clone"><code class="docutils literal notranslate"><span class="pre">TT.clone()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.TT.conj"><code class="docutils literal notranslate"><span class="pre">TT.conj()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.TT.cpu"><code class="docutils literal notranslate"><span class="pre">TT.cpu()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.TT.cuda"><code class="docutils literal notranslate"><span class="pre">TT.cuda()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.TT.detach"><code class="docutils literal notranslate"><span class="pre">TT.detach()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.TT.fast_matvec"><code class="docutils literal notranslate"><span class="pre">TT.fast_matvec()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.TT.full"><code class="docutils literal notranslate"><span class="pre">TT.full()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.TT.is_cuda"><code class="docutils literal notranslate"><span class="pre">TT.is_cuda()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.TT.is_ttm"><code class="docutils literal notranslate"><span class="pre">TT.is_ttm</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.TT.mprod"><code class="docutils literal notranslate"><span class="pre">TT.mprod()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.TT.norm"><code class="docutils literal notranslate"><span class="pre">TT.norm()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.TT.numpy"><code class="docutils literal notranslate"><span class="pre">TT.numpy()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.TT.qtt_to_tens"><code class="docutils literal notranslate"><span class="pre">TT.qtt_to_tens()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.TT.reduce_dims"><code class="docutils literal notranslate"><span class="pre">TT.reduce_dims()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.TT.round"><code class="docutils literal notranslate"><span class="pre">TT.round()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.TT.set_core"><code class="docutils literal notranslate"><span class="pre">TT.set_core()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.TT.sum"><code class="docutils literal notranslate"><span class="pre">TT.sum()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.TT.t"><code class="docutils literal notranslate"><span class="pre">TT.t()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.TT.to"><code class="docutils literal notranslate"><span class="pre">TT.to()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.TT.to_qtt"><code class="docutils literal notranslate"><span class="pre">TT.to_qtt()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="torchtt.html#torchtt.TT.to_ttm"><code class="docutils literal notranslate"><span class="pre">TT.to_ttm()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.Timer"><code class="docutils literal notranslate"><span class="pre">Timer</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.amen_mm"><code class="docutils literal notranslate"><span class="pre">amen_mm()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.amen_mv"><code class="docutils literal notranslate"><span class="pre">amen_mv()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.bilinear_form"><code class="docutils literal notranslate"><span class="pre">bilinear_form()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.cat"><code class="docutils literal notranslate"><span class="pre">cat()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.diag"><code class="docutils literal notranslate"><span class="pre">diag()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.dmrg_hadamard"><code class="docutils literal notranslate"><span class="pre">dmrg_hadamard()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.dot"><code class="docutils literal notranslate"><span class="pre">dot()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.elementwise_divide"><code class="docutils literal notranslate"><span class="pre">elementwise_divide()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.eye"><code class="docutils literal notranslate"><span class="pre">eye()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.fast_mm"><code class="docutils literal notranslate"><span class="pre">fast_mm()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.fast_mv"><code class="docutils literal notranslate"><span class="pre">fast_mv()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.kron"><code class="docutils literal notranslate"><span class="pre">kron()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.load"><code class="docutils literal notranslate"><span class="pre">load()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.meshgrid"><code class="docutils literal notranslate"><span class="pre">meshgrid()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.numel"><code class="docutils literal notranslate"><span class="pre">numel()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.ones"><code class="docutils literal notranslate"><span class="pre">ones()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.pad"><code class="docutils literal notranslate"><span class="pre">pad()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.permute"><code class="docutils literal notranslate"><span class="pre">permute()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.randn"><code class="docutils literal notranslate"><span class="pre">randn()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.random"><code class="docutils literal notranslate"><span class="pre">random()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.rank1TT"><code class="docutils literal notranslate"><span class="pre">rank1TT()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.reshape"><code class="docutils literal notranslate"><span class="pre">reshape()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.save"><code class="docutils literal notranslate"><span class="pre">save()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.shape_mn_to_tuple"><code class="docutils literal notranslate"><span class="pre">shape_mn_to_tuple()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.shape_tuple_to_mn"><code class="docutils literal notranslate"><span class="pre">shape_tuple_to_mn()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="torchtt.html#torchtt.zeros"><code class="docutils literal notranslate"><span class="pre">zeros()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="package-overview.html" class="btn btn-neutral float-left" title="Overview" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="torchtt.html" class="btn btn-neutral float-right" title="torchtt package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Ion Gabriel Ion.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

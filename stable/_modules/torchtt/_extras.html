@@ -1,0 +1,1208 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>torchtt._extras &mdash; torchTT v0.5.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=e663822d"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            torchtt
+              <img src="https://github.com/ion-g-ion/torchTT/blob/main/logo_small.png?raw=true" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/intro_page.html">Welcome to torchTT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/install.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/package-overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/modules.html">API reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/examples.html">Examples</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">torchtt</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">torchtt._extras</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT v0.5.0</strong><br><a href="../../../stable/index.html">Stable release</a> · <a href="../../../latest/index.html">Development (main)</a></nav><h1>Source code for torchtt._extras</h1><div class="highlight"><pre>
+<span></span><span class="sd">""" </span>
+<span class="sd">This file implements additional functions that are visible in the module.</span>
+<span class="sd">"""</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tn</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn.functional</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tnf</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torchtt._decomposition</span><span class="w"> </span><span class="kn">import</span> <span class="n">mat_to_tt</span><span class="p">,</span> <span class="n">to_tt</span><span class="p">,</span> <span class="n">lr_orthogonal</span><span class="p">,</span> <span class="n">round_tt</span><span class="p">,</span> <span class="n">rl_orthogonal</span><span class="p">,</span> <span class="n">QR</span><span class="p">,</span> <span class="n">SVD</span><span class="p">,</span> <span class="n">rank_chop</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torchtt._division</span><span class="w"> </span><span class="kn">import</span> <span class="n">amen_divide</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torchtt._dmrg</span><span class="w"> </span><span class="kn">import</span> <span class="n">dmrg_matvec</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torchtt._aux_ops</span><span class="w"> </span><span class="kn">import</span> <span class="n">apply_mask</span><span class="p">,</span> <span class="n">dense_matvec</span><span class="p">,</span> <span class="n">bilinear_form_aux</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torchtt.errors</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+<span class="c1"># from ._tt_base import TT</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torchtt._tt_base</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+
+
+<div class="viewcode-block" id="eye">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.eye">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">eye</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tn</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Construct the TT decomposition of a multidimensional identity matrix.</span>
+<span class="sd">    all the TT ranks are 1.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        shape (list[int]): the shape.</span>
+<span class="sd">        dtype (torch.dtype, optional): the dtype of the returned tensor. Defaults to tn.float64.</span>
+<span class="sd">        device (torch.device, optional): the device where the TT cores are created (None means CPU). Defaults to None.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        torchtt.TT: the one tensor.</span>
+<span class="sd">    """</span>
+
+    <span class="n">shape</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+
+    <span class="n">cores</span> <span class="o">=</span> <span class="p">[</span><span class="n">tn</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span>
+        <span class="n">tn</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">),</span> <span class="mi">0</span><span class="p">),</span> <span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">shape</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">cores</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="zeros">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.zeros">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tn</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Construct a tensor that contains only zeros.</span>
+<span class="sd">    the shape can be a list of ints or a list of tuples of ints. The second case creates a TT matrix.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        shape (list[int] | list[tuple[int]]): the shape.</span>
+<span class="sd">        dtype (torch.dtype, optional): the dtype of the returned tensor. Defaults to tn.float64.</span>
+<span class="sd">        device (torch.device, optional): the device where the TT cores are created (None means CPU). Defaults to None.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidArguments: Shape must be a list.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        torchtt.TT: the zero tensor.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="c1"># we create a TT-matrix</span>
+            <span class="n">cores</span> <span class="o">=</span> <span class="p">[</span><span class="n">tn</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="n">shape</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">shape</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="mi">1</span><span class="p">],</span>
+                              <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">d</span><span class="p">)]</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># we create a TT-tensor</span>
+            <span class="n">cores</span> <span class="o">=</span> <span class="p">[</span><span class="n">tn</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="n">shape</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
+                              <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">d</span><span class="p">)]</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span><span class="s1">'Shape must be a list.'</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">cores</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="kron">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.kron">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">kron</span><span class="p">(</span><span class="n">first</span><span class="p">,</span> <span class="n">second</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Computes the tensor Kronecker product.</span>
+<span class="sd">    If None is provided as input the reult is the other tensor.</span>
+<span class="sd">    If A is N_1 x ... x N_d and B is M_1 x ... x M_p, then kron(A,B) is N_1 x ... x N_d x M_1 x ... x M_p</span>
+
+
+<span class="sd">    Args:</span>
+<span class="sd">        first (torchtt.TT | None): first argument.</span>
+<span class="sd">        second (torchtt.TT | None): second argument.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        IncompatibleTypes: Incompatible data types (make sure both are either TT-matrices or TT-tensors).</span>
+<span class="sd">        InvalidArguments: Invalid arguments.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        torchtt.TT: the result.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">first</span> <span class="o">==</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">second</span><span class="p">,</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">):</span>
+        <span class="n">cores_new</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">second</span><span class="o">.</span><span class="n">cores</span><span class="p">]</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">cores_new</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">second</span> <span class="o">==</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">first</span><span class="p">,</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">):</span>
+        <span class="n">cores_new</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">first</span><span class="o">.</span><span class="n">cores</span><span class="p">]</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">cores_new</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">first</span><span class="p">,</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">second</span><span class="p">,</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">first</span><span class="o">.</span><span class="n">is_ttm</span> <span class="o">!=</span> <span class="n">second</span><span class="o">.</span><span class="n">is_ttm</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">IncompatibleTypes</span><span class="p">(</span>
+                <span class="s1">'Incompatible data types (make sure both are either TT-matrices or TT-tensors).'</span><span class="p">)</span>
+
+        <span class="c1"># concatenate the result</span>
+        <span class="n">cores_new</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">first</span><span class="o">.</span><span class="n">cores</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
+                                                        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">second</span><span class="o">.</span><span class="n">cores</span><span class="p">]</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">cores_new</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span><span class="s1">'Invalid arguments.'</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span></div>
+
+
+
+<div class="viewcode-block" id="ones">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.ones">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">ones</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tn</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Construct a tensor that contains only ones.</span>
+<span class="sd">    the shape can be a list of ints or a list of tuples of ints. The second case creates a TT matrix.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        shape (list[int] or list[tuple[int]]): the shape.</span>
+<span class="sd">        dtype (torch.dtype, optional): the dtype of the returned tensor. Defaults to tn.float64.</span>
+<span class="sd">        device (torch.device, optional): the device where the TT cores are created (None means CPU). Defaults to None.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidArguments: Shape must be a list.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        torchtt.TT: the one tensor.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">d</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">tuple</span><span class="p">):</span>
+                <span class="c1"># we create a TT-matrix</span>
+                <span class="n">cores</span> <span class="o">=</span> <span class="p">[</span><span class="n">tn</span><span class="o">.</span><span class="n">ones</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="n">shape</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">shape</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="mi">1</span><span class="p">],</span>
+                                 <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">d</span><span class="p">)]</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># we create a TT-tensor</span>
+                <span class="n">cores</span> <span class="o">=</span> <span class="p">[</span><span class="n">tn</span><span class="o">.</span><span class="n">ones</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="n">shape</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
+                                 <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">d</span><span class="p">)]</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span><span class="s1">'Shape must be a list.'</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">cores</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">xfun</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tn</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Construct a tensor from 0 to tn.prod(shape)-1.</span>
+<span class="sd">    the shape must be a list of ints.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        shape (list[int]): the shape.</span>
+<span class="sd">        dtype (torch.dtype, optional): the dtype of the returned tensor. Defaults to tn.float64.</span>
+<span class="sd">        device (torch.device, optional): the device where the TT cores are created (None means CPU). Defaults to None.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidArguments: Shape must be a list.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        torchtt.TT: the xfun tensor.</span>
+<span class="sd">    """</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">d</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">d</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">))</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cores</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">firstcore</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">2</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+            <span class="n">firstcore</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span>
+                <span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+
+            <span class="n">cores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">firstcore</span><span class="p">)</span>
+            <span class="n">ni</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">d</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="n">core</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="n">shape</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="mi">2</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">shape</span><span class="p">[</span><span class="n">i</span><span class="p">]):</span>
+                    <span class="n">core</span><span class="p">[:,</span> <span class="n">j</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+                <span class="n">core</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">ni</span> <span class="o">*</span> \
+                    <span class="n">tn</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">shape</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+                <span class="n">ni</span> <span class="o">*=</span> <span class="n">shape</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">cores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">core</span><span class="p">)</span>
+            <span class="n">core</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="n">shape</span><span class="p">[</span><span class="n">d</span> <span class="o">-</span> <span class="mi">1</span><span class="p">],</span> <span class="mi">1</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+            <span class="n">core</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">ni</span> <span class="o">*</span> \
+                <span class="n">tn</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">shape</span><span class="p">[</span><span class="n">d</span> <span class="o">-</span> <span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+            <span class="n">cores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">core</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span><span class="s1">'Shape must be a list.'</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">cores</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">linspace</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">a</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tn</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Construct an evenly spaced tensor from a to b with a given shape in TT decomposition.</span>
+<span class="sd">    the shape must be a list of ints.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        shape (list[int]): the shape.</span>
+<span class="sd">        a (float): start value</span>
+<span class="sd">        b (float): end value</span>
+<span class="sd">        dtype (torch.dtype, optional): the dtype of the returned tensor. Defaults to tn.float64.</span>
+<span class="sd">        device (torch.device, optional): the device where the TT cores are created (None means CPU). Defaults to None.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidArguments: Shape must be a list.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        torchtt.TT: a linspace tensor.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">d</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">d</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">))</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">xfun</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+            <span class="n">oneTensor</span> <span class="o">=</span> <span class="n">ones</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+            <span class="n">N</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">shape</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+            <span class="n">stepsize</span> <span class="o">=</span> <span class="p">(</span><span class="n">b</span> <span class="o">-</span> <span class="n">a</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">N</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">T</span> <span class="o">=</span> <span class="n">a</span> <span class="o">*</span> <span class="n">oneTensor</span> <span class="o">+</span> <span class="n">x</span> <span class="o">*</span> <span class="n">stepsize</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span><span class="s1">'Shape must be a list.'</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">T</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mf">1e-15</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">arange</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">a</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tn</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Construct a tensor of size (a-b)/step with a given shape, if possible.</span>
+<span class="sd">    the shape must be a list of int and the vector has to fit the shape.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        shape (list[int] or list[tuple[int]]): the shape.</span>
+<span class="sd">        a (float): start value</span>
+<span class="sd">        b (float): end value</span>
+<span class="sd">        step (int): stepsize</span>
+<span class="sd">        dtype (torch.dtype, optional): the dtype of the returned tensor. Defaults to tn.float64.</span>
+<span class="sd">        device (torch.device, optional): the device where the TT cores are created (None means CPU). Defaults to None.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidArguments: Shape must be a list.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        torchtt.TT: an evenly spaced tensor within a given interval.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">d</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">d</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span><span class="s1">'Shape must be a list.'</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">reshape</span><span class="p">(</span><span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)),</span> <span class="n">shape</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="random">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.random">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">random</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tn</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Returns a tensor of shape N with random cores of rank R.</span>
+<span class="sd">    Each core is a normal distributed with mean 0 and variance 1.</span>
+<span class="sd">    Check also the method torchtt.randn()for better random tensors in the TT format.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        N (list[int] or list[tuple[int]]): the shape of the tensor. If the elements are tuples of integers, we deal with a TT-matrix.</span>
+<span class="sd">        R (list[int] or int): can be a list if the exact rank is specified or an integer if the maximum rank is secified.</span>
+<span class="sd">        dtype (torch.dtype, optional): the dtype of the returned tensor. Defaults to tn.float64.</span>
+<span class="sd">        device (torch.device, optional): the device where the TT cores are created (None means CPU). Defaults to None.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidArguments: Check if N and R are right.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        torchtt.TT: the result.</span>
+<span class="sd">    """</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">R</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="n">R</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="p">[</span><span class="n">R</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">N</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">+</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">N</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">R</span><span class="p">)</span> <span class="ow">or</span> <span class="n">R</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">R</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">1</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">N</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span><span class="s1">'Check if N and R are right.'</span><span class="p">)</span>
+
+    <span class="n">cores</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">N</span><span class="p">)):</span>
+        <span class="n">cores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">randn</span><span class="p">([</span><span class="n">R</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">N</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">N</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="n">R</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span>
+            <span class="n">N</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="nb">tuple</span><span class="p">)</span> <span class="k">else</span> <span class="p">[</span><span class="n">R</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">N</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">R</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">))</span>
+
+    <span class="n">T</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">cores</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">T</span></div>
+
+
+
+<div class="viewcode-block" id="randn">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.randn">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">randn</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">var</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tn</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A torchtt.TT tensor of shape N = [N1 x ... x Nd] and rank R is returned. </span>
+<span class="sd">    The entries of the fuill tensor are alomst normal distributed with the variance var.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        N (list[int]): the shape.</span>
+<span class="sd">        R (list[int]): the rank.</span>
+<span class="sd">        var (float, optional): the variance. Defaults to 1.0.</span>
+<span class="sd">        dtype (torch.dtype, optional): the dtype of the returned tensor. Defaults to tn.float64.</span>
+<span class="sd">        device (torch.device, optional): the device where the TT cores are created (None means CPU). Defaults to None.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        torchtt.TT: the result.</span>
+<span class="sd">    """</span>
+
+    <span class="n">d</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
+    <span class="n">v1</span> <span class="o">=</span> <span class="n">var</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">R</span><span class="p">)</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">v1</span><span class="o">**</span><span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">d</span><span class="p">)</span>
+    <span class="n">cores</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">d</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
+        <span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">randn</span><span class="p">([</span><span class="n">R</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">N</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">N</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="n">R</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span>
+            <span class="n">N</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="nb">tuple</span><span class="p">)</span> <span class="k">else</span> <span class="p">[</span><span class="n">R</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">N</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">R</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">cores</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="reshape">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.reshape">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">reshape</span><span class="p">(</span><span class="n">tens</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-16</span><span class="p">,</span> <span class="n">rmax</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">maxsize</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Reshapes a torchtt.TT tensor in the TT format.</span>
+<span class="sd">    A rounding is also performed.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        tens (torchtt.TT): the input tensor.</span>
+<span class="sd">        shape (list[int] or list[tuple[int]]): the desired shape. In the case of a TT operator the shape has to be given as list of tuples of ints [(M1,N1),...,(Md,Nd)].</span>
+<span class="sd">        eps (float, optional): relative accuracy. Defaults to 1e-16.</span>
+<span class="sd">        rmax (int, optional): maximum rank. Defaults to the maximum possible integer.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ShapeMismatch: The product of modes should remain equal. Check the given shape.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        torchtt.TT: the resulting tensor.</span>
+<span class="sd">    """</span>
+
+    <span class="n">dfin</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">cores</span><span class="p">,</span> <span class="n">R</span> <span class="o">=</span> <span class="n">rl_orthogonal</span><span class="p">(</span><span class="n">tens</span><span class="o">.</span><span class="n">cores</span><span class="p">,</span> <span class="n">tens</span><span class="o">.</span><span class="n">R</span><span class="p">,</span> <span class="n">tens</span><span class="o">.</span><span class="n">is_ttm</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">tens</span><span class="o">.</span><span class="n">is_ttm</span><span class="p">:</span>
+        <span class="n">M</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">N</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">shape</span><span class="p">:</span>
+            <span class="n">M</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">N</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">tens</span><span class="o">.</span><span class="n">N</span><span class="p">)</span> <span class="o">!=</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">N</span><span class="p">)</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">tens</span><span class="o">.</span><span class="n">M</span><span class="p">)</span> <span class="o">!=</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">M</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">ShapeMismatch</span><span class="p">(</span>
+                <span class="s1">'The product of modes should remain equal. Check the given shape.'</span><span class="p">)</span>
+        <span class="n">core</span> <span class="o">=</span> <span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">cores_new</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">idx</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">idx_shape</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">core</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">%</span> <span class="n">M</span><span class="p">[</span><span class="n">idx_shape</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">core</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">%</span> <span class="n">N</span><span class="p">[</span><span class="n">idx_shape</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">core</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">//</span> <span class="n">M</span><span class="p">[</span><span class="n">idx_shape</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">core</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">//</span> <span class="n">N</span><span class="p">[</span><span class="n">idx_shape</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">m1</span> <span class="o">=</span> <span class="n">M</span><span class="p">[</span><span class="n">idx_shape</span><span class="p">]</span>
+                    <span class="n">m2</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">//</span> <span class="n">m1</span>
+                    <span class="n">n1</span> <span class="o">=</span> <span class="n">N</span><span class="p">[</span><span class="n">idx_shape</span><span class="p">]</span>
+                    <span class="n">n2</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">//</span> <span class="n">n1</span>
+                    <span class="n">r1</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="n">r2</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="n">tmp</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">core</span><span class="p">,</span> <span class="p">[</span><span class="n">r1</span><span class="o">*</span><span class="n">m1</span><span class="p">,</span> <span class="n">m2</span><span class="p">,</span> <span class="n">n1</span><span class="p">,</span> <span class="n">n2</span><span class="o">*</span><span class="n">r2</span><span class="p">])</span>
+
+                    <span class="n">crz</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">mat_to_tt</span><span class="p">(</span>
+                        <span class="n">tmp</span><span class="p">,</span> <span class="p">[</span><span class="n">r1</span><span class="o">*</span><span class="n">m1</span><span class="p">,</span> <span class="n">m2</span><span class="p">],</span> <span class="p">[</span><span class="n">n1</span><span class="p">,</span> <span class="n">n2</span><span class="o">*</span><span class="n">r2</span><span class="p">],</span> <span class="n">eps</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">dfin</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">rmax</span><span class="p">)</span>
+
+                    <span class="n">cores_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">crz</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="n">r1</span><span class="p">,</span> <span class="n">m1</span><span class="p">,</span> <span class="n">n1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+
+                    <span class="n">core</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">crz</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">m2</span><span class="p">,</span> <span class="n">n2</span><span class="p">,</span> <span class="n">r2</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">cores_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">core</span><span class="o">+</span><span class="mi">0</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">idx</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">cores</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                        <span class="k">break</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">idx</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="n">core</span> <span class="o">=</span> <span class="n">cores</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+                <span class="n">idx_shape</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">idx_shape</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">shape</span><span class="p">):</span>
+                    <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">idx</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">idx</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">cores</span><span class="p">):</span>
+                    <span class="k">break</span>
+
+                <span class="n">core</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'ijkl,lmno-&gt;ijmkno'</span><span class="p">,</span> <span class="n">core</span><span class="p">,</span> <span class="n">cores</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
+                <span class="n">core</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+                    <span class="n">core</span><span class="p">,</span> <span class="p">[</span><span class="n">core</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">core</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">core</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">core</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">tens</span><span class="o">.</span><span class="n">N</span><span class="p">)</span> <span class="o">!=</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">shape</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">ShapeMismatch</span><span class="p">(</span>
+                <span class="s1">'The product of modes should remain equal. Check the given shape.'</span><span class="p">)</span>
+
+        <span class="n">core</span> <span class="o">=</span> <span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">cores_new</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">idx</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">idx_shape</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">core</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">%</span> <span class="n">shape</span><span class="p">[</span><span class="n">idx_shape</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">core</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">//</span> <span class="n">shape</span><span class="p">[</span><span class="n">idx_shape</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">s1</span> <span class="o">=</span> <span class="n">shape</span><span class="p">[</span><span class="n">idx_shape</span><span class="p">]</span>
+                    <span class="n">s2</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">//</span> <span class="n">s1</span>
+                    <span class="n">r1</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="n">r2</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+                    <span class="n">tmp</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">core</span><span class="p">,</span> <span class="p">[</span><span class="n">r1</span><span class="o">*</span><span class="n">s1</span><span class="p">,</span> <span class="n">s2</span><span class="o">*</span><span class="n">r2</span><span class="p">])</span>
+
+                    <span class="n">crz</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">to_tt</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="n">tmp</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">eps</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">dfin</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">rmax</span><span class="p">)</span>
+
+                    <span class="n">cores_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">crz</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="n">r1</span><span class="p">,</span> <span class="n">s1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+
+                    <span class="n">core</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">crz</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">s2</span><span class="p">,</span> <span class="n">r2</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">cores_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">core</span><span class="o">+</span><span class="mi">0</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">idx</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">cores</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                        <span class="k">break</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">idx</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="n">core</span> <span class="o">=</span> <span class="n">cores</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+                <span class="n">idx_shape</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">idx_shape</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">shape</span><span class="p">):</span>
+                    <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">idx</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">idx</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">cores</span><span class="p">):</span>
+                    <span class="k">break</span>
+
+                <span class="n">core</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'ijk,klm-&gt;ijlm'</span><span class="p">,</span> <span class="n">core</span><span class="p">,</span> <span class="n">cores</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
+                <span class="n">core</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">core</span><span class="p">,</span> <span class="p">[</span><span class="n">core</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">core</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
+
+        <span class="n">idx_shape</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">while</span> <span class="n">idx_shape</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">shape</span><span class="p">):</span>
+            <span class="n">cores_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">tn</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">cores_new</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">cores_new</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">device</span><span class="p">))</span>
+            <span class="n">idx_shape</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="k">return</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">cores_new</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">eps</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="meshgrid">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.meshgrid">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">meshgrid</span><span class="p">(</span><span class="n">vectors</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Creates a meshgrid of torchtt.TT objects. Similar to numpy.meshgrid or torch.meshgrid.</span>
+<span class="sd">    The input is a list of d torch.tensor vectors of sizes N_1, ... ,N_d</span>
+<span class="sd">    The result is a list of torchtt.TT instances of shapes N1 x ... x Nd.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        vectors (list[torch.tensor]): the vectors (1d tensors).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list[TT]: the resulting meshgrid.</span>
+<span class="sd">    """</span>
+
+    <span class="n">Xs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">dtype</span> <span class="o">=</span> <span class="n">vectors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">vectors</span><span class="p">)):</span>
+        <span class="n">lst</span> <span class="o">=</span> <span class="p">[</span><span class="n">tn</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">v</span><span class="o">.</span><span class="n">device</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">vectors</span><span class="p">]</span>
+        <span class="n">lst</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">vectors</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+        <span class="n">Xs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">lst</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">Xs</span></div>
+
+
+
+<div class="viewcode-block" id="dot">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.dot">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">dot</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Computes the dot product between 2 tensors in TT format.</span>
+<span class="sd">    If both a and b have identical mode sizes the result is the dot product.</span>
+<span class="sd">    If a and b have inequal mode sizes, the function perform index contraction. </span>
+<span class="sd">    The number of dimensions of a must be greater or equal as b.</span>
+<span class="sd">    The modes of the tensor a along which the index contraction with b is performed are given in axis.</span>
+<span class="sd">    For the compelx case (a,b) = b^H . a.</span>
+
+<span class="sd">    Examples:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            a = torchtt.randn([3,4,5,6,7],[1,2,2,2,2,1])</span>
+<span class="sd">            b = torchtt.randn([3,4,5,6,7],[1,2,2,2,2,1])</span>
+<span class="sd">            c = torchtt.randn([3,5,6],[1,2,2,1])</span>
+<span class="sd">            print(torchtt.dot(a,b))</span>
+<span class="sd">            print(torchtt.dot(a,c,[0,2,3]))</span>
+
+
+<span class="sd">    Args:</span>
+<span class="sd">        a (torchtt.TT): the first tensor.</span>
+<span class="sd">        b (torchtt.TT): the second tensor.</span>
+<span class="sd">        axis (list[int], optional): the mode indices for index contraction. Defaults to None.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidArguments: Both operands should be TT instances.</span>
+<span class="sd">        NotImplementedError: Operation not implemented for TT-matrices.</span>
+<span class="sd">        ShapeMismatch: Operands are not the same size.</span>
+<span class="sd">        ShapeMismatch: Number of the modes of the first tensor must be equal with the second.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        float or torchtt.TT: the result. If no axis index is provided the result is a scalar otherwise a torchtt.TT object.</span>
+<span class="sd">    """</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span><span class="s1">'Both operands should be TT instances.'</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># treat first the full dot product</span>
+        <span class="c1"># faster than partial projection</span>
+        <span class="k">if</span> <span class="n">a</span><span class="o">.</span><span class="n">is_ttm</span> <span class="ow">or</span> <span class="n">b</span><span class="o">.</span><span class="n">is_ttm</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="s1">'Operation not implemented for TT-matrices.'</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">a</span><span class="o">.</span><span class="n">N</span> <span class="o">!=</span> <span class="n">b</span><span class="o">.</span><span class="n">N</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ShapeMismatch</span><span class="p">(</span><span class="s1">'Operands are not the same size.'</span><span class="p">)</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">tensor</span><span class="p">([[</span><span class="mf">1.0</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+                           <span class="n">device</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">N</span><span class="p">)):</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'ab,aim,bin-&gt;mn'</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span>
+                               <span class="n">a</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">tn</span><span class="o">.</span><span class="n">conj</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># partial case</span>
+        <span class="k">if</span> <span class="n">a</span><span class="o">.</span><span class="n">is_ttm</span> <span class="ow">or</span> <span class="n">b</span><span class="o">.</span><span class="n">is_ttm</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="s1">'Operation not implemented for TT-matrices.'</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">N</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">N</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">ShapeMismatch</span><span class="p">(</span>
+                <span class="s1">'Number of the modes of the first tensor must be equal with the second.'</span><span class="p">)</span>
+        <span class="c1"># if a.N[axis] != b.N:</span>
+        <span class="c1">#     raise Exception('Dimension mismatch.')</span>
+
+        <span class="n">k</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># index for the tensor b</span>
+        <span class="n">cores_new</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">rank_left</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">N</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">axis</span><span class="p">:</span>
+                <span class="n">cores_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">conj</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">]))</span>
+                <span class="n">rank_left</span> <span class="o">=</span> <span class="n">b</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+                <span class="n">k</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">rank_right</span> <span class="o">=</span> <span class="n">b</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span> <span class="ow">in</span> <span class="n">axis</span> <span class="k">else</span> <span class="n">rank_left</span>
+                <span class="n">cores_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">conj</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'ik,j-&gt;ijk'</span><span class="p">,</span> <span class="n">tn</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">rank_left</span><span class="p">,</span> <span class="n">rank_right</span><span class="p">,</span>
+                                 <span class="n">dtype</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">),</span> <span class="n">tn</span><span class="o">.</span><span class="n">ones</span><span class="p">([</span><span class="n">a</span><span class="o">.</span><span class="n">N</span><span class="p">[</span><span class="n">i</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">))))</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="p">(</span><span class="n">a</span><span class="o">*</span><span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">cores_new</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span></div>
+
+
+
+<div class="viewcode-block" id="bilinear_form">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.bilinear_form">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">bilinear_form</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Computes the bilinear form x^T A y for TT tensors:</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        x (torchtt.TT): the tensors.</span>
+<span class="sd">        A (torchtt.TT): the tensors (must be TT matrix).</span>
+<span class="sd">        y (torchtt.TT): the tensors.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidArguments: Inputs must be torchtt.TT instances.</span>
+<span class="sd">        IncompatibleTypes: x and y must be TT tensors and A must be TT matrix.</span>
+<span class="sd">        ShapeMismatch: Check the shapes. Required is x.N == A.M and y.N == A.N.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        torch.tensor: the result of the bilienar form as tensor with 1 element.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span><span class="s2">"Inputs must be torchtt.TT instances."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">is_ttm</span> <span class="ow">or</span> <span class="n">y</span><span class="o">.</span><span class="n">is_ttm</span> <span class="ow">or</span> <span class="n">A</span><span class="o">.</span><span class="n">is_ttm</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">IncompatibleTypes</span><span class="p">(</span>
+            <span class="s2">"x and y must be TT tensors and A must be TT matrix."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">N</span> <span class="o">!=</span> <span class="n">A</span><span class="o">.</span><span class="n">M</span> <span class="ow">or</span> <span class="n">y</span><span class="o">.</span><span class="n">N</span> <span class="o">!=</span> <span class="n">A</span><span class="o">.</span><span class="n">N</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ShapeMismatch</span><span class="p">(</span>
+            <span class="s2">"Check the shapes. Required is x.N == A.M and y.N == A.N."</span><span class="p">)</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">N</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">bilinear_form_aux</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">cores</span><span class="p">,</span> <span class="n">A</span><span class="o">.</span><span class="n">cores</span><span class="p">,</span> <span class="n">y</span><span class="o">.</span><span class="n">cores</span><span class="p">,</span> <span class="n">d</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="elementwise_divide">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.elementwise_divide">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">elementwise_divide</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span> <span class="n">starting_tensor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nswp</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">kick</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">local_iterations</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="n">resets</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">preconditioner</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Perform the elemntwise division x/y of two tensors in the TT format using the AMEN method.</span>
+<span class="sd">    Use this method if different AMEN arguments are needed.</span>
+<span class="sd">    This method does not check the validity of the inputs.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        x (torchtt.TT or scalar): first tensor (can also be scalar of type float, int, torch.tensor with shape (1)).</span>
+<span class="sd">        y (torchtt.TT): second tensor.</span>
+<span class="sd">        eps (float, optional): relative acccuracy. Defaults to 1e-12.</span>
+<span class="sd">        starting_tensor (torchtt.TT or None, optional): initial guess of the result (None for random initial guess). Defaults to None.</span>
+<span class="sd">        nswp (int, optional): number of iterations. Defaults to 50.</span>
+<span class="sd">        kick (int, optional): size of rank enrichment. Defaults to 4.</span>
+<span class="sd">        local_iterations (int, optional): the number of iterations for the local iterative solver. Defaults to 40.</span>
+<span class="sd">        resets (int, optional): the number of restarts in the GMRES solver. Defaults to 2.</span>
+<span class="sd">        preconditioner (string, optional): Use preconditioner for the local solver (possible vaules None, 'c'). Defaults to None. </span>
+<span class="sd">        verbose (bool, optional): display debug info. Defaults to False.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        torchtt.TT: the result</span>
+<span class="sd">    """</span>
+
+    <span class="n">cores_new</span> <span class="o">=</span> <span class="n">amen_divide</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">nswp</span><span class="p">,</span> <span class="n">starting_tensor</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">kickrank</span><span class="o">=</span><span class="n">kick</span><span class="p">,</span>
+                            <span class="n">local_iterations</span><span class="o">=</span><span class="n">local_iterations</span><span class="p">,</span> <span class="n">resets</span><span class="o">=</span><span class="n">resets</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span> <span class="n">preconditioner</span><span class="o">=</span><span class="n">preconditioner</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">cores_new</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="rank1TT">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.rank1TT">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">rank1TT</span><span class="p">(</span><span class="n">elements</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Compute the rank 1 TT from a list of vectors (or matrices).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        elements (list[torch.tensor]): the list of vectors (or matrices in case a TT matrix should be created).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        torchtt.TT: the resulting TT object.</span>
+<span class="sd">    """</span>
+
+    <span class="k">return</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">([</span><span class="n">e</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">elements</span><span class="p">])</span></div>
+
+
+
+<div class="viewcode-block" id="numel">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.numel">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">numel</span><span class="p">(</span><span class="n">tensor</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Return the number of entries needed to store the TT cores for the given tensor.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        tensor (torchtt.TT): the TT representation of the tensor.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        int: number of floats stored for the TT decomposition.</span>
+<span class="sd">    """</span>
+
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">([</span><span class="n">tn</span><span class="o">.</span><span class="n">numel</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">N</span><span class="p">))])</span></div>
+
+
+
+<div class="viewcode-block" id="diag">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.diag">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">diag</span><span class="p">(</span><span class="nb">input</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Creates diagonal TT matrix from TT tensor or extracts the diagonal of a TT matrix:</span>
+
+<span class="sd">    * If a TT matrix is provided the result is a TT tensor representing the diagonal :math:` \\mathsf{x}_{i_1...i_d} = \\mathsf{A}_{i_1...i_d,i_1...i_d} `</span>
+
+<span class="sd">    * If a TT tensor is provided the result is a diagonal TT matrix with the entries :math:` \\mathsf{A}_{i_1...i_d,j_1...j_d} = \\mathsf{x}_{i_1...i_d} \\delta_{i_1}^{j_1} \\cdots \\delta_{i_d}^{j_d} `</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        input (TT): the input. </span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidArguments: Input must be a torchtt.TT instance.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        torchtt.TT: the result.</span>
+<span class="sd">    """</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span><span class="s2">"Input must be a torchtt.TT instance."</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">input</span><span class="o">.</span><span class="n">is_ttm</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">([</span><span class="n">tn</span><span class="o">.</span><span class="n">diagonal</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">dim1</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">dim2</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">permute</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">input</span><span class="o">.</span><span class="n">cores</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">([</span><span class="n">tn</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'ijk,jm-&gt;ijmk'</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">tn</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">input</span><span class="o">.</span><span class="n">cores</span><span class="p">])</span></div>
+
+
+
+<div class="viewcode-block" id="permute">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.permute">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">permute</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">dims</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Permutes the dimensions of the tensor. Works similarily to ``torch.permute``.</span>
+<span class="sd">    Works like a bubble sort for both TT tensors and TT matrices.</span>
+
+<span class="sd">    Examples:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            x_tt = torchtt.random([5,6,7,8,9],[1,2,3,4,2,1])</span>
+<span class="sd">            xp_tt = torchtt.permute(x_tt, [4,3,2,1,0], 1e-10)</span>
+<span class="sd">            print(xp_tt) # the shape of this tensor should be [9,8,7,6,5]</span>
+
+
+<span class="sd">    Args:</span>
+<span class="sd">        input (torchtt.TT): the input tensor.</span>
+<span class="sd">        dims (list[int]): the order of the indices in the new tensor.</span>
+<span class="sd">        eps (float, optional): the relative accuracy of the decomposition. Defaults to 1e-12.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidArguments: The input must be a TT tensor dims must be a list of integers or a tple of integers.</span>
+<span class="sd">        ShapeMismatch: `dims` must be the length of the number of dimensions.</span>
+<span class="sd">        InvalidArguments: Duplicate dims are not allowed.</span>
+<span class="sd">        InvalidArguments: Dims should only contain integers from 0 to d-1.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        torchtt.TT: the resulting tensor.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span>
+            <span class="s2">"The input must be a TT tensor dims must be a list of integers or a tple of integers."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dims</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">N</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">ShapeMismatch</span><span class="p">(</span>
+            <span class="s2">"`dims` must be the length of the number of dimensions."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dims</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">dims</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span><span class="s2">"Duplicate dims are not allowed."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">min</span><span class="p">(</span><span class="n">dims</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="nb">max</span><span class="p">(</span><span class="n">dims</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">N</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span>
+            <span class="s2">"Dims should only contain integers from 0 to d-1."</span><span class="p">)</span>
+
+    <span class="n">cores</span><span class="p">,</span> <span class="n">R</span> <span class="o">=</span> <span class="n">rl_orthogonal</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">cores</span><span class="p">,</span> <span class="nb">input</span><span class="o">.</span><span class="n">R</span><span class="p">,</span> <span class="nb">input</span><span class="o">.</span><span class="n">is_ttm</span><span class="p">)</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">cores</span><span class="p">)</span>
+    <span class="n">eps</span> <span class="o">=</span> <span class="n">eps</span><span class="o">/</span><span class="p">(</span><span class="n">d</span><span class="o">**</span><span class="mf">1.5</span><span class="p">)</span>
+    <span class="n">indices</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">d</span><span class="p">))</span>
+
+    <span class="n">last_idx</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="n">inversions</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">while</span> <span class="n">inversions</span><span class="p">:</span>
+        <span class="n">inversions</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">i1</span> <span class="o">=</span> <span class="n">indices</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">i2</span> <span class="o">=</span> <span class="n">indices</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">dims</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">i1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">dims</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">i2</span><span class="p">):</span>
+                <span class="c1"># inverion in the index permutation =&gt; the cores must be swapped.</span>
+                <span class="n">inversions</span> <span class="o">=</span> <span class="kc">True</span>
+
+                <span class="n">indices</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">i2</span>
+                <span class="n">indices</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">i1</span>
+
+                <span class="c1"># print(indices,' permute ', i1, i2)</span>
+
+                <span class="n">last_idx</span> <span class="o">=</span> <span class="n">i</span>
+                <span class="k">if</span> <span class="nb">input</span><span class="o">.</span><span class="n">is_ttm</span><span class="p">:</span>
+                    <span class="c1"># reorthonormalize</span>
+                    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">last_idx</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+                        <span class="n">Q</span><span class="p">,</span> <span class="n">R</span> <span class="o">=</span> <span class="n">QR</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="p">[</span>
+                                  <span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">3</span><span class="p">]]))</span>
+                        <span class="n">R</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">Q</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                        <span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+                            <span class="n">Q</span><span class="p">,</span> <span class="p">[</span><span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+                        <span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'ij,jkl-&gt;ikl'</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+
+                    <span class="n">n2</span> <span class="o">=</span> <span class="p">[</span><span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]]</span>
+                    <span class="n">core</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'ijkl,lmno-&gt;ijkmno'</span><span class="p">,</span> <span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+                    <span class="n">core</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="n">core</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">])</span>
+                    <span class="n">U</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">V</span> <span class="o">=</span> <span class="n">SVD</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+                        <span class="n">core</span><span class="p">,</span> <span class="p">[</span><span class="n">core</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">core</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">core</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+                    <span class="k">if</span> <span class="n">S</span><span class="o">.</span><span class="n">is_cuda</span><span class="p">:</span>
+                        <span class="n">r_now</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
+                            <span class="p">[</span><span class="n">rank_chop</span><span class="p">(</span><span class="n">S</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">S</span><span class="p">)</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">*</span><span class="n">eps</span><span class="p">)])</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">r_now</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
+                            <span class="p">[</span><span class="n">rank_chop</span><span class="p">(</span><span class="n">S</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">S</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">*</span><span class="n">eps</span><span class="p">)])</span>
+
+                    <span class="n">US</span> <span class="o">=</span> <span class="n">U</span><span class="p">[:,</span> <span class="p">:</span><span class="n">r_now</span><span class="p">]</span><span class="nd">@tn</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">S</span><span class="p">[:</span><span class="n">r_now</span><span class="p">])</span>
+                    <span class="n">V</span> <span class="o">=</span> <span class="n">V</span><span class="p">[:</span><span class="n">r_now</span><span class="p">,</span> <span class="p">:]</span>
+
+                    <span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+                        <span class="n">US</span><span class="p">,</span> <span class="p">[</span><span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+                    <span class="n">R</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+                    <span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">V</span><span class="p">,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span>
+                                            <span class="n">n2</span> <span class="o">+</span> <span class="p">[</span><span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">3</span><span class="p">]])</span>
+
+                <span class="k">else</span><span class="p">:</span>
+
+                    <span class="c1"># reorthonormalize</span>
+                    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">last_idx</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+                        <span class="n">Q</span><span class="p">,</span> <span class="n">R</span> <span class="o">=</span> <span class="n">QR</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+                            <span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="p">[</span><span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]]))</span>
+                        <span class="n">R</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">Q</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                        <span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+                            <span class="n">Q</span><span class="p">,</span> <span class="p">[</span><span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+                        <span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'ij,jkl-&gt;ikl'</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+
+                    <span class="n">n2</span> <span class="o">=</span> <span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="n">core</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'ijk,klm-&gt;ijlm'</span><span class="p">,</span> <span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+                    <span class="n">core</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="n">core</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+                    <span class="n">U</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">V</span> <span class="o">=</span> <span class="n">SVD</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+                        <span class="n">core</span><span class="p">,</span> <span class="p">[</span><span class="n">core</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">core</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+                    <span class="k">if</span> <span class="n">S</span><span class="o">.</span><span class="n">is_cuda</span><span class="p">:</span>
+                        <span class="n">r_now</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
+                            <span class="p">[</span><span class="n">rank_chop</span><span class="p">(</span><span class="n">S</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">S</span><span class="p">)</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">*</span><span class="n">eps</span><span class="p">)])</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">r_now</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
+                            <span class="p">[</span><span class="n">rank_chop</span><span class="p">(</span><span class="n">S</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">S</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">*</span><span class="n">eps</span><span class="p">)])</span>
+
+                    <span class="n">US</span> <span class="o">=</span> <span class="n">U</span><span class="p">[:,</span> <span class="p">:</span><span class="n">r_now</span><span class="p">]</span><span class="nd">@tn</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">S</span><span class="p">[:</span><span class="n">r_now</span><span class="p">])</span>
+                    <span class="n">V</span> <span class="o">=</span> <span class="n">V</span><span class="p">[:</span><span class="n">r_now</span><span class="p">,</span> <span class="p">:]</span>
+
+                    <span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+                        <span class="n">US</span><span class="p">,</span> <span class="p">[</span><span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+                    <span class="n">R</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+                    <span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">V</span><span class="p">,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">n2</span><span class="p">,</span> <span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]])</span>
+
+    <span class="k">return</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">cores</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="save">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.save">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="n">tensor</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Save a `torchtt.TT` object in a file.</span>
+
+<span class="sd">    Examples:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            import torchtt</span>
+<span class="sd">            #generate a TT object</span>
+<span class="sd">            A = torchtt.randn([10,20,30,40,4,5],[1,6,5,4,3,2,1])</span>
+<span class="sd">            # save the TT object</span>
+<span class="sd">            torchtt.save(A,"./test.TT")</span>
+<span class="sd">            # load the TT object</span>
+<span class="sd">            B = torchtt.load("./test.TT")</span>
+<span class="sd">            # the loaded should be the same</span>
+<span class="sd">            print((A-B).norm()/A.norm())</span>
+
+
+<span class="sd">    Args:</span>
+<span class="sd">        tensor (torchtt.TT): the tensor to be saved.</span>
+<span class="sd">        path (str): the file name.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidArguments: First argument must be a torchtt.TT instance.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tensor</span><span class="p">,</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span><span class="s2">"First argument must be a torchtt.TT instance."</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">tensor</span><span class="o">.</span><span class="n">is_ttm</span><span class="p">:</span>
+        <span class="n">dct</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"is_ttm"</span><span class="p">:</span> <span class="n">tensor</span><span class="o">.</span><span class="n">is_ttm</span><span class="p">,</span> <span class="s2">"R"</span><span class="p">:</span> <span class="n">tensor</span><span class="o">.</span><span class="n">R</span><span class="p">,</span>
+               <span class="s2">"M"</span><span class="p">:</span> <span class="n">tensor</span><span class="o">.</span><span class="n">M</span><span class="p">,</span> <span class="s2">"N"</span><span class="p">:</span> <span class="n">tensor</span><span class="o">.</span><span class="n">N</span><span class="p">,</span> <span class="s2">"cores"</span><span class="p">:</span> <span class="n">tensor</span><span class="o">.</span><span class="n">cores</span><span class="p">}</span>
+        <span class="n">tn</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">dct</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">dct</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"is_ttm"</span><span class="p">:</span> <span class="n">tensor</span><span class="o">.</span><span class="n">is_ttm</span><span class="p">,</span> <span class="s2">"R"</span><span class="p">:</span> <span class="n">tensor</span><span class="o">.</span><span class="n">R</span><span class="p">,</span>
+               <span class="s2">"N"</span><span class="p">:</span> <span class="n">tensor</span><span class="o">.</span><span class="n">N</span><span class="p">,</span> <span class="s2">"cores"</span><span class="p">:</span> <span class="n">tensor</span><span class="o">.</span><span class="n">cores</span><span class="p">}</span>
+        <span class="n">tn</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">dct</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="load">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.load">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Load a torchtt.TT object from a file.</span>
+
+<span class="sd">    Examples:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            import torchtt</span>
+<span class="sd">            #generate a TT object</span>
+<span class="sd">            A = torchtt.randn([10,20,30,40,4,5],[1,6,5,4,3,2,1])</span>
+<span class="sd">            # save the TT object</span>
+<span class="sd">            torchtt.save(A,"./test.TT")</span>
+<span class="sd">            # load the TT object</span>
+<span class="sd">            B = torchtt.load("./test.TT")</span>
+<span class="sd">            # the loaded should be the same</span>
+<span class="sd">            print((A-B).norm()/A.norm())</span>
+
+
+<span class="sd">    Args:</span>
+<span class="sd">        path (str): the file name.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        torchtt.TT: the tensor.</span>
+<span class="sd">    """</span>
+    <span class="n">dct</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">dct</span><span class="p">[</span><span class="s1">'cores'</span><span class="p">])</span></div>
+
+
+
+<div class="viewcode-block" id="cat">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.cat">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">cat</span><span class="p">(</span><span class="n">tensors</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Concatenate tensors in the TT format along a given dimension `dim`. Only works for TT tensors and not TT matrices.</span>
+
+<span class="sd">    Examples:</span>
+
+<span class="sd">        .. code-block:: python </span>
+
+<span class="sd">            import torchtt </span>
+<span class="sd">            import torch </span>
+
+
+<span class="sd">            a1 = torchtt.randn((3,4,2,6,7), [1,2,3,4,2,1])</span>
+<span class="sd">            a2 = torchtt.randn((3,4,8,6,7), [1,3,1,7,5,1])</span>
+<span class="sd">            a3 = torchtt.randn((3,4,15,6,7), [1,3,10,2,4,1])</span>
+
+<span class="sd">            a = torchtt.cat((a1,a2,a3),2)</span>
+
+<span class="sd">            af = torch.cat((a1.full(), a2.full(),</span>
+<span class="sd">            print(torch.linalg.norm(a.full()-af))</span>
+<span class="sd">        `</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        tensors (tuple[TT]): the tensors to be concatenated. Their mode sizes must match for all modex except the concatenating dimension.</span>
+<span class="sd">        dim (int, optional): The dimension to be concatenated after. Defaults to 0.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidArguments: Not implemented for tensor matrices.</span>
+<span class="sd">        InvalidArguments: The mode sizes must be the same on the nonconcatenated dimensions for all the provided tensors.</span>
+<span class="sd">        InvalidArguments: The tensors must have the same number of dimensions.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        torchtt.TT: the result.</span>
+<span class="sd">    """</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tensors</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">tensors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">is_ttm</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span><span class="s2">"Not implemented for tensor matrices."</span><span class="p">)</span>
+    <span class="n">Rs</span> <span class="o">=</span> <span class="p">[</span><span class="n">tensors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">R</span><span class="p">]</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">tensors</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">tensors</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">is_ttm</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span><span class="s2">"Not implemented for tensor matrices."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">tensors</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">N</span><span class="p">[:</span><span class="n">dim</span><span class="p">]</span> <span class="o">!=</span> <span class="n">tensors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">N</span><span class="p">[:</span><span class="n">dim</span><span class="p">]</span> <span class="ow">and</span> <span class="n">tensors</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">N</span><span class="p">[(</span><span class="n">dim</span><span class="o">+</span><span class="mi">1</span><span class="p">):]</span> <span class="o">!=</span> <span class="n">tensors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">N</span><span class="p">[(</span><span class="n">dim</span><span class="o">+</span><span class="mi">1</span><span class="p">):]:</span>
+            <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span>
+                <span class="s2">"The mode sizes must be the same on the nonconcatenated dimensions for all the provided tensors."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tensors</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">N</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">tensors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">N</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span>
+                <span class="s2">"The tensors must have the same number of dimensions."</span><span class="p">)</span>
+        <span class="n">Rs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tensors</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">R</span><span class="p">)</span>
+
+    <span class="n">cores</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">if</span> <span class="n">tensors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">is_ttm</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="n">r_sum</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">tensors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">N</span><span class="p">)):</span>
+            <span class="n">r_sum</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">sum</span><span class="p">([</span><span class="n">Rs</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tensors</span><span class="p">))]))</span>
+        <span class="n">r_sum</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tensors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">N</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">dim</span><span class="p">:</span>
+                <span class="n">n</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">t</span><span class="o">.</span><span class="n">N</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tensors</span><span class="p">])</span>
+                <span class="n">cores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+                    <span class="p">(</span><span class="n">r_sum</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">n</span><span class="p">,</span> <span class="n">r_sum</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]),</span> <span class="n">device</span><span class="o">=</span><span class="n">tensors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tensors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">cores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">r_sum</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">tensors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">N</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">r_sum</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]),</span>
+                             <span class="n">device</span><span class="o">=</span><span class="n">tensors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tensors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
+
+            <span class="n">offset1</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">offset2</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">offset3</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tensors</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">dim</span><span class="p">:</span>
+                    <span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">offset1</span><span class="p">:(</span><span class="n">offset1</span><span class="o">+</span><span class="n">t</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">offset2</span><span class="p">:(</span>
+                        <span class="n">offset2</span><span class="o">+</span><span class="n">t</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="n">offset3</span><span class="p">:(</span><span class="n">offset3</span><span class="o">+</span><span class="n">t</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">])]</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">offset1</span> <span class="o">+=</span> <span class="n">t</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="n">offset2</span> <span class="o">+=</span> <span class="n">t</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">tensors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">N</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                        <span class="n">offset3</span> <span class="o">+=</span> <span class="n">t</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">offset1</span><span class="p">:(</span><span class="n">offset1</span><span class="o">+</span><span class="n">t</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="p">:,</span>
+                             <span class="n">offset3</span><span class="p">:(</span><span class="n">offset3</span><span class="o">+</span><span class="n">t</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">])]</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">offset1</span> <span class="o">+=</span> <span class="n">t</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">tensors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">N</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                        <span class="n">offset3</span> <span class="o">+=</span> <span class="n">t</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="c1"># for i in range(len(self.__N)):</span>
+        <span class="c1">#    pad1 = (0,0 if i == len(self.__N)-1 else other.R[i+1] , 0,0 , 0,0 if i==0 else other.R[i])</span>
+        <span class="c1">#    pad2 = (0 if i == len(self.__N)-1 else self.__R[i+1],0 , 0,0 , 0 if i==0 else self.R[i],0)</span>
+        <span class="c1">#    cores.append(tnf.pad(self.cores[i],pad1)+tnf.pad(other.cores[i],pad2))</span>
+    <span class="k">return</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">cores</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="pad">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.pad">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">pad</span><span class="p">(</span><span class="n">tensor</span><span class="p">,</span> <span class="n">padding</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Pad a tensor in the TT format.</span>
+<span class="sd">    The `padding` argument is a tuple of tuples `((b1, a1), (b2, a2), ... , (bd, ad))`. </span>
+<span class="sd">    Each dimension is padded with `bk` at the beginning and `ak` at the end. The padding value is constant and is given as the argument `value`. </span>
+<span class="sd">    In case of a TT operator, duiagual padding is performed. On the diagonal, the provided `value` is inserted.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        tensor (TT): the tensor to be padded.</span>
+<span class="sd">        padding (tuple(tuple(int))): the paddings.</span>
+<span class="sd">        value (float, optional): the value to pad. Defaults to 0.0.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidArguments: The number of paddings should not exceed the number of dimensions of the tensor.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        TT: the result.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">padding</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">N</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span>
+            <span class="s2">"The number of paddings should not exceed the number of dimensions of the tensor."</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">tensor</span><span class="o">.</span><span class="n">is_ttm</span><span class="p">:</span>
+        <span class="n">cores</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">tensor</span><span class="o">.</span><span class="n">cores</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">pad</span><span class="p">,</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">padding</span><span class="p">),</span> <span class="nb">reversed</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">N</span><span class="p">)))):</span>
+            <span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">tnf</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="p">(</span><span class="mi">1</span> <span class="k">if</span> <span class="n">k</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">N</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">k</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">N</span><span class="p">)</span> <span class="o">-</span>
+                               <span class="mi">1</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span> <span class="n">pad</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">pad</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">pad</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">pad</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">k</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">k</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span><span class="p">),</span> <span class="n">value</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">0</span><span class="p">,</span> <span class="p">:</span><span class="n">pad</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">:</span><span class="n">pad</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span> <span class="o">*</span> \
+                <span class="n">tn</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">pad</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">device</span><span class="o">=</span><span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+            <span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="n">pad</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">tensor</span><span class="o">.</span><span class="n">M</span><span class="p">[</span><span class="n">k</span><span class="p">]):,</span> <span class="p">(</span><span class="n">pad</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">tensor</span><span class="o">.</span><span class="n">N</span><span class="p">[</span><span class="n">k</span><span class="p">]):,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span> <span class="o">*</span> \
+                <span class="n">tn</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">pad</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">device</span><span class="o">=</span><span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">rprod</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">R</span><span class="p">)</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">/</span><span class="n">rprod</span>
+
+        <span class="n">cores</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">tensor</span><span class="o">.</span><span class="n">cores</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">pad</span><span class="p">,</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">padding</span><span class="p">),</span> <span class="nb">reversed</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">N</span><span class="p">)))):</span>
+            <span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">tnf</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span>
+                <span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">pad</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">pad</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">value</span> <span class="o">!=</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span>
+
+    <span class="k">return</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_tt_base</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">cores</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="shape_tuple_to_mn">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.shape_tuple_to_mn">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">shape_tuple_to_mn</span><span class="p">(</span><span class="n">shape</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Convert the shape of a TTM from tuple format to row and column shapes.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        shape (list[tuple[int]]): shape.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        tuple[list[int],list[int]]: still the shape.</span>
+<span class="sd">    """</span>
+    <span class="n">M</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">shape</span><span class="p">]</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">shape</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">M</span><span class="p">,</span> <span class="n">N</span></div>
+
+
+
+<div class="viewcode-block" id="shape_mn_to_tuple">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.shape_mn_to_tuple">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">shape_mn_to_tuple</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Convert the shape of a TTM from row/column format to tuple format.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        M (list[int]): row shapes.</span>
+<span class="sd">        N (list[int]): column shapes.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list[tuple[int]]: shape.</span>
+<span class="sd">    """</span>
+
+    <span class="k">return</span> <span class="p">[(</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">)]</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Ion Gabriel Ion.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

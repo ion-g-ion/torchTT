@@ -1,0 +1,626 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TT decomposition in torchtt &mdash; torchTT v0.5.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e663822d"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Basic linear algebra in torchTT" href="basic_linalg.html" />
+    <link rel="prev" title="Examples" href="../docs/examples.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            torchtt
+              <img src="https://github.com/ion-g-ion/torchTT/blob/main/logo_small.png?raw=true" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../docs/intro_page.html">Welcome to torchTT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/install.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/package-overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/modules.html">API reference</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../docs/examples.html">Examples</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../docs/examples.html#getting-started">Getting Started</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">TT decomposition in torchtt</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Decomposition-of-a-full-tensor-in-TT-format">Decomposition of a full tensor in TT format</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Tensor-operators">Tensor operators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Slicing">Slicing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#TT-rank-rounding">TT rank rounding</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Special-tensors">Special tensors</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="basic_linalg.html">Basic linear algebra in torchTT</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#linear-algebra-solvers">Linear Algebra &amp; Solvers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#cross-interpolation">Cross Interpolation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#neural-networks">Neural Networks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#advanced-topics">Advanced Topics</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">torchtt</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../docs/examples.html">Examples</a></li>
+      <li class="breadcrumb-item active">TT decomposition in torchtt</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/examples/basic_tutorial.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT v0.5.0</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="TT-decomposition-in-torchtt">
+<h1>TT decomposition in torchtt<a class="headerlink" href="#TT-decomposition-in-torchtt" title="Link to this heading"></a></h1>
+<p>This notebook is a tutorial on how to use the basic functionalities of the <code class="docutils literal notranslate"><span class="pre">torchtt</span></code> package.</p>
+<p>Imports</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tn</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">torchtt</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tntt</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'Installing torchTT...'</span><span class="p">)</span>
+    <span class="o">%</span><span class="k">pip</span> install git+https://github.com/ion-g-ion/torchTT
+    <span class="kn">import</span><span class="w"> </span><span class="nn">torchtt</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tntt</span>
+</pre></div>
+</div>
+</div>
+<section id="Decomposition-of-a-full-tensor-in-TT-format">
+<h2>Decomposition of a full tensor in TT format<a class="headerlink" href="#Decomposition-of-a-full-tensor-in-TT-format" title="Link to this heading"></a></h2>
+<p>We now create a 4d <code class="docutils literal notranslate"><span class="pre">torch.tensor</span></code> which we will use later</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tens_full</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">32</span><span class="o">*</span><span class="mi">16</span><span class="o">*</span><span class="mi">8</span><span class="o">*</span><span class="mi">10</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">float64</span><span class="p">),[</span><span class="mi">32</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">10</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<p>The TT approximation of a given tensor is <span class="math notranslate nohighlight">\(\mathsf{x}_{i_1 i_2 ... i_d} \approx \sum_{r_1,...,r_{d-1}=1}^{R_1,...,R_{d-1}} \mathsf{g}^{(1)}_{1i_1r_1}\cdots\mathsf{g}^{(d)}_{r_{d-1}i_d1}\)</span>. Using the constructor <code class="docutils literal notranslate"><span class="pre">torchtt.TT()</span></code> a full tensor can be decomposed in the TT format.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tens_tt</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">tens_full</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>The newly instantiated object contains the cores as a list, the mode sizes and the rank.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s1">'TT cores'</span><span class="p">,</span> <span class="n">tens_tt</span><span class="o">.</span><span class="n">cores</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Mode size '</span><span class="p">,</span> <span class="n">tens_tt</span><span class="o">.</span><span class="n">N</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'TT rank '</span><span class="p">,</span> <span class="n">tens_tt</span><span class="o">.</span><span class="n">R</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+TT cores [tensor([[[-0.0048, -0.3454],
+         [-0.0144, -0.3288],
+         [-0.0240, -0.3122],
+         [-0.0335, -0.2956],
+         [-0.0431, -0.2791],
+         [-0.0527, -0.2625],
+         [-0.0622, -0.2459],
+         [-0.0718, -0.2293],
+         [-0.0814, -0.2127],
+         [-0.0909, -0.1961],
+         [-0.1005, -0.1796],
+         [-0.1101, -0.1630],
+         [-0.1196, -0.1464],
+         [-0.1292, -0.1298],
+         [-0.1388, -0.1132],
+         [-0.1483, -0.0966],
+         [-0.1579, -0.0800],
+         [-0.1675, -0.0635],
+         [-0.1770, -0.0469],
+         [-0.1866, -0.0303],
+         [-0.1962, -0.0137],
+         [-0.2057,  0.0029],
+         [-0.2153,  0.0195],
+         [-0.2249,  0.0360],
+         [-0.2344,  0.0526],
+         [-0.2440,  0.0692],
+         [-0.2536,  0.0858],
+         [-0.2632,  0.1024],
+         [-0.2727,  0.1190],
+         [-0.2823,  0.1355],
+         [-0.2919,  0.1521],
+         [-0.3014,  0.1687]]], dtype=torch.float64), tensor([[[ 2.4448e-01,  9.6477e-03],
+         [ 2.4521e-01,  8.3789e-03],
+         [ 2.4594e-01,  7.1101e-03],
+         [ 2.4667e-01,  5.8413e-03],
+         [ 2.4741e-01,  4.5725e-03],
+         [ 2.4814e-01,  3.3037e-03],
+         [ 2.4887e-01,  2.0348e-03],
+         [ 2.4960e-01,  7.6604e-04],
+         [ 2.5034e-01, -5.0277e-04],
+         [ 2.5107e-01, -1.7716e-03],
+         [ 2.5180e-01, -3.0404e-03],
+         [ 2.5253e-01, -4.3092e-03],
+         [ 2.5327e-01, -5.5780e-03],
+         [ 2.5400e-01, -6.8468e-03],
+         [ 2.5473e-01, -8.1156e-03],
+         [ 2.5546e-01, -9.3845e-03]],
+
+        [[-3.1962e-03,  2.5540e-01],
+         [-2.7735e-03,  2.5467e-01],
+         [-2.3509e-03,  2.5393e-01],
+         [-1.9282e-03,  2.5320e-01],
+         [-1.5056e-03,  2.5247e-01],
+         [-1.0829e-03,  2.5174e-01],
+         [-6.6029e-04,  2.5101e-01],
+         [-2.3764e-04,  2.5027e-01],
+         [ 1.8500e-04,  2.4954e-01],
+         [ 6.0765e-04,  2.4881e-01],
+         [ 1.0303e-03,  2.4808e-01],
+         [ 1.4529e-03,  2.4735e-01],
+         [ 1.8756e-03,  2.4661e-01],
+         [ 2.2982e-03,  2.4588e-01],
+         [ 2.7209e-03,  2.4515e-01],
+         [ 3.1435e-03,  2.4442e-01]]], dtype=torch.float64), tensor([[[-3.5310e-01,  7.8561e-04],
+         [-3.5323e-01,  5.6136e-04],
+         [-3.5336e-01,  3.3710e-04],
+         [-3.5349e-01,  1.1285e-04],
+         [-3.5362e-01, -1.1141e-04],
+         [-3.5375e-01, -3.3566e-04],
+         [-3.5388e-01, -5.5992e-04],
+         [-3.5401e-01, -7.8417e-04]],
+
+        [[ 2.6179e-04,  3.5401e-01],
+         [ 1.8703e-04,  3.5388e-01],
+         [ 1.1228e-04,  3.5375e-01],
+         [ 3.7521e-05,  3.5362e-01],
+         [-3.7234e-05,  3.5349e-01],
+         [-1.1199e-04,  3.5336e-01],
+         [-1.8674e-04,  3.5323e-01],
+         [-2.6150e-04,  3.5310e-01]]], dtype=torch.float64), tensor([[[ 1.5132e+06],
+         [ 1.5133e+06],
+         [ 1.5133e+06],
+         [ 1.5134e+06],
+         [ 1.5134e+06],
+         [ 1.5135e+06],
+         [ 1.5135e+06],
+         [ 1.5136e+06],
+         [ 1.5137e+06],
+         [ 1.5137e+06]],
+
+        [[ 1.4401e+02],
+         [ 1.1201e+02],
+         [ 8.0011e+01],
+         [ 4.8011e+01],
+         [ 1.6010e+01],
+         [-1.5991e+01],
+         [-4.7991e+01],
+         [-7.9992e+01],
+         [-1.1199e+02],
+         [-1.4399e+02]]], dtype=torch.float64)]
+Mode size  [32, 16, 8, 10]
+TT rank  [1, np.int64(2), np.int64(2), np.int64(2), 1]
+</pre></div></div>
+</div>
+<p>Since the TT decomposition is not exact in most of the cases, an approximation is made. If the argument <code class="docutils literal notranslate"><span class="pre">eps</span></code> is provided to the <code class="docutils literal notranslate"><span class="pre">torchtt.TT()</span></code> function the decomposition can be performed upt to the given relative accuracy. Moreover the maximum rank can also be provided as the argument <code class="docutils literal notranslate"><span class="pre">rmax</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tens_full2</span> <span class="o">=</span> <span class="n">tens_full</span><span class="o">+</span><span class="mf">1e-5</span><span class="o">*</span><span class="n">tn</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">tens_full</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tens_full</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">tens_tt2</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">tens_full2</span><span class="p">,</span> <span class="n">eps</span> <span class="o">=</span> <span class="mf">1e-4</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">tens_tt2</span><span class="o">.</span><span class="n">R</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[1, np.int64(2), np.int64(2), np.int64(2), 1]
+</pre></div></div>
+</div>
+<p>The original tensor can be recovered using the <code class="docutils literal notranslate"><span class="pre">torchtt.TT.full()</span></code> method (also check if it equals the original full tensor):</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tens_full_rec</span> <span class="o">=</span> <span class="n">tens_tt</span><span class="o">.</span><span class="n">full</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">tens_full</span><span class="o">-</span><span class="n">tens_full_rec</span><span class="p">)</span><span class="o">/</span><span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">tens_full</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+tensor(2.1452e-15, dtype=torch.float64)
+</pre></div></div>
+</div>
+<p>Using the <code class="docutils literal notranslate"><span class="pre">print()</span></code> function, information about the newly created <code class="docutils literal notranslate"><span class="pre">torchtt.TT</span></code> instance can be displayed:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">tens_tt</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+TT with sizes and ranks:
+N = [32, 16, 8, 10]
+R = [1, np.int64(2), np.int64(2), np.int64(2), 1]
+
+Device: cpu, dtype: torch.float64
+#entries 180 compression 0.00439453125
+
+</pre></div></div>
+</div>
+</section>
+<section id="Tensor-operators">
+<h2>Tensor operators<a class="headerlink" href="#Tensor-operators" title="Link to this heading"></a></h2>
+<p>As a generalization of the matrix vector algebra, one can define tensor operators that act on tensors. If the tensor is <span class="math notranslate nohighlight">\(d\)</span>-dimensional, the tensor operator will be <span class="math notranslate nohighlight">\(2d\)</span>-dimensional. The goal is to perform a product <span class="math notranslate nohighlight">\(\mathsf{Ax}\in\mathbb{M_1\times \cdots \times M_d}\)</span> between a tensor <span class="math notranslate nohighlight">\(\mathsf{x}\in\mathbb{R}^{N_1\times \cdots \times N_d}\)</span> and the operator <span class="math notranslate nohighlight">\(\mathsf{A}\in \mathbb{R}^{(M_1\times \cdots \times M_d)\times(N_1\times \cdots \times N_d)}\)</span>. For the
+operators the following TT matrix format is used <span class="math notranslate nohighlight">\(\mathsf{A}_{i_1...i_d,j_1...j_d}\approx \sum\limits_{r_1,...,r_{d-1}=1}^{R_1,...,R_{d-1}} \mathsf{g}^{(1)}_{1i_1j_1r_1}\cdots\mathsf{g}^{(d)}_{r_{d-1}i_dj_d1}\)</span>.</p>
+<p>If a tensor operator needs to be decomposed from full, the additional argument <code class="docutils literal notranslate"><span class="pre">shape</span></code> of the <code class="docutils literal notranslate"><span class="pre">torchtt.TT()</span></code> constructor has to be used to provide the shape. If the tensor operator has the shape <span class="math notranslate nohighlight">\((M_1\times \cdots \times M_d)\times(N_1\times \cdots \times N_d)\)</span> the argument must be passed as <code class="docutils literal notranslate"><span class="pre">[(M1,N1),(M2,N2),(M3,N2),...]</span></code>.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">A_full</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">8</span><span class="o">*</span><span class="mi">4</span><span class="o">*</span><span class="mi">6</span><span class="o">*</span><span class="mi">3</span><span class="o">*</span><span class="mi">7</span><span class="o">*</span><span class="mi">9</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">float64</span><span class="p">),[</span><span class="mi">8</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">7</span><span class="p">,</span><span class="mi">9</span><span class="p">])</span>
+<span class="c1"># create an instance of torchtt.TT</span>
+<span class="n">A_ttm</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">A_full</span><span class="p">,</span> <span class="n">eps</span> <span class="o">=</span> <span class="mf">1e-12</span><span class="p">,</span> <span class="n">shape</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">8</span><span class="p">,</span><span class="mi">3</span><span class="p">),(</span><span class="mi">4</span><span class="p">,</span><span class="mi">7</span><span class="p">),(</span><span class="mi">6</span><span class="p">,</span><span class="mi">9</span><span class="p">)])</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Slicing">
+<h2>Slicing<a class="headerlink" href="#Slicing" title="Link to this heading"></a></h2>
+<p>Slicing operation can be performed on a tensor in TT format. If all the dimensions are indexed with an integer and the multiindices are valid, a torch.tensor with the corresponding value is returned. Slices can be also used, however the returned object in this case is again a torchtt.TT instance.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">tens_tt</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">tens_tt</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">:</span><span class="mi">4</span><span class="p">,</span><span class="mi">2</span><span class="p">,:])</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+tensor(1474.0000, dtype=torch.float64)
+TT with sizes and ranks:
+N = [3, 10]
+R = [1, 2, 1]
+
+Device: cpu, dtype: torch.float64
+#entries 26 compression 0.8666666666666667
+
+</pre></div></div>
+</div>
+</section>
+<section id="TT-rank-rounding">
+<h2>TT rank rounding<a class="headerlink" href="#TT-rank-rounding" title="Link to this heading"></a></h2>
+<p>In some cases the TT rank becomes too large and a reduction is desired. The goal is to perform a reduction of the rank while maintaining an accuracy. The problem statement of the rounding operation is: given a tensor <span class="math notranslate nohighlight">\(\mathsf{x}\)</span> in the TT format with the TT rank <span class="math notranslate nohighlight">\(\mathbf{R}\)</span> and an <span class="math notranslate nohighlight">\(\epsilon&gt;0\)</span>, find a tensor <span class="math notranslate nohighlight">\(\tilde{\mathsf{x}}\)</span> with TT rank <span class="math notranslate nohighlight">\(\tilde{\mathbf{R}}\leq \mathbf{R}\)</span> such that $
+||:nbsphinx-math:<cite>mathsf{x}</cite>-<span class="math">\tilde{\mathsf{x}}</span>||_F:nbsphinx-math:<cite>leq `:nbsphinx-math:</cite>epsilon <cite>|| :nbsphinx-math:</cite>mathsf{x}` ||_F$. This is implemented using the member method of a TT object <code class="docutils literal notranslate"><span class="pre">torchtt.TT.round()</span></code>. The argument <code class="docutils literal notranslate"><span class="pre">epsilon</span></code> is passed to the function as well as the optional argument <code class="docutils literal notranslate"><span class="pre">rmax</span></code> which also restricts the rank of the rounding.</p>
+<p>We will create a tensor of TT rank <span class="math notranslate nohighlight">\((1,6,6,6,1)\)</span> in the TT format.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">t1</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">randn</span><span class="p">([</span><span class="mi">10</span><span class="p">,</span><span class="mi">20</span><span class="p">,</span><span class="mi">30</span><span class="p">,</span><span class="mi">40</span><span class="p">],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">t2</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">randn</span><span class="p">([</span><span class="mi">10</span><span class="p">,</span><span class="mi">20</span><span class="p">,</span><span class="mi">30</span><span class="p">,</span><span class="mi">40</span><span class="p">],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">t3</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">randn</span><span class="p">([</span><span class="mi">10</span><span class="p">,</span><span class="mi">20</span><span class="p">,</span><span class="mi">30</span><span class="p">,</span><span class="mi">40</span><span class="p">],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">t1</span><span class="p">,</span> <span class="n">t2</span><span class="p">,</span> <span class="n">t3</span> <span class="o">=</span> <span class="n">t1</span><span class="o">/</span><span class="n">t1</span><span class="o">.</span><span class="n">norm</span><span class="p">(),</span> <span class="n">t2</span><span class="o">/</span><span class="n">t2</span><span class="o">.</span><span class="n">norm</span><span class="p">(),</span> <span class="n">t3</span><span class="o">/</span><span class="n">t3</span><span class="o">.</span><span class="n">norm</span><span class="p">()</span>
+<span class="n">tt</span> <span class="o">=</span> <span class="n">t1</span><span class="o">+</span><span class="mf">1e-3</span><span class="o">*</span><span class="n">t2</span><span class="o">+</span><span class="mf">1e-6</span><span class="o">*</span><span class="n">t3</span>
+<span class="n">t_full</span> <span class="o">=</span> <span class="n">tt</span><span class="o">.</span><span class="n">full</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">tt</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+TT with sizes and ranks:
+N = [10, 20, 30, 40]
+R = [1, 6, 6, 6, 1]
+
+Device: cpu, dtype: torch.float64
+#entries 2100 compression 0.00875
+
+</pre></div></div>
+</div>
+<p>Rounding the tensor to a relative <code class="docutils literal notranslate"><span class="pre">epsilon</span></code> of 1e-5 yields.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tt1</span> <span class="o">=</span> <span class="n">tt</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mf">1e-5</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">tt1</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Error '</span><span class="p">,</span><span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">tt1</span><span class="o">.</span><span class="n">full</span><span class="p">()</span><span class="o">-</span><span class="n">tt</span><span class="o">.</span><span class="n">full</span><span class="p">())</span><span class="o">/</span><span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">tt</span><span class="o">.</span><span class="n">full</span><span class="p">()))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+TT with sizes and ranks:
+N = [10, 20, 30, 40]
+R = [1, 4, 4, 4, 1]
+
+Device: cpu, dtype: torch.float64
+#entries 1000 compression 0.004166666666666667
+
+Error  tensor(9.9712e-07, dtype=torch.float64)
+</pre></div></div>
+</div>
+<p>This is equivalent to removing the <code class="docutils literal notranslate"><span class="pre">t3</span></code> from <code class="docutils literal notranslate"><span class="pre">tt</span></code> and the error will be less than 1e-6. If a truncation with <code class="docutils literal notranslate"><span class="pre">epsilon=1e-2</span></code> is done, the resulting tensor will have the rank <code class="docutils literal notranslate"><span class="pre">[1,2,2,2,1]</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tt1</span> <span class="o">=</span> <span class="n">tt</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mf">1e-2</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">tt1</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Error '</span><span class="p">,</span><span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">tt1</span><span class="o">.</span><span class="n">full</span><span class="p">()</span><span class="o">-</span><span class="n">tt</span><span class="o">.</span><span class="n">full</span><span class="p">())</span><span class="o">/</span><span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">tt</span><span class="o">.</span><span class="n">full</span><span class="p">()))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+TT with sizes and ranks:
+N = [10, 20, 30, 40]
+R = [1, 2, 2, 2, 1]
+
+Device: cpu, dtype: torch.float64
+#entries 300 compression 0.00125
+
+Error  tensor(0.0010, dtype=torch.float64)
+</pre></div></div>
+</div>
+<p>The maximum rank of a truncation can also be provided as argument.</p>
+</section>
+<section id="Special-tensors">
+<h2>Special tensors<a class="headerlink" href="#Special-tensors" title="Link to this heading"></a></h2>
+<p>Some tensors can be directly constructed in the TT format: the one tensor, the zeros tensor, the identity tensor operator adn random tensors with a given rank.</p>
+<p>The one tensor can be created directly in the TT format using <code class="docutils literal notranslate"><span class="pre">torchtt.ones()</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">tntt</span><span class="o">.</span><span class="n">ones</span><span class="p">([</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">])</span><span class="o">.</span><span class="n">full</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+tensor([[[1., 1., 1., 1.],
+         [1., 1., 1., 1.],
+         [1., 1., 1., 1.]],
+
+        [[1., 1., 1., 1.],
+         [1., 1., 1., 1.],
+         [1., 1., 1., 1.]]], dtype=torch.float64)
+</pre></div></div>
+</div>
+<p>The zero tensor ca be created in the TT format using <code class="docutils literal notranslate"><span class="pre">torchtt.zeros()</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">tntt</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">])</span><span class="o">.</span><span class="n">full</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+tensor([[[0., 0., 0., 0.],
+         [0., 0., 0., 0.],
+         [0., 0., 0., 0.]],
+
+        [[0., 0., 0., 0.],
+         [0., 0., 0., 0.],
+         [0., 0., 0., 0.]]], dtype=torch.float64)
+</pre></div></div>
+</div>
+<p>The identity tensor operator is created using <code class="docutils literal notranslate"><span class="pre">torchtt.eye()</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">tntt</span><span class="o">.</span><span class="n">eye</span><span class="p">([</span><span class="mi">10</span><span class="p">,</span><span class="mi">20</span><span class="p">,</span><span class="mi">30</span><span class="p">]))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+TT-matrix with sizes and ranks:
+M = [10, 20, 30]
+N = [10, 20, 30]
+R = [1, 1, 1, 1]
+Device: cpu, dtype: torch.float64
+#entries 1400 compression 3.888888888888889e-05
+
+</pre></div></div>
+</div>
+<p>Tensors with random TT cores and a given rank can be created with <code class="docutils literal notranslate"><span class="pre">torchtt.random()</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">tntt</span><span class="o">.</span><span class="n">random</span><span class="p">([</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">7</span><span class="p">],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">]))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">tntt</span><span class="o">.</span><span class="n">random</span><span class="p">([(</span><span class="mi">3</span><span class="p">,</span><span class="mi">7</span><span class="p">),(</span><span class="mi">4</span><span class="p">,</span><span class="mi">6</span><span class="p">),(</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">),(</span><span class="mi">6</span><span class="p">,</span><span class="mi">10</span><span class="p">),(</span><span class="mi">7</span><span class="p">,</span><span class="mi">2</span><span class="p">)],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">]))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+TT with sizes and ranks:
+N = [3, 4, 5, 6, 7]
+R = [1, 2, 5, 5, 2, 1]
+
+Device: cpu, dtype: torch.float64
+#entries 245 compression 0.09722222222222222
+
+TT-matrix with sizes and ranks:
+M = [3, 4, 5, 6, 7]
+N = [7, 6, 5, 10, 2]
+R = [1, 2, 5, 5, 2, 1]
+Device: cpu, dtype: torch.float64
+#entries 1535 compression 0.0001450302343159486
+
+</pre></div></div>
+</div>
+<p>Random tensors with a given rank and random entries with expected value 0 and given variance can be created using <code class="docutils literal notranslate"><span class="pre">torchtt.randn()</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Variance 1.0</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">randn</span><span class="p">([</span><span class="mi">30</span><span class="p">]</span><span class="o">*</span><span class="mi">5</span><span class="p">,[</span><span class="mi">1</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">x_full</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">full</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Var = '</span><span class="p">,</span><span class="n">tn</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">x_full</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span><span class="s1">' (has to be comparable to 1.0)'</span><span class="p">)</span>
+
+<span class="c1"># Variance 4.0</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">randn</span><span class="p">([</span><span class="mi">30</span><span class="p">]</span><span class="o">*</span><span class="mi">5</span><span class="p">,[</span><span class="mi">1</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span><span class="n">var</span> <span class="o">=</span> <span class="mf">4.0</span><span class="p">)</span>
+<span class="n">x_full</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">full</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Var = '</span><span class="p">,</span><span class="n">tn</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">x_full</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span><span class="s1">' (has to be comparable to 4.0)'</span><span class="p">)</span>
+
+<span class="c1"># Variance 0.01</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">randn</span><span class="p">([</span><span class="mi">30</span><span class="p">]</span><span class="o">*</span><span class="mi">5</span><span class="p">,[</span><span class="mi">1</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="n">var</span> <span class="o">=</span> <span class="mf">0.001</span><span class="p">)</span>
+<span class="n">x_full</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">full</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Var = '</span><span class="p">,</span><span class="n">tn</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">x_full</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span><span class="s1">' (has to be comparable to 0.001)'</span><span class="p">)</span>
+
+<span class="c1"># Variance 1.0 (longer train)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">randn</span><span class="p">([</span><span class="mi">10</span><span class="p">]</span><span class="o">*</span><span class="mi">7</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="n">var</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span>
+<span class="n">x_full</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">full</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Var = '</span><span class="p">,</span><span class="n">tn</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">x_full</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span><span class="s1">' (has to be comparable to 1.0)'</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Var =  0.8806055022985024  (has to be comparable to 1.0)
+Var =  3.1136021195814223  (has to be comparable to 4.0)
+Var =  0.0008934094513731358  (has to be comparable to 0.001)
+Var =  0.6374323197748297  (has to be comparable to 1.0)
+</pre></div></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../docs/examples.html" class="btn btn-neutral float-left" title="Examples" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="basic_linalg.html" class="btn btn-neutral float-right" title="Basic linear algebra in torchTT" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Ion Gabriel Ion.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,485 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TT Manifold and Riemannian Optimization &mdash; torchTT v0.5.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e663822d"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="GPU acceleration" href="gpu_acceleration.html" />
+    <link rel="prev" title="Automatic differentiation" href="automatic_differentiation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            torchtt
+              <img src="https://github.com/ion-g-ion/torchTT/blob/main/logo_small.png?raw=true" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../docs/intro_page.html">Welcome to torchTT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/install.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/package-overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/modules.html">API reference</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../docs/examples.html">Examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#getting-started">Getting Started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#linear-algebra-solvers">Linear Algebra &amp; Solvers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#cross-interpolation">Cross Interpolation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#neural-networks">Neural Networks</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../docs/examples.html#advanced-topics">Advanced Topics</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="automatic_differentiation.html">Automatic differentiation</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">TT Manifold and Riemannian Optimization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Overview">Overview</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Riemannian-Gradient-via-Automatic-Differentiation">Riemannian Gradient via Automatic Differentiation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Why-Riemannian-Optimization?">Why Riemannian Optimization?</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Example-1:-Minimizing-a-Quadratic-Function">Example 1: Minimizing a Quadratic Function</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Example-2:-Manifold-Tensor-Completion">Example 2: Manifold Tensor Completion</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gpu_acceleration.html">GPU acceleration</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">torchtt</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../docs/examples.html">Examples</a></li>
+      <li class="breadcrumb-item active">TT Manifold and Riemannian Optimization</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/examples/manifold.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT v0.5.0</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="TT-Manifold-and-Riemannian-Optimization">
+<h1>TT Manifold and Riemannian Optimization<a class="headerlink" href="#TT-Manifold-and-Riemannian-Optimization" title="Link to this heading"></a></h1>
+<section id="Overview">
+<h2>Overview<a class="headerlink" href="#Overview" title="Link to this heading"></a></h2>
+<p>This notebook demonstrates <strong>Riemannian optimization</strong> on the tensor train (TT) manifold using <code class="docutils literal notranslate"><span class="pre">torchtt</span></code>.</p>
+<p>Tensor trains of fixed ranks form a smooth <strong>Riemannian manifold</strong> <span class="math notranslate nohighlight">\(\mathcal{M}_{\mathbf{r}}\)</span>, meaning we can perform optimization directly on this manifold rather than in the ambient space of all tensors. This approach is particularly powerful for problems where we want to constrain our solution to have a specific TT-rank structure.</p>
+</section>
+<section id="Riemannian-Gradient-via-Automatic-Differentiation">
+<h2>Riemannian Gradient via Automatic Differentiation<a class="headerlink" href="#Riemannian-Gradient-via-Automatic-Differentiation" title="Link to this heading"></a></h2>
+<p>The key insight is that <code class="docutils literal notranslate"><span class="pre">torchtt</span></code> can compute the <strong>Riemannian gradient</strong> using <strong>automatic differentiation (AD)</strong>. Given a smooth function <span class="math notranslate nohighlight">\(f: \mathcal{M}_{\mathbf{r}} \to \mathbb{R}\)</span> and a point <span class="math notranslate nohighlight">\(\mathcal{X}\)</span> on the manifold:</p>
+<ol class="arabic simple">
+<li><p>The Euclidean gradient <span class="math notranslate nohighlight">\(\nabla f(\mathcal{X})\)</span> is computed via PyTorch’s AD</p></li>
+<li><p>This gradient is then <strong>projected onto the tangent space</strong> <span class="math notranslate nohighlight">\(T_{\mathcal{X}}\mathcal{M}_{\mathbf{r}}\)</span> to obtain the Riemannian gradient</p></li>
+</ol>
+<p>The function <code class="docutils literal notranslate"><span class="pre">torchtt.manifold.riemannian_gradient(x,</span> <span class="pre">func)</span></code> handles both steps automatically, making manifold optimization as simple as standard gradient descent.</p>
+</section>
+<section id="Why-Riemannian-Optimization?">
+<h2>Why Riemannian Optimization?<a class="headerlink" href="#Why-Riemannian-Optimization?" title="Link to this heading"></a></h2>
+<p>Compared to standard gradient descent on TT cores:</p>
+<ul class="simple">
+<li><p><strong>Preserves rank structure</strong>: The iterates stay on the manifold of fixed-rank TTs</p></li>
+<li><p><strong>Better conditioning</strong>: Avoids issues with redundant parameterization</p></li>
+<li><p><strong>Faster convergence</strong>: Often requires fewer iterations and larger step sizes</p></li>
+</ul>
+<p>This notebook shows two examples:</p>
+<ol class="arabic simple">
+<li><p><strong>Function minimization</strong>: Finding a TT tensor that minimizes a given objective</p></li>
+<li><p><strong>Tensor completion</strong>: Reconstructing a low-rank tensor from sparse observations</p></li>
+</ol>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tn</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">torchtt</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tntt</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'Installing torchTT...'</span><span class="p">)</span>
+    <span class="o">%</span><span class="k">pip</span> install git+https://github.com/ion-g-ion/torchTT
+    <span class="kn">import</span><span class="w"> </span><span class="nn">torchtt</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tntt</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Example-1:-Minimizing-a-Quadratic-Function">
+<h2>Example 1: Minimizing a Quadratic Function<a class="headerlink" href="#Example-1:-Minimizing-a-Quadratic-Function" title="Link to this heading"></a></h2>
+<p>We create a random target tensor and define a quadratic loss function <span class="math notranslate nohighlight">\(f(\mathcal{X}) = \frac{1}{2}\|\mathcal{X} - \mathcal{T}\|^2\)</span> where <span class="math notranslate nohighlight">\(\mathcal{T}\)</span> is the target. The goal is to find a TT tensor of fixed rank that minimizes this objective.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">N</span> <span class="o">=</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span><span class="mi">11</span><span class="p">,</span><span class="mi">12</span><span class="p">,</span><span class="mi">13</span><span class="p">,</span><span class="mi">14</span><span class="p">]</span>
+<span class="n">Rt</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">Rx</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">target</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="n">Rt</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">func</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">target</span><span class="p">)</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<section id="Riemannian-Gradient-Descent">
+<h3>Riemannian Gradient Descent<a class="headerlink" href="#Riemannian-Gradient-Descent" title="Link to this heading"></a></h3>
+<p>The optimization loop below uses <code class="docutils literal notranslate"><span class="pre">torchtt.manifold.riemannian_gradient()</span></code> to compute the Riemannian gradient at each step. Notice how:</p>
+<ul class="simple">
+<li><p>The gradient is computed automatically via AD — no manual derivation needed</p></li>
+<li><p>A simple retraction (rounding) projects the updated tensor back onto the manifold</p></li>
+<li><p>Convergence is extremely fast, reaching machine precision in just a few iterations</p></li>
+</ul>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">x0</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="n">Rx</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span><span class="n">x0</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">20</span><span class="p">):</span>
+    <span class="c1"># compute riemannian gradient using AD</span>
+    <span class="n">gr</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">manifold</span><span class="o">.</span><span class="n">riemannian_gradient</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">func</span><span class="p">)</span>
+
+    <span class="c1">#stepsize length</span>
+    <span class="n">alpha</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+    <span class="c1"># update step</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">alpha</span><span class="o">*</span><span class="n">gr</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">Rx</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'Value '</span> <span class="p">,</span> <span class="n">func</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Value  198043.7594408848
+Value  161702.02598821177
+Value  71389.60114411256
+Value  23698.57390652948
+Value  2460.4626114669804
+Value  0.9337952947342707
+Value  1.815510743155269e-09
+Value  9.409020444391612e-25
+Value  1.479598700080797e-24
+Value  1.5548277884655298e-24
+Value  2.969944199121008e-24
+Value  7.059492707508358e-25
+Value  1.7110194779310687e-24
+Value  8.010955421507427e-25
+Value  1.1671818921822796e-24
+Value  1.1501295103843825e-24
+Value  6.074575267741516e-25
+Value  6.251762467634565e-25
+Value  8.579854638729817e-25
+Value  7.778999496013356e-25
+</pre></div></div>
+</div>
+</section>
+<section id="Comparison:-Standard-Gradient-Descent-on-TT-Cores">
+<h3>Comparison: Standard Gradient Descent on TT Cores<a class="headerlink" href="#Comparison:-Standard-Gradient-Descent-on-TT-Cores" title="Link to this heading"></a></h3>
+<p>As a comparison, we perform conventional gradient descent with respect to the TT cores (the ambient space parameterization). Notice the dramatic difference:</p>
+<ul class="simple">
+<li><p><strong>Much smaller step size</strong> required for stability (<code class="docutils literal notranslate"><span class="pre">α</span> <span class="pre">=</span> <span class="pre">0.00001</span></code> vs <code class="docutils literal notranslate"><span class="pre">α</span> <span class="pre">=</span> <span class="pre">1.0</span></code>)</p></li>
+<li><p><strong>Slower convergence</strong>: Even after 1000 iterations, the loss is orders of magnitude higher</p></li>
+<li><p>The Riemannian approach avoids the ill-conditioning inherent in the TT core parameterization</p></li>
+</ul>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">y</span> <span class="o">=</span> <span class="n">x0</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1000</span><span class="p">):</span>
+    <span class="n">tntt</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">watch</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+    <span class="n">fval</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+    <span class="n">deriv</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="n">fval</span><span class="p">,</span><span class="n">y</span><span class="p">)</span>
+    <span class="n">alpha</span> <span class="o">=</span> <span class="mf">0.00001</span> <span class="c1"># for stability</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">TT</span><span class="p">([</span><span class="n">y</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">-</span><span class="n">alpha</span><span class="o">*</span><span class="n">deriv</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">deriv</span><span class="p">))])</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="k">100</span> == 0: print(func(y))
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+tensor(199489.7611, dtype=torch.float64)
+tensor(199176.1922, dtype=torch.float64)
+tensor(193181.5858, dtype=torch.float64)
+tensor(86946.0497, dtype=torch.float64)
+tensor(18060.0565, dtype=torch.float64)
+tensor(6145.5984, dtype=torch.float64)
+tensor(3902.7198, dtype=torch.float64)
+tensor(2690.0054, dtype=torch.float64)
+tensor(1782.9748, dtype=torch.float64)
+tensor(1109.8465, dtype=torch.float64)
+</pre></div></div>
+</div>
+</section>
+</section>
+<section id="Example-2:-Manifold-Tensor-Completion">
+<h2>Example 2: Manifold Tensor Completion<a class="headerlink" href="#Example-2:-Manifold-Tensor-Completion" title="Link to this heading"></a></h2>
+<p>A powerful application of Riemannian optimization is <strong>tensor completion</strong> — reconstructing a low-rank tensor from sparse, potentially noisy observations.</p>
+<p>Given:</p>
+<ul class="simple">
+<li><p>A set of observed indices <span class="math notranslate nohighlight">\(\Omega = \{(i_1^{(k)}, \ldots, i_d^{(k)})\}_{k=1}^{M}\)</span></p></li>
+<li><p>Noisy observations <span class="math notranslate nohighlight">\(y_k = \mathcal{T}_{i_1^{(k)}, \ldots, i_d^{(k)}} + \epsilon_k\)</span></p></li>
+</ul>
+<p>We minimize the least-squares loss:</p>
+<div class="math notranslate nohighlight">
+\[f(\mathcal{X}) = \sum_{k=1}^{M} \left(\mathcal{X}_{i_1^{(k)}, \ldots, i_d^{(k)}} - y_k\right)^2\]</div>
+<p>The Riemannian gradient is again computed via AD using <code class="docutils literal notranslate"><span class="pre">torchtt.manifold.riemannian_gradient()</span></code>. This is particularly useful because:</p>
+<ul class="simple">
+<li><p>The loss involves only sparse evaluations (not the full tensor)</p></li>
+<li><p>The gradient projection onto the tangent space is handled automatically</p></li>
+<li><p>We can recover tensors even when observing a tiny fraction of the entries</p></li>
+</ul>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">N</span> <span class="o">=</span> <span class="mi">25</span>
+<span class="n">target</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">randn</span><span class="p">([</span><span class="n">N</span><span class="p">]</span><span class="o">*</span><span class="mi">4</span><span class="p">,[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">Xs</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">([</span><span class="n">tn</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">N</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">float64</span><span class="p">)]</span><span class="o">*</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">target</span> <span class="o">=</span> <span class="n">Xs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="o">+</span><span class="n">Xs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">Xs</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">+</span><span class="n">Xs</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">+</span><span class="n">Xs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">Xs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">Xs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">Xs</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">+</span><span class="n">tntt</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">Xs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">full</span><span class="p">()))</span>
+<span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mf">1e-10</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">target</span><span class="o">.</span><span class="n">R</span><span class="p">)</span>
+
+<span class="n">M</span> <span class="o">=</span> <span class="mi">15000</span> <span class="c1"># number of observations</span>
+<span class="n">indices</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">N</span><span class="p">,(</span><span class="n">M</span><span class="p">,</span><span class="mi">4</span><span class="p">))</span>
+
+<span class="c1"># observations are considered to be noisy</span>
+<span class="n">sigma_noise</span> <span class="o">=</span> <span class="mf">0.00001</span>
+<span class="n">obs</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">target</span><span class="o">.</span><span class="n">apply_mask</span><span class="p">(</span><span class="n">indices</span><span class="p">),</span> <span class="n">sigma_noise</span><span class="p">)</span>
+
+<span class="c1"># define the loss function</span>
+<span class="n">loss</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">apply_mask</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span><span class="o">-</span><span class="n">obs</span><span class="p">)</span><span class="o">.</span><span class="n">norm</span><span class="p">()</span><span class="o">**</span><span class="mi">2</span>
+
+<span class="c1">#%% Manifold learning</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Riemannian gradient descent</span><span class="se">\n</span><span class="s1">'</span><span class="p">)</span>
+<span class="c1"># starting point</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">randn</span><span class="p">([</span><span class="n">N</span><span class="p">]</span><span class="o">*</span><span class="mi">4</span><span class="p">,[</span><span class="mi">1</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+
+<span class="n">tme</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+<span class="c1"># iterations</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10000</span><span class="p">):</span>
+    <span class="c1"># manifold gradient</span>
+    <span class="n">gr</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">manifold</span><span class="o">.</span><span class="n">riemannian_gradient</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">loss</span><span class="p">)</span>
+
+    <span class="n">step_size</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">R</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">R</span>
+    <span class="c1"># step update</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">step_size</span> <span class="o">*</span> <span class="n">gr</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">R</span><span class="p">)</span>
+
+    <span class="c1"># compute loss value</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="k">100</span> == 0:
+        <span class="n">loss_value</span> <span class="o">=</span> <span class="n">loss</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">'Iteration </span><span class="si">%4d</span><span class="s1"> loss value </span><span class="si">%e</span><span class="s1"> error </span><span class="si">%e</span><span class="s1"> tensor norm </span><span class="si">%e</span><span class="s1">'</span><span class="o">%</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">loss_value</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),(</span><span class="n">x</span><span class="o">-</span><span class="n">target</span><span class="p">)</span><span class="o">.</span><span class="n">norm</span><span class="p">()</span><span class="o">/</span><span class="n">target</span><span class="o">.</span><span class="n">norm</span><span class="p">(),</span> <span class="n">x</span><span class="o">.</span><span class="n">norm</span><span class="p">()</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+
+<span class="n">tme</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">tme</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">''</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Time elapsed'</span><span class="p">,</span><span class="n">tme</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Number of observations </span><span class="si">%d</span><span class="s1">, tensor shape </span><span class="si">%s</span><span class="s1">, percentage of entries observed </span><span class="si">%6.4f</span><span class="s1">'</span><span class="o">%</span><span class="p">(</span><span class="n">M</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">N</span><span class="p">),</span><span class="mi">100</span><span class="o">*</span><span class="n">M</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">N</span><span class="p">)))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Number of unknowns </span><span class="si">%d</span><span class="s1">, number of observations </span><span class="si">%d</span><span class="s1">, DoF/observations </span><span class="si">%.6f</span><span class="s1">'</span><span class="o">%</span><span class="p">(</span><span class="n">tntt</span><span class="o">.</span><span class="n">numel</span><span class="p">(</span><span class="n">x</span><span class="p">),</span><span class="n">M</span><span class="p">,</span><span class="n">tntt</span><span class="o">.</span><span class="n">numel</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">/</span><span class="n">M</span><span class="p">))</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Rank after rounding'</span><span class="p">,</span><span class="n">x</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mf">1e-6</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[1, 3, 3, 2, 1]
+Riemannian gradient descent
+
+Iteration  100 loss value 2.835414e+02 error 7.095354e-02 tensor norm 6.438727e+06
+Iteration  200 loss value 1.564026e+02 error 5.716689e-02 tensor norm 6.570423e+06
+Iteration  300 loss value 7.340437e+01 error 4.943336e-02 tensor norm 6.582769e+06
+Iteration  400 loss value 4.401695e+01 error 4.601466e-02 tensor norm 6.586063e+06
+Iteration  500 loss value 3.480826e+01 error 4.460205e-02 tensor norm 6.586760e+06
+Iteration  600 loss value 3.336573e+01 error 4.413909e-02 tensor norm 6.587039e+06
+Iteration  700 loss value 3.175818e+01 error 4.368099e-02 tensor norm 6.587212e+06
+Iteration  800 loss value 2.895179e+01 error 4.290056e-02 tensor norm 6.587260e+06
+Iteration  900 loss value 2.442120e+01 error 4.159506e-02 tensor norm 6.586853e+06
+Iteration 1000 loss value 1.837452e+01 error 3.981241e-02 tensor norm 6.585507e+06
+Iteration 1100 loss value 1.143451e+01 error 3.807197e-02 tensor norm 6.583487e+06
+Iteration 1200 loss value 6.860995e+00 error 3.674023e-02 tensor norm 6.581799e+06
+Iteration 1300 loss value 3.933710e+00 error 3.574334e-02 tensor norm 6.580529e+06
+Iteration 1400 loss value 2.447444e+00 error 3.506999e-02 tensor norm 6.579593e+06
+Iteration 1500 loss value 1.509968e+00 error 3.457828e-02 tensor norm 6.578953e+06
+Iteration 1600 loss value 8.928927e-01 error 3.427316e-02 tensor norm 6.578572e+06
+Iteration 1700 loss value 5.786926e-01 error 3.407428e-02 tensor norm 6.578382e+06
+Iteration 1800 loss value 3.306242e-01 error 3.393152e-02 tensor norm 6.578289e+06
+Iteration 1900 loss value 1.931639e-01 error 3.383940e-02 tensor norm 6.578253e+06
+Iteration 2000 loss value 1.021285e-01 error 3.378516e-02 tensor norm 6.578264e+06
+Iteration 2100 loss value 5.196498e-02 error 3.375590e-02 tensor norm 6.578287e+06
+Iteration 2200 loss value 2.782952e-02 error 3.373978e-02 tensor norm 6.578301e+06
+Iteration 2300 loss value 1.667637e-02 error 3.372975e-02 tensor norm 6.578304e+06
+Iteration 2400 loss value 1.121847e-02 error 3.372262e-02 tensor norm 6.578300e+06
+Iteration 2500 loss value 8.206944e-03 error 3.371708e-02 tensor norm 6.578290e+06
+Iteration 2600 loss value 6.315916e-03 error 3.371260e-02 tensor norm 6.578279e+06
+Iteration 2700 loss value 5.002699e-03 error 3.370891e-02 tensor norm 6.578268e+06
+Iteration 2800 loss value 4.029615e-03 error 3.370584e-02 tensor norm 6.578257e+06
+Iteration 2900 loss value 3.280340e-03 error 3.370329e-02 tensor norm 6.578246e+06
+Iteration 3000 loss value 2.690207e-03 error 3.370117e-02 tensor norm 6.578237e+06
+Iteration 3100 loss value 2.218880e-03 error 3.369939e-02 tensor norm 6.578229e+06
+Iteration 3200 loss value 1.838926e-03 error 3.369790e-02 tensor norm 6.578221e+06
+Iteration 3300 loss value 1.530572e-03 error 3.369665e-02 tensor norm 6.578215e+06
+Iteration 3400 loss value 1.279022e-03 error 3.369559e-02 tensor norm 6.578209e+06
+Iteration 3500 loss value 1.072939e-03 error 3.369470e-02 tensor norm 6.578204e+06
+Iteration 3600 loss value 9.034909e-04 error 3.369395e-02 tensor norm 6.578199e+06
+Iteration 3700 loss value 7.637210e-04 error 3.369331e-02 tensor norm 6.578195e+06
+Iteration 3800 loss value 6.480980e-04 error 3.369276e-02 tensor norm 6.578191e+06
+Iteration 3900 loss value 5.521954e-04 error 3.369229e-02 tensor norm 6.578188e+06
+Iteration 4000 loss value 4.724499e-04 error 3.369189e-02 tensor norm 6.578185e+06
+Iteration 4100 loss value 4.059799e-04 error 3.369154e-02 tensor norm 6.578182e+06
+Iteration 4200 loss value 3.504455e-04 error 3.369124e-02 tensor norm 6.578180e+06
+Iteration 4300 loss value 3.039398e-04 error 3.369098e-02 tensor norm 6.578178e+06
+Iteration 4400 loss value 2.649045e-04 error 3.369075e-02 tensor norm 6.578176e+06
+Iteration 4500 loss value 2.320622e-04 error 3.369054e-02 tensor norm 6.578175e+06
+Iteration 4600 loss value 2.043636e-04 error 3.369037e-02 tensor norm 6.578173e+06
+Iteration 4700 loss value 1.809446e-04 error 3.369021e-02 tensor norm 6.578172e+06
+Iteration 4800 loss value 1.610926e-04 error 3.369006e-02 tensor norm 6.578171e+06
+Iteration 4900 loss value 1.442184e-04 error 3.368994e-02 tensor norm 6.578170e+06
+Iteration 5000 loss value 1.298341e-04 error 3.368982e-02 tensor norm 6.578169e+06
+Iteration 5100 loss value 1.175355e-04 error 3.368972e-02 tensor norm 6.578168e+06
+Iteration 5200 loss value 1.069866e-04 error 3.368962e-02 tensor norm 6.578168e+06
+Iteration 5300 loss value 9.790816e-05 error 3.368953e-02 tensor norm 6.578167e+06
+Iteration 5400 loss value 9.006754e-05 error 3.368945e-02 tensor norm 6.578167e+06
+Iteration 5500 loss value 8.327080e-05 error 3.368938e-02 tensor norm 6.578166e+06
+Iteration 5600 loss value 7.735601e-05 error 3.368931e-02 tensor norm 6.578166e+06
+Iteration 5700 loss value 7.218779e-05 error 3.368925e-02 tensor norm 6.578166e+06
+Iteration 5800 loss value 6.765283e-05 error 3.368919e-02 tensor norm 6.578165e+06
+Iteration 5900 loss value 6.365614e-05 error 3.368913e-02 tensor norm 6.578165e+06
+Iteration 6000 loss value 6.011804e-05 error 3.368908e-02 tensor norm 6.578165e+06
+Iteration 6100 loss value 5.697154e-05 error 3.368902e-02 tensor norm 6.578165e+06
+Iteration 6200 loss value 5.416030e-05 error 3.368898e-02 tensor norm 6.578165e+06
+Iteration 6300 loss value 5.163683e-05 error 3.368893e-02 tensor norm 6.578165e+06
+Iteration 6400 loss value 4.936106e-05 error 3.368889e-02 tensor norm 6.578165e+06
+Iteration 6500 loss value 4.729913e-05 error 3.368884e-02 tensor norm 6.578165e+06
+Iteration 6600 loss value 4.542238e-05 error 3.368880e-02 tensor norm 6.578165e+06
+Iteration 6700 loss value 4.370652e-05 error 3.368877e-02 tensor norm 6.578165e+06
+Iteration 6800 loss value 4.213089e-05 error 3.368873e-02 tensor norm 6.578165e+06
+Iteration 6900 loss value 4.067795e-05 error 3.368869e-02 tensor norm 6.578165e+06
+Iteration 7000 loss value 3.933271e-05 error 3.368866e-02 tensor norm 6.578165e+06
+Iteration 7100 loss value 3.808240e-05 error 3.368862e-02 tensor norm 6.578165e+06
+Iteration 7200 loss value 3.691605e-05 error 3.368859e-02 tensor norm 6.578166e+06
+Iteration 7300 loss value 3.582426e-05 error 3.368856e-02 tensor norm 6.578166e+06
+Iteration 7400 loss value 3.479897e-05 error 3.368853e-02 tensor norm 6.578166e+06
+Iteration 7500 loss value 3.383319e-05 error 3.368850e-02 tensor norm 6.578166e+06
+Iteration 7600 loss value 3.292090e-05 error 3.368847e-02 tensor norm 6.578166e+06
+Iteration 7700 loss value 3.205688e-05 error 3.368844e-02 tensor norm 6.578166e+06
+Iteration 7800 loss value 3.123657e-05 error 3.368842e-02 tensor norm 6.578167e+06
+Iteration 7900 loss value 3.045602e-05 error 3.368839e-02 tensor norm 6.578167e+06
+Iteration 8000 loss value 2.971177e-05 error 3.368837e-02 tensor norm 6.578167e+06
+Iteration 8100 loss value 2.900076e-05 error 3.368834e-02 tensor norm 6.578167e+06
+Iteration 8200 loss value 2.832031e-05 error 3.368832e-02 tensor norm 6.578167e+06
+Iteration 8300 loss value 2.766807e-05 error 3.368829e-02 tensor norm 6.578168e+06
+Iteration 8400 loss value 2.704194e-05 error 3.368827e-02 tensor norm 6.578168e+06
+Iteration 8500 loss value 2.644004e-05 error 3.368825e-02 tensor norm 6.578168e+06
+Iteration 8600 loss value 2.586071e-05 error 3.368822e-02 tensor norm 6.578168e+06
+Iteration 8700 loss value 2.530246e-05 error 3.368820e-02 tensor norm 6.578169e+06
+Iteration 8800 loss value 2.476395e-05 error 3.368818e-02 tensor norm 6.578169e+06
+Iteration 8900 loss value 2.424398e-05 error 3.368816e-02 tensor norm 6.578169e+06
+Iteration 9000 loss value 2.374144e-05 error 3.368814e-02 tensor norm 6.578169e+06
+Iteration 9100 loss value 2.325534e-05 error 3.368812e-02 tensor norm 6.578169e+06
+Iteration 9200 loss value 2.278479e-05 error 3.368810e-02 tensor norm 6.578170e+06
+Iteration 9300 loss value 2.232895e-05 error 3.368808e-02 tensor norm 6.578170e+06
+Iteration 9400 loss value 2.188707e-05 error 3.368806e-02 tensor norm 6.578170e+06
+Iteration 9500 loss value 2.145846e-05 error 3.368805e-02 tensor norm 6.578170e+06
+Iteration 9600 loss value 2.104246e-05 error 3.368803e-02 tensor norm 6.578170e+06
+Iteration 9700 loss value 2.063850e-05 error 3.368801e-02 tensor norm 6.578171e+06
+Iteration 9800 loss value 2.024601e-05 error 3.368799e-02 tensor norm 6.578171e+06
+Iteration 9900 loss value 1.986450e-05 error 3.368798e-02 tensor norm 6.578171e+06
+Iteration 10000 loss value 1.949349e-05 error 3.368796e-02 tensor norm 6.578171e+06
+
+Time elapsed 0:01:34.523436
+Number of observations 15000, tensor shape [25, 25, 25, 25], percentage of entries observed 3.8400
+Number of unknowns 1000, number of observations 15000, DoF/observations 0.066667
+Rank after rounding TT with sizes and ranks:
+N = [25, 25, 25, 25]
+R = [1, 4, 4, 4, 1]
+
+Device: cpu, dtype: torch.float64
+#entries 1000 compression 0.00256
+
+</pre></div></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="automatic_differentiation.html" class="btn btn-neutral float-left" title="Automatic differentiation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="gpu_acceleration.html" class="btn btn-neutral float-right" title="GPU acceleration" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Ion Gabriel Ion.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

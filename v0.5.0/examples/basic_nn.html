@@ -1,0 +1,324 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tensor Train layers for neural networks &mdash; torchTT v0.5.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e663822d"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Digit Recognition using Tensor Train (TT) Neural Networks" href="mnist_nn.html" />
+    <link rel="prev" title="Cross approximation in the TT format" href="cross_interpolation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            torchtt
+              <img src="https://github.com/ion-g-ion/torchTT/blob/main/logo_small.png?raw=true" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../docs/intro_page.html">Welcome to torchTT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/install.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/package-overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/modules.html">API reference</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../docs/examples.html">Examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#getting-started">Getting Started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#linear-algebra-solvers">Linear Algebra &amp; Solvers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#cross-interpolation">Cross Interpolation</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../docs/examples.html#neural-networks">Neural Networks</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Tensor Train layers for neural networks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mnist_nn.html">Digit Recognition using Tensor Train (TT) Neural Networks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="deep_tt_density.html">Deep TT Density demo</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#advanced-topics">Advanced Topics</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">torchtt</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../docs/examples.html">Examples</a></li>
+      <li class="breadcrumb-item active">Tensor Train layers for neural networks</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/examples/basic_nn.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT v0.5.0</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="Tensor-Train-layers-for-neural-networks">
+<h1>Tensor Train layers for neural networks<a class="headerlink" href="#Tensor-Train-layers-for-neural-networks" title="Link to this heading"></a></h1>
+<p>In this section, the TT layers are introduced.</p>
+<p>Imports:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tn</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">torchtt</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tntt</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'Installing torchTT...'</span><span class="p">)</span>
+    <span class="o">%</span><span class="k">pip</span> install git+https://github.com/ion-g-ion/torchTT
+    <span class="kn">import</span><span class="w"> </span><span class="nn">torchtt</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tntt</span>
+</pre></div>
+</div>
+</div>
+<p>We consider a linear layer <span class="math notranslate nohighlight">\(\mathcal{LTT}(\mathsf{x}) = \mathsf{Wx}+\mathsf{b}\)</span> acting on a tensor input <span class="math notranslate nohighlight">\(\mathsf{x}\)</span> of shape <span class="math notranslate nohighlight">\(n_1 \times \cdots \times n_d\)</span> and returning a tensor of shape <span class="math notranslate nohighlight">\(m_1\times\cdots\times m_d\)</span>. The corresponding weight matrix <span class="math notranslate nohighlight">\(\mathsf{W}\)</span> would have the shape <span class="math notranslate nohighlight">\((m_1\times\cdots\times m_d) \times (n_1 \times \cdots \times n_d)\)</span>. The goal is to represent the weights tensor operator in TT format and perform the learning with respect tot
+the cores of the TT decomposition (ranks have to be fixed a priori). Due to the AD functionality of <code class="docutils literal notranslate"><span class="pre">torchtt</span></code>, the gradient with respect tot the cores can be computed for any network structure. TT layers can be added using <code class="docutils literal notranslate"><span class="pre">torchtt.nn.LinearLayerTT()</span></code> class.</p>
+<p>In the following, a neural netywork with 3 hidden layers and one linear layer is created. The shapes of the individual layers are</p>
+<p><span class="math notranslate nohighlight">\(\mathbb{R}^{16} \times\mathbb{R}^{16} \times\mathbb{R}^{16} \times\mathbb{R}^{16} \underset{}{\longrightarrow} \mathbb{R}^8 \times\mathbb{R}^8 \times\mathbb{R}^8 \times\mathbb{R}^8 \underset{}{\longrightarrow} \mathbb{R}^4 \times\mathbb{R}^4 \times\mathbb{R}^4 \times\mathbb{R}^4 \underset{}{\longrightarrow} \mathbb{R}^2 \times\mathbb{R}^4 \times\mathbb{R}^2 \times\mathbb{R}^4 \underset{}{\longrightarrow} \mathbb{R}^{10}\)</span>.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">BasicTT</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ttl1</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">LinearLayerTT</span><span class="p">([</span><span class="mi">16</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">16</span><span class="p">],</span> <span class="p">[</span><span class="mi">8</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">8</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ttl2</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">LinearLayerTT</span><span class="p">([</span><span class="mi">8</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">8</span><span class="p">],</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ttl3</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">LinearLayerTT</span><span class="p">([</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">4</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">linear</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">64</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ttl1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ttl2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ttl3</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">x</span><span class="p">,[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">64</span><span class="p">])</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>Create the model and print the number of trainable parameters as well as the model structure.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">BasicTT</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Number of trainable parameters:'</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">())))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Number of trainable parameters: 17
+BasicTT(
+  (ttl1): LinearLayerTT(
+    (cores): ParameterList(
+        (0): Parameter containing: [torch.float32 of size 1x8x16x3]
+        (1): Parameter containing: [torch.float32 of size 3x8x16x3]
+        (2): Parameter containing: [torch.float32 of size 3x8x16x3]
+        (3): Parameter containing: [torch.float32 of size 3x8x16x1]
+    )
+  )
+  (ttl2): LinearLayerTT(
+    (cores): ParameterList(
+        (0): Parameter containing: [torch.float32 of size 1x4x8x2]
+        (1): Parameter containing: [torch.float32 of size 2x4x8x2]
+        (2): Parameter containing: [torch.float32 of size 2x4x8x2]
+        (3): Parameter containing: [torch.float32 of size 2x4x8x1]
+    )
+  )
+  (ttl3): LinearLayerTT(
+    (cores): ParameterList(
+        (0): Parameter containing: [torch.float32 of size 1x2x4x2]
+        (1): Parameter containing: [torch.float32 of size 2x4x4x2]
+        (2): Parameter containing: [torch.float32 of size 2x2x4x2]
+        (3): Parameter containing: [torch.float32 of size 2x4x4x1]
+    )
+  )
+  (linear): Linear(in_features=64, out_features=10, bias=True)
+)
+</pre></div></div>
+</div>
+<p>A random input is created and passed as argument to the model. Batch evaluation is also possible by extending the dimensionality of the input before the leading mode.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">input</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">rand</span><span class="p">((</span><span class="mi">16</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">16</span><span class="p">),</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+
+<span class="n">input_batch</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">rand</span><span class="p">((</span><span class="mi">1000</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">16</span><span class="p">),</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">label_batch</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">rand</span><span class="p">((</span><span class="mi">1000</span><span class="p">,</span><span class="mi">10</span><span class="p">),</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="o">%</span><span class="k">time</span> pred = model.forward(input_batch)
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+CPU times: user 3.61 s, sys: 2.22 s, total: 5.84 s
+Wall time: 450 ms
+</pre></div></div>
+</div>
+<p>The obtained network can be trained similarily to other <code class="docutils literal notranslate"><span class="pre">torch</span></code> models. A loss function together with an optimizer are defined.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">criterion</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">CrossEntropyLoss</span><span class="p">()</span>
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span> <span class="o">=</span> <span class="mf">0.001</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>A training loop is executed to exemplify the training parameters update procedure. An example where a true dataset is used is presented <a class="reference external" href="https://github.com/ion-g-ion/torchTT/blob/main/examples/mnist_nn.ipynb">here</a>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span>
+
+    <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+
+    <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">input_batch</span><span class="p">)</span>
+    <span class="n">loss</span> <span class="o">=</span> <span class="n">criterion</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="n">label_batch</span><span class="p">)</span>
+    <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+    <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+
+    <span class="c1"># print statistics</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'Epoch </span><span class="si">%d</span><span class="s1">, loss </span><span class="si">%e</span><span class="s1">'</span><span class="o">%</span><span class="p">(</span><span class="n">epoch</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">()))</span>
+
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Finished Training'</span><span class="p">)</span>
+<span class="o">%</span><span class="k">time</span> plm = model(input_batch)
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Epoch 1, loss 1.196611e+01
+Epoch 2, loss 1.182479e+01
+Epoch 3, loss 1.174133e+01
+Epoch 4, loss 1.169423e+01
+Epoch 5, loss 1.166731e+01
+Finished Training
+CPU times: user 3.85 s, sys: 1.79 s, total: 5.64 s
+Wall time: 499 ms
+</pre></div></div>
+</div>
+<p>If the GPU is available, the model can be run on it to get a speedup (should be run 2 times to see the speedup due to CUDA warm-up).</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">tn</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">():</span>
+    <span class="n">model_gpu</span> <span class="o">=</span> <span class="n">BasicTT</span><span class="p">()</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
+    <span class="n">input_batch_gpu</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">rand</span><span class="p">((</span><span class="mi">400</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">16</span><span class="p">))</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
+
+    <span class="n">input_batch</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">rand</span><span class="p">((</span><span class="mi">400</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">16</span><span class="p">))</span>
+    <span class="n">tme</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+    <span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="n">input_batch</span><span class="p">)</span>
+    <span class="n">tme</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">tme</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'Time on CPU '</span><span class="p">,</span><span class="n">tme</span><span class="p">)</span>
+
+    <span class="n">tme</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+    <span class="n">pred_gpu</span> <span class="o">=</span> <span class="n">model_gpu</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="n">input_batch_gpu</span><span class="p">)</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span>
+    <span class="n">tme</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">tme</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'Time on GPU '</span><span class="p">,</span><span class="n">tme</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Time on CPU  0:00:00.232971
+Time on GPU  0:00:00.003855
+</pre></div></div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="cross_interpolation.html" class="btn btn-neutral float-left" title="Cross approximation in the TT format" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="mnist_nn.html" class="btn btn-neutral float-right" title="Digit Recognition using Tensor Train (TT) Neural Networks" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Ion Gabriel Ion.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
