@@ -1,0 +1,323 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# GPU acceleration\n",
+    "\n",
+    "The package `torchtt` can use the built-in GPU acceleration from `pytorch`.\n",
+    "The tensor can be moved to the desired device using the `.to()` method.\n",
+    "\n",
+    "Imports and check if any CUDA device is available."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "CUDA available: True\n",
+      "Device name: NVIDIA GeForce RTX 4090 Laptop GPU\n"
+     ]
+    }
+   ],
+   "source": [
+    "import datetime\n",
+    "import torch as tn\n",
+    "try: \n",
+    "    import torchtt as tntt\n",
+    "except:\n",
+    "    print('Installing torchTT...')\n",
+    "    %pip install git+https://github.com/ion-g-ion/torchTT\n",
+    "    import torchtt as tntt\n",
+    "    \n",
+    "print('CUDA available:',tn.cuda.is_available())\n",
+    "print('Device name: ' + tn.cuda.get_device_name())"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Define a function to test. It performs 2 matrix vector products in TT-format and a rank rounding.\n",
+    "The return result is a scalar."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def f(x,A,y):\n",
+    "    \"\"\"\n",
+    "    fonction that performs operations of tensors in TT.\n",
+    "\n",
+    "    Args:\n",
+    "        x (tnt.TT): input TT tensor\n",
+    "        A (tnt.TT): input TT matrix\n",
+    "        y (tnt.TT): input TT tensor\n",
+    "\n",
+    "    Returns:\n",
+    "        torch.tensor: result\n",
+    "    \"\"\"\n",
+    "    z = A @ y + A @ y # operatio that grows the rank\n",
+    "    z = z.round(1e-12) # rank rounding (contains QR and SVD decomposition)\n",
+    "    z += z+x # some other operation\n",
+    "    return tntt.dot(x,z) # contract the tensor"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Generate random tensors in the TT-format (on the CPU)."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "x = tntt.random([200,300,400,500],[1,8,8,8,1])\n",
+    "y = tntt.random([200,300,400,500],[1,8,8,8,1])\n",
+    "A = tntt.random([(200,200),(300,300),(400,400),(500,500)],[1,8,8,8,1])"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Run the function `f()` and report the time."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Time on CPU:  0:00:00.630195\n"
+     ]
+    }
+   ],
+   "source": [
+    "tme_cpu = datetime.datetime.now()\n",
+    "f(x,A,y) \n",
+    "tme_cpu = datetime.datetime.now() - tme_cpu\n",
+    "print('Time on CPU: ',tme_cpu)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Move the defined tensors on GPU. Similarily to `pytorch` tensors one can use the function `cuda()` to return a copy of a TT instance on the GPU.\n",
+    "All the cores of the returned TT object are on the GPU."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "cuda_name = 'cuda:0'\n",
+    "x = x.to(cuda_name)\n",
+    "y = y.to(cuda_name)\n",
+    "A = A.to(cuda_name)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The function is executed once without timing to \"warm-up\" the CUDA."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "tensor(0., dtype=torch.float64)"
+      ]
+     },
+     "execution_count": 6,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "f(x*0,A*0,0*y).cpu()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Run the function again. This time the runtime is reported. The return value is moved to CPU to assure blocking until all computations are done."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Time with CUDA:  0:00:00.196770\n"
+     ]
+    }
+   ],
+   "source": [
+    "tme_gpu = datetime.datetime.now()\n",
+    "f(x,A,y).cpu()\n",
+    "tme_gpu = datetime.datetime.now() - tme_gpu\n",
+    "print('Time with CUDA: ',tme_gpu)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The speedup is reported:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Speedup:  3.20269858210093  times.\n"
+     ]
+    }
+   ],
+   "source": [
+    "print('Speedup: ',tme_cpu.total_seconds()/tme_gpu.total_seconds(),' times.')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "This time we perform the same test without using the rank rounding. The expected result is better since the rank rounding contains QR and SVD which are not that parallelizable."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def g(x,A,y):\n",
+    "    \"\"\"\n",
+    "    fonction that performs operations of tensors in TT.\n",
+    "\n",
+    "    Args:\n",
+    "        x (tnt.TT): input TT tensor\n",
+    "        A (tnt.TT): input TT matrix\n",
+    "        y (tnt.TT): input TT tensor\n",
+    "\n",
+    "    Returns:\n",
+    "        torch.tensor: result\n",
+    "    \"\"\"\n",
+    "    z = A @ y + A @ y # operatio that grows the rank\n",
+    "    z += z+x # some other operation\n",
+    "    return tntt.dot(x,z) # contract the tensor"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Time on CPU:  0:00:00.434796\n",
+      "Time with CUDA:  0:00:00.030479\n",
+      "Speedup:  14.265428655795795  times.\n"
+     ]
+    }
+   ],
+   "source": [
+    "# put tensors on CPU\n",
+    "x, y, A = x.cpu(), y.cpu(), A.cpu()\n",
+    "# perform the test\n",
+    "tme_cpu = datetime.datetime.now()\n",
+    "g(x,A,y) \n",
+    "tme_cpu = datetime.datetime.now() - tme_cpu\n",
+    "print('Time on CPU: ',tme_cpu)\n",
+    "# move the tensors back to GPU\n",
+    "x, y, A = x.to(cuda_name), y.cuda(cuda_name), A.cuda(cuda_name)\n",
+    "# execute the function\n",
+    "tme_gpu = datetime.datetime.now()\n",
+    "g(x,A,y).cpu()\n",
+    "tme_gpu = datetime.datetime.now() - tme_gpu\n",
+    "print('Time with CUDA: ',tme_gpu)\n",
+    "\n",
+    "print('Speedup: ',tme_cpu.total_seconds()/tme_gpu.total_seconds(),' times.')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "A tensor can be copied to a differenct device using the `torchtt.TT.to()` method. Usage is similar to `torch.tensor.to()`."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "dev = tn.cuda.current_device()\n",
+    "x_cuda = x.to(dev)\n",
+    "x_cpu = x_cuda.to(None)"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": ".venv",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.12.3"
+  },
+  "orig_nbformat": 4
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}

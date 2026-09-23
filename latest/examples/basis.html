@@ -1,0 +1,745 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Univariate Basis Functions: B-Splines &mdash; torchTT development (main @ ff5a3fd) documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e6c4269e"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Tensor Train layers for neural networks" href="basic_nn.html" />
+    <link rel="prev" title="Cross approximation in the TT format" href="cross_interpolation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            torchtt
+              <img src="https://github.com/ion-g-ion/torchTT/blob/main/logo_small.png?raw=true" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../docs/intro_page.html">Welcome to torchTT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/install.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/package-overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/modules.html">API reference</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../docs/examples.html">Examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#getting-started">Getting Started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#linear-algebra-solvers">Linear Algebra &amp; Solvers</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../docs/examples.html#cross-interpolation">Cross Interpolation</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="cross_interpolation.html">Cross approximation in the TT format</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Univariate Basis Functions: B-Splines</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Creating-B-Spline-Bases-of-Different-Degrees">Creating B-Spline Bases of Different Degrees</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Visualizing-the-Basis-Functions">Visualizing the Basis Functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Interpolation-with-B-Splines">Interpolation with B-Splines</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Integration-Weights-of-Individual-Basis-Functions">Integration Weights of Individual Basis Functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Automatic-Differentiation-with-B-Splines">Automatic Differentiation with B-Splines</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Basis-Derivatives">Basis Derivatives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Boundary-Modes:-Zero-Boundaries-and-Unbounded-Domains">Boundary Modes: Zero Boundaries and Unbounded Domains</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#Gaussian-Basis-Functions">Gaussian Basis Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#neural-networks">Neural Networks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#advanced-topics">Advanced Topics</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">torchtt</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../docs/examples.html">Examples</a></li>
+      <li class="breadcrumb-item active">Univariate Basis Functions: B-Splines</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/examples/basis.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ ff5a3fd)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="Univariate-Basis-Functions:-B-Splines">
+<h1>Univariate Basis Functions: B-Splines<a class="headerlink" href="#Univariate-Basis-Functions:-B-Splines" title="Link to this heading"></a></h1>
+<p>This notebook demonstrates the B-spline basis implementation in <code class="docutils literal notranslate"><span class="pre">torchtt.functional</span></code>.</p>
+<p>B-splines are piecewise polynomial functions widely used for interpolation and approximation. Key features of our implementation:</p>
+<ul class="simple">
+<li><p><strong>Pure PyTorch</strong>: Full automatic differentiation support</p></li>
+<li><p><strong>Interpolation</strong>: Greville abscissae provide invertible interpolation matrices</p></li>
+<li><p><strong>Quadrature</strong>: Built-in Gauss-Legendre integration weights</p></li>
+</ul>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torchtt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torchtt.functional</span><span class="w"> </span><span class="kn">import</span> <span class="n">BSplineBasis</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
+<span class="c1"># Use a nice style for plots</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'figure.figsize'</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'axes.grid'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'grid.alpha'</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.3</span>
+</pre></div>
+</div>
+</div>
+<section id="Creating-B-Spline-Bases-of-Different-Degrees">
+<h2>Creating B-Spline Bases of Different Degrees<a class="headerlink" href="#Creating-B-Spline-Bases-of-Different-Degrees" title="Link to this heading"></a></h2>
+<p>B-splines of degree <span class="math notranslate nohighlight">\(p\)</span> are piecewise polynomials with <span class="math notranslate nohighlight">\(C^{p-1}\)</span> continuity at the knots:</p>
+<ul class="simple">
+<li><p><strong>Degree 0</strong>: Piecewise constant (step functions)</p></li>
+<li><p><strong>Degree 1</strong>: Piecewise linear (hat functions)</p></li>
+<li><p><strong>Degree 2</strong>: Piecewise quadratic (smooth parabolic arcs)</p></li>
+</ul>
+<p>We create 3 bases on the interval <span class="math notranslate nohighlight">\([0, 1]\)</span> with 8 interior knots.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Define knot vector</span>
+<span class="n">knots</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>
+
+<span class="c1"># Create B-spline bases of degrees 0, 1, and 2</span>
+<span class="n">basis_0</span> <span class="o">=</span> <span class="n">BSplineBasis</span><span class="p">(</span><span class="n">knots</span><span class="p">,</span> <span class="n">deg</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">basis_1</span> <span class="o">=</span> <span class="n">BSplineBasis</span><span class="p">(</span><span class="n">knots</span><span class="p">,</span> <span class="n">deg</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">basis_2</span> <span class="o">=</span> <span class="n">BSplineBasis</span><span class="p">(</span><span class="n">knots</span><span class="p">,</span> <span class="n">deg</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Degree 0: </span><span class="si">{</span><span class="n">basis_0</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Degree 1: </span><span class="si">{</span><span class="n">basis_1</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Degree 2: </span><span class="si">{</span><span class="n">basis_2</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Degree 0: BSplineBasis(n=7, deg=0, interval=(0.0, 1.0))
+Degree 1: BSplineBasis(n=8, deg=1, interval=(0.0, 1.0))
+Degree 2: BSplineBasis(n=9, deg=2, interval=(0.0, 1.0))
+</pre></div></div>
+</div>
+</section>
+<section id="Visualizing-the-Basis-Functions">
+<h2>Visualizing the Basis Functions<a class="headerlink" href="#Visualizing-the-Basis-Functions" title="Link to this heading"></a></h2>
+<p>Let’s plot all basis functions for each degree. We evaluate on a fine grid to see the smooth structure.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Fine grid for evaluation (use float64 for consistency with basis internals)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">500</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+<span class="c1"># Evaluate all bases</span>
+<span class="n">B0</span> <span class="o">=</span> <span class="n">basis_0</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>  <span class="c1"># shape: (n0, 500)</span>
+<span class="n">B1</span> <span class="o">=</span> <span class="n">basis_1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>  <span class="c1"># shape: (n1, 500)</span>
+<span class="n">B2</span> <span class="o">=</span> <span class="n">basis_2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>  <span class="c1"># shape: (n2, 500)</span>
+
+<span class="c1"># Create 3 subplots</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">14</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+
+<span class="c1"># Plot degree 0 (piecewise constant)</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">B0</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+    <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">B0</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s1">'$B_</span><span class="se">{{</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">,0</span><span class="se">}}</span><span class="s1">$'</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Degree 0: Piecewise Constant'</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">'x'</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'B(x)'</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">'upper right'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+
+<span class="c1"># Plot degree 1 (piecewise linear)</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">B1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+    <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">B1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s1">'$B_</span><span class="se">{{</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">,1</span><span class="se">}}</span><span class="s1">$'</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Degree 1: Piecewise Linear'</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">'x'</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">'upper right'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+
+<span class="c1"># Plot degree 2 (piecewise quadratic)</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">B2</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+    <span class="n">axes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">B2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s1">'$B_</span><span class="se">{{</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">,2</span><span class="se">}}</span><span class="s1">$'</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Degree 2: Piecewise Quadratic'</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">'x'</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">'upper right'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_basis_5_0.png" src="../_images/examples_basis_5_0.png" />
+</div>
+</div>
+</section>
+<section id="Interpolation-with-B-Splines">
+<h2>Interpolation with B-Splines<a class="headerlink" href="#Interpolation-with-B-Splines" title="Link to this heading"></a></h2>
+<p>A function <span class="math notranslate nohighlight">\(f(x)\)</span> can be approximated as a linear combination of B-splines:</p>
+<div class="math notranslate nohighlight">
+\[f(x) \approx \sum_{i=0}^{n-1} c_i B_i(x)\]</div>
+<p>To find the coefficients <span class="math notranslate nohighlight">\(c_i\)</span>, we use the <strong>Greville abscissae</strong> (interpolating points) where the basis evaluation matrix is invertible. Given function values <span class="math notranslate nohighlight">\(f_i\)</span> at these points, we solve:</p>
+<div class="math notranslate nohighlight">
+\[\mathbf{B} \cdot \mathbf{c} = \mathbf{f}\]</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Define a test function to interpolate</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">f</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="mi">4</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">x</span><span class="p">)</span>
+
+<span class="c1"># Get interpolating points and basis matrix for degree-2 basis</span>
+<span class="n">interp_pts</span><span class="p">,</span> <span class="n">B_matrix</span> <span class="o">=</span> <span class="n">basis_2</span><span class="o">.</span><span class="n">interpolating_points</span><span class="p">()</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Interpolating points (Greville abscissae): </span><span class="si">{</span><span class="n">interp_pts</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Basis matrix shape: </span><span class="si">{</span><span class="n">B_matrix</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Matrix condition number: </span><span class="si">{</span><span class="n">torch</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">cond</span><span class="p">(</span><span class="n">B_matrix</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Interpolating points (Greville abscissae): tensor([0.0000, 0.0714, 0.2143, 0.3571, 0.5000, 0.6429, 0.7857, 0.9286, 1.0000],
+       dtype=torch.float64)
+Basis matrix shape: torch.Size([9, 9])
+Matrix condition number: 2.14
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Evaluate function at interpolating points</span>
+<span class="n">f_vals</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">interp_pts</span><span class="p">)</span>
+
+<span class="c1"># Solve for B-spline coefficients: B @ c = f</span>
+<span class="n">coeffs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">B_matrix</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">f_vals</span><span class="p">)</span>  <span class="c1"># B_matrix is (n, n_pts), need transpose</span>
+
+<span class="c1"># Reconstruct the function on the fine grid</span>
+<span class="n">B2_fine</span> <span class="o">=</span> <span class="n">basis_2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>  <span class="c1"># shape: (n, 500)</span>
+<span class="n">f_approx</span> <span class="o">=</span> <span class="n">coeffs</span> <span class="o">@</span> <span class="n">B2_fine</span>  <span class="c1"># shape: (500,)</span>
+
+<span class="c1"># Plot the results</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="s1">'b-'</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Original $f(x)$'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">f_approx</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="s1">'r--'</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'B-spline interpolation'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">interp_pts</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">f_vals</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">s</span><span class="o">=</span><span class="mi">80</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">'green'</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+            <span class="n">label</span><span class="o">=</span><span class="s1">'Interpolating points'</span><span class="p">,</span> <span class="n">edgecolors</span><span class="o">=</span><span class="s1">'black'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'x'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'f(x)'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">'Function Interpolation using Quadratic B-Splines'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+<span class="c1"># Compute interpolation error</span>
+<span class="n">error</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="n">f_approx</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Maximum interpolation error: </span><span class="si">{</span><span class="n">error</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_basis_8_0.png" src="../_images/examples_basis_8_0.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Maximum interpolation error: 0.278475
+</pre></div></div>
+</div>
+</section>
+<section id="Integration-Weights-of-Individual-Basis-Functions">
+<h2>Integration Weights of Individual Basis Functions<a class="headerlink" href="#Integration-Weights-of-Individual-Basis-Functions" title="Link to this heading"></a></h2>
+<p>Each basis provides the integrals of individual basis functions. For B-splines, the integral of each basis function B_i(x) over its support can be computed analytically. These integration weights are useful for various numerical methods and tensor operations.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get the integration weights for degree-2 basis</span>
+<span class="n">int_weights</span> <span class="o">=</span> <span class="n">basis_2</span><span class="o">.</span><span class="n">integration_weights</span><span class="p">()</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Number of basis functions: </span><span class="si">{</span><span class="n">basis_2</span><span class="o">.</span><span class="n">n</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Integration weights (integral of each basis function):"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">int_weights</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Sum of integration weights: </span><span class="si">{</span><span class="n">int_weights</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s2">.10f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Expected (interval length): 1.0"</span><span class="p">)</span>
+
+<span class="c1"># Visualize the integration weights</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">basis_2</span><span class="o">.</span><span class="n">n</span><span class="p">),</span> <span class="n">int_weights</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s1">'black'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'Basis function index'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'Integral value'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">'Integration Weights of Individual B-Spline Basis Functions (degree=2)'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="s1">'y'</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Number of basis functions: 9
+Integration weights (integral of each basis function):
+tensor([0.0476, 0.0952, 0.1429, 0.1429, 0.1429, 0.1429, 0.1429, 0.0952, 0.0476],
+       dtype=torch.float64)
+
+Sum of integration weights: 1.0000000000
+Expected (interval length): 1.0
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_basis_10_1.png" src="../_images/examples_basis_10_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Compare integration weights for different degrees</span>
+<span class="n">int_weights_0</span> <span class="o">=</span> <span class="n">basis_0</span><span class="o">.</span><span class="n">integration_weights</span><span class="p">()</span>
+<span class="n">int_weights_1</span> <span class="o">=</span> <span class="n">basis_1</span><span class="o">.</span><span class="n">integration_weights</span><span class="p">()</span>
+<span class="n">int_weights_2</span> <span class="o">=</span> <span class="n">basis_2</span><span class="o">.</span><span class="n">integration_weights</span><span class="p">()</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Integration weights for different degrees:"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Degree 0 (n=</span><span class="si">{</span><span class="n">basis_0</span><span class="o">.</span><span class="n">n</span><span class="si">}</span><span class="s2">): sum = </span><span class="si">{</span><span class="n">int_weights_0</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Degree 1 (n=</span><span class="si">{</span><span class="n">basis_1</span><span class="o">.</span><span class="n">n</span><span class="si">}</span><span class="s2">): sum = </span><span class="si">{</span><span class="n">int_weights_1</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Degree 2 (n=</span><span class="si">{</span><span class="n">basis_2</span><span class="o">.</span><span class="n">n</span><span class="si">}</span><span class="s2">): sum = </span><span class="si">{</span><span class="n">int_weights_2</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="c1"># All should sum to the interval length (1.0)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Note: The sum of integration weights equals the interval length [0, 1] = 1.0"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"This is a consequence of the partition of unity property of B-splines."</span><span class="p">)</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Integration weights for different degrees:
+
+Degree 0 (n=7): sum = 1.000000
+Degree 1 (n=8): sum = 1.000000
+Degree 2 (n=9): sum = 1.000000
+
+Note: The sum of integration weights equals the interval length [0, 1] = 1.0
+This is a consequence of the partition of unity property of B-splines.
+</pre></div></div>
+</div>
+</section>
+<section id="Automatic-Differentiation-with-B-Splines">
+<h2>Automatic Differentiation with B-Splines<a class="headerlink" href="#Automatic-Differentiation-with-B-Splines" title="Link to this heading"></a></h2>
+<p>One of the key features of our implementation is full PyTorch autograd support. We can compute gradients of any function of the basis values with respect to the input points.</p>
+<p>This is particularly useful for:</p>
+<ul class="simple">
+<li><p>Optimization problems</p></li>
+<li><p>Learning-based methods</p></li>
+<li><p>Sensitivity analysis</p></li>
+</ul>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create input with gradient tracking</span>
+<span class="n">x_grad</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="n">requires_grad</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+<span class="c1"># Evaluate basis</span>
+<span class="n">B2_grad</span> <span class="o">=</span> <span class="n">basis_2</span><span class="p">(</span><span class="n">x_grad</span><span class="p">)</span>  <span class="c1"># shape: (n, 200)</span>
+
+<span class="c1"># Compute some scalar function of the basis (e.g., sum of all values)</span>
+<span class="n">loss</span> <span class="o">=</span> <span class="n">B2_grad</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+<span class="c1"># Backpropagate to get gradient w.r.t. input</span>
+<span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Input shape: </span><span class="si">{</span><span class="n">x_grad</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Basis output shape: </span><span class="si">{</span><span class="n">B2_grad</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Gradient shape: </span><span class="si">{</span><span class="n">x_grad</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Gradient (first 10 values): </span><span class="si">{</span><span class="n">x_grad</span><span class="o">.</span><span class="n">grad</span><span class="p">[:</span><span class="mi">10</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Input shape: torch.Size([200])
+Basis output shape: torch.Size([9, 200])
+Gradient shape: torch.Size([200])
+Gradient (first 10 values): tensor([0., 0., 0., 0., 0., 0., 0., 0., 0., 0.], dtype=torch.float64)
+</pre></div></div>
+</div>
+</section>
+<section id="Basis-Derivatives">
+<h2>Basis Derivatives<a class="headerlink" href="#Basis-Derivatives" title="Link to this heading"></a></h2>
+<p>The B-spline implementation also provides analytical derivatives via the <code class="docutils literal notranslate"><span class="pre">derivative=True</span></code> flag. This uses the standard B-spline derivative formula:</p>
+<div class="math notranslate nohighlight">
+\[B'_{i,p}(x) = p \left[ \frac{B_{i,p-1}(x)}{t_{i+p} - t_i} - \frac{B_{i+1,p-1}(x)}{t_{i+p+1} - t_{i+1}} \right]\]</div>
+<p>Let’s visualize the derivatives of all three basis degrees.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Evaluate derivatives of all bases</span>
+<span class="n">dB0</span> <span class="o">=</span> <span class="n">basis_0</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">derivative</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># Degree 0: derivative is zero everywhere (piecewise constant)</span>
+<span class="n">dB1</span> <span class="o">=</span> <span class="n">basis_1</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">derivative</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># Degree 1: piecewise constant derivative</span>
+<span class="n">dB2</span> <span class="o">=</span> <span class="n">basis_2</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">derivative</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># Degree 2: piecewise linear derivative</span>
+
+<span class="c1"># Create 3 subplots for derivatives</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">14</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+
+<span class="c1"># Plot degree 0 derivatives</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">dB0</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+    <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">dB0</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">"$B'_</span><span class="se">{{</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">,0</span><span class="se">}}</span><span class="s2">$"</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"Degree 0 Derivatives (Always Zero)"</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">'x'</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"B'(x)"</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">'upper right'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+
+<span class="c1"># Plot degree 1 derivatives</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">dB1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+    <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">dB1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">"$B'_</span><span class="se">{{</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">,1</span><span class="se">}}</span><span class="s2">$"</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"Degree 1 Derivatives (Piecewise Constant)"</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">'x'</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">'upper right'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+
+<span class="c1"># Plot degree 2 derivatives</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">dB2</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+    <span class="n">axes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">dB2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">"$B'_</span><span class="se">{{</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">,2</span><span class="se">}}</span><span class="s2">$"</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"Degree 2 Derivatives (Piecewise Linear)"</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">'x'</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">'upper right'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_basis_15_0.png" src="../_images/examples_basis_15_0.png" />
+</div>
+</div>
+</section>
+<section id="Boundary-Modes:-Zero-Boundaries-and-Unbounded-Domains">
+<h2>Boundary Modes: Zero Boundaries and Unbounded Domains<a class="headerlink" href="#Boundary-Modes:-Zero-Boundaries-and-Unbounded-Domains" title="Link to this heading"></a></h2>
+<p>By default the basis is <strong>clamped</strong>: the boundary knots are repeated and the first/last basis functions reach <span class="math notranslate nohighlight">\(1\)</span> at the boundary. Two additional per-side modes are available through the <code class="docutils literal notranslate"><span class="pre">bc=(left,</span> <span class="pre">right)</span></code> argument:</p>
+<ul>
+<li><p><strong>``”zero”``</strong> — the basis function that is nonzero at that boundary is omitted, so every function in the span vanishes there (useful for densities or Dirichlet boundary conditions). The dimension <code class="docutils literal notranslate"><span class="pre">n</span></code> decreases by one.</p></li>
+<li><p><strong>``”decay”``</strong> — the domain becomes unbounded on that side. The knot vector is extended with <code class="docutils literal notranslate"><span class="pre">deg</span></code> phantom knots and the basis functions crossing the boundary are continued by smooth tails</p>
+<div class="math notranslate nohighlight">
+\[T_i(x) = \sum_{j=1}^{\mathrm{deg}} a_{ij}\, e^{-j \lambda |x - b|},\]</div>
+<p>whose <span class="math notranslate nohighlight">\(\mathrm{deg}\)</span> coefficients are matched in value and the first <span class="math notranslate nohighlight">\(\mathrm{deg}-1\)</span> derivatives: the basis is <span class="math notranslate nohighlight">\(C^{\mathrm{deg}-1}\)</span> on the whole unbounded domain. The rate <span class="math notranslate nohighlight">\(\lambda\)</span> is set via <code class="docutils literal notranslate"><span class="pre">decay_rate</span></code> (default: <span class="math notranslate nohighlight">\(\mathrm{deg}/h\)</span> with <span class="math notranslate nohighlight">\(h\)</span> the adjacent knot spacing) and fixes the far-field behaviour, since the <span class="math notranslate nohighlight">\(j=1\)</span> term is the slowest one. Crossing functions whose <strong>center (Greville point) would fall outside the domain are dropped</strong>, so the
+outermost retained function peaks at the boundary and decays monotonically past it — no redundant bump in the tail.</p>
+</li>
+</ul>
+<p>Where this form comes from: the map</p>
+<div class="math notranslate nohighlight">
+\[t = 1 - e^{-\lambda |x - b|}\]</div>
+<p>sends the unbounded side onto <span class="math notranslate nohighlight">\([0, 1)\)</span>, and the tail is the <em>general polynomial in :math:`t` that vanishes at :math:`t = 1`</em>. Vanishing at <span class="math notranslate nohighlight">\(t = 1\)</span> is exactly the condition that the tail go to zero at infinity, which is what keeps every integral finite; expanding it back in <span class="math notranslate nohighlight">\(x\)</span> gives the sum of exponentials above. The pay-off is that no growing polynomial factor multiplies the exponential — <strong>every term decays</strong>, so at the default rate the tails come out non-negative and
+monotone to machine precision. That is what a density expansion with non-negative coefficients needs, and it is why <span class="math notranslate nohighlight">\(\int B_i\,dx\)</span>, the mass, stiffness and advection matrices all have closed forms here.</p>
+<p>The interpolating points adapt automatically: for a <code class="docutils literal notranslate"><span class="pre">&quot;zero&quot;</span></code> side the boundary point is dropped, and for a <code class="docutils literal notranslate"><span class="pre">&quot;decay&quot;</span></code> side the out-of-domain points are dropped so all interpolating points stay within <span class="math notranslate nohighlight">\([a, b]\)</span> (the outermost sits exactly at the boundary). Integration weights include the analytic tail mass, so normalization over the unbounded domain works out of the box.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># --- Example 1: zero boundary at the left end ---</span>
+<span class="n">knots</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>
+<span class="n">basis_zero</span> <span class="o">=</span> <span class="n">BSplineBasis</span><span class="p">(</span><span class="n">knots</span><span class="p">,</span> <span class="n">deg</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">bc</span><span class="o">=</span><span class="p">(</span><span class="s2">"zero"</span><span class="p">,</span> <span class="s2">"clamped"</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Zero-left basis: </span><span class="si">{</span><span class="n">basis_zero</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"(the clamped basis on the same knots would have n=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">knots</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">500</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+<span class="n">B_zero</span> <span class="o">=</span> <span class="n">basis_zero</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">pts_zero</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">basis_zero</span><span class="o">.</span><span class="n">interpolating_points</span><span class="p">()</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">basis_zero</span><span class="o">.</span><span class="n">n</span><span class="p">):</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">B_zero</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s1">'$B_</span><span class="se">{{</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="se">}}</span><span class="s1">$'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">pts_zero</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">pts_zero</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">s</span><span class="o">=</span><span class="mi">90</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">'red'</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s1">'^'</span><span class="p">,</span>
+            <span class="n">zorder</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">edgecolors</span><span class="o">=</span><span class="s1">'black'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Interpolating points'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">'bc=("zero", "clamped"): every basis function vanishes at $x=0$'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'x'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'B(x)'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">'upper right'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">ncol</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Zero-left basis: BSplineBasis(n=8, deg=2, interval=(0.0, 1.0), bc=(&#39;zero&#39;, &#39;clamped&#39;))
+(the clamped basis on the same knots would have n=9)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_basis_17_1.png" src="../_images/examples_basis_17_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># --- Example 2: unbounded domain to the right (smooth exponential tails) ---</span>
+<span class="n">knots_d</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>  <span class="c1"># wide spacing h=0.5 so the tails are clearly visible</span>
+<span class="n">basis_decay</span> <span class="o">=</span> <span class="n">BSplineBasis</span><span class="p">(</span><span class="n">knots_d</span><span class="p">,</span> <span class="n">deg</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">bc</span><span class="o">=</span><span class="p">(</span><span class="s2">"clamped"</span><span class="p">,</span> <span class="s2">"decay"</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Decay-right basis: </span><span class="si">{</span><span class="n">basis_decay</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Integration weights sum: </span><span class="si">{</span><span class="n">basis_decay</span><span class="o">.</span><span class="n">integration_weights</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2"> "</span>
+      <span class="sa">f</span><span class="s2">"(interval length 2 plus the analytic tail mass)"</span><span class="p">)</span>
+
+<span class="n">x_ext</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">3.5</span><span class="p">,</span> <span class="mi">800</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+<span class="n">B_decay</span> <span class="o">=</span> <span class="n">basis_decay</span><span class="p">(</span><span class="n">x_ext</span><span class="p">)</span>
+<span class="n">pts_decay</span><span class="p">,</span> <span class="n">M_decay</span> <span class="o">=</span> <span class="n">basis_decay</span><span class="o">.</span><span class="n">interpolating_points</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Interpolating points: </span><span class="si">{</span><span class="n">pts_decay</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="si">}</span><span class="s2">  &lt;- last point sits at b=2, none beyond"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Matrix condition number: </span><span class="si">{</span><span class="n">torch</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">cond</span><span class="p">(</span><span class="n">M_decay</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">basis_decay</span><span class="o">.</span><span class="n">n</span><span class="p">):</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_ext</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">B_decay</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s1">'$B_</span><span class="se">{{</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="se">}}</span><span class="s1">$'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'gray'</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">'--'</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'last knot $b=2$'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">pts_decay</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">pts_decay</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">s</span><span class="o">=</span><span class="mi">90</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">'red'</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s1">'^'</span><span class="p">,</span>
+            <span class="n">zorder</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">edgecolors</span><span class="o">=</span><span class="s1">'black'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Interpolating points'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">'bc=("clamped", "decay"): $C^</span><span class="si">{1}</span><span class="s1">$ exponential tails beyond the last knot'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'x'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'B(x)'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">'upper right'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">ncol</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Decay-right basis: BSplineBasis(n=5, deg=2, interval=(0.0, 2.0), bc=(&#39;clamped&#39;, &#39;decay&#39;), decay_rate=(None, 4.0))
+Integration weights sum: 2.041667 (interval length 2 plus the analytic tail mass)
+Interpolating points: [0.   0.25 0.75 1.25 1.75]  &lt;- last point sits at b=2, none beyond
+Matrix condition number: 2.08
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_basis_18_1.png" src="../_images/examples_basis_18_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># --- Example 3: combination for densities on [0, inf): zero at 0, unbounded right ---</span>
+<span class="c1"># Cubic (deg=3): the last retained function peaks exactly at b and decays monotonically,</span>
+<span class="c1"># with no redundant bump past b (the out-of-domain crossing functions are dropped).</span>
+<span class="n">knots_pdf</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">basis_pdf</span> <span class="o">=</span> <span class="n">BSplineBasis</span><span class="p">(</span><span class="n">knots_pdf</span><span class="p">,</span> <span class="n">deg</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">bc</span><span class="o">=</span><span class="p">(</span><span class="s2">"zero"</span><span class="p">,</span> <span class="s2">"decay"</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"PDF-style basis: </span><span class="si">{</span><span class="n">basis_pdf</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="n">x_pdf</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">4.5</span><span class="p">,</span> <span class="mi">900</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+<span class="n">B_pdf</span> <span class="o">=</span> <span class="n">basis_pdf</span><span class="p">(</span><span class="n">x_pdf</span><span class="p">)</span>
+<span class="n">pts_pdf</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">basis_pdf</span><span class="o">.</span><span class="n">interpolating_points</span><span class="p">()</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">basis_pdf</span><span class="o">.</span><span class="n">n</span><span class="p">):</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_pdf</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">B_pdf</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s1">'$B_</span><span class="se">{{</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="se">}}</span><span class="s1">$'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'gray'</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">'--'</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'last knot $b=3$'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">pts_pdf</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">pts_pdf</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">s</span><span class="o">=</span><span class="mi">90</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">'red'</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s1">'^'</span><span class="p">,</span>
+            <span class="n">zorder</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">edgecolors</span><span class="o">=</span><span class="s1">'black'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Interpolating points'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">'bc=("zero", "decay"): vanishes at $x=0$, smooth tails towards $+</span><span class="se">\\</span><span class="s1">infty$'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'x'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'B(x)'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">'upper right'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">ncol</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+PDF-style basis: BSplineBasis(n=10, deg=3, interval=(0.0, 3.0), bc=(&#39;zero&#39;, &#39;decay&#39;), decay_rate=(None, 9.000002145767724))
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_basis_19_1.png" src="../_images/examples_basis_19_1.png" />
+</div>
+</div>
+</section>
+</section>
+<section id="Gaussian-Basis-Functions">
+<h1>Gaussian Basis Functions<a class="headerlink" href="#Gaussian-Basis-Functions" title="Link to this heading"></a></h1>
+<p>The <code class="docutils literal notranslate"><span class="pre">GaussianBasis</span></code> class implements a basis of Gaussian functions centered at the knots.</p>
+<div class="math notranslate nohighlight">
+\[\phi_i(x) = \exp\left(-\frac{(x - \mu_i)^2}{2\sigma_i^2}\right)\]</div>
+<p>where <span class="math notranslate nohighlight">\(\mu_i\)</span> are the knots and <span class="math notranslate nohighlight">\(\sigma_i\)</span> determines the width.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">torchtt.functional</span><span class="w"> </span><span class="kn">import</span> <span class="n">GaussianBasis</span>
+
+<span class="c1"># Create Gaussian basis</span>
+<span class="n">knots</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">gaussian_basis</span> <span class="o">=</span> <span class="n">GaussianBasis</span><span class="p">(</span><span class="n">knots</span><span class="p">,</span> <span class="n">delta_overlap</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Gaussian Basis: </span><span class="si">{</span><span class="n">gaussian_basis</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Gaussian Basis: GaussianBasis(n=10, delta_overlap=1)
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Evaluate and plot</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">500</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+<span class="n">B_gauss</span> <span class="o">=</span> <span class="n">gaussian_basis</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">B_gauss</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">B_gauss</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s1">'$\phi_</span><span class="se">{{</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="se">}}</span><span class="s1">$'</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">'Gaussian Basis Functions (delta_overlap=1)'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'x'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'$\phi(x)$'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">'upper right'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">ncol</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+&lt;&gt;:7: SyntaxWarning: invalid escape sequence &#39;\p&#39;
+&lt;&gt;:11: SyntaxWarning: invalid escape sequence &#39;\p&#39;
+&lt;&gt;:7: SyntaxWarning: invalid escape sequence &#39;\p&#39;
+&lt;&gt;:11: SyntaxWarning: invalid escape sequence &#39;\p&#39;
+/tmp/ipykernel_319982/3916280675.py:7: SyntaxWarning: invalid escape sequence &#39;\p&#39;
+  plt.plot(x.numpy(), B_gauss[i].numpy(), label=f&#39;$\phi_{{{i}}}$&#39;)
+/tmp/ipykernel_319982/3916280675.py:11: SyntaxWarning: invalid escape sequence &#39;\p&#39;
+  plt.ylabel(&#39;$\phi(x)$&#39;)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_basis_22_1.png" src="../_images/examples_basis_22_1.png" />
+</div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="cross_interpolation.html" class="btn btn-neutral float-left" title="Cross approximation in the TT format" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="basic_nn.html" class="btn btn-neutral float-right" title="Tensor Train layers for neural networks" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Ion Gabriel Ion.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

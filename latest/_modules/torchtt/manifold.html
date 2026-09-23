@@ -1,0 +1,276 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>torchtt.manifold &mdash; torchTT development (main @ ff5a3fd) documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=e6c4269e"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            torchtt
+              <img src="https://github.com/ion-g-ion/torchTT/blob/main/logo_small.png?raw=true" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/intro_page.html">Welcome to torchTT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/install.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/package-overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/modules.html">API reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/examples.html">Examples</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">torchtt</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">torchtt.manifold</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ ff5a3fd)</strong><br><a href="../../../stable/index.html">Stable release</a> · <a href="../../../latest/index.html">Development (main)</a></nav><h1>Source code for torchtt.manifold</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""</span>
+<span class="sd">Manifold gradient module.</span>
+
+<span class="sd">"""</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tn</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torchtt._decomposition</span><span class="w"> </span><span class="kn">import</span> <span class="n">mat_to_tt</span><span class="p">,</span> <span class="n">to_tt</span><span class="p">,</span> <span class="n">lr_orthogonal</span><span class="p">,</span> <span class="n">round_tt</span><span class="p">,</span> <span class="n">rl_orthogonal</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">TT</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torchtt.errors</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_delta2cores</span><span class="p">(</span><span class="n">tt_cores</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">Sds</span><span class="p">,</span> <span class="n">is_ttm</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">ortho</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Convert the detla notation to TT.</span>
+<span class="sd">    Implements Algorithm 5.1 from "AUTOMATIC DIFFERENTIATION FOR RIEMANNIAN OPTIMIZATION ON LOW-RANK MATRIX AND TENSOR-TRAIN MANIFOLDS".</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        tt_cores (list[torch.tensor]): the TT cores.</span>
+<span class="sd">        R (list[int]): the rank of the tensor.</span>
+<span class="sd">        Sds (list[torch.tensor]): deltas.</span>
+<span class="sd">        is_ttm (bool, optional): is TT amtrix or not. Defaults to False.</span>
+<span class="sd">        ortho (list[list[torch.tensor]], optional): the left and right orthogonal cores of tt_cores. Defaults to None.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list[torch.tensor]: the resulting TT cores.</span>
+<span class="sd">    """</span>
+    
+    <span class="k">if</span> <span class="n">ortho</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">l_cores</span><span class="p">,</span><span class="n">_</span>  <span class="o">=</span> <span class="n">lr_orthogonal</span><span class="p">(</span><span class="n">tt_cores</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">is_ttm</span><span class="p">)</span>
+        <span class="n">r_cores</span><span class="p">,</span><span class="n">_</span>  <span class="o">=</span> <span class="n">rl_orthogonal</span><span class="p">(</span><span class="n">tt_cores</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">is_ttm</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">l_cores</span> <span class="o">=</span> <span class="n">ortho</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">r_cores</span> <span class="o">=</span> <span class="n">ortho</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    
+    <span class="c1"># first</span>
+    <span class="n">cores_new</span> <span class="o">=</span> <span class="p">[</span><span class="n">tn</span><span class="o">.</span><span class="n">cat</span><span class="p">((</span><span class="n">Sds</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">l_cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span><span class="mi">2</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">is_ttm</span> <span class="k">else</span> <span class="mi">3</span><span class="p">)]</span>
+    <span class="c1"># 2...d-1</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">tt_cores</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">up</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">cat</span><span class="p">((</span><span class="n">r_cores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span><span class="n">tn</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">r_cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">),</span><span class="n">dtype</span> <span class="o">=</span> <span class="n">l_cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span> <span class="o">=</span> <span class="n">l_cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">device</span><span class="p">)),</span><span class="mi">2</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">is_ttm</span> <span class="k">else</span> <span class="mi">3</span><span class="p">)</span>
+        <span class="n">down</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">cat</span><span class="p">((</span><span class="n">Sds</span><span class="p">[</span><span class="n">k</span><span class="p">],</span><span class="n">l_cores</span><span class="p">[</span><span class="n">k</span><span class="p">]),</span><span class="mi">2</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">is_ttm</span> <span class="k">else</span> <span class="mi">3</span><span class="p">)</span>
+        <span class="n">cores_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">cat</span><span class="p">((</span><span class="n">up</span><span class="p">,</span><span class="n">down</span><span class="p">),</span><span class="mi">0</span><span class="p">))</span>
+    <span class="c1"># last</span>
+    <span class="n">cores_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">cat</span><span class="p">((</span><span class="n">r_cores</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="n">Sds</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span><span class="mi">0</span><span class="p">))</span>
+    
+    <span class="k">return</span> <span class="n">cores_new</span>
+
+<div class="viewcode-block" id="riemannian_gradient">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.manifold.riemannian_gradient">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">riemannian_gradient</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">func</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Compute the Riemannian gradient using AD.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        x (torchtt.TT): the point on the manifold where the gradient is computed.</span>
+<span class="sd">        func ([type]): function that has to be differentiated. The function takes as only argument `torchtt.TT` instances.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        torchtt.TT: the gradient projected on the tangent space of x.</span>
+<span class="sd">    """</span>
+
+    <span class="n">l_cores</span><span class="p">,</span><span class="n">_</span>  <span class="o">=</span> <span class="n">lr_orthogonal</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">cores</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">R</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">is_ttm</span><span class="p">)</span>
+    <span class="n">r_cores</span><span class="p">,</span><span class="n">_</span>  <span class="o">=</span> <span class="n">rl_orthogonal</span><span class="p">(</span><span class="n">l_cores</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">R</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">is_ttm</span><span class="p">)</span>
+    
+    <span class="n">is_ttm</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">is_ttm</span>
+
+    
+    <span class="n">R</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">R</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">N</span><span class="p">)</span>
+    
+    <span class="n">Rs</span> <span class="o">=</span> <span class="p">[</span> <span class="n">r_cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="p">]</span>
+    <span class="n">Rs</span> <span class="o">+=</span> <span class="p">[</span> <span class="n">x</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="mi">0</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">d</span><span class="p">)]</span>
+    
+    <span class="c1"># AD part</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
+        <span class="n">Rs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">requires_grad_</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">Ghats</span> <span class="o">=</span> <span class="n">_delta2cores</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">cores</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">Rs</span><span class="p">,</span> <span class="n">is_ttm</span> <span class="o">=</span> <span class="n">is_ttm</span><span class="p">,</span><span class="n">ortho</span> <span class="o">=</span> <span class="p">[</span><span class="n">l_cores</span><span class="p">,</span><span class="n">r_cores</span><span class="p">])</span>
+    <span class="n">fval</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="n">TT</span><span class="p">(</span><span class="n">Ghats</span><span class="p">))</span>
+    <span class="n">fval</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span> 
+    <span class="n">Sds</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">grad</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">Rs</span><span class="p">]</span>
+  
+    
+    <span class="c1"># compute Sdeltas</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">D</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">Sds</span><span class="p">[</span><span class="n">k</span><span class="p">],[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">R</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]])</span>
+        <span class="n">UL</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">l_cores</span><span class="p">[</span><span class="n">k</span><span class="p">],[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">R</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]])</span>
+        <span class="n">D</span> <span class="o">=</span> <span class="n">D</span> <span class="o">-</span> <span class="n">UL</span> <span class="o">@</span> <span class="p">(</span><span class="n">UL</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">D</span><span class="p">)</span>
+        <span class="n">Sds</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">D</span><span class="p">,</span><span class="n">l_cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="c1"># delta to TT</span>
+    <span class="n">grad_cores</span> <span class="o">=</span> <span class="n">_delta2cores</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">cores</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">Sds</span><span class="p">,</span> <span class="n">is_ttm</span><span class="p">,</span><span class="n">ortho</span> <span class="o">=</span> <span class="p">[</span><span class="n">l_cores</span><span class="p">,</span><span class="n">r_cores</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">TT</span><span class="p">(</span><span class="n">grad_cores</span><span class="p">)</span></div>
+
+        
+<div class="viewcode-block" id="riemannian_projection">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.manifold.riemannian_projection">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">riemannian_projection</span><span class="p">(</span><span class="n">Xspace</span><span class="p">,</span><span class="n">z</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Project the tensor z onto the tangent space defined at xspace</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        Xspace (torchtt.TT): the target where the tensor should be projected.</span>
+<span class="sd">        z (torchtt.TT): the tensor that should be projected.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        IncompatibleTypes: Both must be of same type.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        torchtt.TT: the projection.</span>
+<span class="sd">    """</span>
+
+    <span class="k">if</span> <span class="n">Xspace</span><span class="o">.</span><span class="n">is_ttm</span> <span class="o">!=</span> <span class="n">z</span><span class="o">.</span><span class="n">is_ttm</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">IncompatibleTypes</span><span class="p">(</span><span class="s1">'Both must be of same type.'</span><span class="p">)</span>
+       
+    <span class="n">is_ttm</span> <span class="o">=</span> <span class="n">Xspace</span><span class="o">.</span><span class="n">is_ttm</span>
+     
+    <span class="n">l_cores</span><span class="p">,</span><span class="n">R</span>  <span class="o">=</span> <span class="n">lr_orthogonal</span><span class="p">(</span><span class="n">Xspace</span><span class="o">.</span><span class="n">cores</span><span class="p">,</span> <span class="n">Xspace</span><span class="o">.</span><span class="n">R</span><span class="p">,</span> <span class="n">Xspace</span><span class="o">.</span><span class="n">is_ttm</span><span class="p">)</span>
+    <span class="n">r_cores</span><span class="p">,</span><span class="n">_</span>  <span class="o">=</span> <span class="n">rl_orthogonal</span><span class="p">(</span><span class="n">l_cores</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">Xspace</span><span class="o">.</span><span class="n">is_ttm</span><span class="p">)</span>
+    
+    <span class="n">d</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">Xspace</span><span class="o">.</span><span class="n">N</span><span class="p">)</span>
+
+    <span class="n">N</span> <span class="o">=</span> <span class="n">Xspace</span><span class="o">.</span><span class="n">N</span>
+    <span class="n">Pleft</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">tmp</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span><span class="n">dtype</span><span class="o">=</span><span class="n">Xspace</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span> <span class="o">=</span> <span class="n">Xspace</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">is_ttm</span><span class="p">:</span>
+            <span class="n">tmp</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'rs,rijR,sijS-&gt;RS'</span><span class="p">,</span><span class="n">tmp</span><span class="p">,</span><span class="n">l_cores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span><span class="n">z</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="c1"># size rk x sk</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tmp</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'rs,riR,siS-&gt;RS'</span><span class="p">,</span><span class="n">tmp</span><span class="p">,</span><span class="n">l_cores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span><span class="n">z</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="c1"># size rk x sk</span>
+        <span class="n">Pleft</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+        
+   
+    
+    <span class="n">Pright</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">tmp</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">Xspace</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span> <span class="o">=</span> <span class="n">Xspace</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">is_ttm</span><span class="p">:</span>
+            <span class="n">tmp</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'RS,rijR,sijS-&gt;rs'</span><span class="p">,</span><span class="n">tmp</span><span class="p">,</span><span class="n">r_cores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span><span class="n">z</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="c1"># size rk x sk</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tmp</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'RS,riR,siS-&gt;rs'</span><span class="p">,</span><span class="n">tmp</span><span class="p">,</span><span class="n">r_cores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span><span class="n">z</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="c1"># size rk x sk</span>
+        <span class="n">Pright</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+    <span class="n">Pright</span> <span class="o">=</span> <span class="n">Pright</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    
+    
+    <span class="c1"># compute elements of the tangent space</span>
+    <span class="n">Sds</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
+  
+        <span class="k">if</span> <span class="n">k</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+            <span class="n">L</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span><span class="n">dtype</span><span class="o">=</span><span class="n">Xspace</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span> <span class="o">=</span> <span class="n">Xspace</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">L</span> <span class="o">=</span> <span class="n">Pleft</span><span class="p">[</span><span class="n">k</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">k</span><span class="o">==</span><span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">is_ttm</span><span class="p">:</span>
+                <span class="n">Sds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'rs,sjiS-&gt;rjiS'</span><span class="p">,</span><span class="n">L</span><span class="p">,</span><span class="n">z</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">]))</span>   
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">Sds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'rs,siS-&gt;riS'</span><span class="p">,</span><span class="n">L</span><span class="p">,</span><span class="n">z</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">]))</span>           
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">R</span> <span class="o">=</span> <span class="n">Pright</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">is_ttm</span><span class="p">:</span>
+                <span class="n">tmp1</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'rs,sijS-&gt;rijS'</span><span class="p">,</span><span class="n">L</span><span class="p">,</span><span class="n">z</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+                <span class="n">tmp2</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'rijR,RS-&gt;rijS'</span><span class="p">,</span><span class="n">l_cores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span><span class="n">tn</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'rs,rijR,sijS-&gt;RS'</span><span class="p">,</span><span class="n">L</span><span class="p">,</span><span class="n">l_cores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span><span class="n">z</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">]))</span>
+                <span class="n">Sds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'rijS,RS-&gt;rijR'</span><span class="p">,</span><span class="n">tmp1</span><span class="o">-</span><span class="n">tmp2</span><span class="p">,</span><span class="n">R</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">tmp1</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'rs,siS-&gt;riS'</span><span class="p">,</span><span class="n">L</span><span class="p">,</span><span class="n">z</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+                <span class="n">tmp2</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'riR,RS-&gt;riS'</span><span class="p">,</span><span class="n">l_cores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span><span class="n">tn</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'rs,riR,siS-&gt;RS'</span><span class="p">,</span><span class="n">L</span><span class="p">,</span><span class="n">l_cores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span><span class="n">z</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">]))</span>
+                <span class="n">Sds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'riS,RS-&gt;riR'</span><span class="p">,</span><span class="n">tmp1</span><span class="o">-</span><span class="n">tmp2</span><span class="p">,</span><span class="n">R</span><span class="p">))</span>  
+        
+    <span class="c1"># convert Sds to TT</span>
+    <span class="n">grad_cores</span> <span class="o">=</span> <span class="n">_delta2cores</span><span class="p">(</span><span class="n">Xspace</span><span class="o">.</span><span class="n">cores</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">Sds</span><span class="p">,</span> <span class="n">Xspace</span><span class="o">.</span><span class="n">is_ttm</span><span class="p">,</span><span class="n">ortho</span> <span class="o">=</span> <span class="p">[</span><span class="n">l_cores</span><span class="p">,</span><span class="n">r_cores</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">TT</span><span class="p">(</span><span class="n">grad_cores</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Ion Gabriel Ion.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

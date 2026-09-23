@@ -1,0 +1,587 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>torchtt._amen &mdash; torchTT development (main @ ff5a3fd) documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=e6c4269e"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            torchtt
+              <img src="https://github.com/ion-g-ion/torchTT/blob/main/logo_small.png?raw=true" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/intro_page.html">Welcome to torchTT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/install.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/package-overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/modules.html">API reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/examples.html">Examples</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">torchtt</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">torchtt._amen</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ ff5a3fd)</strong><br><a href="../../../stable/index.html">Stable release</a> · <a href="../../../latest/index.html">Development (main)</a></nav><h1>Source code for torchtt._amen</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""</span>
+<span class="sd">System solvers in the TT format.</span>
+
+<span class="sd">"""</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tn</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torchtt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torchtt._decomposition</span><span class="w"> </span><span class="kn">import</span> <span class="n">QR</span><span class="p">,</span> <span class="n">SVD</span><span class="p">,</span> <span class="n">lr_orthogonal</span><span class="p">,</span> <span class="n">rl_orthogonal</span><span class="p">,</span> <span class="n">rank_chop</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torchtt._iterative_solvers</span><span class="w"> </span><span class="kn">import</span> <span class="n">BiCGSTAB_reset</span><span class="p">,</span> <span class="n">gmres_restart</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">opt_einsum</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">oe</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.errors</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">torchttcpp</span>
+    <span class="n">_flag_use_cpp</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+        <span class="s2">"</span><span class="se">\x1B</span><span class="s2">[33m</span><span class="se">\n</span><span class="s2">C++ implementation not available. Using pure Python.</span><span class="se">\n\033</span><span class="s2">[0m"</span><span class="p">)</span>
+    <span class="n">_flag_use_cpp</span> <span class="o">=</span> <span class="kc">False</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">cpp_enabled</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Is the C++ backend enabled?</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        bool: the flag</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">_flag_use_cpp</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_local_AB</span><span class="p">(</span><span class="n">Phi_left</span><span class="p">,</span> <span class="n">Phi_right</span><span class="p">,</span> <span class="n">coreA</span><span class="p">,</span> <span class="n">coreB</span><span class="p">,</span> <span class="n">bandA</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">bandB</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    PErfomrs the contraction for the right side of amen mm</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        Phi_left (torch.tensor): left phi</span>
+<span class="sd">        Phi_right (torch.tensor): right phi</span>
+<span class="sd">        coreA (torch.tensor): core of A</span>
+<span class="sd">        coreB (torch.tensor): core of B</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        torch.tensor: _description_</span>
+<span class="sd">    """</span>
+    <span class="n">w</span> <span class="o">=</span> <span class="n">oe</span><span class="o">.</span><span class="n">contract</span><span class="p">(</span><span class="s1">'rab,amkA,bknB,RAB-&gt;rmnR'</span><span class="p">,</span>
+                    <span class="n">Phi_left</span><span class="p">,</span> <span class="n">coreA</span><span class="p">,</span> <span class="n">coreB</span><span class="p">,</span> <span class="n">Phi_right</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">w</span>
+
+
+<div class="viewcode-block" id="amen_mv">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.amen_mv">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">amen_mv</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">nswp</span><span class="o">=</span><span class="mi">22</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">,</span> <span class="n">rmax</span><span class="o">=</span><span class="mi">1024</span><span class="p">,</span> <span class="n">kickrank</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">kick2</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">use_cpp</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Compute the matrix vector product between a TTM and a TT.</span>
+<span class="sd">    Suited when the output is expected to be low rank. </span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        A (torchtt.TT): the matrix in TT.</span>
+<span class="sd">        b (torchtt.TT): the tensor TT.</span>
+<span class="sd">        nswp (int, optional): number of sweeps. Defaults to 22.</span>
+<span class="sd">        x0 (torchtt.TT, optional): initial guess. In None is provided the initial guess is a ones tensor. Defaults to None.</span>
+<span class="sd">        eps (float, optional): relative residual. Defaults to 1e-10.</span>
+<span class="sd">        rmax (int, optional): maximum rank. Defaults to 100.</span>
+<span class="sd">        kickrank (int, optional): rank enrichment. Defaults to 4.</span>
+<span class="sd">        kick2 (int, optional): [description]. Defaults to 0.</span>
+<span class="sd">        verbose (bool, optional): choose whether to display or not additional information during the runtime. Defaults to True.</span>
+<span class="sd">        use_cpp (bool, optional): use the C++ implementation of AMEn. Defaults to True.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidArguments: A and b must be TT instances.</span>
+<span class="sd">        InvalidArguments: Invalid preconditioner.</span>
+<span class="sd">        IncompatibleTypes: A must be TT-matrix and b must be vector.</span>
+<span class="sd">        ShapeMismatch: Dimension mismatch.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        torchtt.TT: the approximation of the solution in TT format.</span>
+<span class="sd">    """</span>
+    <span class="c1"># perform checks of the input data</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">TT</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">TT</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span><span class="s1">'A and b must be TT instances.'</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">is_ttm</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">b</span><span class="o">.</span><span class="n">is_ttm</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">IncompatibleTypes</span><span class="p">(</span><span class="s1">'A must be TT-matrix and b must be vector.'</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">A</span><span class="o">.</span><span class="n">N</span> <span class="o">!=</span> <span class="n">b</span><span class="o">.</span><span class="n">N</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ShapeMismatch</span><span class="p">(</span><span class="s1">'Dimension mismatch.'</span><span class="p">)</span>
+
+    <span class="n">use_cpp</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">if</span> <span class="n">use_cpp</span> <span class="ow">and</span> <span class="n">_flag_use_cpp</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">x0</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">x_cores</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">x_R</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="nb">len</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">N</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">x_cores</span> <span class="o">=</span> <span class="n">x0</span><span class="o">.</span><span class="n">cores</span>
+            <span class="n">x_R</span> <span class="o">=</span> <span class="n">x0</span><span class="o">.</span><span class="n">R</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_amen_mm_python</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">cores</span><span class="p">,</span> <span class="p">[</span><span class="n">c</span><span class="p">[:,</span> <span class="p">:,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">b</span><span class="o">.</span><span class="n">cores</span><span class="p">],</span> <span class="n">A</span><span class="o">.</span><span class="n">M</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">M</span><span class="p">),</span> <span class="n">A</span><span class="o">.</span><span class="n">N</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="n">nswp</span><span class="p">,</span> <span class="n">x0</span><span class="o">.</span><span class="n">cores</span> <span class="k">if</span> <span class="n">x0</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span> <span class="n">x0</span><span class="o">.</span><span class="n">R</span> <span class="k">if</span> <span class="n">x0</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">,</span> <span class="n">kickrank</span><span class="p">,</span> <span class="n">kick2</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="amen_mm">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.amen_mm">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">amen_mm</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">nswp</span><span class="o">=</span><span class="mi">22</span><span class="p">,</span> <span class="n">X0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">,</span> <span class="n">rmax</span><span class="o">=</span><span class="mi">1024</span><span class="p">,</span> <span class="n">kickrank</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">kick2</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Perform the TTM-TTM product using AMEn optimization.</span>
+<span class="sd">    Suited when the operators have high ranks, but the result is expected to be low rank.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        A (torchtt.TT): the first TTM.</span>
+<span class="sd">        B (torchtt.TT): the second TTM.</span>
+<span class="sd">        nswp (int, optional): number of sweeps. Defaults to 22.</span>
+<span class="sd">        X0 (torchtt.TT, optional): initial guess (None means no initial guess). Defaults to None.</span>
+<span class="sd">        eps (float, optional): realtive tolerance. Defaults to 1e-10.</span>
+<span class="sd">        rmax (int, optional): maximum rank. Defaults to 1024.</span>
+<span class="sd">        kickrank (int, optional): kickrank. Defaults to 4.</span>
+<span class="sd">        kick2 (int, optional): kick2. Defaults to 0.</span>
+<span class="sd">        verbose (bool, optional): show debug info. Defaults to False.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        torchtt.TT: the result.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">_amen_mm_python</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">cores</span><span class="p">,</span> <span class="n">B</span><span class="o">.</span><span class="n">cores</span><span class="p">,</span> <span class="n">A</span><span class="o">.</span><span class="n">M</span><span class="p">,</span> <span class="n">B</span><span class="o">.</span><span class="n">N</span><span class="p">,</span> <span class="n">A</span><span class="o">.</span><span class="n">N</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">nswp</span><span class="p">,</span> <span class="n">X0</span><span class="o">.</span><span class="n">cores</span> <span class="k">if</span> <span class="n">X0</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span> <span class="n">X0</span><span class="o">.</span><span class="n">R</span> <span class="k">if</span> <span class="n">X0</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>   <span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">,</span> <span class="n">kickrank</span><span class="p">,</span> <span class="n">kick2</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_amen_mm_python</span><span class="p">(</span><span class="n">A_cores</span><span class="p">,</span> <span class="n">B_cores</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">to_ttm</span><span class="p">,</span> <span class="n">nswp</span><span class="o">=</span><span class="mi">22</span><span class="p">,</span> <span class="n">X0_cores</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rx</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">,</span> <span class="n">rmax</span><span class="o">=</span><span class="mi">1024</span><span class="p">,</span> <span class="n">kickrank</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">kick2</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="n">time_total</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+
+    <span class="n">dtype</span> <span class="o">=</span> <span class="n">A_cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span>
+    <span class="n">device</span> <span class="o">=</span> <span class="n">A_cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">device</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">X0_cores</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">x_cores</span> <span class="o">=</span> <span class="p">[</span><span class="n">tn</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+                   <span class="k">for</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">)]</span>
+        <span class="n">rx</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="n">d</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">x_cores</span> <span class="o">=</span> <span class="p">[</span><span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
+                   <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">X0_cores</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">)]</span>
+
+    <span class="c1"># check if rmax is a list</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rmax</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="n">rmax</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="p">[</span><span class="n">rmax</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="c1"># z cores</span>
+    <span class="n">rz</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="p">(</span><span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="p">[</span><span class="n">kickrank</span><span class="o">+</span><span class="n">kick2</span><span class="p">]</span><span class="o">+</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">z_tt</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">random</span><span class="p">([(</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+                          <span class="k">for</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">)],</span> <span class="n">rz</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">z_cores</span> <span class="o">=</span> <span class="p">[</span><span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
+               <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">z_tt</span><span class="o">.</span><span class="n">cores</span><span class="p">]</span>
+    <span class="n">z_cores</span><span class="p">,</span> <span class="n">rz</span> <span class="o">=</span> <span class="n">rl_orthogonal</span><span class="p">(</span><span class="n">z_cores</span><span class="p">,</span> <span class="n">rz</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="n">z_cores</span> <span class="o">=</span> <span class="p">[</span><span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">m</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
+               <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">z_cores</span><span class="p">,</span> <span class="n">M</span><span class="p">)]</span>
+
+    <span class="n">norms</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+    <span class="n">Phiz</span> <span class="o">=</span> <span class="p">[</span><span class="n">tn</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)]</span> <span class="o">+</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> \
+        <span class="p">[</span><span class="n">tn</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)]</span>  <span class="c1"># size is rzk x rxk</span>
+    <span class="n">Phiz_rhs</span> <span class="o">=</span> <span class="p">[</span><span class="n">tn</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)]</span> <span class="o">+</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> \
+        <span class="p">[</span><span class="n">tn</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+         <span class="p">]</span>   <span class="c1"># size is rzk x rAk x rBk</span>
+
+    <span class="n">Phis</span> <span class="o">=</span> <span class="p">[</span><span class="n">tn</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)]</span> <span class="o">+</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> \
+        <span class="p">[</span><span class="n">tn</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)]</span>  <span class="c1"># size is rk x rk</span>
+    <span class="n">Phis_rhs</span> <span class="o">=</span> <span class="p">[</span><span class="n">tn</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)]</span> <span class="o">+</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> \
+        <span class="p">[</span><span class="n">tn</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+         <span class="p">]</span>  <span class="c1"># size is rk x rAk x rBk</span>
+
+    <span class="n">last</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="n">normA</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+    <span class="n">normb</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+    <span class="n">normx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+    <span class="n">nrmsc</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">'Starting AMEn multiplication with:</span><span class="se">\n\t</span><span class="s1">epsilon: </span><span class="si">%g</span><span class="se">\n\t</span><span class="s1">sweeps: </span><span class="si">%d</span><span class="s1">'</span> <span class="o">%</span> <span class="p">(</span>
+            <span class="n">eps</span><span class="p">,</span> <span class="n">nswp</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">swp</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nswp</span><span class="p">):</span>
+        <span class="c1"># right to left orthogonalization</span>
+
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">()</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">'Starting sweep </span><span class="si">%d</span><span class="s1"> </span><span class="si">%s</span><span class="s1">...'</span> <span class="o">%</span>
+                  <span class="p">(</span><span class="n">swp</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="s2">"(last one) "</span> <span class="k">if</span> <span class="n">last</span> <span class="k">else</span> <span class="s2">""</span><span class="p">))</span>
+            <span class="n">tme_sweep</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+
+        <span class="n">tme</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+
+            <span class="c1"># update the z part (ALS) update</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">last</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">swp</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="c1"># shape rzp x MN x rz</span>
+                    <span class="n">czx</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'zr,rmnR,ZR-&gt;zmnZ'</span><span class="p">,</span>
+                                    <span class="n">Phiz</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">x_cores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">Phiz</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+                    <span class="c1"># shape is rzp x MN x rz</span>
+                    <span class="n">czAB</span> <span class="o">=</span> <span class="n">_local_AB</span><span class="p">(</span>
+                        <span class="n">Phiz_rhs</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">Phiz_rhs</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="n">A_cores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">B_cores</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+
+                    <span class="n">cz_new</span> <span class="o">=</span> <span class="n">czAB</span><span class="o">*</span><span class="n">nrmsc</span> <span class="o">-</span> <span class="n">czx</span>
+                    <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">vz</span> <span class="o">=</span> <span class="n">SVD</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">cz_new</span><span class="p">,</span> <span class="p">[</span><span class="n">cz_new</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+                    <span class="c1"># truncate to kickrank</span>
+                    <span class="n">cz_new</span> <span class="o">=</span> <span class="n">vz</span><span class="p">[:</span><span class="nb">min</span><span class="p">(</span><span class="n">kickrank</span><span class="p">,</span> <span class="n">vz</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="p">:]</span><span class="o">.</span><span class="n">t</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="n">k</span> <span class="o">&lt;</span> <span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>  <span class="c1"># extend cz_new with random elements</span>
+                        <span class="n">cz_new</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+                            <span class="p">(</span><span class="n">cz_new</span><span class="p">,</span> <span class="n">tn</span><span class="o">.</span><span class="n">randn</span><span class="p">((</span><span class="n">cz_new</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">kick2</span><span class="p">),</span>  <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)),</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">cz_new</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">z_cores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="p">[</span><span class="n">rz</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">t</span><span class="p">()</span>
+
+                <span class="n">qz</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">QR</span><span class="p">(</span><span class="n">cz_new</span><span class="p">)</span>
+                <span class="n">rz</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">qz</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">z_cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">qz</span><span class="o">.</span><span class="n">t</span><span class="p">(),</span> <span class="p">[</span><span class="n">rz</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">M</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">N</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">rz</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]])</span>
+
+            <span class="c1"># norm correction ?</span>
+            <span class="k">if</span> <span class="n">swp</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">nrmsc</span> <span class="o">=</span> <span class="n">nrmsc</span> <span class="o">*</span> <span class="n">normA</span><span class="p">[</span><span class="n">k</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">normx</span><span class="p">[</span><span class="n">k</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="n">normb</span><span class="p">[</span><span class="n">k</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="n">core</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">x_cores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="p">[</span><span class="n">rx</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">M</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="n">N</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="n">rx</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]])</span><span class="o">.</span><span class="n">t</span><span class="p">()</span>
+            <span class="n">Qmat</span><span class="p">,</span> <span class="n">Rmat</span> <span class="o">=</span> <span class="n">QR</span><span class="p">(</span><span class="n">core</span><span class="p">)</span>
+
+            <span class="n">core_prev</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'ijlk,km-&gt;ijlm'</span><span class="p">,</span> <span class="n">x_cores</span><span class="p">[</span><span class="n">k</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">Rmat</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+            <span class="n">rx</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">Qmat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="n">current_norm</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">core_prev</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">current_norm</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">core_prev</span> <span class="o">=</span> <span class="n">core_prev</span> <span class="o">/</span> <span class="n">current_norm</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">current_norm</span> <span class="o">=</span> <span class="mf">1.0</span>
+            <span class="n">normx</span><span class="p">[</span><span class="n">k</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">normx</span><span class="p">[</span><span class="n">k</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">current_norm</span>
+
+            <span class="n">x_cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">Qmat</span><span class="o">.</span><span class="n">t</span><span class="p">(),</span> <span class="p">[</span><span class="n">rx</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">M</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">N</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">rx</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]])</span>
+            <span class="n">x_cores</span><span class="p">[</span><span class="n">k</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">core_prev</span><span class="p">[:]</span>
+
+            <span class="c1"># update phis (einsum)</span>
+            <span class="n">Phis</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">_compute_phi_bck_x</span><span class="p">(</span><span class="n">Phis</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="n">x_cores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">x_cores</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+            <span class="n">Phis_rhs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">_compute_phi_bck_AB</span><span class="p">(</span>
+                <span class="n">Phis_rhs</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="n">A_cores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">B_cores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">x_cores</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+
+            <span class="c1"># ... and norms</span>
+            <span class="n">norm</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">Phis_rhs</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+            <span class="n">norm</span> <span class="o">=</span> <span class="n">norm</span> <span class="k">if</span> <span class="n">norm</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mf">1.0</span>
+            <span class="n">normb</span><span class="p">[</span><span class="n">k</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">norm</span>
+            <span class="n">Phis_rhs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">Phis_rhs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">/</span><span class="n">norm</span>
+
+            <span class="c1"># norm correction</span>
+            <span class="n">nrmsc</span> <span class="o">=</span> <span class="n">nrmsc</span> <span class="o">*</span> <span class="n">normb</span><span class="p">[</span><span class="n">k</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="p">(</span><span class="n">normA</span><span class="p">[</span><span class="n">k</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">normx</span><span class="p">[</span><span class="n">k</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+            <span class="c1"># compute phis_z</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">last</span><span class="p">:</span>
+                <span class="n">Phiz</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">_compute_phi_bck_x</span><span class="p">(</span>
+                    <span class="n">Phiz</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="n">z_cores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">x_cores</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="o">/</span> <span class="n">normA</span><span class="p">[</span><span class="n">k</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">Phiz_rhs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">_compute_phi_bck_AB</span><span class="p">(</span>
+                    <span class="n">Phiz_rhs</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="n">A_cores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">B_cores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">z_cores</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="o">/</span> <span class="n">normb</span><span class="p">[</span><span class="n">k</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="c1"># start loop</span>
+        <span class="n">max_dx</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">'</span><span class="se">\t</span><span class="s1">Core'</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+            <span class="n">previous_solution</span> <span class="o">=</span> <span class="n">x_cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+
+            <span class="c1"># compute new approximation</span>
+            <span class="n">solution_now</span> <span class="o">=</span> <span class="n">_local_AB</span><span class="p">(</span>
+                <span class="n">Phis_rhs</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">Phis_rhs</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="n">A_cores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">B_cores</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="o">*</span> <span class="n">nrmsc</span>
+            <span class="n">norm_solution</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">solution_now</span><span class="p">)</span>
+
+            <span class="c1"># compute residual and step size</span>
+            <span class="n">dx</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">solution_now</span><span class="o">-</span><span class="n">previous_solution</span><span class="p">)</span> <span class="o">/</span> \
+                <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">solution_now</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">'</span><span class="se">\t\t</span><span class="s1">dx = </span><span class="si">%g</span><span class="s1">'</span> <span class="o">%</span> <span class="p">(</span><span class="n">dx</span><span class="p">))</span>
+
+            <span class="n">max_dx</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">dx</span><span class="p">,</span> <span class="n">max_dx</span><span class="p">)</span>
+
+            <span class="n">solution_now</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">solution_now</span><span class="p">,</span> <span class="p">[</span><span class="n">rx</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="n">M</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="n">N</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">rx</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]])</span>
+            <span class="c1"># truncation</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="o">&lt;</span> <span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">u</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">SVD</span><span class="p">(</span><span class="n">solution_now</span><span class="p">)</span>
+
+                <span class="n">r</span> <span class="o">=</span> <span class="n">rank_chop</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="p">(</span><span class="n">norm_solution</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span>
+                              <span class="o">*</span> <span class="n">eps</span> <span class="o">/</span> <span class="p">(</span><span class="n">d</span><span class="o">**</span><span class="p">(</span><span class="mf">0.5</span> <span class="k">if</span> <span class="n">last</span> <span class="k">else</span> <span class="mf">1.5</span><span class="p">)))</span><span class="o">.</span><span class="n">numpy</span><span class="p">())</span>
+                <span class="n">r</span> <span class="o">=</span> <span class="nb">min</span><span class="p">([</span><span class="n">r</span><span class="p">,</span> <span class="n">tn</span><span class="o">.</span><span class="n">numel</span><span class="p">(</span><span class="n">s</span><span class="p">),</span> <span class="n">rmax</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">u</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">QR</span><span class="p">(</span><span class="n">solution_now</span><span class="p">)</span>
+                <span class="n">r</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">r</span><span class="p">,</span>  <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+
+            <span class="n">u</span> <span class="o">=</span> <span class="n">u</span><span class="p">[:,</span> <span class="p">:</span><span class="n">r</span><span class="p">]</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">s</span><span class="p">[:</span><span class="n">r</span><span class="p">])</span> <span class="o">@</span> <span class="n">v</span><span class="p">[:</span><span class="n">r</span><span class="p">,</span> <span class="p">:]</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">t</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">last</span><span class="p">:</span>
+                <span class="c1"># shape rzp x MN x rz</span>
+                <span class="n">czx</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span>
+                    <span class="s1">'zr,rmnR,ZR-&gt;zmnZ'</span><span class="p">,</span> <span class="n">Phiz</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">u</span><span class="nd">@v</span><span class="o">.</span><span class="n">t</span><span class="p">(),</span> <span class="p">[</span><span class="n">rx</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">M</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">N</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">rx</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]]),</span> <span class="n">Phiz</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+                <span class="c1"># shape is rzp x MN x rz</span>
+                <span class="n">czAB</span> <span class="o">=</span> <span class="n">_local_AB</span><span class="p">(</span>
+                    <span class="n">Phiz_rhs</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">Phiz_rhs</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="n">A_cores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">B_cores</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+
+                <span class="n">cz_new</span> <span class="o">=</span> <span class="n">czAB</span><span class="o">*</span><span class="n">nrmsc</span> <span class="o">-</span> <span class="n">czx</span>
+
+                <span class="n">uz</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">SVD</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">cz_new</span><span class="p">,</span> <span class="p">[</span><span class="n">rz</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="n">M</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="n">N</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">rz</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]]))</span>
+                <span class="c1"># truncate to kickrank</span>
+                <span class="n">cz_new</span> <span class="o">=</span> <span class="n">uz</span><span class="p">[:,</span> <span class="p">:</span><span class="nb">min</span><span class="p">(</span><span class="n">kickrank</span><span class="p">,</span> <span class="n">uz</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span>
+                <span class="k">if</span> <span class="n">k</span> <span class="o">&lt;</span> <span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>  <span class="c1"># extend cz_new with random elements</span>
+                    <span class="n">cz_new</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+                        <span class="p">(</span><span class="n">cz_new</span><span class="p">,</span> <span class="n">tn</span><span class="o">.</span><span class="n">randn</span><span class="p">((</span><span class="n">cz_new</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">kick2</span><span class="p">),</span>  <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)),</span> <span class="mi">1</span><span class="p">)</span>
+
+                <span class="n">qz</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">QR</span><span class="p">(</span><span class="n">cz_new</span><span class="p">)</span>
+                <span class="n">rz</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">qz</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">z_cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">qz</span><span class="p">,</span> <span class="p">[</span><span class="n">rz</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">M</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">N</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">rz</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]])</span>
+
+            <span class="k">if</span> <span class="n">k</span> <span class="o">&lt;</span> <span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">last</span><span class="p">:</span>
+                    <span class="c1"># shape rzp x MN x rz</span>
+                    <span class="n">czx</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span>
+                        <span class="s1">'zr,rmnR,ZR-&gt;zmnZ'</span><span class="p">,</span> <span class="n">Phis</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">u</span><span class="nd">@v</span><span class="o">.</span><span class="n">t</span><span class="p">(),</span> <span class="p">[</span><span class="n">rx</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">M</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">N</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">rx</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]]),</span> <span class="n">Phiz</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+                    <span class="c1"># shape is rzp x MN x rz</span>
+                    <span class="n">czAB</span> <span class="o">=</span> <span class="n">_local_AB</span><span class="p">(</span>
+                        <span class="n">Phis_rhs</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">Phiz_rhs</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="n">A_cores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">B_cores</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+
+                    <span class="n">uk</span> <span class="o">=</span> <span class="n">czAB</span><span class="o">*</span><span class="n">nrmsc</span> <span class="o">-</span> <span class="n">czx</span>
+
+                    <span class="n">u</span><span class="p">,</span> <span class="n">Rmat</span> <span class="o">=</span> <span class="n">QR</span><span class="p">(</span>
+                        <span class="n">tn</span><span class="o">.</span><span class="n">cat</span><span class="p">((</span><span class="n">u</span><span class="p">,</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">uk</span><span class="p">,</span> <span class="p">[</span><span class="n">u</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">])),</span> <span class="mi">1</span><span class="p">))</span>
+                    <span class="n">r_add</span> <span class="o">=</span> <span class="n">uk</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="n">v</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+                        <span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">tn</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">rx</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="n">r_add</span><span class="p">],</span>  <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)),</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="n">v</span> <span class="o">=</span> <span class="n">v</span> <span class="o">@</span> <span class="n">Rmat</span><span class="o">.</span><span class="n">t</span><span class="p">()</span>
+
+                <span class="n">r</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">v</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'ji,jklm-&gt;iklm'</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">x_cores</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+                <span class="c1"># remove norm correction</span>
+                <span class="n">nrmsc</span> <span class="o">=</span> <span class="n">nrmsc</span> <span class="o">*</span> <span class="n">normA</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">*</span> <span class="n">normx</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">/</span> <span class="n">normb</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+
+                <span class="n">norm_now</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">norm_now</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">v</span> <span class="o">=</span> <span class="n">v</span> <span class="o">/</span> <span class="n">norm_now</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">norm_now</span> <span class="o">=</span> <span class="mf">1.0</span>
+                <span class="n">normx</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">normx</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">*</span> <span class="n">norm_now</span>
+
+                <span class="n">x_cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="p">[</span><span class="n">rx</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">M</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">N</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">r</span><span class="p">])</span>
+                <span class="n">x_cores</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="n">M</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="n">N</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="n">rx</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">2</span><span class="p">]])</span>
+                <span class="n">rx</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">r</span>
+
+                <span class="c1"># next phis with norm correction</span>
+                <span class="n">Phis</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">_compute_phi_fwd_x</span><span class="p">(</span><span class="n">Phis</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">x_cores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">x_cores</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+                <span class="n">Phis_rhs</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">_compute_phi_fwd_AB</span><span class="p">(</span>
+                    <span class="n">Phis_rhs</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">A_cores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">B_cores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">x_cores</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+
+                <span class="c1"># ... and norms</span>
+                <span class="n">norm</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">Phis_rhs</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+                <span class="n">norm</span> <span class="o">=</span> <span class="n">norm</span> <span class="k">if</span> <span class="n">norm</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mf">1.0</span>
+                <span class="n">normb</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">norm</span>
+                <span class="n">Phis_rhs</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">Phis_rhs</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="n">norm</span>
+
+                <span class="c1"># norm correction</span>
+                <span class="n">nrmsc</span> <span class="o">=</span> <span class="n">nrmsc</span> <span class="o">*</span> <span class="n">normb</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">/</span> <span class="p">(</span><span class="n">normA</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">*</span> <span class="n">normx</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+
+                <span class="c1"># next phiz</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">last</span><span class="p">:</span>
+                    <span class="n">Phiz</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">_compute_phi_fwd_x</span><span class="p">(</span><span class="n">Phiz</span><span class="p">[</span><span class="n">k</span><span class="p">],</span>
+                                                   <span class="n">z_cores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">x_cores</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="o">/</span> <span class="n">normA</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+                    <span class="n">Phiz_rhs</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">_compute_phi_fwd_AB</span><span class="p">(</span>
+                        <span class="n">Phiz_rhs</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">A_cores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">B_cores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">z_cores</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="o">/</span> <span class="n">normb</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">x_cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+                    <span class="n">u</span><span class="nd">@tn</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">s</span><span class="p">[:</span><span class="n">r</span><span class="p">])</span> <span class="o">@</span> <span class="n">v</span><span class="p">[:</span><span class="n">r</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">t</span><span class="p">(),</span> <span class="p">[</span><span class="n">rx</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">M</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">N</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">rx</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]])</span>
+
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">'Solution rank is'</span><span class="p">,</span> <span class="n">rx</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">'Maxdx '</span><span class="p">,</span> <span class="n">max_dx</span><span class="p">)</span>
+            <span class="n">tme_sweep</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">-</span><span class="n">tme_sweep</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">'Time '</span><span class="p">,</span> <span class="n">tme_sweep</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">last</span><span class="p">:</span>
+            <span class="k">break</span>
+
+        <span class="k">if</span> <span class="n">max_dx</span> <span class="o">&lt;</span> <span class="n">eps</span><span class="p">:</span>
+            <span class="n">last</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="n">time_total</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">time_total</span>
+        <span class="nb">print</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">'Finished after'</span><span class="p">,</span> <span class="n">swp</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="s1">' sweeps and '</span><span class="p">,</span> <span class="n">time_total</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">()</span>
+    <span class="n">normx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">normx</span><span class="p">))</span><span class="o">/</span><span class="n">d</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
+        <span class="n">x_cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">x_cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">*</span> <span class="n">normx</span>
+
+    <span class="k">if</span> <span class="n">to_ttm</span><span class="p">:</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">x_cores</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">c</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">c</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">x_cores</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">x</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_compute_phi_bck_x</span><span class="p">(</span><span class="n">Phi_now</span><span class="p">,</span> <span class="n">core_left</span><span class="p">,</span> <span class="n">core_right</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Compute the phi backwards for the form dot(left,A @ right)</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        Phi_now (torch.tensor): The current phi. Has shape r1_k+1 x r2_k+1</span>
+<span class="sd">        core_left (torch.tensor): the core on the left. Has shape r1_k x M_k x N_k x r1_k+1 </span>
+<span class="sd">        core_right (torch.tensor): the core to the right. Has shape r2_k x M_k x N_k x r2_k+1 </span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        torch.tensor: The following phi (backward). Has shape r1_k x r2_k</span>
+<span class="sd">    """</span>
+
+    <span class="n">Phi</span> <span class="o">=</span> <span class="n">oe</span><span class="o">.</span><span class="n">contract</span><span class="p">(</span><span class="s1">'LR,lmnL,rmnR-&gt;lr'</span><span class="p">,</span> <span class="n">Phi_now</span><span class="p">,</span> <span class="n">core_left</span><span class="p">,</span> <span class="n">core_right</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">Phi</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_compute_phi_fwd_x</span><span class="p">(</span><span class="n">Phi_now</span><span class="p">,</span> <span class="n">core_left</span><span class="p">,</span> <span class="n">core_right</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Compute the phi forward for the form dot(left,A @ right)</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        Phi_now (torch.tensor): The current phi. Has shape r1_k x R_k x r2_k</span>
+<span class="sd">        core_left (torch.tensor): the core on the left. Has shape r1_k x M_k x N_k x r1_k+1 </span>
+<span class="sd">        core_right (torch.tensor): the core to the right. Has shape r2_k x M_k x N_k x r2_k+1 </span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        torch.tensor: The following phi (backward). Has shape r1_k+1 x r2_k+1</span>
+<span class="sd">    """</span>
+
+    <span class="n">Phi_next</span> <span class="o">=</span> <span class="n">oe</span><span class="o">.</span><span class="n">contract</span><span class="p">(</span><span class="s1">'lr,lMNL,rMNR-&gt;LR'</span><span class="p">,</span> <span class="n">Phi_now</span><span class="p">,</span> <span class="n">core_left</span><span class="p">,</span> <span class="n">core_right</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">Phi_next</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_compute_phi_bck_AB</span><span class="p">(</span><span class="n">Phi_now</span><span class="p">,</span> <span class="n">coreA</span><span class="p">,</span> <span class="n">coreB</span><span class="p">,</span> <span class="n">core</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+
+
+<span class="sd">    Args:</span>
+<span class="sd">        Phi_now (torch.tensor): The current phi. Has shape r_k+1 x rA_k+1 x rB_k+1</span>
+<span class="sd">        coreA (torch.tensor): The current core of the rhs. Has shape rA_k x M_k x K_k x rA_k+1</span>
+<span class="sd">        coreB (torch.tensor): The current core of the rhs. Has shape rB_k x K_k x N_k x rB_k+1</span>
+<span class="sd">        core (torch.tensor): The current core. Has shape r_k x M_k x N_k x r_k+1</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        torch.tensor: The backward phi corresponding to the rhs. Has shape r_k x rA_k x rB_k</span>
+<span class="sd">    """</span>
+
+    <span class="n">Phi</span> <span class="o">=</span> <span class="n">oe</span><span class="o">.</span><span class="n">contract</span><span class="p">(</span><span class="s1">'RAB,amkA,bknB,rmnR-&gt;rab'</span><span class="p">,</span> <span class="n">Phi_now</span><span class="p">,</span> <span class="n">coreA</span><span class="p">,</span> <span class="n">coreB</span><span class="p">,</span> <span class="n">core</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">Phi</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_compute_phi_fwd_AB</span><span class="p">(</span><span class="n">Phi_now</span><span class="p">,</span> <span class="n">coreA</span><span class="p">,</span> <span class="n">coreB</span><span class="p">,</span> <span class="n">core</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+
+
+<span class="sd">    Args:</span>
+<span class="sd">        Phi_now (torch.tensor): The current phi. Has shape r_k x rA_k x rB_k</span>
+<span class="sd">        coreA (torch.tensor): The current core of the rhs. Has shape rA_k x M_k x K_k x rA_k+1</span>
+<span class="sd">        coreB (torch.tensor): The current core of the rhs. Has shape rB_k x K_k x N_k x rB_k+1</span>
+<span class="sd">        core (torch.tensor): The current core. Has shape r_k x M_k x N_k x r_k+1</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        torch.tensor: The backward phi corresponding to the rhs. Has shape r_k+1 x rA_k+1 x rB_k+1</span>
+<span class="sd">    """</span>
+    <span class="n">Phi_next</span> <span class="o">=</span> <span class="n">oe</span><span class="o">.</span><span class="n">contract</span><span class="p">(</span><span class="s1">'rab,amkA,bknB,rmnR-&gt;RAB'</span><span class="p">,</span>
+                           <span class="n">Phi_now</span><span class="p">,</span> <span class="n">coreA</span><span class="p">,</span> <span class="n">coreB</span><span class="p">,</span> <span class="n">core</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">Phi_next</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Ion Gabriel Ion.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

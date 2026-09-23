@@ -1,0 +1,228 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Overview &mdash; torchTT development (main @ ff5a3fd) documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e6c4269e"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="API reference" href="modules.html" />
+    <link rel="prev" title="Installation guide" href="install.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            torchtt
+              <img src="https://github.com/ion-g-ion/torchTT/blob/main/logo_small.png?raw=true" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro_page.html">Welcome to torchTT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation guide</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#what-is-the-tensor-train-format">What is the Tensor-Train format?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#about-the-package">About the package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#nonlinear-transformations-for-ttdensitylayer">Nonlinear Transformations for TTDensityLayer</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">API reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">torchtt</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Overview</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/docs/package-overview.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ ff5a3fd)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="overview">
+<span id="about-tt-label"></span><h1>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h1>
+<section id="what-is-the-tensor-train-format">
+<h2>What is the Tensor-Train format?<a class="headerlink" href="#what-is-the-tensor-train-format" title="Link to this heading"></a></h2>
+<p>The Tensor-Train (TT) format is a low-rank tensor decomposition format used to fight the curse of dimensionality. A d-dimensional tensor (mathsf{x} in mathbb{R} ^{n_1 times n_2 times cdots times n_d}) can be expressed using algebraic operations between d smaller tensors:</p>
+<div class="math notranslate nohighlight">
+\[\mathsf{x}_{i_1i_2...i_d} = \sum\limits_{s_0=1}^{r_0} \sum\limits_{s_1=1}^{r_1} \cdots \sum\limits_{s_{d-1}=1}^{r_{d-1}} \sum\limits_{s_d=1}^{r_d} \mathsf{g}^{(1)}_{s_0 i_1 s_1} \cdots \mathsf{g}^{(d)}_{s_{d-1} i_d s_d},\]</div>
+<p>where <span class="math notranslate nohighlight">\(\mathbf{r} = (r_0,r_1,...,r_d), r_0 = r_d = 1\)</span> is the TT rank and  <span class="math notranslate nohighlight">\(\mathsf{g}^{(k)} \in \mathbb{R}^{r_{k-1} \times n_k \times r_k}\)</span> are the TT cores.
+The storage complexity is <span class="math notranslate nohighlight">\(\mathcal{O}(nr^2d)\)</span> instead of <span class="math notranslate nohighlight">\(\mathcal{O}(n^d)\)</span> if the rank remains bounded. Tensor operators <span class="math notranslate nohighlight">\(\mathsf{A} \in \mathbb{R} ^{(m_1 \times m_2 \times \cdots \times m_d) \times (n_1 \times n_2 \times \cdots \times n_d)}\)</span> can be similarly expressed in the TT format as:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\mathsf{A}_{i_1i_2...i_d,j_1j_2...j_d} = \sum\limits_{s_0=1}^{r_0} \sum\limits_{s_1=1}^{r_1} \cdots \sum\limits_{s_{d-1}=1}^{r_{d-1}} \sum\limits_{s_d=1}^{r_d} \mathsf{h}^{(1)}_{s_0 i_1 j_1 s_1} \cdots \mathsf{h}^{(d)}_{s_{d-1} i_d j_d s_d}, \\ j_k = 1,...,m_k, \: i_k=1,...,n_k, \; \; k=1,...,d.\end{split}\]</div>
+<p>Tensor operators (also called tensor matrices in this library) generalize the concept of matrix-vector product to the multilinear case.</p>
+<p>To create a <cite>TT</cite> object one can simply provide a tensor or the representation in terms of TT-cores. In the first case, the relative accuracy can also be provided such that</p>
+<div class="math notranslate nohighlight">
+\[|| \mathsf{x} - \mathsf{y} ||_F^2 &lt; \epsilon || \mathsf{x}||_F^2,\]</div>
+<p>where <cite>y</cite> is the <cite>TT</cite> tensor returned by the decomposition. In code, this translates to</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torchtt</span>
+
+<span class="c1"># tens is a torch.Tensor</span>
+<span class="c1"># tens = ...</span>
+
+<span class="n">tt</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">tens</span><span class="p">,</span> <span class="mf">1e-10</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The rank of the object <code class="docutils literal notranslate"><span class="pre">tt</span></code> can be inspected using the <code class="docutils literal notranslate"><span class="pre">print()</span></code> function or can accessed using <code class="docutils literal notranslate"><span class="pre">tt.R</span></code>. The tensor can be converted back to the full format using <code class="docutils literal notranslate"><span class="pre">tt.full()</span></code>.
+The TT class implements tensors in the TT format as well as tensors operators in TT format. Once in the TT format, linear algebra operations (<code class="docutils literal notranslate"><span class="pre">+</span></code>, <code class="docutils literal notranslate"><span class="pre">-</span></code>, <code class="docutils literal notranslate"><span class="pre">*</span></code>, <code class="docutils literal notranslate"><span class="pre">&#64;</span></code>, <code class="docutils literal notranslate"><span class="pre">/</span></code>) can be performed without resorting to the full format. The format and the operations is similar to the one implemented in <code class="docutils literal notranslate"><span class="pre">torch</span></code>.
+As an example, we have the following code where 3 tensors in the TT format are involved in algebra operations:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torchTT</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+
+<span class="c1"># generate 2 random tensors and a tensor matrix</span>
+<span class="n">a</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">randn</span><span class="p">([</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">7</span><span class="p">],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">b</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">randn</span><span class="p">([</span><span class="mi">8</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">4</span><span class="p">],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">A</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">randn</span><span class="p">([(</span><span class="mi">4</span><span class="p">,</span><span class="mi">8</span><span class="p">),</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span> <span class="p">,(</span><span class="mi">6</span><span class="p">,</span><span class="mi">6</span><span class="p">)</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="mi">4</span><span class="p">)],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">a</span> <span class="o">*</span> <span class="p">(</span> <span class="n">A</span> <span class="o">@</span> <span class="n">b</span> <span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mf">1e-12</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">x</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">a</span>
+
+<span class="c1"># this is equivalent to</span>
+<span class="n">yf</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">full</span><span class="p">()</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">full</span><span class="p">()</span><span class="o">*</span><span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'ijklabcd,abcd-&gt;ijkl'</span><span class="p">,</span> <span class="n">A</span><span class="o">.</span><span class="n">full</span><span class="p">(),</span> <span class="n">b</span><span class="o">.</span><span class="n">full</span><span class="p">()))</span>
+</pre></div>
+</div>
+<p>During the process, the <code class="docutils literal notranslate"><span class="pre">round()</span></code> function has been used. This has the role of further compressing tensors by reducing the rank. After successive linear algebra operations, the rank will overshoot and therefore it is required to perform rounding operations.</p>
+</section>
+<section id="about-the-package">
+<h2>About the package<a class="headerlink" href="#about-the-package" title="Link to this heading"></a></h2>
+<p>The class <code class="docutils literal notranslate"><span class="pre">torchtt.TT</span></code> is used to create tensors in the TT format. Passing a <cite>torch.Tensor</cite> to the constructor computes a TT decomposition. The accuracy <code class="docutils literal notranslate"><span class="pre">eps</span></code> can be provided as an additional argument. In order to recover the original tensor (also called full tensor), the <code class="docutils literal notranslate"><span class="pre">torchtt.TT.full()</span></code> method can be used. Tensors can be further compressed using the <code class="docutils literal notranslate"><span class="pre">torchtt.TT.round()</span></code> method.</p>
+<dl class="simple">
+<dt>Once in the TT format, linear algebra operations can be performed between compressed tensors without going to the full format. The implemented operations are:</dt><dd><ul class="simple">
+<li><p>Sum and difference between TT objects. Two <code class="docutils literal notranslate"><span class="pre">torchtt.TT</span></code> instances can be summed using the <code class="docutils literal notranslate"><span class="pre">+</span></code> operator. The difference can be implemented using the <code class="docutils literal notranslate"><span class="pre">-</span></code> operator.</p></li>
+<li><p>Elementwise product (also called Hadamard product is performed using) the <code class="docutils literal notranslate"><span class="pre">*</span></code> operator. The same operator also implements the scalar multiplication.</p></li>
+<li><p>The operator <code class="docutils literal notranslate"><span class="pre">&#64;</span></code> implements the generalization of the matrix product. It can also be used between a tensor operator and a tensor.</p></li>
+<li><p>The operator <code class="docutils literal notranslate"><span class="pre">/</span></code> implements the elementwise division of two TT objects. The algorithm is AMEn.</p></li>
+<li><p>The operator <code class="docutils literal notranslate"><span class="pre">**</span></code> implements the Kronecker product.</p></li>
+</ul>
+</dd>
+</dl>
+<p>The package also includes more features such as solving multilinear systems, cross approximation and automatic differentiation (with the possibility to define TT layers for neural networks <code class="docutils literal notranslate"><span class="pre">torchtt.TT.full()</span></code>). Working examples that can be used as a tutorial are to be found in <a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples">examples/</a>.
+Following example scripts (as well as python notebooks) are also provied provided as part of the documentation:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/basic_tutorial.py">basic_tutorial.py</a> / <a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/basic_tutorial.ipynb">basic_tutorial.ipynb</a>: This contains a basic tutorial on decomposing full tensors in the TT format as well as performing rank rounding, slicing. <a class="reference external" href="https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/basic_tutorial.ipynb">Try on Google Colab</a>.</p></li>
+<li><p><a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/basic_linalg.py">basic_linalg.py</a> / <a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/basic_linalg.ipynb">basic_linalg.ipynb</a>: This tutorial presents all the algebra operations that can be performed in the TT format. <a class="reference external" href="https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/basic_linalg.ipynb">Try on Google Colab</a>.</p></li>
+<li><p><a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/efficient_linalg.py">efficient_linalg.py</a> / <a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/efficient_linalg.ipynb">efficient_linalg.ipynb</a>: contains the DMRG for fast matves and AMEN for elementwise inversion in the TT format <a class="reference external" href="https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/efficient_linalg.ipynb">Try on Google Colab</a>.</p></li>
+<li><p><a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/automatic_differentiation.py)">automatic_differentiation.py</a> / <a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/automatic_differentiation.ipynb">automatic_differentiation.ipynp</a>: Basic tutorial on AD in <code class="docutils literal notranslate"><span class="pre">torchtt</span></code>. <a class="reference external" href="https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/automatic_differentiation.ipynb">Try on Google Colab</a>.</p></li>
+<li><p><a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/cross_interpolation.py">cross_interpolation.py</a> / <a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/cross_interpolation.ipynb">cross_interpolation.ipynb</a>: In this script, the cross interpolation emthod is exemplified. <a class="reference external" href="https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/cross_interpolation.ipynb">Try on Google Colab</a>.</p></li>
+<li><p><a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/system_solvers.py">system_solvers.py</a> / <a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/system_solvers.ipynb">system_solvers.ipynb</a>: This contains the bais ussage of the multilinear solvers. <a class="reference external" href="https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/system_solvers.ipynb">Try on Google Colab</a>.</p></li>
+<li><p><a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/gpu_acceleration.py">gpu_acceleration.py</a> / <a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/gpu_acceleration.ipynb">gpu_acceleration.ipynb</a>: This provides an example on how to use the GPU acceleration. <a class="reference external" href="https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/gpu_acceleration.ipynb">Try on Google Colab</a>.</p></li>
+<li><p><a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/basic_nn.py">basic_nn.py</a> / <a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/basic_nn.ipynb">basic_nn.ipynb</a>: This provides an example on how to use the TT neural network layers. <a class="reference external" href="https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/basic_nn.ipynb">Try on Google Colab</a>.</p></li>
+</ul>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/mnist_nn.py">mnist_nn.py</a> / <a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/mnist_nn.ipynb">mnist_nn.ipynb</a>: Example of TT layers used for image classification. <a class="reference external" href="https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/mnist_nn.ipynb">Try on Google Colab</a>.</p></li>
+</ul>
+</div></blockquote>
+</div></blockquote>
+</section>
+<section id="nonlinear-transformations-for-ttdensitylayer">
+<h2>Nonlinear Transformations for TTDensityLayer<a class="headerlink" href="#nonlinear-transformations-for-ttdensitylayer" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">torchtt.nn.TTDensityLayer</span></code> models a conditional probability density function. To reduce the tensor train rank required for complex, curved distributions (like banana or C-shapes), the layer can apply a learnable change-of-variables before evaluating the TT cores. We implement several modular transformations:</p>
+<p><strong>Affine Transform</strong></p>
+<p>The simplest transformation is an affine map:</p>
+<div class="math notranslate nohighlight">
+\[\mathbf{z} = R(\boldsymbol{\theta}) \text{diag}(e^{\mathbf{a}}) \mathbf{x} + \mathbf{b}\]</div>
+<p>Here, <span class="math notranslate nohighlight">\(R(\boldsymbol{\theta})\)</span> is a rotation matrix assembled from Givens rotations parameterized by angles <span class="math notranslate nohighlight">\(\boldsymbol{\theta}\)</span>, <span class="math notranslate nohighlight">\(\mathbf{a}\)</span> are log-scales, and <span class="math notranslate nohighlight">\(\mathbf{b}\)</span> are offsets.
+The Jacobian determinant is <span class="math notranslate nohighlight">\(| \det J | = \prod e^{a_i}\)</span>.</p>
+<p><strong>Rank-1 Volume-Preserving Shear</strong></p>
+<p>To straighten curved ridges, we apply a rank-1 nonlinear shear:</p>
+<div class="math notranslate nohighlight">
+\[\mathbf{z} = \mathbf{x} + \mathbf{u} g(\mathbf{v}^\top \mathbf{x} + c)\]</div>
+<p>To ensure the transformation is volume-preserving (i.e., <span class="math notranslate nohighlight">\(| \det J | = 1\)</span>), we project <span class="math notranslate nohighlight">\(\mathbf{u}\)</span> such that <span class="math notranslate nohighlight">\(\mathbf{v}^\top \mathbf{u} = 0\)</span>.
+The scalar function <span class="math notranslate nohighlight">\(g(t)\)</span> is a polynomial of degree <span class="math notranslate nohighlight">\(D\)</span> with no constant term:</p>
+<div class="math notranslate nohighlight">
+\[g(t) = \sum_{p=1}^D \alpha_p t^p\]</div>
+<p>Optionally, the displacement can be squashed with a hyperbolic tangent to prevent numerical overflow: <span class="math notranslate nohighlight">\(\tilde{g}(t) = c_{clip} \tanh(g(t) / c_{clip})\)</span>.</p>
+<p><strong>Triangular Polynomial Shear</strong></p>
+<p>A Knothe-Rosenblatt-style mapping that is also volume-preserving:</p>
+<div class="math notranslate nohighlight">
+\[z_i = x_i + \sum_{j&gt;i} q_{ij}(x_j)\]</div>
+<p>The Jacobian is unit upper-triangular, so <span class="math notranslate nohighlight">\(\det J = 1\)</span> identically. Each <span class="math notranslate nohighlight">\(q_{ij}(t)\)</span> is a polynomial of degree <span class="math notranslate nohighlight">\(D_{poly}\)</span> with no constant term:</p>
+<div class="math notranslate nohighlight">
+\[q_{ij}(t) = \sum_{p=1}^{D_{poly}} \beta_{ij,p} t^p\]</div>
+<p><strong>Sinh-Arcsinh Warp</strong></p>
+<p>An elementwise bijection used to model asymmetric skewness and heavy tails:</p>
+<div class="math notranslate nohighlight">
+\[z_i = \sinh\left(e^{s_i} \text{asinh}(x_i) + b_i\right)\]</div>
+<p>where <span class="math notranslate nohighlight">\(s_i\)</span> is the log-scale and <span class="math notranslate nohighlight">\(b_i\)</span> is the offset.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="install.html" class="btn btn-neutral float-left" title="Installation guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="modules.html" class="btn btn-neutral float-right" title="API reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Ion Gabriel Ion.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

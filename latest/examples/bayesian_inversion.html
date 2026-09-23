@@ -1,0 +1,704 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bayesian Inversion with torchTT &mdash; torchTT development (main @ ff5a3fd) documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e6c4269e"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="GPU acceleration" href="gpu_acceleration.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            torchtt
+              <img src="https://github.com/ion-g-ion/torchTT/blob/main/logo_small.png?raw=true" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../docs/intro_page.html">Welcome to torchTT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/install.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/package-overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/modules.html">API reference</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../docs/examples.html">Examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#getting-started">Getting Started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#linear-algebra-solvers">Linear Algebra &amp; Solvers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#cross-interpolation">Cross Interpolation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#neural-networks">Neural Networks</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../docs/examples.html#advanced-topics">Advanced Topics</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="automatic_differentiation.html">Automatic differentiation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="manifold.html">TT Manifold and Riemannian Optimization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gpu_acceleration.html">GPU acceleration</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Bayesian Inversion with torchTT</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Log-likelihood-for-the-SIDE">Log-likelihood for the SIDE</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Tensor-product-basis-representation">Tensor product basis representation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Bayesian-inference">Bayesian inference</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Marginal-posterior-densities">Marginal posterior densities</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#2D-Marginal-Posterior-Densities">2D Marginal Posterior Densities</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">torchtt</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../docs/examples.html">Examples</a></li>
+      <li class="breadcrumb-item active">Bayesian Inversion with torchTT</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/examples/bayesian_inversion.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ ff5a3fd)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="Bayesian-Inversion-with-torchTT">
+<h1>Bayesian Inversion with torchTT<a class="headerlink" href="#Bayesian-Inversion-with-torchTT" title="Link to this heading"></a></h1>
+<p>First we define a random process with memory governed by a <strong>Stochastic Integro-Differential Equation (SIDE)</strong>. The process incorporates an integral term with an exponential memory kernel:</p>
+<div class="math notranslate nohighlight">
+\[dX_t = \left(\alpha X_t + \beta \int_0^t e^{-\kappa(t-s)} X_s \, ds + \gamma \right) dt + \sigma dW_t\]</div>
+<p>where <span class="math notranslate nohighlight">\(W_t\)</span> is a standard Brownian motion and <span class="math notranslate nohighlight">\(\kappa &gt; 0\)</span> controls the decay rate of the memory kernel.</p>
+<p>By introducing an auxiliary variable <span class="math notranslate nohighlight">\(I_t = \int_0^t e^{-\kappa(t-s)} X_s \, ds\)</span>, we note that <span class="math notranslate nohighlight">\(I_t\)</span> satisfies:</p>
+<div class="math notranslate nohighlight">
+\[dI_t = (X_t - \kappa I_t) \, dt\]</div>
+<p>Discretizing using the Euler-Maruyama method gives:</p>
+<div class="math notranslate nohighlight">
+\[X_{i} = X_{i-1} + (\alpha X_{i-1} + \beta I_{i-1} + \gamma)\Delta t + \sigma \sqrt{\Delta t} Z_i\]</div>
+<div class="math notranslate nohighlight">
+\[I_{i} = I_{i-1} + (X_{i-1} - \kappa I_{i-1})\Delta t\]</div>
+<p>with <span class="math notranslate nohighlight">\(Z_i \sim \mathcal{N}(0, 1)\)</span>.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torchtt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torchtt.functional</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+
+<span class="n">torch</span><span class="o">.</span><span class="n">set_default_dtype</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+<span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="mi">123456</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">123456</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">sample_integro_process</span><span class="p">(</span><span class="n">ns</span><span class="p">,</span> <span class="n">nt</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Sample paths of a Stochastic Integro-Differential Equation (SIDE).</span>
+
+<span class="sd">    dX_t = (alpha * X_t + beta * I_t + gamma) dt + sigma dW_t</span>
+<span class="sd">    dI_t = (X_t - kappa * I_t) dt</span>
+
+<span class="sd">    where I_t = integral_0^t exp(-kappa*(t-s)) X_s ds</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">      ns    : number of sample paths</span>
+<span class="sd">      nt    : number of time steps</span>
+<span class="sd">      dt    : time step size</span>
+<span class="sd">      params: [alpha, beta, gamma, kappa, sigma]</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">      X: tensor of shape (ns, nt+1) with sample paths</span>
+<span class="sd">      t_grid: tensor of shape (nt+1,) with time values</span>
+<span class="sd">    """</span>
+    <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">gamma</span><span class="p">,</span> <span class="n">kappa</span><span class="p">,</span> <span class="n">sigma</span> <span class="o">=</span> <span class="n">params</span>
+
+    <span class="n">X</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">ns</span><span class="p">,</span> <span class="n">nt</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">I</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">ns</span><span class="p">)</span>  <span class="c1"># integral state, starts at 0</span>
+
+    <span class="n">sqrt_dt</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">nt</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="n">dW</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">ns</span><span class="p">)</span> <span class="o">*</span> <span class="n">sqrt_dt</span>
+        <span class="n">X_prev</span> <span class="o">=</span> <span class="n">X</span><span class="p">[:,</span> <span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+
+        <span class="c1"># Update X</span>
+        <span class="n">X</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">X_prev</span> <span class="o">+</span> <span class="p">(</span><span class="n">alpha</span> <span class="o">*</span> <span class="n">X_prev</span> <span class="o">+</span> <span class="n">beta</span> <span class="o">*</span> <span class="n">I</span> <span class="o">+</span> <span class="n">gamma</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">+</span> <span class="n">sigma</span> <span class="o">*</span> <span class="n">dW</span>
+
+        <span class="c1"># Update the integral state I</span>
+        <span class="n">I</span> <span class="o">=</span> <span class="n">I</span> <span class="o">+</span> <span class="p">(</span><span class="n">X_prev</span> <span class="o">-</span> <span class="n">kappa</span> <span class="o">*</span> <span class="n">I</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span>
+
+    <span class="n">t_grid</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">nt</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span>
+    <span class="k">return</span> <span class="n">X</span><span class="p">,</span> <span class="n">t_grid</span>
+
+
+<span class="c1"># Parameters: [alpha, beta, gamma, kappa, sigma]</span>
+<span class="c1"># Moderate diffusion (sigma) for smoother paths; grid/prior below match these values.</span>
+<span class="n">params</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mf">0.45</span><span class="p">,</span> <span class="mf">0.28</span><span class="p">,</span> <span class="mf">0.08</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.06</span><span class="p">]</span>
+
+<span class="n">ns</span> <span class="o">=</span> <span class="mi">20</span>     <span class="c1"># number of sample paths</span>
+<span class="n">T</span> <span class="o">=</span> <span class="mf">40.0</span>     <span class="c1"># total time</span>
+<span class="n">dt</span> <span class="o">=</span> <span class="mf">0.01</span>   <span class="c1"># time step</span>
+<span class="n">nt</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">T</span> <span class="o">/</span> <span class="n">dt</span><span class="p">)</span>
+
+<span class="n">X</span><span class="p">,</span> <span class="n">t_grid</span> <span class="o">=</span> <span class="n">sample_integro_process</span><span class="p">(</span><span class="n">ns</span><span class="p">,</span> <span class="n">nt</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">14</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ns</span><span class="p">):</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t_grid</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">X</span><span class="p">[</span><span class="n">k</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'t'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'$X_t$'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">'Sample paths: Stochastic Integro-Differential Equation'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_bayesian_inversion_2_0.png" src="../_images/examples_bayesian_inversion_2_0.png" />
+</div>
+</div>
+<section id="Log-likelihood-for-the-SIDE">
+<h2>Log-likelihood for the SIDE<a class="headerlink" href="#Log-likelihood-for-the-SIDE" title="Link to this heading"></a></h2>
+<p>Given a path <span class="math notranslate nohighlight">\(X\)</span> and the discretization:</p>
+<div class="math notranslate nohighlight">
+\[X_{i} = X_{i-1} + (\alpha X_{i-1} + \beta I_{i-1} + \gamma)\Delta t + \sigma \sqrt{\Delta t} Z_i,\]</div>
+<p>the transition density is Gaussian:</p>
+<div class="math notranslate nohighlight">
+\[X_i \mid X_{i-1}, I_{i-1} \sim \mathcal{N}\!\left(X_{i-1} + (\alpha X_{i-1} + \beta I_{i-1} + \gamma)\Delta t,\; \sigma^2 \Delta t\right).\]</div>
+<p>The likelihood of an observed path <span class="math notranslate nohighlight">\(Y = (Y_0,\dots,Y_N)\)</span> given <span class="math notranslate nohighlight">\(\theta = (\alpha,\beta,\gamma,\kappa,\sigma)\)</span> is the product of these transition densities,</p>
+<div class="math notranslate nohighlight">
+\[L(\theta) \;:=\; L(Y \mid \theta) \;=\; \prod_{i=1}^{N} p(Y_i \mid Y_{i-1}, I_{i-1};\,\theta),\]</div>
+<p>and the corresponding log-likelihood</p>
+<div class="math notranslate nohighlight">
+\[\ell(\theta) \;=\; \log L(\theta) \;=\; \sum_{i=1}^{N} \log p(Y_i \mid Y_{i-1}, I_{i-1};\,\theta)\]</div>
+<p>is summed over all time steps. Note that the integral state <span class="math notranslate nohighlight">\(I_i\)</span> must be reconstructed from the observed path for each parameter evaluation.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><br/><span></span><span class="k">def</span><span class="w"> </span><span class="nf">process_log_likelihood</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">start_idx</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">end_idx</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Compute the log-likelihood of a single observed path Y under the SIDE model.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">      Y        : 1D tensor of shape (nt+1,) — one observed path</span>
+<span class="sd">      dt       : scalar time step</span>
+<span class="sd">      params   : [alpha, beta, gamma, kappa, sigma]</span>
+<span class="sd">                 Each can be a scalar or a 1D tensor of shape (np,) for vectorized evaluation.</span>
+<span class="sd">      start_idx: first time index to include in the likelihood</span>
+<span class="sd">      end_idx  : last time index (exclusive); defaults to len(Y)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">      log_lik  : scalar or tensor of shape (np,)</span>
+<span class="sd">    """</span>
+    <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">gamma</span><span class="p">,</span> <span class="n">kappa</span><span class="p">,</span> <span class="n">sigma</span> <span class="o">=</span> <span class="n">params</span>
+
+    <span class="k">if</span> <span class="n">end_idx</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">end_idx</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">alpha</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="c1"># Vectorized over parameter grid: alpha, beta, gamma, kappa, sigma all (np,)</span>
+        <span class="n">np_size</span> <span class="o">=</span> <span class="n">alpha</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">var</span> <span class="o">=</span> <span class="p">(</span><span class="n">sigma</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span>  <span class="c1"># (np,)</span>
+        <span class="n">norm_term</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">var</span><span class="p">)</span>  <span class="c1"># (np,)</span>
+
+        <span class="c1"># Reconstruct the integral state I for each parameter vector</span>
+        <span class="c1"># I has shape (np,) and evolves over time</span>
+        <span class="n">I_state</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">np_size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">Y</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">Y</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>  <span class="c1"># (np,)</span>
+
+        <span class="c1"># First, evolve I from 0 to start_idx (no likelihood contribution)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">start_idx</span><span class="p">):</span>
+            <span class="n">I_state</span> <span class="o">=</span> <span class="n">I_state</span> <span class="o">+</span> <span class="p">(</span><span class="n">Y</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">kappa</span> <span class="o">*</span> <span class="n">I_state</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span>
+
+        <span class="c1"># Now compute log-likelihood from start_idx to end_idx</span>
+        <span class="n">log_lik</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">np_size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">Y</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">Y</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">start_idx</span><span class="p">,</span> <span class="n">end_idx</span><span class="p">):</span>
+            <span class="n">mu</span> <span class="o">=</span> <span class="n">Y</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="n">alpha</span> <span class="o">*</span> <span class="n">Y</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">beta</span> <span class="o">*</span> <span class="n">I_state</span> <span class="o">+</span> <span class="n">gamma</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span>  <span class="c1"># (np,)</span>
+            <span class="n">residuals</span> <span class="o">=</span> <span class="n">Y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">mu</span>  <span class="c1"># (np,)</span>
+            <span class="n">log_lik</span> <span class="o">=</span> <span class="n">log_lik</span> <span class="o">+</span> <span class="n">norm_term</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">residuals</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">var</span>
+
+            <span class="c1"># Update integral state</span>
+            <span class="n">I_state</span> <span class="o">=</span> <span class="n">I_state</span> <span class="o">+</span> <span class="p">(</span><span class="n">Y</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">kappa</span> <span class="o">*</span> <span class="n">I_state</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span>
+
+        <span class="k">return</span> <span class="n">log_lik</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Scalar parameters</span>
+        <span class="n">var</span> <span class="o">=</span> <span class="p">(</span><span class="n">sigma</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span>
+        <span class="n">norm_term</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">var</span><span class="p">)</span>
+
+        <span class="n">I_state</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="c1"># Evolve I from 0 to start_idx</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">start_idx</span><span class="p">):</span>
+            <span class="n">I_state</span> <span class="o">=</span> <span class="n">I_state</span> <span class="o">+</span> <span class="p">(</span><span class="n">Y</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">-</span> <span class="n">kappa</span> <span class="o">*</span> <span class="n">I_state</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span>
+
+        <span class="n">log_lik</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">start_idx</span><span class="p">,</span> <span class="n">end_idx</span><span class="p">):</span>
+            <span class="n">mu</span> <span class="o">=</span> <span class="n">Y</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="n">alpha</span> <span class="o">*</span> <span class="n">Y</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">beta</span> <span class="o">*</span> <span class="n">I_state</span> <span class="o">+</span> <span class="n">gamma</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span>
+            <span class="n">residual</span> <span class="o">=</span> <span class="n">Y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">mu</span>
+            <span class="n">log_lik</span> <span class="o">=</span> <span class="n">log_lik</span> <span class="o">+</span> <span class="n">norm_term</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">residual</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">var</span>
+
+            <span class="n">I_state</span> <span class="o">=</span> <span class="n">I_state</span> <span class="o">+</span> <span class="p">(</span><span class="n">Y</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">-</span> <span class="n">kappa</span> <span class="o">*</span> <span class="n">I_state</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span>
+
+        <span class="k">return</span> <span class="n">log_lik</span>
+
+
+<span class="c1"># Example usage: Evaluate the likelihood of a single path using true parameters</span>
+<span class="n">log_lik_scalar</span> <span class="o">=</span> <span class="n">process_log_likelihood</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:],</span> <span class="n">dt</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">start_idx</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Scalar log-likelihood:"</span><span class="p">,</span> <span class="n">log_lik_scalar</span><span class="p">)</span>
+
+<span class="c1"># Example usage: Vectorized evaluation</span>
+<span class="n">np_evals</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">vec_params</span> <span class="o">=</span> <span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">np_evals</span><span class="p">,),</span> <span class="n">p</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">params</span><span class="p">]</span>
+<span class="n">log_lik_vec</span> <span class="o">=</span> <span class="n">process_log_likelihood</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:],</span> <span class="n">dt</span><span class="p">,</span> <span class="n">vec_params</span><span class="p">,</span> <span class="n">start_idx</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Vectorized log-likelihood:"</span><span class="p">,</span> <span class="n">log_lik_vec</span><span class="p">)</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Scalar log-likelihood: tensor(14853.3186)
+Vectorized log-likelihood: tensor([14853.3186, 14853.3186, 14853.3186, 14853.3186, 14853.3186, 14853.3186,
+        14853.3186, 14853.3186, 14853.3186, 14853.3186])
+</pre></div></div>
+</div>
+</section>
+<section id="Tensor-product-basis-representation">
+<h2>Tensor product basis representation<a class="headerlink" href="#Tensor-product-basis-representation" title="Link to this heading"></a></h2>
+<p>Let <span class="math notranslate nohighlight">\(\theta = (\theta_1,\dots,\theta_d) = (\alpha,\beta,\gamma,\kappa,\sigma) \in \Omega = \prod_{k=1}^d \Omega_k \subset \mathbb{R}^d\)</span>, with <span class="math notranslate nohighlight">\(d=5\)</span>. For each coordinate <span class="math notranslate nohighlight">\(k\)</span> we choose a univariate B-spline basis <span class="math notranslate nohighlight">\(\{\varphi_{k,i_k}\}_{i_k=1}^{n_k}\)</span> on <span class="math notranslate nohighlight">\(\Omega_k\)</span> and form the tensor product basis</p>
+<div class="math notranslate nohighlight">
+\[\Phi_{i_1\cdots i_d}(\theta) \;=\; \prod_{k=1}^{d} \varphi_{k,i_k}(\theta_k).\]</div>
+<p>Any function <span class="math notranslate nohighlight">\(f:\Omega \to \mathbb{R}\)</span> is represented through its coefficient tensor <span class="math notranslate nohighlight">\(\mathsf{F} \in \mathbb{R}^{n_1\times\cdots\times n_d}\)</span> as</p>
+<div class="math notranslate nohighlight">
+\[f(\theta) \;\approx\; \sum_{i_1,\dots,i_d} \mathsf{F}_{i_1\cdots i_d}\, \Phi_{i_1\cdots i_d}(\theta).\]</div>
+<p>Collocation at interpolation nodes <span class="math notranslate nohighlight">\(\{x_{k,j_k}\}_{j_k=1}^{n_k}\)</span> defines univariate matrices <span class="math notranslate nohighlight">\(B_k \in \mathbb{R}^{n_k\times n_k}\)</span> with <span class="math notranslate nohighlight">\((B_k)_{j_k i_k} = \varphi_{k,i_k}(x_{k,j_k})\)</span>. Values on the tensor grid are then linked to coefficients through the rank-one Kronecker operator</p>
+<div class="math notranslate nohighlight">
+\[B \;=\; B_1 \otimes \cdots \otimes B_d, \qquad \mathsf{F}^{\text{vals}} \;=\; B\,\mathsf{F}.\]</div>
+<p>Integration is performed with separable quadrature weights <span class="math notranslate nohighlight">\(w_k \in \mathbb{R}^{n_k}\)</span>,</p>
+<div class="math notranslate nohighlight">
+\[\int_\Omega f(\theta)\,d\theta \;\approx\; \sum_{j_1,\dots,j_d} \mathsf{F}^{\text{vals}}_{j_1\cdots j_d} \prod_{k=1}^d w_{k,j_k},\]</div>
+<p>which is itself a rank-one tensor contraction.</p>
+<p>The prior is chosen separable,</p>
+<div class="math notranslate nohighlight">
+\[\pi_0(\theta) \;=\; \frac{1}{Z_0}\prod_{k=1}^d \pi_{0,k}(\theta_k),\]</div>
+<p>so its coefficient tensor has TT-rank one. Concretely we use Gaussian factors for <span class="math notranslate nohighlight">\(\alpha,\beta,\gamma\)</span> and log-normal factors for the positive parameters <span class="math notranslate nohighlight">\(\kappa,\sigma\)</span>, and normalize so that <span class="math notranslate nohighlight">\(\int_\Omega \pi_0(\theta)\,d\theta = 1\)</span>.</p>
+<p>Posterior summaries are computed by quadrature against the same weights:</p>
+<div class="math notranslate nohighlight">
+\[\mathbb{E}[\theta_k] \;=\; \int_\Omega \theta_k\, \pi(\theta)\,d\theta,
+\qquad
+\operatorname{Cov}(\theta_k,\theta_\ell) \;=\; \mathbb{E}[\theta_k\theta_\ell] - \mathbb{E}[\theta_k]\,\mathbb{E}[\theta_\ell].\]</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Number of quadrature points</span>
+<span class="n">n</span> <span class="o">=</span> <span class="mi">32</span>
+<span class="n">bases</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">torchtt</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">BSplineBasis</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="mi">2</span><span class="p">),</span>
+    <span class="n">torchtt</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">BSplineBasis</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.55</span><span class="p">,</span> <span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="mi">2</span><span class="p">),</span>
+    <span class="n">torchtt</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">BSplineBasis</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.35</span><span class="p">,</span> <span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="mi">2</span><span class="p">),</span>
+    <span class="n">torchtt</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">BSplineBasis</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.45</span><span class="p">,</span> <span class="mf">1.65</span><span class="p">,</span> <span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="mi">2</span><span class="p">),</span>
+    <span class="n">torchtt</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">BSplineBasis</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.075</span><span class="p">,</span> <span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="mi">2</span><span class="p">),</span>
+<span class="p">]</span>
+<span class="n">interpolation_pts</span> <span class="o">=</span> <span class="p">[</span><span class="n">b</span><span class="o">.</span><span class="n">interpolating_points</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">bases</span><span class="p">]</span>
+<span class="n">interpolation_matrices</span> <span class="o">=</span> <span class="p">[</span><span class="n">b</span><span class="o">.</span><span class="n">interpolating_points</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">bases</span><span class="p">]</span>
+<span class="n">B_eval</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">rank1TT</span><span class="p">(</span><span class="n">interpolation_matrices</span><span class="p">)</span>
+<span class="n">B_eval_inv</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">rank1TT</span><span class="p">([</span><span class="n">torch</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">m</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">interpolation_matrices</span><span class="p">])</span>
+<span class="n">integration_weights</span> <span class="o">=</span> <span class="p">[</span><span class="n">b</span><span class="o">.</span><span class="n">integration_weights</span><span class="p">()</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">bases</span><span class="p">]</span>
+<span class="n">Ws</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">rank1TT</span><span class="p">(</span><span class="n">integration_weights</span><span class="p">)</span>
+
+<span class="n">gauss_unnorm</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">std</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">mu</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">std</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">prior</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">rank1TT</span><span class="p">([</span>
+    <span class="n">gauss_unnorm</span><span class="p">(</span><span class="n">interpolation_pts</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mf">0.45</span><span class="p">,</span> <span class="mf">0.12</span><span class="p">),</span>
+    <span class="n">gauss_unnorm</span><span class="p">(</span><span class="n">interpolation_pts</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mf">0.28</span><span class="p">,</span> <span class="mf">0.08</span><span class="p">),</span>
+    <span class="n">gauss_unnorm</span><span class="p">(</span><span class="n">interpolation_pts</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="mf">0.08</span><span class="p">,</span> <span class="mf">0.08</span><span class="p">),</span>
+    <span class="n">gauss_unnorm</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">interpolation_pts</span><span class="p">[</span><span class="mi">3</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">1.0</span><span class="p">),</span> <span class="mf">0.2</span><span class="p">)</span> <span class="o">/</span> <span class="n">interpolation_pts</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span>
+    <span class="n">gauss_unnorm</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">interpolation_pts</span><span class="p">[</span><span class="mi">4</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">0.065</span><span class="p">),</span> <span class="mf">0.03</span><span class="p">)</span> <span class="o">/</span> <span class="n">interpolation_pts</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span>
+<span class="p">])</span>
+<span class="n">prior</span> <span class="o">=</span> <span class="n">prior</span> <span class="o">/</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">B_eval_inv</span> <span class="o">@</span> <span class="n">prior</span><span class="p">,</span> <span class="n">Ws</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">statistics</span><span class="p">(</span><span class="n">prob</span><span class="p">,</span> <span class="n">xs</span><span class="p">,</span> <span class="n">Ws</span><span class="p">):</span>
+    <span class="n">n_params</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">xs</span><span class="p">)</span>
+    <span class="n">Es</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_params</span><span class="p">)</span>
+    <span class="n">Cs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_params</span><span class="p">,</span> <span class="n">n_params</span><span class="p">))</span>
+
+    <span class="n">Xs</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">xs</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_params</span><span class="p">):</span>
+        <span class="n">Es</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">torchtt</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">prob</span><span class="p">,</span> <span class="n">Xs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">Ws</span><span class="p">))</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_params</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">n_params</span><span class="p">):</span>
+            <span class="n">E_xixj</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">torchtt</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">prob</span><span class="p">,</span> <span class="n">Xs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">Xs</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">Ws</span><span class="p">))</span>
+            <span class="n">cov</span> <span class="o">=</span> <span class="n">E_xixj</span> <span class="o">-</span> <span class="n">Es</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">Es</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+            <span class="n">Cs</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">cov</span>
+            <span class="n">Cs</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">cov</span>
+
+    <span class="k">return</span> <span class="n">Es</span><span class="p">,</span> <span class="n">Cs</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Joint prior TT shape:"</span><span class="p">,</span> <span class="n">prior</span><span class="o">.</span><span class="n">N</span><span class="p">)</span>
+<span class="n">Es</span><span class="p">,</span> <span class="n">Cs</span> <span class="o">=</span> <span class="n">statistics</span><span class="p">(</span><span class="n">prior</span><span class="p">,</span> <span class="n">interpolation_pts</span><span class="p">,</span> <span class="n">Ws</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Expectations: "</span><span class="p">,</span> <span class="n">Es</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Covariance Matrix: </span><span class="se">\n</span><span class="s2">"</span><span class="p">,</span> <span class="n">Cs</span><span class="p">)</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Joint prior TT shape: [32, 32, 32, 32, 32]
+Expectations:  tensor([-0.4499,  0.2799,  0.0799,  1.0153,  0.0650])
+Covariance Matrix:
+ tensor([[ 1.4438e-02, -3.2027e-05, -9.1472e-06, -1.1618e-04, -7.4392e-06],
+        [-3.2027e-05,  6.3664e-03,  5.6908e-06,  7.2280e-05,  4.6282e-06],
+        [-9.1472e-06,  5.6908e-06,  6.3481e-03,  2.0644e-05,  1.3219e-06],
+        [-1.1618e-04,  7.2280e-05,  2.0644e-05,  3.9450e-02,  1.6789e-05],
+        [-7.4392e-06,  4.6282e-06,  1.3219e-06,  1.6789e-05,  4.8815e-06]])
+</pre></div></div>
+</div>
+</section>
+<section id="Bayesian-inference">
+<h2>Bayesian inference<a class="headerlink" href="#Bayesian-inference" title="Link to this heading"></a></h2>
+<p>Given the observed path <span class="math notranslate nohighlight">\(Y\)</span> and the likelihood <span class="math notranslate nohighlight">\(L(\theta)\)</span> defined above, Bayes’ rule reads</p>
+<div class="math notranslate nohighlight">
+\[\pi(\theta \mid Y) \;\propto\; \pi_0(\theta)\, L(\theta).\]</div>
+<p>We split the observation window into disjoint blocks indexed by <span class="math notranslate nohighlight">\(k\)</span> and factor the likelihood as <span class="math notranslate nohighlight">\(L(\theta) = \prod_k L_k(\theta)\)</span>, so that Bayes’ rule can be applied sequentially:</p>
+<div class="math notranslate nohighlight">
+\[\pi_{k+1}(\theta) \;\propto\; \pi_k(\theta)\, L_k(\theta), \qquad \pi_0 = \text{prior}.\]</div>
+<p>For numerical stability we work in log-space and subtract a constant shift <span class="math notranslate nohighlight">\(c_k = \log L_k(\theta_\star)\)</span> at a reference point <span class="math notranslate nohighlight">\(\theta_\star\)</span>, which does not change the normalized posterior:</p>
+<div class="math notranslate nohighlight">
+\[\pi_{k+1}(\theta) \;\propto\; \pi_k(\theta)\, \exp\!\bigl(\log L_k(\theta) - c_k\bigr).\]</div>
+<p>At each step the new posterior, viewed as a tensor on the parameter grid, is approximated in TT format by adaptive cross interpolation (AMEN),</p>
+<div class="math notranslate nohighlight">
+\[\pi_{k+1} \;\approx\; \mathrm{TT}\!\left[\,(\theta,\, \pi_k(\theta)) \;\mapsto\; \pi_k(\theta)\,e^{\log L_k(\theta) - c_k}\,\right],\]</div>
+<p>using <span class="math notranslate nohighlight">\(\pi_k\)</span> as a warm start. The result is normalized,</p>
+<div class="math notranslate nohighlight">
+\[\pi_{k+1}(\theta) \;\leftarrow\; \pi_{k+1}(\theta) \,\Big/\, \int_\Omega \pi_{k+1}(\theta)\, d\theta,\]</div>
+<p>and TT-rounded to a tolerance <span class="math notranslate nohighlight">\(\varepsilon\)</span> to control rank growth, after which posterior moments <span class="math notranslate nohighlight">\(\mathbb{E}_{\pi_{k+1}}[\theta_k]\)</span> and <span class="math notranslate nohighlight">\(\operatorname{Cov}_{\pi_{k+1}}(\theta_k,\theta_\ell)\)</span> are evaluated by quadrature.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">post</span> <span class="o">=</span> <span class="n">prior</span>
+
+<span class="n">dt_obs</span> <span class="o">=</span> <span class="mf">4.0</span>
+<span class="n">n_obs</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">dt_obs</span> <span class="o">/</span> <span class="n">dt</span><span class="p">)</span>
+<span class="n">total_lik_time</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nt</span><span class="o">//</span><span class="n">n_obs</span><span class="p">):</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_obs</span> <span class="o">*</span> <span class="n">k</span><span class="p">)</span>
+    <span class="n">end</span> <span class="o">=</span> <span class="n">n_obs</span> <span class="o">*</span> <span class="p">(</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">start</span> <span class="o">&gt;=</span> <span class="n">end</span><span class="p">:</span>
+        <span class="k">continue</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">nt</span><span class="o">//</span><span class="n">n_obs</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">post</span><span class="o">.</span><span class="n">R</span><span class="p">)</span>
+    <span class="n">shift</span> <span class="o">=</span> <span class="n">process_log_likelihood</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">,:],</span> <span class="n">dt</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">start_idx</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end_idx</span><span class="o">=</span><span class="n">end</span><span class="p">)</span>
+
+    <span class="n">nt_eval</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_handle</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+        <span class="k">global</span> <span class="n">total_lik_time</span>
+        <span class="n">counter</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+        <span class="n">posterior</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">args</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">),</span> <span class="n">device</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">eval_params</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">args</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
+        <span class="n">prior_vals</span> <span class="o">=</span> <span class="n">args</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">global</span> <span class="n">nt_eval</span>
+        <span class="n">nt_eval</span> <span class="o">+=</span> <span class="n">args</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">log_lik</span> <span class="o">=</span> <span class="n">process_log_likelihood</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">device</span><span class="p">),</span> <span class="n">dt</span><span class="p">,</span> <span class="n">eval_params</span><span class="p">,</span> <span class="n">start_idx</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end_idx</span><span class="o">=</span><span class="n">end</span><span class="p">)</span>
+        <span class="n">log_posterior</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">prior_vals</span><span class="p">)</span> <span class="o">+</span> <span class="n">log_lik</span>
+        <span class="n">posterior</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">log_posterior</span> <span class="o">-</span> <span class="n">shift</span><span class="p">)</span>
+        <span class="n">posterior</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">posterior</span><span class="p">,</span> <span class="n">nan</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+        <span class="n">total_lik_time</span> <span class="o">+=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">counter</span>
+        <span class="k">return</span> <span class="n">posterior</span>
+
+
+    <span class="n">post</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">interpolate</span><span class="o">.</span><span class="n">function_interpolate</span><span class="p">(</span><span class="n">update_handle</span><span class="p">,</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">interpolation_pts</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="n">post</span><span class="p">],</span> <span class="n">start_tens</span> <span class="o">=</span> <span class="n">post</span><span class="p">,</span> <span class="n">eps</span> <span class="o">=</span> <span class="mf">1e-3</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">'amen'</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">kick</span><span class="o">=</span><span class="mi">6</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"N evals </span><span class="si">{</span><span class="n">nt_eval</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">nt_eval</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">post</span><span class="o">.</span><span class="n">N</span><span class="p">)</span><span class="o">*</span><span class="mi">100</span><span class="si">}</span><span class="s2"> %"</span><span class="p">)</span>
+    <span class="n">norm</span> <span class="o">=</span> <span class="p">(</span><span class="n">B_eval_inv</span> <span class="o">@</span> <span class="n">post</span> <span class="o">*</span> <span class="n">Ws</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+    <span class="n">post</span> <span class="o">=</span> <span class="p">(</span><span class="n">post</span> <span class="o">/</span> <span class="n">norm</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">eps</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">)</span>
+    <span class="n">E</span><span class="p">,</span> <span class="n">C</span> <span class="o">=</span> <span class="n">statistics</span><span class="p">(</span><span class="n">post</span><span class="p">,</span> <span class="n">interpolation_pts</span><span class="p">,</span> <span class="n">Ws</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"E=</span><span class="si">{</span><span class="n">E</span><span class="si">}</span><span class="s2">, Var=</span><span class="si">{</span><span class="n">torch</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">C</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Time needed for likelihood evaluation: "</span><span class="p">,</span> <span class="n">total_lik_time</span><span class="p">)</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+1/10
+[1, 1, 1, 1, 1, 1]
+N evals 100000 0.2980232238769531 %
+E=tensor([-0.4294,  0.2848,  0.0780,  1.0127,  0.0614]), Var=tensor([1.2886e-02, 6.2477e-03, 9.0556e-04, 3.9153e-02, 2.8051e-06])
+2/10
+[1, 5, 7, 4, 2, 1]
+N evals 303072 0.9032249450683594 %
+E=tensor([-0.4145,  0.2971,  0.0867,  0.9947,  0.0609]), Var=tensor([9.5233e-03, 5.5190e-03, 7.8512e-04, 3.6698e-02, 1.9769e-06])
+3/10
+[1, 9, 20, 8, 2, 1]
+N evals 402656 1.2000083923339844 %
+E=tensor([-0.4542,  0.2782,  0.0901,  1.0401,  0.0602]), Var=tensor([8.3060e-03, 5.2125e-03, 7.6676e-04, 3.6085e-02, 1.5674e-06])
+4/10
+[1, 13, 34, 12, 2, 1]
+N evals 839200 2.5010108947753906 %
+E=tensor([-0.4635,  0.2766,  0.0928,  1.0393,  0.0605]), Var=tensor([7.9692e-03, 5.0675e-03, 7.6750e-04, 3.5486e-02, 1.3352e-06])
+5/10
+[1, 15, 45, 15, 2, 1]
+N evals 1769568 5.273723602294922 %
+E=tensor([-0.4605,  0.2850,  0.0926,  1.0221,  0.0602]), Var=tensor([7.6258e-03, 4.9358e-03, 7.5046e-04, 3.4489e-02, 1.1249e-06])
+6/10
+[1, 17, 56, 18, 2, 1]
+N evals 2336096 6.962108612060547 %
+E=tensor([-0.4693,  0.2903,  0.0941,  1.0107,  0.0602]), Var=tensor([7.3828e-03, 4.8037e-03, 7.2332e-04, 3.3530e-02, 9.8322e-07])
+7/10
+[1, 17, 68, 21, 2, 1]
+N evals 4719712 14.065837860107422 %
+E=tensor([-0.4643,  0.2961,  0.0919,  0.9950,  0.0601]), Var=tensor([7.3230e-03, 4.6899e-03, 7.0035e-04, 3.2591e-02, 8.8020e-07])
+8/10
+[1, 19, 106, 31, 3, 1]
+N evals 5922496 17.650413513183594 %
+E=tensor([-0.4641,  0.3000,  0.0913,  0.9909,  0.0598]), Var=tensor([7.0312e-03, 4.6205e-03, 6.4583e-04, 3.2117e-02, 8.2028e-07])
+9/10
+[1, 19, 123, 33, 3, 1]
+N evals 6681088 19.91119384765625 %
+E=tensor([-0.4660,  0.3023,  0.0914,  0.9829,  0.0597]), Var=tensor([7.0397e-03, 4.5468e-03, 6.3161e-04, 3.1430e-02, 7.4425e-07])
+10/10
+[1, 19, 134, 36, 3, 1]
+N evals 7246272 21.59557342529297 %
+E=tensor([-0.4722,  0.3084,  0.0909,  0.9686,  0.0597]), Var=tensor([7.0431e-03, 4.4733e-03, 6.0595e-04, 3.0408e-02, 7.1266e-07])
+
+Time needed for likelihood evaluation:  121.6701488992403
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">Imat</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">])</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">n</span><span class="p">):</span>
+        <span class="n">Imat</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+<br/></pre></div>
+</div>
+</div>
+</section>
+<section id="Marginal-posterior-densities">
+<h2>Marginal posterior densities<a class="headerlink" href="#Marginal-posterior-densities" title="Link to this heading"></a></h2>
+<p>For each parameter <span class="math notranslate nohighlight">\(\theta_k\)</span> we plot the one-dimensional marginal posterior <span class="math notranslate nohighlight">\(\pi(\theta_k \mid Y) = \int \pi(\theta \mid Y)\, d\theta_{-k}\)</span>, the corresponding prior marginal (rescaled for visibility), and the true value used to generate the data.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><br/><span></span><span class="n">param_names</span> <span class="o">=</span> <span class="p">[</span><span class="sa">r</span><span class="s1">'$\alpha$'</span><span class="p">,</span> <span class="sa">r</span><span class="s1">'$\beta$'</span><span class="p">,</span> <span class="sa">r</span><span class="s1">'$\gamma$'</span><span class="p">,</span> <span class="sa">r</span><span class="s1">'$\kappa$'</span><span class="p">,</span> <span class="sa">r</span><span class="s1">'$\sigma$'</span><span class="p">]</span>
+
+<span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+    <span class="c1"># Marginalize over all dimensions except idx</span>
+    <span class="n">other_dims</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">idx</span><span class="p">]</span>
+    <span class="n">other_ws</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">rank1TT</span><span class="p">([</span><span class="n">integration_weights</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">other_dims</span><span class="p">])</span>
+    <span class="n">xplot</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">bases</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">interval</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">bases</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">interval</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">512</span><span class="p">)</span>
+    <span class="n">B</span> <span class="o">=</span> <span class="n">bases</span><span class="p">[</span><span class="n">idx</span><span class="p">](</span><span class="n">xplot</span><span class="p">)</span>
+    <span class="n">BB</span> <span class="o">=</span> <span class="n">bases</span><span class="p">[</span><span class="n">idx</span><span class="p">](</span><span class="n">interpolation_pts</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
+    <span class="n">tmp</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">post</span><span class="p">,</span> <span class="n">other_ws</span><span class="p">,</span> <span class="n">other_dims</span><span class="p">)</span><span class="o">.</span><span class="n">full</span><span class="p">()</span>
+    <span class="n">tmp</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">BB</span> <span class="o">@</span> <span class="n">BB</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">BB</span> <span class="o">@</span> <span class="n">tmp</span><span class="p">)</span>
+    <span class="n">po</span> <span class="o">=</span> <span class="n">B</span><span class="o">.</span><span class="n">t</span><span class="p">()</span> <span class="o">@</span> <span class="n">tmp</span>
+    <span class="n">pr</span> <span class="o">=</span> <span class="n">B</span><span class="o">.</span><span class="n">t</span><span class="p">()</span> <span class="o">@</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">prior</span><span class="p">,</span> <span class="n">other_ws</span><span class="p">,</span> <span class="n">other_dims</span><span class="p">)</span><span class="o">.</span><span class="n">full</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xplot</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">po</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Posterior'</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xplot</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="p">(</span><span class="n">pr</span><span class="o">/</span><span class="n">pr</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">*</span><span class="n">po</span><span class="o">.</span><span class="n">max</span><span class="p">())</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="s1">'g:'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Prior (scaled)'</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">([</span><span class="n">params</span><span class="p">[</span><span class="n">idx</span><span class="p">]],</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s1">'r'</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'True value'</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="n">param_names</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'Density'</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Marginal posterior: </span><span class="si">{</span><span class="n">param_names</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_bayesian_inversion_11_0.png" src="../_images/examples_bayesian_inversion_11_0.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_bayesian_inversion_11_1.png" src="../_images/examples_bayesian_inversion_11_1.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_bayesian_inversion_11_2.png" src="../_images/examples_bayesian_inversion_11_2.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_bayesian_inversion_11_3.png" src="../_images/examples_bayesian_inversion_11_3.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_bayesian_inversion_11_4.png" src="../_images/examples_bayesian_inversion_11_4.png" />
+</div>
+</div>
+</section>
+<section id="2D-Marginal-Posterior-Densities">
+<h2>2D Marginal Posterior Densities<a class="headerlink" href="#2D-Marginal-Posterior-Densities" title="Link to this heading"></a></h2>
+<p>We marginalize the posterior over all but two parameters to compute the 2D marginal distributions, visualizing the pairwise correlations between the parameters using contour plots.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">))</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">j</span><span class="p">:</span>
+            <span class="c1"># 1D marginal</span>
+            <span class="n">other_dims</span> <span class="o">=</span> <span class="p">[</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span> <span class="k">if</span> <span class="n">k</span> <span class="o">!=</span> <span class="n">i</span><span class="p">]</span>
+            <span class="n">other_ws</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">rank1TT</span><span class="p">([</span><span class="n">integration_weights</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">other_dims</span><span class="p">])</span>
+            <span class="n">xplot</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">bases</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">interval</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">bases</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">interval</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">100</span><span class="p">)</span>
+            <span class="n">B</span> <span class="o">=</span> <span class="n">bases</span><span class="p">[</span><span class="n">i</span><span class="p">](</span><span class="n">xplot</span><span class="p">)</span>
+            <span class="n">tmp</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">post</span><span class="p">,</span> <span class="n">other_ws</span><span class="p">,</span> <span class="n">other_dims</span><span class="p">)</span><span class="o">.</span><span class="n">full</span><span class="p">()</span>
+            <span class="n">po</span> <span class="o">=</span> <span class="n">B</span><span class="o">.</span><span class="n">t</span><span class="p">()</span> <span class="o">@</span> <span class="n">tmp</span>
+
+            <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xplot</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">po</span><span class="o">.</span><span class="n">numpy</span><span class="p">())</span>
+            <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s1">'r'</span><span class="p">)</span>
+            <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">param_names</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
+        <span class="k">elif</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">j</span><span class="p">:</span>
+            <span class="c1"># 2D marginal over i and j</span>
+            <span class="n">other_dims</span> <span class="o">=</span> <span class="p">[</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span> <span class="k">if</span> <span class="n">k</span> <span class="o">!=</span> <span class="n">i</span> <span class="ow">and</span> <span class="n">k</span> <span class="o">!=</span> <span class="n">j</span><span class="p">]</span>
+            <span class="n">other_ws</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">rank1TT</span><span class="p">([</span><span class="n">integration_weights</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">other_dims</span><span class="p">])</span>
+
+            <span class="n">tmp</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">post</span><span class="p">,</span> <span class="n">other_ws</span><span class="p">,</span> <span class="n">other_dims</span><span class="p">)</span><span class="o">.</span><span class="n">full</span><span class="p">()</span>
+
+            <span class="n">xplot_i</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">bases</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">interval</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">bases</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">interval</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">50</span><span class="p">)</span>
+            <span class="n">xplot_j</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">bases</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">interval</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">bases</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">interval</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">50</span><span class="p">)</span>
+            <span class="n">B_i</span> <span class="o">=</span> <span class="n">bases</span><span class="p">[</span><span class="n">i</span><span class="p">](</span><span class="n">xplot_i</span><span class="p">)</span>
+            <span class="n">B_j</span> <span class="o">=</span> <span class="n">bases</span><span class="p">[</span><span class="n">j</span><span class="p">](</span><span class="n">xplot_j</span><span class="p">)</span>
+
+            <span class="c1"># Project onto 2D grid</span>
+            <span class="n">po</span> <span class="o">=</span> <span class="n">B_i</span><span class="o">.</span><span class="n">t</span><span class="p">()</span> <span class="o">@</span> <span class="n">tmp</span> <span class="o">@</span> <span class="n">B_j</span>
+
+            <span class="n">X</span><span class="p">,</span> <span class="n">Y</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">xplot_j</span><span class="p">,</span> <span class="n">xplot_i</span><span class="p">,</span> <span class="n">indexing</span><span class="o">=</span><span class="s1">'xy'</span><span class="p">)</span>
+            <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">contourf</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">Y</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">po</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">levels</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">'viridis'</span><span class="p">)</span>
+            <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="n">params</span><span class="p">[</span><span class="n">j</span><span class="p">]],</span> <span class="p">[</span><span class="n">params</span><span class="p">[</span><span class="n">i</span><span class="p">]],</span> <span class="s1">'ro'</span><span class="p">)</span> <span class="c1"># True value</span>
+            <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">param_names</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+            <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">param_names</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">'off'</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_bayesian_inversion_13_0.png" src="../_images/examples_bayesian_inversion_13_0.png" />
+</div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="gpu_acceleration.html" class="btn btn-neutral float-left" title="GPU acceleration" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Ion Gabriel Ion.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

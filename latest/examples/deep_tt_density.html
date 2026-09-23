@@ -1,0 +1,588 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Deep TT Density demo &mdash; torchTT development (main @ ff5a3fd) documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e6c4269e"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="A physics-informed neural network for the Fokker-Planck equation" href="fokker_planck_pinn.html" />
+    <link rel="prev" title="Digit Recognition using Tensor Train (TT) Neural Networks" href="mnist_nn.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            torchtt
+              <img src="https://github.com/ion-g-ion/torchTT/blob/main/logo_small.png?raw=true" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../docs/intro_page.html">Welcome to torchTT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/install.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/package-overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/modules.html">API reference</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../docs/examples.html">Examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#getting-started">Getting Started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#linear-algebra-solvers">Linear Algebra &amp; Solvers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#cross-interpolation">Cross Interpolation</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../docs/examples.html#neural-networks">Neural Networks</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="basic_nn.html">Tensor Train layers for neural networks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mnist_nn.html">Digit Recognition using Tensor Train (TT) Neural Networks</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Deep TT Density demo</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#The-reference-density:-basis-and-layer">The reference density: basis and layer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Checking-the-normalization">Checking the normalization</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Transformation-and-density">Transformation and density</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Rank-1-shear">Rank-1 shear</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Sinh-arcsinh-warp">Sinh-arcsinh warp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Triangular-polynomial-shear">Triangular polynomial shear</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Composing-transforms">Composing transforms</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fokker_planck_pinn.html">A physics-informed neural network for the Fokker-Planck equation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#advanced-topics">Advanced Topics</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">torchtt</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../docs/examples.html">Examples</a></li>
+      <li class="breadcrumb-item active">Deep TT Density demo</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/examples/deep_tt_density.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ ff5a3fd)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="Deep-TT-Density-demo">
+<h1>Deep TT Density demo<a class="headerlink" href="#Deep-TT-Density-demo" title="Link to this heading"></a></h1>
+<p>The <code class="docutils literal notranslate"><span class="pre">torchtt.nn.TTDensityLayer</span></code> represents a probability density as a <strong>normalized squared functional Tensor Train</strong> — a “Born-machine” density.</p>
+<p>Given univariate basis functions <span class="math notranslate nohighlight">\(\{\phi^{(k)}_i\}_{i=1}^{N_k}\)</span> for every dimension <span class="math notranslate nohighlight">\(k = 1, \dots, d\)</span> (here Gaussians), we build a scalar model function</p>
+<div class="math notranslate nohighlight">
+\[f(x_1, \dots, x_d) = \sum_{i_1=1}^{N_1} \cdots \sum_{i_d=1}^{N_d} G_{i_1 \dots i_d}\, \phi^{(1)}_{i_1}(x_1) \cdots \phi^{(d)}_{i_d}(x_d),\]</div>
+<p>whose coefficient tensor <span class="math notranslate nohighlight">\(G\)</span> is stored in the <strong>Tensor-Train</strong> format with cores <span class="math notranslate nohighlight">\(G^{(k)} \in \mathbb{R}^{R_k \times N_k \times R_{k+1}}\)</span> and <span class="math notranslate nohighlight">\(R_1 = R_{d+1} = 1\)</span>. The density is the normalized square</p>
+<div class="math notranslate nohighlight">
+\[p_\text{ref}(x) = \frac{f(x)^2}{\int f(y)^2\, dy}.\]</div>
+<p>Squaring guarantees non-negativity, and the normalizer <span class="math notranslate nohighlight">\(Z = \int f^2\)</span> is available in closed form from the cores and the basis integration weights <span class="math notranslate nohighlight">\(w^{(k)}_i = \int \phi^{(k)}_i\)</span>, so <span class="math notranslate nohighlight">\(p_\text{ref}\)</span> integrates to <span class="math notranslate nohighlight">\(1\)</span> by construction.</p>
+<p>Optionally a <strong>diffeomorphism</strong> <span class="math notranslate nohighlight">\(T\)</span> (a smooth, invertible change of variables) is applied, yielding the push-forward density through the change-of-variables formula</p>
+<div class="math notranslate nohighlight">
+\[p(x) = p_\text{ref}\big(T(x)\big)\, \big|\det J_T(x)\big|.\]</div>
+<p>The transform lets a low-rank reference density represent correlated or curved distributions. Because the cores are meant to be produced by an upstream neural network (hence <em>deep</em> TT), the layer is an ordinary <code class="docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>: it takes a <strong>flat parameter vector</strong> — the flattened TT cores followed by the transform parameters — together with the evaluation points <span class="math notranslate nohighlight">\(x\)</span>, and returns <span class="math notranslate nohighlight">\(p(x)\)</span>. A network can thus emit a different density for every element of a batch.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%</span><span class="k">matplotlib</span> inline
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">torchtt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torchtt.functional</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torchtt.nn</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">TTDensityLayer</span><span class="p">,</span>
+    <span class="n">AffineTransform</span><span class="p">,</span>
+    <span class="n">Rank1Shear</span><span class="p">,</span>
+    <span class="n">SinhArcsinhWarp</span><span class="p">,</span>
+    <span class="n">TriangularPolyShear</span><span class="p">,</span>
+    <span class="n">ComposedTransform</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<section id="The-reference-density:-basis-and-layer">
+<h2>The reference density: basis and layer<a class="headerlink" href="#The-reference-density:-basis-and-layer" title="Link to this heading"></a></h2>
+<p>We work in <span class="math notranslate nohighlight">\(d = 2\)</span>. Each dimension is given a <strong>Gaussian basis</strong> centred on a uniform grid of <span class="math notranslate nohighlight">\(N_k\)</span> points on <span class="math notranslate nohighlight">\([0, 1]\)</span>; <code class="docutils literal notranslate"><span class="pre">delta_overlap=1</span></code> sets every Gaussian’s width to the spacing of its immediate neighbour, so adjacent bumps overlap smoothly. The TT ranks <code class="docutils literal notranslate"><span class="pre">R</span> <span class="pre">=</span> <span class="pre">[1,</span> <span class="pre">5,</span> <span class="pre">1]</span></code> allow a bond rank of <span class="math notranslate nohighlight">\(5\)</span> between the two modes, which controls how much correlation between <span class="math notranslate nohighlight">\(x_1\)</span> and <span class="math notranslate nohighlight">\(x_2\)</span> the density can capture.</p>
+<p>The flattened TT cores contain <span class="math notranslate nohighlight">\(\sum_k R_k N_k R_{k+1}\)</span> numbers; we draw them once as <code class="docutils literal notranslate"><span class="pre">theta_core</span></code> and reuse this single reference density throughout, appending a different transform’s parameters after it in each section below.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="n">dim</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">N</span> <span class="o">=</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">11</span><span class="p">]</span>          <span class="c1"># number of basis functions per dimension</span>
+<span class="n">R</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>         <span class="c1"># TT ranks (bond rank 5 between the two modes)</span>
+
+<span class="n">basis</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">torchtt</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">GaussianBasis</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">N</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">delta_overlap</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+    <span class="n">torchtt</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">GaussianBasis</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">N</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="n">delta_overlap</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+<span class="p">]</span>
+
+<span class="c1"># The flattened TT cores have this many entries; every layer below appends its</span>
+<span class="c1"># own transform parameters after them.</span>
+<span class="n">n_core</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">n</span> <span class="o">*</span> <span class="n">r0</span> <span class="o">*</span> <span class="n">r1</span> <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">r0</span><span class="p">,</span> <span class="n">r1</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">R</span><span class="p">[</span><span class="mi">1</span><span class="p">:]))</span>
+<span class="n">theta_core</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">n_core</span><span class="p">)</span>   <span class="c1"># one shared reference density, reused everywhere</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"TT-core parameters: </span><span class="si">{</span><span class="n">n_core</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+TT-core parameters: 105
+</pre></div></div>
+</div>
+</section>
+<section id="Checking-the-normalization">
+<h2>Checking the normalization<a class="headerlink" href="#Checking-the-normalization" title="Link to this heading"></a></h2>
+<p>The flat input vector is laid out as <span class="math notranslate nohighlight">\([\,\text{TT cores}\ |\ \text{transform params}\,]\)</span>. We are not training here, so we simply draw one random parameter vector (the shared cores plus a random <strong>affine</strong> transform <span class="math notranslate nohighlight">\(z = R(\theta)\,\mathrm{diag}(e^{a})\,x + b\)</span>), broadcast it across a batch of <span class="math notranslate nohighlight">\(M = 2^{18}\)</span> points, and confirm the density is normalized with a Monte-Carlo estimate</p>
+<div class="math notranslate nohighlight">
+\[\int_\Omega p(x)\, dx \;\approx\; \frac{|\Omega|}{M} \sum_{m=1}^{M} p\big(x^{(m)}\big), \qquad x^{(m)} \sim \mathrm{Unif}(\Omega),\]</div>
+<p>on a square <span class="math notranslate nohighlight">\(\Omega\)</span> of area <span class="math notranslate nohighlight">\(|\Omega| = 3^2\)</span> centred on the affine offset <span class="math notranslate nohighlight">\(b\)</span> so it sits over the density’s mass. The estimate should come out close to <span class="math notranslate nohighlight">\(1\)</span>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">transform</span> <span class="o">=</span> <span class="n">AffineTransform</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+<span class="n">layer</span> <span class="o">=</span> <span class="n">TTDensityLayer</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">basis</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">transform</span><span class="p">)</span>
+
+<span class="n">n_samples</span> <span class="o">=</span> <span class="mi">2</span><span class="o">**</span><span class="mi">18</span>
+<span class="n">theta_affine</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">transform</span><span class="o">.</span><span class="n">input_requirement</span><span class="p">())</span>
+<span class="n">params</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">theta_core</span><span class="p">,</span> <span class="n">theta_affine</span><span class="p">])</span>
+<span class="n">offset</span> <span class="o">=</span> <span class="n">theta_affine</span><span class="p">[</span><span class="o">-</span><span class="n">dim</span><span class="p">:]</span>                       <span class="c1"># the affine translation b</span>
+
+<span class="n">tts</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">n_samples</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">box</span> <span class="o">=</span> <span class="mf">3.0</span>
+<span class="n">xs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">n_samples</span><span class="p">,</span> <span class="n">dim</span><span class="p">)</span> <span class="o">*</span> <span class="n">box</span> <span class="o">-</span> <span class="n">box</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">offset</span>   <span class="c1"># box centred on the mass</span>
+<span class="n">pdf_val</span> <span class="o">=</span> <span class="n">layer</span><span class="p">(</span><span class="n">tts</span><span class="p">,</span> <span class="n">xs</span><span class="p">)</span>
+
+<span class="n">integral</span> <span class="o">=</span> <span class="n">pdf_val</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="n">n_samples</span> <span class="o">*</span> <span class="n">box</span><span class="o">**</span><span class="n">dim</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"pdf batch shape:"</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">pdf_val</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Monte-Carlo integral (expected ~1): </span><span class="si">{</span><span class="n">integral</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+pdf batch shape: (262144,)
+Monte-Carlo integral (expected ~1): 1.0053
+</pre></div></div>
+</div>
+</section>
+<section id="Transformation-and-density">
+<h2>Transformation and density<a class="headerlink" href="#Transformation-and-density" title="Link to this heading"></a></h2>
+<p>From here on we tour the diffeomorphisms available in <code class="docutils literal notranslate"><span class="pre">torchtt.nn</span></code>. Each one plugs into a <code class="docutils literal notranslate"><span class="pre">TTDensityLayer</span></code> the same way, so we keep the <strong>same reference cores</strong> <code class="docutils literal notranslate"><span class="pre">theta_core</span></code> and only change the transform tail.</p>
+<p>For every transform we draw two panels over a common window: on the <strong>left</strong> the displacement field <span class="math notranslate nohighlight">\(z - x = T(x) - x\)</span> (how the map moves points), and on the <strong>right</strong> the resulting density <span class="math notranslate nohighlight">\(p(x) = p_\text{ref}(T(x))\,|\det J_T(x)|\)</span>. We start with the affine map used above.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Reuse the affine transform, layer and parameters from the check above.</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"TT-core parameters:   </span><span class="si">{</span><span class="n">n_core</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"transform parameters: </span><span class="si">{</span><span class="n">transform</span><span class="o">.</span><span class="n">input_requirement</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="n">x0</span><span class="p">,</span> <span class="n">x1</span> <span class="o">=</span> <span class="n">offset</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">-</span> <span class="mf">1.5</span><span class="p">,</span> <span class="n">offset</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">+</span> <span class="mf">1.5</span>
+<span class="n">y0</span><span class="p">,</span> <span class="n">y1</span> <span class="o">=</span> <span class="n">offset</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">-</span> <span class="mf">1.5</span><span class="p">,</span> <span class="n">offset</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">+</span> <span class="mf">1.5</span>
+
+<span class="c1"># left panel: the transformation's displacement field  z - x  (20 x 20 grid)</span>
+<span class="n">qx</span><span class="p">,</span> <span class="n">qy</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">x0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="mi">20</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">y0</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+<span class="n">Xq</span><span class="p">,</span> <span class="n">Yq</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">qx</span><span class="p">,</span> <span class="n">qy</span><span class="p">,</span> <span class="n">indexing</span><span class="o">=</span><span class="s2">"ij"</span><span class="p">)</span>
+<span class="n">grid_q</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">((</span><span class="n">Xq</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">Yq</span><span class="o">.</span><span class="n">flatten</span><span class="p">()),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">z</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">grid_q</span><span class="p">,</span> <span class="n">theta_affine</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">grid_q</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">U</span> <span class="o">=</span> <span class="p">(</span><span class="n">z</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">grid_q</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+<span class="n">V</span> <span class="o">=</span> <span class="p">(</span><span class="n">z</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">grid_q</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+
+<span class="c1"># right panel: the density  p(x)  (200 x 200 grid)</span>
+<span class="n">gx</span><span class="p">,</span> <span class="n">gy</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">x0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="mi">200</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">y0</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
+<span class="n">Xg</span><span class="p">,</span> <span class="n">Yg</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">gx</span><span class="p">,</span> <span class="n">gy</span><span class="p">,</span> <span class="n">indexing</span><span class="o">=</span><span class="s2">"ij"</span><span class="p">)</span>
+<span class="n">grid_g</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">((</span><span class="n">Xg</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">Yg</span><span class="o">.</span><span class="n">flatten</span><span class="p">()),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">full_params</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">theta_core</span><span class="p">,</span> <span class="n">theta_affine</span><span class="p">])</span>
+<span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+    <span class="n">pdf</span> <span class="o">=</span> <span class="n">layer</span><span class="p">(</span><span class="n">full_params</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">grid_g</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">grid_g</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax_t</span><span class="p">,</span> <span class="n">ax_p</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+<span class="n">ax_t</span><span class="o">.</span><span class="n">quiver</span><span class="p">(</span><span class="n">Xq</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">Yq</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">U</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">V</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">color</span><span class="o">=</span><span class="s2">"tab:blue"</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
+<span class="n">ax_t</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"transformation   $z - x$"</span><span class="p">)</span>
+<span class="n">cf</span> <span class="o">=</span> <span class="n">ax_p</span><span class="o">.</span><span class="n">contourf</span><span class="p">(</span><span class="n">Xg</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">Yg</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">pdf</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">levels</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">cf</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax_p</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"density"</span><span class="p">)</span>
+<span class="n">ax_p</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"density   $p(x)$"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="p">(</span><span class="n">ax_t</span><span class="p">,</span> <span class="n">ax_p</span><span class="p">):</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"$x_1$"</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"$x_2$"</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s2">"equal"</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">"Affine transform"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+TT-core parameters:   105
+transform parameters: 5
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_deep_tt_density_7_1.png" src="../_images/examples_deep_tt_density_7_1.png" />
+</div>
+</div>
+</section>
+<section id="Rank-1-shear">
+<h2>Rank-1 shear<a class="headerlink" href="#Rank-1-shear" title="Link to this heading"></a></h2>
+<p>At low rank the reference density is restricted to fairly generic shapes (roughly a rotated, scaled blob). A <strong>nonlinear</strong> diffeomorphism can bend it into curved distributions such as the classic “banana”.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Rank1Shear</span></code> is a volume-preserving rank-1 shear</p>
+<div class="math notranslate nohighlight">
+\[z = x + u\, g(v^\top x + c), \qquad g(t) = \sum_{p=1}^{D} \alpha_p\, t^p,\]</div>
+<p>where <span class="math notranslate nohighlight">\(u\)</span> is internally projected orthogonally to <span class="math notranslate nohighlight">\(v\)</span> so that <span class="math notranslate nohighlight">\(v^\top u = 0\)</span> and hence <span class="math notranslate nohighlight">\(\det J = 1\)</span>. With <span class="math notranslate nohighlight">\(u = [1, 0]\)</span>, <span class="math notranslate nohighlight">\(v = [0, 1]\)</span>, <span class="math notranslate nohighlight">\(c = 0\)</span> and <span class="math notranslate nohighlight">\(g(t) = t^2\)</span> it becomes <span class="math notranslate nohighlight">\((x_1, x_2) \mapsto (x_1 + x_2^2,\ x_2)\)</span> — a parabolic shear along the first axis, with parameter vector <span class="math notranslate nohighlight">\([u_x, u_y, v_x, v_y, c, \alpha_1, \alpha_2]\)</span>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">shear</span> <span class="o">=</span> <span class="n">Rank1Shear</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">degree</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">layer_shear</span> <span class="o">=</span> <span class="n">TTDensityLayer</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">basis</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">shear</span><span class="p">)</span>
+
+<span class="c1"># [u_x, u_y, v_x, v_y, c, alpha_1, alpha_2]:  u=[1,0], v=[0,1], g(t)=t**2</span>
+<span class="n">shear_params</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">])</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"TT-core parameters:   </span><span class="si">{</span><span class="n">n_core</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"transform parameters: </span><span class="si">{</span><span class="n">shear</span><span class="o">.</span><span class="n">input_requirement</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="n">x0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">y1</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.5</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">1.5</span>
+
+<span class="c1"># left panel: the transformation's displacement field  z - x  (20 x 20 grid)</span>
+<span class="n">qx</span><span class="p">,</span> <span class="n">qy</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">x0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="mi">20</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">y0</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+<span class="n">Xq</span><span class="p">,</span> <span class="n">Yq</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">qx</span><span class="p">,</span> <span class="n">qy</span><span class="p">,</span> <span class="n">indexing</span><span class="o">=</span><span class="s2">"ij"</span><span class="p">)</span>
+<span class="n">grid_q</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">((</span><span class="n">Xq</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">Yq</span><span class="o">.</span><span class="n">flatten</span><span class="p">()),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">z</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">shear</span><span class="p">(</span><span class="n">grid_q</span><span class="p">,</span> <span class="n">shear_params</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">grid_q</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">U</span> <span class="o">=</span> <span class="p">(</span><span class="n">z</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">grid_q</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+<span class="n">V</span> <span class="o">=</span> <span class="p">(</span><span class="n">z</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">grid_q</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+
+<span class="c1"># right panel: the density  p(x)  (200 x 200 grid)</span>
+<span class="n">gx</span><span class="p">,</span> <span class="n">gy</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">x0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="mi">200</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">y0</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
+<span class="n">Xg</span><span class="p">,</span> <span class="n">Yg</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">gx</span><span class="p">,</span> <span class="n">gy</span><span class="p">,</span> <span class="n">indexing</span><span class="o">=</span><span class="s2">"ij"</span><span class="p">)</span>
+<span class="n">grid_g</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">((</span><span class="n">Xg</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">Yg</span><span class="o">.</span><span class="n">flatten</span><span class="p">()),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">full_params</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">theta_core</span><span class="p">,</span> <span class="n">shear_params</span><span class="p">])</span>
+<span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+    <span class="n">pdf</span> <span class="o">=</span> <span class="n">layer_shear</span><span class="p">(</span><span class="n">full_params</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">grid_g</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">grid_g</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax_t</span><span class="p">,</span> <span class="n">ax_p</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+<span class="n">ax_t</span><span class="o">.</span><span class="n">quiver</span><span class="p">(</span><span class="n">Xq</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">Yq</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">U</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">V</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">color</span><span class="o">=</span><span class="s2">"tab:blue"</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
+<span class="n">ax_t</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"transformation   $z - x$"</span><span class="p">)</span>
+<span class="n">cf</span> <span class="o">=</span> <span class="n">ax_p</span><span class="o">.</span><span class="n">contourf</span><span class="p">(</span><span class="n">Xg</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">Yg</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">pdf</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">levels</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">cf</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax_p</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"density"</span><span class="p">)</span>
+<span class="n">ax_p</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"density   $p(x)$"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="p">(</span><span class="n">ax_t</span><span class="p">,</span> <span class="n">ax_p</span><span class="p">):</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"$x_1$"</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"$x_2$"</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s2">"equal"</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">"Rank-1 shear (banana)"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+TT-core parameters:   105
+transform parameters: 7
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_deep_tt_density_9_1.png" src="../_images/examples_deep_tt_density_9_1.png" />
+</div>
+</div>
+</section>
+<section id="Sinh-arcsinh-warp">
+<h2>Sinh-arcsinh warp<a class="headerlink" href="#Sinh-arcsinh-warp" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">SinhArcsinhWarp</span></code> acts on each coordinate independently,</p>
+<div class="math notranslate nohighlight">
+\[z_i = \sinh\!\big(e^{s_i}\,\operatorname{asinh}(x_i) + b_i\big),\]</div>
+<p>with per-axis parameters <span class="math notranslate nohighlight">\([s_1, s_2, b_1, b_2]\)</span>. The offset <span class="math notranslate nohighlight">\(b_i\)</span> controls the <strong>skewness</strong> and the log-scale <span class="math notranslate nohighlight">\(s_i\)</span> the <strong>tail weight</strong> along axis <span class="math notranslate nohighlight">\(i\)</span>. Unlike the shears it has a non-trivial Jacobian, <span class="math notranslate nohighlight">\(\det J = \prod_i e^{s_i}\cosh(\cdot)/\sqrt{1 + x_i^2}\)</span>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">warp</span> <span class="o">=</span> <span class="n">SinhArcsinhWarp</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+<span class="n">layer_warp</span> <span class="o">=</span> <span class="n">TTDensityLayer</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">basis</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">warp</span><span class="p">)</span>
+
+<span class="c1"># [s_1, s_2, b_1, b_2]:  per-axis log-scale (tails) and offset (skew)</span>
+<span class="n">warp_params</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">0.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">])</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"TT-core parameters:   </span><span class="si">{</span><span class="n">n_core</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"transform parameters: </span><span class="si">{</span><span class="n">warp</span><span class="o">.</span><span class="n">input_requirement</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="n">x0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">y1</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.7</span><span class="p">,</span> <span class="mf">2.7</span>
+
+<span class="c1"># left panel: the transformation's displacement field  z - x  (20 x 20 grid)</span>
+<span class="n">qx</span><span class="p">,</span> <span class="n">qy</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">x0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="mi">20</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">y0</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+<span class="n">Xq</span><span class="p">,</span> <span class="n">Yq</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">qx</span><span class="p">,</span> <span class="n">qy</span><span class="p">,</span> <span class="n">indexing</span><span class="o">=</span><span class="s2">"ij"</span><span class="p">)</span>
+<span class="n">grid_q</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">((</span><span class="n">Xq</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">Yq</span><span class="o">.</span><span class="n">flatten</span><span class="p">()),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">z</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">warp</span><span class="p">(</span><span class="n">grid_q</span><span class="p">,</span> <span class="n">warp_params</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">grid_q</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">U</span> <span class="o">=</span> <span class="p">(</span><span class="n">z</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">grid_q</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+<span class="n">V</span> <span class="o">=</span> <span class="p">(</span><span class="n">z</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">grid_q</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+
+<span class="c1"># right panel: the density  p(x)  (200 x 200 grid)</span>
+<span class="n">gx</span><span class="p">,</span> <span class="n">gy</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">x0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="mi">200</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">y0</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
+<span class="n">Xg</span><span class="p">,</span> <span class="n">Yg</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">gx</span><span class="p">,</span> <span class="n">gy</span><span class="p">,</span> <span class="n">indexing</span><span class="o">=</span><span class="s2">"ij"</span><span class="p">)</span>
+<span class="n">grid_g</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">((</span><span class="n">Xg</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">Yg</span><span class="o">.</span><span class="n">flatten</span><span class="p">()),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">full_params</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">theta_core</span><span class="p">,</span> <span class="n">warp_params</span><span class="p">])</span>
+<span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+    <span class="n">pdf</span> <span class="o">=</span> <span class="n">layer_warp</span><span class="p">(</span><span class="n">full_params</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">grid_g</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">grid_g</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax_t</span><span class="p">,</span> <span class="n">ax_p</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+<span class="n">ax_t</span><span class="o">.</span><span class="n">quiver</span><span class="p">(</span><span class="n">Xq</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">Yq</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">U</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">V</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">color</span><span class="o">=</span><span class="s2">"tab:blue"</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
+<span class="n">ax_t</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"transformation   $z - x$"</span><span class="p">)</span>
+<span class="n">cf</span> <span class="o">=</span> <span class="n">ax_p</span><span class="o">.</span><span class="n">contourf</span><span class="p">(</span><span class="n">Xg</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">Yg</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">pdf</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">levels</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">cf</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax_p</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"density"</span><span class="p">)</span>
+<span class="n">ax_p</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"density   $p(x)$"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="p">(</span><span class="n">ax_t</span><span class="p">,</span> <span class="n">ax_p</span><span class="p">):</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"$x_1$"</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"$x_2$"</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s2">"equal"</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">"Sinh-arcsinh warp"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+TT-core parameters:   105
+transform parameters: 4
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_deep_tt_density_11_1.png" src="../_images/examples_deep_tt_density_11_1.png" />
+</div>
+</div>
+</section>
+<section id="Triangular-polynomial-shear">
+<h2>Triangular polynomial shear<a class="headerlink" href="#Triangular-polynomial-shear" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">TriangularPolyShear</span></code> is a Knothe-Rosenblatt map: each coordinate is shifted by a polynomial of the <em>later</em> coordinates,</p>
+<div class="math notranslate nohighlight">
+\[z_i = x_i + \sum_{j&gt;i} q_{ij}(x_j), \qquad q_{ij}(t) = \sum_{p=1}^{D} \beta_{ij,p}\, t^p,\]</div>
+<p>which is triangular and hence volume-preserving (<span class="math notranslate nohighlight">\(\det J = 1\)</span>). In 2-D a single polynomial <span class="math notranslate nohighlight">\(q(x_2)\)</span> shifts <span class="math notranslate nohighlight">\(x_1\)</span>; where the banana used <span class="math notranslate nohighlight">\(q(t) = t^2\)</span>, a <strong>cubic</strong> <span class="math notranslate nohighlight">\(q\)</span> can bend the density into an S-shape.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">poly_shear</span> <span class="o">=</span> <span class="n">TriangularPolyShear</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">degree</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">layer_poly</span> <span class="o">=</span> <span class="n">TTDensityLayer</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">basis</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">poly_shear</span><span class="p">)</span>
+
+<span class="c1"># [beta_1, beta_2, beta_3]:  q(t) = beta_1 t + beta_2 t**2 + beta_3 t**3</span>
+<span class="n">poly_params</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">3.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">6.0</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">])</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"TT-core parameters:   </span><span class="si">{</span><span class="n">n_core</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"transform parameters: </span><span class="si">{</span><span class="n">poly_shear</span><span class="o">.</span><span class="n">input_requirement</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="n">x0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">y1</span> <span class="o">=</span> <span class="o">-</span><span class="mf">2.5</span><span class="p">,</span> <span class="mf">2.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.4</span><span class="p">,</span> <span class="mf">1.4</span>
+
+<span class="c1"># left panel: the transformation's displacement field  z - x  (20 x 20 grid)</span>
+<span class="n">qx</span><span class="p">,</span> <span class="n">qy</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">x0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="mi">20</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">y0</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+<span class="n">Xq</span><span class="p">,</span> <span class="n">Yq</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">qx</span><span class="p">,</span> <span class="n">qy</span><span class="p">,</span> <span class="n">indexing</span><span class="o">=</span><span class="s2">"ij"</span><span class="p">)</span>
+<span class="n">grid_q</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">((</span><span class="n">Xq</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">Yq</span><span class="o">.</span><span class="n">flatten</span><span class="p">()),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">z</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">poly_shear</span><span class="p">(</span><span class="n">grid_q</span><span class="p">,</span> <span class="n">poly_params</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">grid_q</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">U</span> <span class="o">=</span> <span class="p">(</span><span class="n">z</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">grid_q</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+<span class="n">V</span> <span class="o">=</span> <span class="p">(</span><span class="n">z</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">grid_q</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+
+<span class="c1"># right panel: the density  p(x)  (200 x 200 grid)</span>
+<span class="n">gx</span><span class="p">,</span> <span class="n">gy</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">x0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="mi">200</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">y0</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
+<span class="n">Xg</span><span class="p">,</span> <span class="n">Yg</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">gx</span><span class="p">,</span> <span class="n">gy</span><span class="p">,</span> <span class="n">indexing</span><span class="o">=</span><span class="s2">"ij"</span><span class="p">)</span>
+<span class="n">grid_g</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">((</span><span class="n">Xg</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">Yg</span><span class="o">.</span><span class="n">flatten</span><span class="p">()),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">full_params</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">theta_core</span><span class="p">,</span> <span class="n">poly_params</span><span class="p">])</span>
+<span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+    <span class="n">pdf</span> <span class="o">=</span> <span class="n">layer_poly</span><span class="p">(</span><span class="n">full_params</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">grid_g</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">grid_g</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax_t</span><span class="p">,</span> <span class="n">ax_p</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+<span class="n">ax_t</span><span class="o">.</span><span class="n">quiver</span><span class="p">(</span><span class="n">Xq</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">Yq</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">U</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">V</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">color</span><span class="o">=</span><span class="s2">"tab:blue"</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
+<span class="n">ax_t</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"transformation   $z - x$"</span><span class="p">)</span>
+<span class="n">cf</span> <span class="o">=</span> <span class="n">ax_p</span><span class="o">.</span><span class="n">contourf</span><span class="p">(</span><span class="n">Xg</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">Yg</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">pdf</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">levels</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">cf</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax_p</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"density"</span><span class="p">)</span>
+<span class="n">ax_p</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"density   $p(x)$"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="p">(</span><span class="n">ax_t</span><span class="p">,</span> <span class="n">ax_p</span><span class="p">):</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"$x_1$"</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"$x_2$"</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s2">"equal"</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">"Cubic triangular shear (S-shape)"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+TT-core parameters:   105
+transform parameters: 3
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_deep_tt_density_13_1.png" src="../_images/examples_deep_tt_density_13_1.png" />
+</div>
+</div>
+</section>
+<section id="Composing-transforms">
+<h2>Composing transforms<a class="headerlink" href="#Composing-transforms" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">ComposedTransform</span></code> chains several diffeomorphisms, applying them in order and multiplying their Jacobian determinants; its parameter vector is simply the concatenation of the individual ones. Here an affine <strong>rotation</strong> is followed by the rank-1 <strong>shear</strong>, producing a tilted banana.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">composed</span> <span class="o">=</span> <span class="n">ComposedTransform</span><span class="p">([</span><span class="n">AffineTransform</span><span class="p">(</span><span class="n">dim</span><span class="p">),</span> <span class="n">Rank1Shear</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">degree</span><span class="o">=</span><span class="mi">2</span><span class="p">)])</span>
+<span class="n">layer_comp</span> <span class="o">=</span> <span class="n">TTDensityLayer</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">basis</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">composed</span><span class="p">)</span>
+
+<span class="c1"># affine rotation by 0.7 rad, then the banana shear (parameters concatenated)</span>
+<span class="n">affine_rot</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">])</span>
+<span class="n">shear_bend</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">])</span>
+<span class="n">comp_params</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">affine_rot</span><span class="p">,</span> <span class="n">shear_bend</span><span class="p">])</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"TT-core parameters:   </span><span class="si">{</span><span class="n">n_core</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"transform parameters: </span><span class="si">{</span><span class="n">composed</span><span class="o">.</span><span class="n">input_requirement</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="n">x0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">y1</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.6</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.3</span><span class="p">,</span> <span class="mf">2.3</span>
+
+<span class="c1"># left panel: the transformation's displacement field  z - x  (20 x 20 grid)</span>
+<span class="n">qx</span><span class="p">,</span> <span class="n">qy</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">x0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="mi">20</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">y0</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+<span class="n">Xq</span><span class="p">,</span> <span class="n">Yq</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">qx</span><span class="p">,</span> <span class="n">qy</span><span class="p">,</span> <span class="n">indexing</span><span class="o">=</span><span class="s2">"ij"</span><span class="p">)</span>
+<span class="n">grid_q</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">((</span><span class="n">Xq</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">Yq</span><span class="o">.</span><span class="n">flatten</span><span class="p">()),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">z</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">composed</span><span class="p">(</span><span class="n">grid_q</span><span class="p">,</span> <span class="n">comp_params</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">grid_q</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">U</span> <span class="o">=</span> <span class="p">(</span><span class="n">z</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">grid_q</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+<span class="n">V</span> <span class="o">=</span> <span class="p">(</span><span class="n">z</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">grid_q</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+
+<span class="c1"># right panel: the density  p(x)  (200 x 200 grid)</span>
+<span class="n">gx</span><span class="p">,</span> <span class="n">gy</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">x0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="mi">200</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">y0</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
+<span class="n">Xg</span><span class="p">,</span> <span class="n">Yg</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">gx</span><span class="p">,</span> <span class="n">gy</span><span class="p">,</span> <span class="n">indexing</span><span class="o">=</span><span class="s2">"ij"</span><span class="p">)</span>
+<span class="n">grid_g</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">((</span><span class="n">Xg</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">Yg</span><span class="o">.</span><span class="n">flatten</span><span class="p">()),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">full_params</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">theta_core</span><span class="p">,</span> <span class="n">comp_params</span><span class="p">])</span>
+<span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+    <span class="n">pdf</span> <span class="o">=</span> <span class="n">layer_comp</span><span class="p">(</span><span class="n">full_params</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">grid_g</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">grid_g</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax_t</span><span class="p">,</span> <span class="n">ax_p</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+<span class="n">ax_t</span><span class="o">.</span><span class="n">quiver</span><span class="p">(</span><span class="n">Xq</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">Yq</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">U</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">V</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">color</span><span class="o">=</span><span class="s2">"tab:blue"</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
+<span class="n">ax_t</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"transformation   $z - x$"</span><span class="p">)</span>
+<span class="n">cf</span> <span class="o">=</span> <span class="n">ax_p</span><span class="o">.</span><span class="n">contourf</span><span class="p">(</span><span class="n">Xg</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">Yg</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">pdf</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">levels</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">cf</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax_p</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"density"</span><span class="p">)</span>
+<span class="n">ax_p</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"density   $p(x)$"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="p">(</span><span class="n">ax_t</span><span class="p">,</span> <span class="n">ax_p</span><span class="p">):</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"$x_1$"</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"$x_2$"</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s2">"equal"</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">"Affine + rank-1 shear (tilted banana)"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+TT-core parameters:   105
+transform parameters: 12
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_deep_tt_density_15_1.png" src="../_images/examples_deep_tt_density_15_1.png" />
+</div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="mnist_nn.html" class="btn btn-neutral float-left" title="Digit Recognition using Tensor Train (TT) Neural Networks" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="fokker_planck_pinn.html" class="btn btn-neutral float-right" title="A physics-informed neural network for the Fokker-Planck equation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Ion Gabriel Ion.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
