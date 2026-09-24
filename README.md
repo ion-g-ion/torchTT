@@ -22,6 +22,7 @@ Following requirements are needed:
 - `torch>=1.7.0`
 - `numpy>=1.18`
 - [`opt_einsum`](https://pypi.org/project/opt-einsum/)
+- `scipy>=0.16`
 
 The GPU (if available) version of pytorch is recommended to be installed. Read the [official installation guide](https://pytorch.org/get-started/locally/) for further info.
 
@@ -43,7 +44,7 @@ One can also clone the repository and manually install the package:
 ```
 git clone https://github.com/ion-g-ion/torchTT
 cd torchTT
-python setup.py install
+python -m pip install .
 ``` 
 
 ### Using [uv](https://docs.astral.sh/uv/getting-started/installation/)
@@ -73,6 +74,29 @@ Or install in editable mode:
 ```
 uv pip install -e .
 ```
+
+### Optional C++ extension (Linux and macOS)
+
+Installation attempts to compile the C++ extension and falls back to Python if compilation fails. Windows uses the Python implementation; the C++ extension is unsupported there.
+
+Optional build dependencies:
+
+- A C++ compiler compatible with your PyTorch version. PyTorch selects the required language standard (C++17 in older releases, C++20 in newer releases).
+- Python development headers and the platform's C/C++ headers, linker, and runtime. On Ubuntu/Debian: `sudo apt-get install build-essential python3-dev`. On macOS: `xcode-select --install` (Apple Clang and the macOS SDK). For other Linux distributions, install the equivalent packages; their names differ.
+- PyTorch supplies the LibTorch headers and shared libraries. No separate LibTorch, BLAS/LAPACK, OpenMP development package, or CUDA toolkit is needed for this extension when using PyTorch wheels. The compiler and system headers must be installed through your OS, not a pip extra.
+
+To build against the PyTorch already installed in your environment, run from the cloned repository:
+
+```bash
+python -m pip install torch  # Or choose a CPU/CUDA wheel using the PyTorch guide above.
+python -m pip install setuptools setuptools-scm wheel ninja numpy opt_einsum scipy
+python -m pip install --no-build-isolation -v .
+python -c "import torchtt; print(torchtt.cpp_enabled())"  # True if the extension loads.
+```
+
+With uv, use `uv pip install` for the installation commands above. Set `CXX` to select another compiler. Rebuild after changing PyTorch versions; `--no-build-isolation` keeps the build and runtime PyTorch versions aligned. Use `--no-cache-dir --force-reinstall --no-deps` on the final installation command when rebuilding an existing installation.
+
+To skip compilation on Linux/macOS: `TORCHTT_NO_CPP=1 python -m pip install .` (or `uv pip install .`). CI checks extension builds with GCC on Ubuntu and Apple Clang on macOS, plus Python-only installs on Linux, macOS, and Windows. Other toolchains are not covered by CI.
 
 ### Development Installation
 

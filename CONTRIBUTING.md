@@ -27,6 +27,8 @@ To set up a development environment:
     uv sync --extra dev
     ```
 
+The C++ extension is optional and unsupported on Windows. To build it on Linux or macOS, install the [optional build dependencies](README.md#optional-c-extension-linux-and-macos), then use `pip install --no-build-isolation -e ".[dev]"`. Verify it with `python -c "import torchtt; assert torchtt.cpp_enabled()"`. On Linux/macOS, set `TORCHTT_NO_CPP=1` during installation to test the Python-only package.
+
 ## Running Tests
 
 We use `pytest` for testing. Ensure all tests pass before submitting a pull request:

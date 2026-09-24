@@ -1,5 +1,4 @@
-from setuptools import setup, Extension
-from setuptools.command.build_ext import build_ext
+from setuptools import setup
 import platform
 import os
 from warnings import warn
@@ -31,7 +30,9 @@ class OptionalBuildExtension(BuildExtension):
             warn(f"\x1B[33m\nFailed to build C++ extension '{ext.name}'. Falling back to pure Python.\n\033[0m")
             print(f"Error: {e}")
 
-if os_name in ['Linux', 'Darwin']:
+if os.environ.get('TORCHTT_NO_CPP') == '1':
+    setup(name="torchTT")
+elif os_name in ['Linux', 'Darwin']:
     if os_name == 'Darwin':
         if 'CXX' not in os.environ:
             if os.path.exists('/opt/homebrew/opt/llvm/bin/clang++'):
@@ -54,7 +55,7 @@ if os_name in ['Linux', 'Darwin']:
                     ['cpp/cpp_ext.cpp'],
                     include_dirs=["cpp"],
                     extra_compile_args=[
-                        '-std=c++17',
+                        # BuildExtension selects the standard required by PyTorch.
                         '-Wno-c++11-narrowing', '-w', '-O3',
                     ],
                     extra_link_args=extra_link_args,
