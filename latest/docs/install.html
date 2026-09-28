@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Installation guide &mdash; torchTT development (main @ ff5a3fd) documentation</title>
+  <title>Installation guide &mdash; torchTT development (main @ 42740af) documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=e6c4269e"></script>
+      <script src="../_static/documentation_options.js?v=167f7836"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -50,6 +50,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#using-pip">Using pip</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#using-uv">Using uv</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#optional-c-extension-linux-and-macos">Optional C++ extension (Linux and macOS)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#development-installation">Development Installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#tests">Tests</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#building-documentation">Building Documentation</a></li>
@@ -84,7 +85,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ ff5a3fd)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="installation-guide">
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 42740af)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="installation-guide">
 <span id="install-page-label"></span><h1>Installation guide<a class="headerlink" href="#installation-guide" title="Link to this heading"></a></h1>
 <section id="requirements">
 <h2>Requirements<a class="headerlink" href="#requirements" title="Link to this heading"></a></h2>
@@ -94,6 +95,7 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">torch&gt;=1.7.0</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">numpy&gt;=1.18</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">opt_einsum</span></code> (<a class="reference external" href="https://pypi.org/project/opt-einsum/">https://pypi.org/project/opt-einsum/</a>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">scipy&gt;=0.16</span></code></p></li>
 </ul>
 <p>The GPU (if available) version of pytorch is recommended to be installed. Read the <a class="reference external" href="https://pytorch.org/get-started/locally/">official installation guide</a>  for further info.</p>
 </section>
@@ -135,6 +137,42 @@
 </pre></div>
 </div>
 </section>
+<section id="optional-c-extension-linux-and-macos">
+<h2>Optional C++ extension (Linux and macOS)<a class="headerlink" href="#optional-c-extension-linux-and-macos" title="Link to this heading"></a></h2>
+<p>Installation attempts to compile the C++ extension and falls back to Python if
+compilation fails. Windows uses the Python implementation; the C++ extension is
+unsupported there.</p>
+<p>Optional build dependencies:</p>
+<ul class="simple">
+<li><p>A C++ compiler compatible with your PyTorch version. PyTorch selects the required
+language standard (C++17 in older releases, C++20 in newer releases).</p></li>
+<li><p>Python development headers and the platform’s C/C++ headers, linker, and runtime. On
+Ubuntu/Debian: <code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">build-essential</span> <span class="pre">python3-dev</span></code>. On macOS:
+<code class="docutils literal notranslate"><span class="pre">xcode-select</span> <span class="pre">--install</span></code> (Apple Clang and the macOS SDK). For other Linux
+distributions, install the equivalent packages; their names differ.</p></li>
+<li><p>PyTorch supplies the LibTorch headers and shared libraries. No separate LibTorch,
+BLAS/LAPACK, OpenMP development package, or CUDA toolkit is needed for this extension
+when using PyTorch wheels. The compiler and system headers must be installed through
+your OS, not a pip extra.</p></li>
+</ul>
+<p>To build against the PyTorch already installed in your environment, run from the cloned
+repository:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>torch<span class="w">  </span><span class="c1"># Or choose a CPU/CUDA wheel using the PyTorch guide above.</span>
+python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>setuptools<span class="w"> </span>setuptools-scm<span class="w"> </span>wheel<span class="w"> </span>ninja<span class="w"> </span>numpy<span class="w"> </span>opt_einsum<span class="w"> </span>scipy
+python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--no-build-isolation<span class="w"> </span>-v<span class="w"> </span>.
+python<span class="w"> </span>-c<span class="w"> </span><span class="s2">"import torchtt; print(torchtt.cpp_enabled())"</span><span class="w">  </span><span class="c1"># True if the extension loads.</span>
+</pre></div>
+</div>
+<p>With uv, use <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">pip</span> <span class="pre">install</span></code> for the installation commands above. Set <code class="docutils literal notranslate"><span class="pre">CXX</span></code> to
+select another compiler. Rebuild after changing PyTorch versions;
+<code class="docutils literal notranslate"><span class="pre">--no-build-isolation</span></code> keeps the build and runtime PyTorch versions aligned. Use
+<code class="docutils literal notranslate"><span class="pre">--no-cache-dir</span> <span class="pre">--force-reinstall</span> <span class="pre">--no-deps</span></code> on the final installation command when
+rebuilding an existing installation.</p>
+<p>To skip compilation on Linux/macOS: <code class="docutils literal notranslate"><span class="pre">TORCHTT_NO_CPP=1</span> <span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pip</span> <span class="pre">install</span> <span class="pre">.</span></code> (or
+<code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">pip</span> <span class="pre">install</span> <span class="pre">.</span></code>). CI checks extension builds with GCC on Ubuntu and Apple Clang on
+macOS, plus Python-only installs on Linux, macOS, and Windows. Other toolchains are not
+covered by CI.</p>
+</section>
 <section id="development-installation">
 <h2>Development Installation<a class="headerlink" href="#development-installation" title="Link to this heading"></a></h2>
 <p>For development, you may want to install the package with additional development dependencies (pytest, sphinx, ipykernel, matplotlib):</p>
@@ -154,7 +192,7 @@
 </section>
 <section id="tests">
 <h2>Tests<a class="headerlink" href="#tests" title="Link to this heading"></a></h2>
-<p>The directory <a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/ff5a3fd7d2fd63a205eabf35e84273990ba3e88d/tests">tests/</a> from the root folder contains all the <cite>unittests</cite>. To run them use the command:</p>
+<p>The directory <a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/42740af464f59d2bece4408a5a7a8c93d3760b9b/tests">tests/</a> from the root folder contains all the <cite>unittests</cite>. To run them use the command:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pytest</span> <span class="n">tests</span><span class="o">/</span>
 </pre></div>
 </div>

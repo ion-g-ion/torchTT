@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Welcome to torchTT &mdash; torchTT development (main @ ff5a3fd) documentation</title>
+  <title>Welcome to torchTT &mdash; torchTT development (main @ 42740af) documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=e6c4269e"></script>
+      <script src="_static/documentation_options.js?v=167f7836"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -77,7 +77,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ ff5a3fd)</strong><br><a href="../stable/index.html">Stable release</a> · <a href="../latest/index.html">Development (main)</a></nav><a class="reference internal image-reference" href="https://github.com/ion-g-ion/torchTT/blob/main/logo.png?raw=true"><img alt="logo" class="align-center" src="https://github.com/ion-g-ion/torchTT/blob/main/logo.png?raw=true" style="width: 200px; height: 100px;" />
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 42740af)</strong><br><a href="../stable/index.html">Stable release</a> · <a href="../latest/index.html">Development (main)</a></nav><a class="reference internal image-reference" href="https://github.com/ion-g-ion/torchTT/blob/main/logo.png?raw=true"><img alt="logo" class="align-center" src="https://github.com/ion-g-ion/torchTT/blob/main/logo.png?raw=true" style="width: 200px; height: 100px;" />
 </a>
 <section id="welcome-to-torchtt">
 <h1>Welcome to torchTT<a class="headerlink" href="#welcome-to-torchtt" title="Link to this heading"></a></h1>
@@ -85,6 +85,21 @@
 <p>Tensor-Train decomposition package written only in Python on top of <cite>pytorch</cite>. Supports GPU acceleration and automatic differentiation.
 It also contains routines for solving linear systems in the TT format and performing adaptive cross approximation  (the AMEN solver/cross interpolation is inspired form the <a class="reference external" href="https://github.com/oseledets/TT-Toolbox">MATLAB TT-Toolbox</a>).</p>
 <p>Some routines are implemented in C++ for an increased execution speed.</p>
+<p><code class="docutils literal notranslate"><span class="pre">torchtt</span></code> helps researchers and engineers tackle high-dimensional problems in
+scientific computing by working directly with compressed representations of large
+arrays.
+It is designed for PyTorch users, making it easy to replace dense tensor operations
+with operations in the tensor-train (TT) format.
+For problems that admit low-rank TT representations, <code class="docutils literal notranslate"><span class="pre">torchtt</span></code> can make
+high-dimensional experiments practical even on a laptop.
+Users should be familiar with linear algebra and the basics of the TT format; the
+<a class="reference external" href="https://github.com/ion-g-ion/torchTT/blob/main/examples/basic_tutorial.ipynb">basic tutorial</a>
+provides a starting point.
+Example applications include solving linear systems arising from discretized
+high-dimensional differential equations, such as the Fokker–Planck and chemical
+master equations; approximating black-box multivariate functions for surrogate
+modeling and uncertainty quantification; and compressing neural-network weight
+matrices to reduce the number of trainable parameters.</p>
 <section id="install-page-label">
 <h2><a class="reference internal" href="docs/install.html#install-page-label"><span class="std std-ref">Installation guide</span></a><a class="headerlink" href="#install-page-label" title="Link to this heading"></a></h2>
 </section>
