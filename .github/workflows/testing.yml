@@ -52,14 +52,21 @@ jobs:
           sudo apt-get install -y build-essential python3-dev
           echo "CXX=g++" >> "$GITHUB_ENV"
           g++ --version
-      - name: Check macOS compiler and SDK
+      - name: Configure macOS compiler and SDK
         if: runner.os == 'macOS' && env.TORCHTT_NO_CPP != '1'
         run: |
           # GitHub's macOS runners already include Xcode Command Line Tools.
           xcode-select -p
-          xcrun --show-sdk-path
-          echo "CXX=$(xcrun --find clang++)" >> "$GITHUB_ENV"
-          xcrun clang++ --version
+          export SDKROOT="$(xcrun --sdk macosx --show-sdk-path)"
+          export CXX="$(xcrun --sdk macosx --find clang++)"
+          echo "SDKROOT=$SDKROOT" >> "$GITHUB_ENV"
+          echo "CXX=$CXX" >> "$GITHUB_ENV"
+          echo "CPPFLAGS=-isysroot $SDKROOT" >> "$GITHUB_ENV"
+          # Python may be universal2, but the installed PyTorch is single-arch.
+          echo "ARCHFLAGS=-arch $(python -c 'import platform; print(platform.machine())')" >> "$GITHUB_ENV"
+          "$CXX" --version
+          printf '#include <cassert>\n#include <functional>\n' | \
+            "$CXX" -isysroot "$SDKROOT" -std=c++17 -x c++ -fsyntax-only -
       - name: Upgrade pip
         run: python -m pip install --upgrade pip
       - name: Install CPU-only PyTorch
@@ -67,7 +74,12 @@ jobs:
         if: runner.os != 'macOS' || matrix.python-version == '3.15'
         run: python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
       - name: Install runtime, test, and build dependencies
-        run: python -m pip install -r requirements.txt setuptools setuptools-scm wheel ninja
+        # --no-build-isolation requires us to satisfy pyproject.toml's build
+        # requirements; an unversioned install can retain setuptools 56.
+        run: >-
+          python -m pip install -r requirements.txt
+          "setuptools>=61" "setuptools-scm>=8.0" wheel ninja
+          "tomli; python_version < '3.11'"
       - name: Use NumPy compatible with older PyTorch wheels
         if: matrix.python-version == '3.8' || matrix.python-version == '3.9'
         run: python -m pip install "numpy<2"
@@ -75,11 +87,24 @@ jobs:
         run: python -m pip list
       - name: Install torchTT against the runtime PyTorch
         run: python -m pip install --no-build-isolation -v .
-      - name: Verify installed backend
+      - name: Verify installed version and backend
         working-directory: ${{ runner.temp }}
         shell: python
         run: |
           import os
+          from importlib.metadata import version
+          from pathlib import Path
+          try:
+              import tomllib
+          except ModuleNotFoundError:
+              import tomli as tomllib
+
+          config = Path(os.environ["GITHUB_WORKSPACE"]) / "pyproject.toml"
+          expected_version = tomllib.loads(config.read_text(encoding="utf-8"))["project"]["version"]
+          installed_version = version("torchTT")
+          print(f"Installed torchTT {installed_version}; expected {expected_version}")
+          assert installed_version == expected_version, (installed_version, expected_version)
+
           import torchtt
           expected_cpp = os.environ["TORCHTT_NO_CPP"] != "1"
           if expected_cpp:
@@ -87,4 +112,6 @@ jobs:
           assert torchtt.cpp_enabled() == expected_cpp
           assert torchtt.solvers.cpp_enabled() == expected_cpp
       - name: Run tests
-        run: python -m pytest tests/
+        # Exercise the installed wheel instead of importing the source checkout.
+        working-directory: ${{ runner.temp }}
+        run: python -m pytest "${{ github.workspace }}/tests/"

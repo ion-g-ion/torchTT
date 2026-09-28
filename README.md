@@ -95,7 +95,7 @@ To build against the PyTorch already installed in your environment, run from the
 
 ```bash
 python -m pip install torch  # Or choose a CPU/CUDA wheel using the PyTorch guide above.
-python -m pip install setuptools setuptools-scm wheel ninja numpy opt_einsum scipy
+python -m pip install "setuptools>=61" "setuptools-scm>=8.0" wheel ninja numpy opt_einsum scipy
 python -m pip install --no-build-isolation -v .
 python -c "import torchtt; print(torchtt.cpp_enabled())"  # True if the extension loads.
 ```
