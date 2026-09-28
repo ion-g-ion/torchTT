@@ -584,8 +584,8 @@ def bilinear_form(x, A, y):
 
 def elementwise_divide(x, y, eps=1e-12, starting_tensor=None, nswp=50, kick=4, local_iterations=40, resets=2, preconditioner=None, verbose=False):
     """
-    Perform the elemntwise division x/y of two tensors in the TT format using the AMEN method.
-    Use this method if different AMEN arguments are needed.
+    Perform the elemntwise division x/y of two tensors in the TT format using the alternating minimal energy (AMEn) method :cite:p:`dolgov2014alternating`.
+    Use this method if different AMEn arguments are needed.
     This method does not check the validity of the inputs.
 
     Args:
@@ -596,7 +596,7 @@ def elementwise_divide(x, y, eps=1e-12, starting_tensor=None, nswp=50, kick=4, l
         nswp (int, optional): number of iterations. Defaults to 50.
         kick (int, optional): size of rank enrichment. Defaults to 4.
         local_iterations (int, optional): the number of iterations for the local iterative solver. Defaults to 40.
-        resets (int, optional): the number of restarts in the GMRES solver. Defaults to 2.
+        resets (int, optional): the number of restarts in the GMRES (generalized minimal residual) solver. Defaults to 2.
         preconditioner (string, optional): Use preconditioner for the local solver (possible vaules None, 'c'). Defaults to None. 
         verbose (bool, optional): display debug info. Defaults to False.
 
@@ -1001,7 +1001,7 @@ def pad(tensor, padding, value=0.0):
 
 def shape_tuple_to_mn(shape):
     """
-    Convert the shape of a TTM from tuple format to row and column shapes.
+    Convert the shape of a TT matrix (TTM) from tuple format to row and column shapes.
 
     Args:
         shape (list[tuple[int]]): shape.
@@ -1017,7 +1017,7 @@ def shape_tuple_to_mn(shape):
 
 def shape_mn_to_tuple(M, N):
     """
-    Convert the shape of a TTM from row/column format to tuple format.
+    Convert the shape of a TT matrix (TTM) from row/column format to tuple format.
 
     Args:
         M (list[int]): row shapes.

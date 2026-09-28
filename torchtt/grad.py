@@ -1,5 +1,5 @@
 """
-Adds AD functionality to torchtt.
+Adds automatic differentiation (AD) functionality to torchtt.
 
 """
 

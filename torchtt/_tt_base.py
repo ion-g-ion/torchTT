@@ -321,7 +321,7 @@ class TT():
     def full(self):
         """
         Return the full tensor.
-        In case of a TTM, the result has the shape ``M1 x M2 x ... x Md x N1 x N2 x ... x Nd``.
+        In case of a TT matrix (TTM), the result has the shape ``M1 x M2 x ... x Md x N1 x N2 x ... x Nd``.
 
         Returns:
             torch.tensor: the full tensor.
@@ -353,8 +353,8 @@ class TT():
     def numpy(self):
         """
         Return the full tensor as a numpy.array.
-        In case of a TTM, the result has the shape ``M1 x M2 x ... x Md x N1 x N2 x ... x Nd``.
-        If it is involved in an AD graph, an error will occur.
+        In case of a TT matrix (TTM), the result has the shape ``M1 x M2 x ... x Md x N1 x N2 x ... x Nd``.
+        If it is involved in an automatic differentiation (AD) graph, an error will occur.
 
         Returns:
             numpy.array: the full tensor in numpy.
@@ -836,7 +836,7 @@ class TT():
 
     def fast_matvec(self, other, eps=1e-12, initial=None, nswp=20, verb=False, use_cpp=True):
         """
-        Fast matrix vector multiplication A@x using DMRG iterations. Faster than traditional matvec + rounding.
+        Fast matrix vector multiplication A@x using density matrix renormalization group (DMRG) iterations :cite:p:`oseledets2011dmrg`. Faster than traditional matvec + rounding.
 
         Args:
             other (torchtt.TT): the TT tensor.
@@ -888,9 +888,9 @@ class TT():
     def __truediv__(self, other):
         """
         This function implements the "/" operator.
-        This operation is performed using the AMEN solver. The number of sweeps and rthe relative accuracy are fixed.
+        This operation is performed using the AMEn solver. The number of sweeps and rthe relative accuracy are fixed.
         For most cases it is sufficient but sometimes it can fail.
-        Check the function torchtt.elementwise_divide() if you want to change the arguments of the AMEN solver.
+        Check the function torchtt.elementwise_divide() if you want to change the arguments of the AMEn solver.
 
 
         Args:
@@ -926,9 +926,9 @@ class TT():
     def __rtruediv__(self, other):
         """
         Right true division. this function is called when a non TT object is divided by a TT object.
-        This operation is performed using the AMEN solver. The number of sweeps and rthe relative accuracy are fixed.
+        This operation is performed using the AMEn solver. The number of sweeps and rthe relative accuracy are fixed.
         For most cases it is sufficient but sometimes it can fail.
-        Check the function torchtt.elementwise_divide() if you want to change the arguments of the AMEN solver.
+        Check the function torchtt.elementwise_divide() if you want to change the arguments of the AMEn solver.
 
         Example: 
 
@@ -1411,7 +1411,7 @@ class TT():
 
     def round(self, eps=1e-12, rmax=sys.maxsize):
         """
-        Implements the rounding operations within a given tolerance epsilon.
+        Implements the rounding operations within a given tolerance epsilon :cite:p:`oseledets2011tensor`.
         The maximum rank is also provided.
 
         Args:
@@ -1436,8 +1436,8 @@ class TT():
 
     def to_qtt(self, eps=1e-12, mode_size=2, rmax=sys.maxsize):
         """
-        Converts a tensor to the QTT format: N1 x N2 x ... x Nd -> mode_size x mode_size x ... x mode_size.
-        The product of the mode sizes should be a power of mode_size.
+        Converts a tensor to the quantized tensor-train (QTT) format :cite:p:`oseledets2010approximation,khoromskij2011quantics`: the TT format applied to the tensor reshaped so that every mode has size ``mode_size`` (2 by default).
+        The shape changes as N1 x N2 x ... x Nd -> mode_size x mode_size x ... x mode_size, so every mode size must be a power of ``mode_size``.
         The tensor in QTT can be converted back using the qtt_to_tens() method.
 
         Examples:
@@ -1505,7 +1505,7 @@ class TT():
 
     def qtt_to_tens(self, original_shape):
         """
-        Transform a tensor back from QTT.
+        Transform a tensor back from the quantized tensor-train (QTT) format (see ``to_qtt()``).
 
         Args:
             original_shape (list): the original shape.

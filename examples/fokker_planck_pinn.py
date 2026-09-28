@@ -1,7 +1,7 @@
 r"""
-# A physics-informed neural network for the Fokker-Planck equation
+# A physics-informed neural network (PINN) for the Fokker-Planck equation
 
-We solve the Fokker-Planck equation associated with the overdamped Langevin SDE
+We solve the Fokker-Planck equation associated with the overdamped Langevin stochastic differential equation (SDE)
 
 $$ \mathrm{d}X_t = -\nabla V(X_t)\,\mathrm{d}t + \sqrt{2D}\,\mathrm{d}W_t, $$
 
@@ -19,7 +19,7 @@ The density is represented with a `torchtt.nn.TTDensityLayer`: a squared functio
 
 $$ p_\theta(t, x) = \texttt{TTDensityLayer}\big(\mathrm{net}_\theta(t),\, x\big). $$
 
-Two properties make this ansatz attractive for Fokker-Planck PINNs: $p_\theta \geq 0$ and $\int p_\theta(t, x)\,\mathrm{d}x = 1$ hold **by construction for every $t$**, so no normalization penalty is needed — only the PDE residual and the initial condition enter the loss. The code is written for general dimension $d$; here we fix $d = 2$.
+Two properties make this ansatz attractive for Fokker-Planck PINNs: $p_\theta \geq 0$ and $\int p_\theta(t, x)\,\mathrm{d}x = 1$ hold **by construction for every $t$**, so no normalization penalty is needed — only the residual of the partial differential equation (PDE) and the initial condition enter the loss. The code is written for general dimension $d$; here we fix $d = 2$.
 """
 
 
@@ -146,7 +146,7 @@ def residual(t, x):
 #
 # $$ \mathcal{L} = \frac{1}{M} \sum_{m=1}^{M} r_\theta\big(t_m, x_m\big)^2 \;+\; \frac{\lambda}{M'} \sum_{m=1}^{M'} \Big( p_\theta\big(0, x'_m\big) - p_0\big(x'_m\big) \Big)^2 . $$
 #
-# The IC points $x'_m$ are drawn half from $p_0$ itself and half uniformly from the box, so the density is also pushed to zero away from the initial blob. All points are redrawn every step.
+# The initial-condition (IC) points $x'_m$ are drawn half from $p_0$ itself and half uniformly from the box, so the density is also pushed to zero away from the initial blob. All points are redrawn every step.
 
 
 n_iters = 3000

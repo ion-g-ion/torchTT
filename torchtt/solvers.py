@@ -1,5 +1,5 @@
 """
-System solvers in the TT format.
+System solvers in the TT format, based on the alternating minimal energy (AMEn) method :cite:p:`dolgov2014alternating`.
 
 """
 
@@ -173,7 +173,7 @@ def amen_solve(A, b, nswp=22, x0=None, eps=1e-10, rmax=32768, max_full=256, kick
     """
     Solve a multilinear system :math:`\\mathsf{Ax} = \\mathsf{b}` in the Tensor Train format.
 
-    This method implements the algorithm from `Sergey V Dolgov, Dmitry V Savostyanov, Alternating minimal energy methods for linear systems in higher dimensions <https://epubs.siam.org/doi/abs/10.1137/140953289>`_.
+    This method implements the alternating minimal energy (AMEn) algorithm from `Sergey V Dolgov, Dmitry V Savostyanov, Alternating minimal energy methods for linear systems in higher dimensions <https://epubs.siam.org/doi/abs/10.1137/140953289>`_.
 
     Example:
 
@@ -199,7 +199,7 @@ def amen_solve(A, b, nswp=22, x0=None, eps=1e-10, rmax=32768, max_full=256, kick
         kickrank (int, optional): rank enrichment. Defaults to 4.
         kick2 (int, optional): [description]. Defaults to 0.
         trunc_norm (str, optional): [description]. Defaults to 'res'.
-        local_solver (int, optional): choose local iterative solver: 1 for GMRES and 2 for BiCGSTAB. Defaults to 1.
+        local_solver (int, optional): choose local iterative solver: 1 for GMRES (generalized minimal residual) and 2 for BiCGSTAB (biconjugate gradient stabilized). Defaults to 1.
         local_iterations (int, optional): number of GMRES iterations for the local subproblems. Defaults to 40.
         resets (int, optional): number of resets in the GMRES. Defaults to 2.
         verbose (bool, optional): choose whether to display or not additional information during the runtime. Defaults to True.

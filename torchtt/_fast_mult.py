@@ -57,9 +57,9 @@ def swap_cores(core_a, core_b, eps, rmax=None):
 
 def fast_hadammard(tt_a, tt_b, eps=1e-10, rmax=None):
     """
-    Performs the elementwise multiplication between two TTs to TTMs and tround the result.
+    Performs the elementwise multiplication between two TTs or TT matrices (TTMs) and rounds the result.
     Equivalent to `(tt_a * tt_b).round(eps)`.
-    Method described in [https://arxiv.org/pdf/2410.19747](https://arxiv.org/pdf/2410.19747).
+    Method described in :cite:p:`michailidis2025elementwise`.
 
     Args:
         tt_a (torchtt.TT): first operand.
@@ -106,9 +106,9 @@ def fast_hadammard(tt_a, tt_b, eps=1e-10, rmax=None):
 
 def fast_mv(tt_a, tt_b, eps=1e-10, rmax=None):
     """
-    Performs the matvec product between a TTM and a TT.
-    Equivalent to `(tt_a * tt_b).round(eps)`.
-    Method described in [https://arxiv.org/pdf/2410.19747](https://arxiv.org/pdf/2410.19747).
+    Performs the matvec product between a TT matrix (TTM) and a TT tensor.
+    Equivalent to `(tt_a @ tt_b).round(eps)`.
+    Method described in :cite:p:`michailidis2025elementwise`.
 
     Args:
         tt_a (torchtt.TT): the first operand. Must be a TTM.
@@ -144,9 +144,9 @@ def fast_mv(tt_a, tt_b, eps=1e-10, rmax=None):
 
 def fast_mm(tt_a, tt_b, eps=1e-10, rmax=None):
     """
-    Performs the matmat product between a TTM and a TTM.
-    Equivalent to `(tt_a * tt_b).round(eps)`.
-    Method described in [https://arxiv.org/pdf/2410.19747](https://arxiv.org/pdf/2410.19747).
+    Performs the matmat product between two TT matrices (TTMs).
+    Equivalent to `(tt_a @ tt_b).round(eps)`.
+    Method described in :cite:p:`michailidis2025elementwise`.
     
     Args:
         tt_a (torchtt.TT): the first operand. Must be a TTM.

@@ -3,8 +3,8 @@
 
 
 This notebook is an introduction into the basic linar algebra operations that can be perfromed using the `torchtt` package.
-The basic operations such as +,-,*,@,norm,dot product can be performed between `torchtt.TT` instances without computing the full format by computing the TT cores of the result.
-One exception is the elementwise division between TT objects. For this, no explicit form of the resulting TT cores can be derived and therefore optimization techniques have to be employed (see the notebook `fast_tt_operations.ipynb`).
+The basic operations such as +,-,*,@,norm,dot product can be performed between `torchtt.TT` instances without computing the full format by computing the tensor-train (TT) cores of the result.
+One exception is the elementwise division between TT objects. For this, no explicit form of the resulting TT cores can be derived and therefore optimization techniques have to be employed (see the notebook `efficient_linalg.ipynb`).
 """
 
 #%% Imports

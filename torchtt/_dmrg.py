@@ -186,7 +186,7 @@ def dmrg_matvec_python(A, x, y0 = None, nswp = 20, eps = 1e-12, rmax = 32768, ki
 
 def dmrg_hadamard(x, y, z0 = None, nswp = 20, eps = 1e-12, rmax = 32768, kickrank = 4, verb = False, use_cpp = True):
     """
-    Perform fast elementwise multiplication `z = x * y` in the TT using the DMRG algorithm.
+    Perform fast elementwise multiplication `z = x * y` in the TT format using the density matrix renormalization group (DMRG) algorithm :cite:p:`oseledets2011dmrg`.
     C++ backend not yet ready if available.
     
     Args:

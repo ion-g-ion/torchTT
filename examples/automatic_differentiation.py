@@ -1,7 +1,7 @@
 """
 # Automatic differentiation
 
-Being based on `pytorch`, `torchtt` can handle automatic differentiation with respect to the TT cores. 
+Being based on `pytorch`, `torchtt` can handle automatic differentiation (AD) with respect to the cores of a tensor-train (TT) decomposition. 
 """
 
 #%% Imports

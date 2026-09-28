@@ -1,5 +1,5 @@
 """
-Implements the cross approximation methods (DMRG).
+Implements cross approximation methods in the TT format :cite:p:`oseledets2010tt`, based on the density matrix renormalization group (DMRG) :cite:p:`savostyanov2011fast` and the alternating minimal energy (AMEn) :cite:p:`dolgov2014alternating` schemes.
 
 """
 import torch as tn
@@ -141,7 +141,7 @@ def _build_one_core_eval_index(I_left, I_curr, I_right, rank_l, rank_r, device):
 
 def function_interpolate(function, x, eps=1e-9, start_tens=None, nswp=20, kick=2, kick2=0, dtype=tn.float64, rmax=sys.maxsize, method='dmrg', verbose=False, callback=None):
     """
-    Interpolate a function using tensor train cross approximation.
+    Interpolate a function using tensor train cross approximation :cite:p:`oseledets2010tt,savostyanov2011fast`.
 
     Args:
         function (Callable): Function to interpolate.
@@ -153,7 +153,7 @@ def function_interpolate(function, x, eps=1e-9, start_tens=None, nswp=20, kick=2
         kick2 (int, optional): Secondary rank enrichment (meant for amen method). Defaults to 0.
         dtype (torch.dtype, optional): The datatype of the result. Defaults to tn.float64.
         rmax (int, optional): Maximum allowed rank. Defaults to sys.maxsize.
-        method (str, optional): Method to use ('dmrg' or 'amen'). Defaults to 'dmrg'.
+        method (str, optional): Method to use: 'dmrg' (density matrix renormalization group) or 'amen' (alternating minimal energy). Defaults to 'dmrg'.
         verbose (bool, optional): If True, display information. Defaults to False.
         callback (Callable, optional): optional hook invoked at the end of every sweep as
             ``callback(tt, sweep, error)``, where ``tt`` is the current approximation

@@ -1,7 +1,7 @@
 """
 Basic tutorial 
 
-This notebook is a tutorial on how to use the basic functionalities of the `torchtt` package. 
+This notebook is a tutorial on how to use the basic functionalities of the `torchtt` package for the tensor-train (TT) decomposition ([Oseledets, 2011](https://doi.org/10.1137/090752286)). 
 """
 
 #%% Imports

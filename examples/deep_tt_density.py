@@ -7,7 +7,7 @@ Given univariate basis functions $\{\phi^{(k)}_i\}_{i=1}^{N_k}$ for every dimens
 
 $$ f(x_1, \dots, x_d) = \sum_{i_1=1}^{N_1} \cdots \sum_{i_d=1}^{N_d} G_{i_1 \dots i_d}\, \phi^{(1)}_{i_1}(x_1) \cdots \phi^{(d)}_{i_d}(x_d), $$
 
-whose coefficient tensor $G$ is stored in the **Tensor-Train** format with cores $G^{(k)} \in \mathbb{R}^{R_k \times N_k \times R_{k+1}}$ and $R_1 = R_{d+1} = 1$. The density is the normalized square
+whose coefficient tensor $G$ is stored in the **tensor-train (TT)** format with cores $G^{(k)} \in \mathbb{R}^{R_k \times N_k \times R_{k+1}}$ and $R_1 = R_{d+1} = 1$. The density is the normalized square
 
 $$ p_\text{ref}(x) = \frac{f(x)^2}{\int f(y)^2\, dy}. $$
 

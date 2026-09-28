@@ -1,10 +1,10 @@
 """
 # Cross approximation in the TT format
 
-Using the `torchtt.TT` constructor, a TT decomposition of a given tensor can be obtained. 
+Using the `torchtt.TT` constructor, a tensor-train (TT) decomposition of a given tensor can be obtained. 
 However, in the cases where the entries of the tensor are computed using a given function, building full tensors becomes unfeasible. 
 It is possible to construct a TT decomposition using only a part of the entries of the full tensor. 
-This is called the cross approximation method.
+This is called the cross approximation method ([Oseledets and Tyrtyshnikov, 2010](https://doi.org/10.1016/j.laa.2009.07.024)).
 """
 
 #%% Imports
@@ -17,7 +17,7 @@ import torchtt as tntt
 # Since the passed indices are integers of type torch.int64, casting is used.
 func1 = lambda I: 1/(2+tn.sum(I+1,1).to(dtype=tn.float64))
 
-# Call the torchtt.interpolate.dmrg_cross() method.
+# Call the torchtt.interpolate.dmrg_cross() method, which implements the density matrix renormalization group (DMRG) cross scheme ([Savostyanov and Oseledets, 2011](https://doi.org/10.1109/nDS.2011.6076873)).
 N = [20]*4
 x = tntt.interpolate.dmrg_cross(func1, N, eps = 1e-7)
 

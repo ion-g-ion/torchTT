@@ -11,7 +11,7 @@ import torchtt as tntt
 
 
 #%% We consider a linear layer $\mathcal{LTT}(\mathsf{x}) = \mathsf{Wx}+\mathsf{b}$ acting on a tensor input $\mathsf{x}$ of shape $n_1 \times \cdots \times n_d$ and returning a tensor of shape $m_1\times\cdots\times m_d$. The corresponding weight matrix $\mathsf{W}$ would have the shape $(m_1\times\cdots\times m_d) \times (n_1 \times \cdots \times n_d)$. The goal is to represent the weights tensor operator in TT format and perform the learning with respect tot the cores of the TT decomposition (ranks have to be fixed a priori).
-# Due to the AD functionality of `torchtt`, the gradient with respect tot the cores can be computed for any network structure.
+# Due to the automatic differentiation functionality of `torchtt`, the gradient with respect tot the cores can be computed for any network structure.
 # TT layers can be added using `torchtt.nn.LinearLayerTT()` class. 
 # In the following, a neural netywork with 3 hidden layers and one linear layer is created.
 # The shapes of the individual layers are 

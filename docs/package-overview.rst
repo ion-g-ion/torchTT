@@ -7,7 +7,7 @@ What is the Tensor-Train format?
 --------------------------------
 
 
-The Tensor-Train (TT) format is a low-rank tensor decomposition format used to fight the curse of dimensionality. A d-dimensional tensor \(\mathsf{x} \in \mathbb{R} ^{n_1 \times n_2 \times \cdots \times n_d}\) can be expressed using algebraic operations between d smaller tensors:
+The Tensor-Train (TT) format :cite:p:`oseledets2011tensor` is a low-rank tensor decomposition format used to fight the curse of dimensionality. A d-dimensional tensor \(\mathsf{x} \in \mathbb{R} ^{n_1 \times n_2 \times \cdots \times n_d}\) can be expressed using algebraic operations between d smaller tensors:
 
 .. math::
   \mathsf{x}_{i_1i_2...i_d} = \sum\limits_{s_0=1}^{r_0} \sum\limits_{s_1=1}^{r_1} \cdots \sum\limits_{s_{d-1}=1}^{r_{d-1}} \sum\limits_{s_d=1}^{r_d} \mathsf{g}^{(1)}_{s_0 i_1 s_1} \cdots \mathsf{g}^{(d)}_{s_{d-1} i_d s_d}, 
@@ -61,6 +61,39 @@ As an example, we have the following code where 3 tensors in the TT format are i
 
 During the process, the ``round()`` function has been used. This has the role of further compressing tensors by reducing the rank. After successive linear algebra operations, the rank will overshoot and therefore it is required to perform rounding operations.
 
+.. _qtt-label:
+
+Quantized TT (QTT)
+------------------
+
+The quantized tensor-train (QTT) format
+:cite:p:`oseledets2010approximation,khoromskij2011quantics` is the TT format applied to a
+tensor that has first been reshaped so that every mode has size 2. For example, a vector of length
+:math:`8 = 2^3` is reshaped into a :math:`2 \times 2 \times 2` tensor. Entry 5 of the
+vector (counting from 0) becomes entry :math:`(1, 0, 1)` of the tensor, which are the
+binary digits of 5. In general, a mode of size :math:`2^L` becomes :math:`L` modes of
+size 2, and for a TT matrix, a mode of size :math:`(2^L, 2^L)` becomes :math:`L` modes of
+size :math:`(2, 2)`.
+
+The reshaped tensor has more modes, but they are much smaller. For data with structure,
+such as smooth functions sampled on a uniform grid, the TT ranks stay small. A vector of
+length :math:`n` then needs only :math:`\mathcal{O}(r^2 \log_2 n)` numbers instead of
+:math:`n`, where :math:`r` bounds the TT ranks. For unstructured data, such as random
+vectors, QTT does not help.
+
+In ``torchtt``, :meth:`torchtt.TT.to_qtt` converts a tensor to the QTT format and
+:meth:`torchtt.TT.qtt_to_tens` converts it back:
+
+.. code-block:: python
+
+  import torch
+  import torchtt
+
+  x = torch.exp(torch.linspace(0, 1, 1024, dtype=torch.float64))  # 1 mode of size 1024
+  x_qtt = torchtt.TT(x).to_qtt()   # 10 modes of size 2
+  print(x_qtt.N)   # [2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
+  print(x_qtt.R)   # [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+
 About the package
 -----------------
 
@@ -70,16 +103,16 @@ Once in the TT format, linear algebra operations can be performed between compre
  - Sum and difference between TT objects. Two ``torchtt.TT`` instances can be summed using the ``+`` operator. The difference can be implemented using the ``-`` operator.
  - Elementwise product (also called Hadamard product is performed using) the ``*`` operator. The same operator also implements the scalar multiplication.
  - The operator ``@`` implements the generalization of the matrix product. It can also be used between a tensor operator and a tensor.
- - The operator ``/`` implements the elementwise division of two TT objects. The algorithm is AMEn.
+ - The operator ``/`` implements the elementwise division of two TT objects. It is computed with the alternating minimal energy (:term:`AMEn`) method :cite:p:`dolgov2014alternating`.
  - The operator ``**`` implements the Kronecker product.
 
-The package also includes more features such as solving multilinear systems, cross approximation and automatic differentiation (with the possibility to define TT layers for neural networks ``torchtt.TT.full()``). Working examples that can be used as a tutorial are to be found in `examples/ <https://github.com/ion-g-ion/torchTT/tree/main/examples>`_.
+The package also includes more features such as solving multilinear systems :cite:p:`dolgov2014alternating`, cross approximation :cite:p:`oseledets2010tt,savostyanov2011fast` and automatic differentiation (with the possibility to define TT layers for neural networks ``torchtt.TT.full()``). Working examples that can be used as a tutorial are to be found in `examples/ <https://github.com/ion-g-ion/torchTT/tree/main/examples>`_.
 Following example scripts (as well as python notebooks) are also provied provided as part of the documentation:
 
  - `basic_tutorial.py <https://github.com/ion-g-ion/torchTT/tree/main/examples/basic_tutorial.py>`_ / `basic_tutorial.ipynb <https://github.com/ion-g-ion/torchTT/tree/main/examples/basic_tutorial.ipynb>`_: This contains a basic tutorial on decomposing full tensors in the TT format as well as performing rank rounding, slicing. `Try on Google Colab <https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/basic_tutorial.ipynb>`_. 
  - `basic_linalg.py <https://github.com/ion-g-ion/torchTT/tree/main/examples/basic_linalg.py>`_ / `basic_linalg.ipynb <https://github.com/ion-g-ion/torchTT/tree/main/examples/basic_linalg.ipynb>`_: This tutorial presents all the algebra operations that can be performed in the TT format. `Try on Google Colab <https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/basic_linalg.ipynb>`_. 
- - `efficient_linalg.py  <https://github.com/ion-g-ion/torchTT/tree/main/examples/efficient_linalg.py>`_ / `efficient_linalg.ipynb <https://github.com/ion-g-ion/torchTT/tree/main/examples/efficient_linalg.ipynb>`_: contains the DMRG for fast matves and AMEN for elementwise inversion in the TT format `Try on Google Colab <https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/efficient_linalg.ipynb>`_. 
- - `automatic_differentiation.py <https://github.com/ion-g-ion/torchTT/tree/main/examples/automatic_differentiation.py)>`_ / `automatic_differentiation.ipynp <https://github.com/ion-g-ion/torchTT/tree/main/examples/automatic_differentiation.ipynb>`_: Basic tutorial on AD in ``torchtt``. `Try on Google Colab <https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/automatic_differentiation.ipynb>`_. 
+ - `efficient_linalg.py  <https://github.com/ion-g-ion/torchTT/tree/main/examples/efficient_linalg.py>`_ / `efficient_linalg.ipynb <https://github.com/ion-g-ion/torchTT/tree/main/examples/efficient_linalg.ipynb>`_: contains the density matrix renormalization group (:term:`DMRG`) scheme :cite:p:`oseledets2011dmrg` for fast matrix-vector products and :term:`AMEn` :cite:p:`dolgov2014alternating` for elementwise inversion in the TT format. `Try on Google Colab <https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/efficient_linalg.ipynb>`_. 
+ - `automatic_differentiation.py <https://github.com/ion-g-ion/torchTT/tree/main/examples/automatic_differentiation.py>`_ / `automatic_differentiation.ipynp <https://github.com/ion-g-ion/torchTT/tree/main/examples/automatic_differentiation.ipynb>`_: Basic tutorial on automatic differentiation in ``torchtt``. `Try on Google Colab <https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/automatic_differentiation.ipynb>`_. 
  - `cross_interpolation.py <https://github.com/ion-g-ion/torchTT/tree/main/examples/cross_interpolation.py>`_ / `cross_interpolation.ipynb <https://github.com/ion-g-ion/torchTT/tree/main/examples/cross_interpolation.ipynb>`_: In this script, the cross interpolation emthod is exemplified. `Try on Google Colab <https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/cross_interpolation.ipynb>`_. 
  - `system_solvers.py <https://github.com/ion-g-ion/torchTT/tree/main/examples/system_solvers.py>`_ / `system_solvers.ipynb <https://github.com/ion-g-ion/torchTT/tree/main/examples/system_solvers.ipynb>`_: This contains the bais ussage of the multilinear solvers. `Try on Google Colab <https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/system_solvers.ipynb>`_. 
  - `gpu_acceleration.py <https://github.com/ion-g-ion/torchTT/tree/main/examples/gpu_acceleration.py>`_ / `gpu_acceleration.ipynb <https://github.com/ion-g-ion/torchTT/tree/main/examples/gpu_acceleration.ipynb>`_: This provides an example on how to use the GPU acceleration. `Try on Google Colab <https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/gpu_acceleration.ipynb>`_.

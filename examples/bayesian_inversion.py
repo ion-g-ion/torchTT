@@ -225,7 +225,7 @@ print("Vectorized log-likelihood:", log_lik_vec)
 # $$
 # \pi_0(\theta) \;=\; \frac{1}{Z_0}\prod_{k=1}^d \pi_{0,k}(\theta_k),
 # $$
-# so its coefficient tensor has TT-rank one. Concretely we use Gaussian factors for $\alpha,\beta,\gamma$ and log-normal factors for the positive parameters $\kappa,\sigma$, and normalize so that $\int_\Omega \pi_0(\theta)\,d\theta = 1$.
+# so its coefficient tensor has tensor-train (TT) rank one. Concretely we use Gaussian factors for $\alpha,\beta,\gamma$ and log-normal factors for the positive parameters $\kappa,\sigma$, and normalize so that $\int_\Omega \pi_0(\theta)\,d\theta = 1$.
 # 
 # Posterior summaries are computed by quadrature against the same weights:
 # $$
@@ -306,7 +306,7 @@ print("Covariance Matrix: \n", Cs)
 # \pi_{k+1}(\theta) \;\propto\; \pi_k(\theta)\, \exp\!\bigl(\log L_k(\theta) - c_k\bigr).
 # $$
 # 
-# At each step the new posterior, viewed as a tensor on the parameter grid, is approximated in TT format by adaptive cross interpolation (AMEN),
+# At each step the new posterior, viewed as a tensor on the parameter grid, is approximated in TT format by adaptive cross interpolation with the alternating minimal energy (AMEn) method ([Dolgov and Savostyanov, 2014](https://doi.org/10.1137/140953289)),
 # $$
 # \pi_{k+1} \;\approx\; \mathrm{TT}\!\left[\,(\theta,\, \pi_k(\theta)) \;\mapsto\; \pi_k(\theta)\,e^{\log L_k(\theta) - c_k}\,\right],
 # $$

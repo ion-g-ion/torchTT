@@ -16,7 +16,7 @@ except:
 print('CUDA available:',tn.cuda.is_available())
 print('Device name: ' + tn.cuda.get_device_name())
 
-#%% Define a function to test. It performs 2 matrix vector products in TT-format and a rank rounding. 
+#%% Define a function to test. It performs 2 matrix vector products in the tensor-train (TT) format and a rank rounding. 
 # The return result is a scalar.
 
 def f(x,A,y):
@@ -32,7 +32,7 @@ def f(x,A,y):
         torch.tensor: result
     """
     z = A @ y + A @ y # operatio that grows the rank
-    z = z.round(1e-12) # rank rounding (contains QR and SVD decomposition)
+    z = z.round(1e-12) # rank rounding (contains QR and singular value decompositions)
     z += z*x # some other operation
     return tntt.dot(x,z) # contract the tensor
 
@@ -67,7 +67,7 @@ print('Time with CUDA: ',tme_gpu)
 print('Speedup: ',tme_cpu.total_seconds()/tme_gpu.total_seconds(),' times.')
 
 #%% This time we perform the same test without using the rank rounding. 
-# The expected result is better since the rank rounding contains QR and SVD which are not that parallelizable.
+# The expected result is better since the rank rounding contains QR decompositions and singular value decompositions (SVD), which are not that parallelizable.
 
 def g(x,A,y):
     """

@@ -54,7 +54,7 @@ def _local_AB(Phi_left, Phi_right, coreA, coreB, bandA = -1, bandB = -1):
 
 def amen_mv(A, b, nswp=22, x0=None, eps=1e-10, rmax=1024, kickrank=4, kick2=0, verbose=False, use_cpp=True):
     """
-    Compute the matrix vector product between a TTM and a TT.
+    Compute the matrix vector product between a TT matrix (TTM) and a TT tensor using the alternating minimal energy (AMEn) method :cite:p:`dolgov2014alternating`.
     Suited when the output is expected to be low rank. 
 
     Args:
@@ -100,7 +100,7 @@ def amen_mv(A, b, nswp=22, x0=None, eps=1e-10, rmax=1024, kickrank=4, kick2=0, v
 
 def amen_mm(A, B, nswp=22, X0=None, eps=1e-10, rmax=1024, kickrank=4, kick2=0, verbose=False):
     """
-    Perform the TTM-TTM product using AMEn optimization.
+    Perform the product of two TT matrices (TTM) using the alternating minimal energy (AMEn) method :cite:p:`dolgov2014alternating`.
     Suited when the operators have high ranks, but the result is expected to be low rank.
 
     Args:

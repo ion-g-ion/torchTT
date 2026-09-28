@@ -114,4 +114,5 @@ jobs:
       - name: Run tests
         # Exercise the installed wheel instead of importing the source checkout.
         working-directory: ${{ runner.temp }}
-        run: python -m pytest "${{ github.workspace }}/tests/"
+        # Keep crash reporting enabled after pytest tears down its own handler.
+        run: python -X faulthandler -m pytest "${{ github.workspace }}/tests/"

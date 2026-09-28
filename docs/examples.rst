@@ -13,6 +13,7 @@ Getting Started
 
    ../examples/basic_tutorial.ipynb
    ../examples/basic_linalg.ipynb
+   ../examples/random_tt.ipynb
 
 Linear Algebra & Solvers
 ------------------------
@@ -51,6 +52,7 @@ Advanced Topics
 
    ../examples/automatic_differentiation.ipynb
    ../examples/manifold.ipynb
+   ../examples/tensor_completion.ipynb
    ../examples/gpu_acceleration.ipynb
    ../examples/bayesian_inversion.ipynb
 

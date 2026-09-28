@@ -1,7 +1,7 @@
 """
 Linear solvers in the TT format
 
-This tutorial addresses solving multilinear systems $\mathsf{Ax}=\mathsf{b}$ in the TT format.
+This tutorial addresses solving multilinear systems $\mathsf{Ax}=\mathsf{b}$ in the tensor-train (TT) format.
 
 """
 
@@ -18,7 +18,7 @@ A = tntt.random([(4,4),(5,5),(6,6)],[1,2,3,1])
 x = tntt.random([4,5,6],[1,2,3,1])
 b = A @ x
 
-# Solve the multilinear system $\mathsf{Ax}=\mathsf{b}$ using the method torchtt.solvers.amen_solve().
+# Solve the multilinear system $\mathsf{Ax}=\mathsf{b}$ using the method `torchtt.solvers.amen_solve()`, which implements the alternating minimal energy (AMEn) method ([Dolgov and Savostyanov, 2014](https://doi.org/10.1137/140953289)).
 xs = tntt.solvers.amen_solve(A,b, x0 = b, eps = 1e-7)
 
 # The relative residual norm and the relative error of the solution are reported:

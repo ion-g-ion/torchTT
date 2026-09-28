@@ -19,7 +19,7 @@ class Transform(nn.Module):
         self.dim = dim
 
     def input_requirement(self):
-        """Returns the number of parameters required from the NN per sample."""
+        """Returns the number of parameters required from the neural network per sample."""
         raise NotImplementedError
 
     def forward(self, x, params):
@@ -384,7 +384,7 @@ class CompressedTTLayer(nn.Module):
     """
     A Tensor Train (TT) neural network layer that operates directly on TT objects and applies nonlinear activation between TT cores during multiplication.
     
-    This layer is inspired by Nonlinear Tensor Train formats for deep neural networks. Instead of computing the full dense tensor, it performs a fast matrix-vector-like multiplication of the layer's TTM weights with the input TT object. The layer natively applies a nonlinear activation and an optional bias to the intermediate core representations during the contraction sweep. The intermediate representations are orthogonalized and truncated to maintain the compression, ensuring the output TT object's ranks are strictly bounded by ``R_output``.
+    This layer is inspired by nonlinear tensor-train formats for deep neural networks :cite:p:`wang2021nonlinear`. Instead of computing the full dense tensor, it performs a fast matrix-vector-like multiplication of the layer's TT-matrix (TTM) weights with the input TT object. The layer natively applies a nonlinear activation and an optional bias to the intermediate core representations during the contraction sweep. The intermediate representations are orthogonalized and truncated to maintain the compression, ensuring the output TT object's ranks are strictly bounded by ``R_output``.
     """
     def __init__(self, N_in, N_out, R_layer, R_output, activation=tn.relu, bias=True, dtype=tn.float32):
         """
@@ -393,7 +393,7 @@ class CompressedTTLayer(nn.Module):
         Args:
             N_in (list[int]): Mode sizes for the input dimensions.
             N_out (list[int]): Mode sizes for the output dimensions.
-            R_layer (list[int]): TT ranks of the layer's TTM weight operator (length ``len(N_in)+1``).
+            R_layer (list[int]): TT ranks of the layer's TT-matrix (TTM) weight operator (length ``len(N_in)+1``).
             R_output (list[int]): TT ranks of the output tensor (length ``len(N_out)+1``). Must satisfy ``R_output[0] == R_output[-1] == 1``. Each entry ``R_output[k]`` bounds the rank at the k-th bond of the output TT, giving per-bond control over the compression.
             activation (callable, optional): The nonlinear activation function to apply between cores during multiplication. Defaults to ``torch.relu``.
             bias (bool, optional): If True, a trainable per-mode bias is added to the intermediate core representations. Defaults to True.
@@ -431,9 +431,9 @@ class CompressedTTLayer(nn.Module):
         """
         Forward pass for the CompressedTTLayer.
         
-        Computes the operation by multiplying the input TT with the layer's TTM using a right-to-left sweep. 
+        Computes the operation by multiplying the input TT with the layer's TT-matrix (TTM) weights using a right-to-left sweep. 
         During this sweep, the intermediate bias is added and the activation is applied to the core before 
-        the core is orthogonalized and truncated (using SVD) to strictly enforce the per-bond rank limits 
+        the core is orthogonalized and truncated (using a singular value decomposition, SVD) to strictly enforce the per-bond rank limits 
         given by ``R_output``.
 
         Args:

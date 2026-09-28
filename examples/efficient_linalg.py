@@ -1,7 +1,7 @@
 """
-# AMEN and DMRG for fast TT operations
+# AMEn and DMRG for fast TT operations
 
-The torchtt package includes DMRG and AMEN schemes for fast matrix vector product and elementwise inversion in the TT format.
+The torchtt package includes density matrix renormalization group (DMRG; [Oseledets, 2011](https://doi.org/10.2478/cmam-2011-0021)) and alternating minimal energy (AMEn; [Dolgov and Savostyanov, 2014](https://doi.org/10.1137/140953289)) schemes for fast matrix vector products and elementwise inversion in the tensor-train (TT) format.
 """
 
 #%% Imports
@@ -13,7 +13,7 @@ import datetime
 #%% Efficient matrix vector product
 # When performing the multiplication between a a TT matrix and a TT tensor the rank of the result is the product of the ranks of the inputs. 
 # Therefore rank rounding has to be performed. This increases the complexity to $\mathcal{O}(Ndr^6)$. 
-# In order to overcome this, Oseledets proposed in "DMRG Approach to Fast Linear Algebra in the TT-Format" the DMRG optimization scheme to reduce the complexity. 
+# In order to overcome this, Oseledets proposed in ["DMRG Approach to Fast Linear Algebra in the TT-Format"](https://doi.org/10.2478/cmam-2011-0021) the DMRG optimization scheme to reduce the complexity. 
 # This feature is implemented in torchtt by the member function fast_matvec() of the TT class. An example is showed in the following.
 
 # Create a random TT object and a TT matrix.
@@ -43,7 +43,9 @@ print('Time DMRG    ', tme)
 # Check if the error is the same (debugging purpose).
 print('Relative error ',(y-yf).norm().numpy()/y.norm().numpy())
 
-# A second routine is the `torchtt.fast_mv()`. The method is described in `https://arxiv.org/pdf/2410.19747`. This works well for tensors in QTT.
+# A second routine is `torchtt.fast_mv()`. The method is described in [Michailidis, Fenton and Kiffner, 2025](https://doi.org/10.1137/24M1714149) (preprint: [arXiv:2410.19747](https://arxiv.org/abs/2410.19747)). It works well for tensors in the quantized tensor-train (QTT) format,
+# i.e. tensors reshaped so that every mode has size 2 (see `torchtt.TT.to_qtt()`; [Oseledets, 2010](https://doi.org/10.1137/090757861) and [Khoromskij, 2011](https://doi.org/10.1007/s00365-011-9131-1)).
+# In the example below, `x` has 8 modes of size 2 (a vector of length 2^8 = 256) and `A` is a matching 256 x 256 operator with modes of size (2,2).
 A = tntt.random([(2,2)]*8,[1]+7*[6]+[1]) # random array
 x = tntt.random([2]*8,[1]+7*[5]+[1]) # random tensor 
 for _ in range(8): A+=A
@@ -56,7 +58,7 @@ print('Time fast 2  ', tme)
 
 #%% Elementwise division in the TT format
 # One other basic linear algebra function that cannot be done without optimization is the elementwise division of two tensors in the TT format.
-# In contrast to the elemntwise multiplication (where the resulting TT cores can be explicitly computed), the elementwise inversion has to be solved by means of an optimization problem (the method of choice is AMEN). 
+# In contrast to the elemntwise multiplication (where the resulting TT cores can be explicitly computed), the elementwise inversion has to be solved by means of an optimization problem (the method of choice is AMEn). 
 # The operator "/" can be used  for elemntwise division between tensors. Moreover one can use "/" between a scalar and a  torchtt.TT instance.
 
 # Create 2 tensors:

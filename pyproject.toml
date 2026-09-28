@@ -41,6 +41,7 @@ dev = [
     "ipykernel",
     "matplotlib",
     "nbsphinx",
+    "sphinxcontrib-bibtex",
     "torchvision",
 ]
 

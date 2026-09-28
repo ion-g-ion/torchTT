@@ -1,5 +1,5 @@
 """
-Manifold gradient module.
+Manifold gradient module: Riemannian gradients and tangent-space projections on the manifold of TT tensors with fixed rank :cite:p:`steinlechner2016riemannian`.
 
 """
 
@@ -45,7 +45,7 @@ def _delta2cores(tt_cores, R, Sds, is_ttm = False, ortho = None):
 
 def riemannian_gradient(x,func):
     """
-    Compute the Riemannian gradient using AD.
+    Compute the Riemannian gradient using automatic differentiation (AD).
 
     Args:
         x (torchtt.TT): the point on the manifold where the gradient is computed.

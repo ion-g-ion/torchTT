@@ -6,8 +6,9 @@
 # torchTT
 Tensor-Train decomposition in `pytorch`
 
-Tensor-Train decomposition package written in Python on top of `pytorch`. Supports GPU acceleration and automatic differentiation.
-It also contains routines for solving linear systems in the TT format and performing adaptive cross approximation  (the AMEN solver/cross interpolation is inspired form the [MATLAB TT-Toolbox](https://github.com/oseledets/TT-Toolbox)).
+Tensor-Train (TT) decomposition package written in Python on top of `pytorch`. Supports GPU acceleration and automatic differentiation.
+It also contains methods for solving multilinear systems and for adaptive cross approximation in the TT format, inspired by the [MATLAB TT-Toolbox](https://github.com/oseledets/TT-Toolbox).
+Abbreviations are explained in the [glossary](https://ion-g-ion.github.io/torchTT/latest/docs/glossary.html).
 Some routines are implemented in C++ for an increased execution speed.
 
 `torchtt` helps researchers and engineers tackle high-dimensional problems in scientific computing by working directly with compressed representations of large arrays.
@@ -132,7 +133,7 @@ Detailed descriptions can be found in the [development API documentation](https:
 | Component | Description |
 | --- | --- |
 | [`torchtt`](https://ion-g-ion.github.io/torchTT/latest/docs/torchtt.html#module-torchtt)             | Basic TT class and basic linear algebra functions. |
-| [`torchtt.solvers`](https://ion-g-ion.github.io/torchTT/latest/docs/torchtt.html#module-torchtt.solvers)     | Implementation of the AMEN solver. |
+| [`torchtt.solvers`](https://ion-g-ion.github.io/torchTT/latest/docs/torchtt.html#module-torchtt.solvers)     | Solvers for multilinear systems in the TT format. |
 | [`torchtt.grad`](https://ion-g-ion.github.io/torchTT/latest/docs/torchtt.html#module-torchtt.grad)        | Wrapper for automatic differentiation. |
 | [`torchtt.manifold`](https://ion-g-ion.github.io/torchTT/latest/docs/torchtt.html#module-torchtt.manifold)    | Riemannian gradient and projection onto manifolds of tensors with fixed TT rank. |
 | [`torchtt.nn`](https://ion-g-ion.github.io/torchTT/latest/docs/torchtt.html#module-torchtt.nn)          | Basic TT neural network layer. |
@@ -153,16 +154,16 @@ Following example scripts (as well as python notebooks) are also provied provide
 
  * [basic_tutorial.py](examples/basic_tutorial.py) / [basic_tutorial.ipynp](examples/basic_tutorial.ipynb): This contains a basic tutorial on decomposing full tensors in the TT format as well as performing rank rounding, slicing ([Try on Google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/basic_tutorial.ipynb)). 
  * [basic_linalg.py](examples/basic_linalg.py) / [basic_linalg.ipynp](examples/basic_linalg.ipynb): This tutorial presents all the algebra operations that can be performed in the TT format ([Try on Google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/basic_linalg.ipynb)). 
- * [efficient_linalg.py](examples/efficient_linalg.py) / [efficient_linalg.ipynb](examples/efficient_linalg.ipynb): contains the DMRG for fast matves and AMEN for elementwise inversion in the TT format ([Try on Google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/efficient_linalg.ipynb)). 
- * [automatic_differentiation.py](examples/automatic_differentiation.py) / [automatic_differentiation.ipynp](examples/automatic_differentiation.ipynb): Basic tutorial on AD in `torchtt` ([Try on Google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/automatic_differentiation.ipynb)). 
+ * [efficient_linalg.py](examples/efficient_linalg.py) / [efficient_linalg.ipynb](examples/efficient_linalg.ipynb): contains the density matrix renormalization group (DMRG) scheme for fast matrix-vector products and AMEn for elementwise inversion in the TT format ([Try on Google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/efficient_linalg.ipynb)). 
+ * [automatic_differentiation.py](examples/automatic_differentiation.py) / [automatic_differentiation.ipynp](examples/automatic_differentiation.ipynb): Basic tutorial on automatic differentiation in `torchtt` ([Try on Google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/automatic_differentiation.ipynb)). 
  * [cross_interpolation.py](examples/cross_interpolation.py) / [cross_interpolation.ipynb](examples/cross_interpolation.ipynb): In this script, the cross interpolation emthod is exemplified ([Try on Google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/cross_interpolation.ipynb)). 
  * [system_solvers.py](examples/system_solvers.py) / [system_solvers.ipynb](examples/system_solvers.ipynb): This contains the bais ussage of the multilinear solvers ([Try on Google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/system_solvers.ipynb)). 
  * [gpu_acceleration.py](examples/gpu_acceleration.py) / [gpu_acceleration.ipynb](examples/gpu_acceleration.ipynb): This provides an example on how to use the GPU acceleration ([Try on Google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/gpu_acceleration.ipynb)). 
  * [basic_nn.py](examples/basic_nn.py) / [basic_nn.ipynb](examples/basic_nn.ipynb): This provides an example on how to use the TT neural network layers ([Try on Google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/basic_nn.ipynb)). 
  * [mnist_nn.py](examples/mnist_nn.py) / [mnist_nn.ipynb](examples/mnist_nn.ipynb): Example of TT layers used for image classification ([Try on Google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/mnist_nn.ipynb)). 
  * [manifold.py](examples/manifold.py) / [manifold.ipynb](examples/manifold.ipynb): This demonstrates Riemannian gradient descent on manifolds of tensors with fixed TT rank ([Try on Google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/manifold.ipynb)). 
- * [random_tt.py](examples/random_tt.py): This script shows how to generate random TT tensors with different variances ([Try on Google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/random_tt.py)). 
- * [tensor_completion.py](examples/tensor_completion.py): This example demonstrates tensor completion using manifold learning with Riemannian gradient descent ([Try on Google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/tensor_completion.py)).
+ * [random_tt.py](examples/random_tt.py) / [random_tt.ipynb](examples/random_tt.ipynb): This shows how to generate random TT tensors with different variances ([Try on Google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/random_tt.ipynb)). 
+ * [tensor_completion.py](examples/tensor_completion.py) / [tensor_completion.ipynb](examples/tensor_completion.ipynb): This example demonstrates tensor completion with Riemannian gradient descent on the manifold of fixed-rank TT tensors ([Try on Google Colab](https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/tensor_completion.ipynb)).
  
 ### Building Documentation
 

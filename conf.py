@@ -20,7 +20,11 @@ version = release
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode', 'sphinx.ext.napoleon', 'sphinx.ext.intersphinx', 'nbsphinx']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode', 'sphinx.ext.napoleon', 'sphinx.ext.intersphinx', 'nbsphinx', 'sphinxcontrib.bibtex']
+
+# sphinxcontrib-bibtex configuration: cite with :cite:p:`key` (listed in docs/references.rst)
+bibtex_bibfiles = ['docs/references.bib']
+bibtex_reference_style = 'author_year'
 
 # nbsphinx configuration
 nbsphinx_execute = 'never'  # Don't execute notebooks during build

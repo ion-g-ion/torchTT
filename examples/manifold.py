@@ -13,7 +13,7 @@ func = lambda x: 0.5*(x-target).norm(True)
 x0 = tntt.randn(N,Rx)
 x =x0.clone()
 for i in range(20):
-    # compute riemannian gradient using AD    
+    # compute riemannian gradient using automatic differentiation    
     gr = tntt.manifold.riemannian_gradient(x,func)
     
     #stepsize length
