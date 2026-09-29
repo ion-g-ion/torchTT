@@ -8,11 +8,12 @@ from torchtt._decomposition import mat_to_tt, to_tt, lr_orthogonal, round_tt, rl
 from torchtt._division import amen_divide
 import numpy as np
 import math
-from torchtt._dmrg import dmrg_matvec
 from torchtt._aux_ops import apply_mask, dense_matvec, bilinear_form_aux
 from torchtt.errors import *
 import torchtt._extras
+import torchtt._products
 import sys
+import warnings
 
 
 class TT():
@@ -834,15 +835,80 @@ class TT():
         result = TT(cores_new)
         return result
 
+    def matvec(self, other, eps=1e-12, rmax=sys.maxsize, method='dmrg', initial=None, verbose=False):
+        """
+        Matrix-vector product with rank truncation, ``(self @ other).round(eps, rmax)``, without forming the exact product.
+        Same as :func:`torchtt.matvec` with ``self`` as the TT matrix (see there how to choose the method).
+
+        Examples:
+
+            .. code-block:: python
+
+                y = A.matvec(x, eps=1e-10)
+                y = A.matvec(x, eps=1e-10, method='direct')
+                y = A.matvec(x, eps=1e-10, method=torchtt.methods.DMRG(nswp=40))
+
+        Args:
+            other (torchtt.TT): the TT tensor.
+            eps (float, optional): relative accuracy. Defaults to 1e-12.
+            rmax (int, optional): maximum rank of the result. Defaults to the maximum possible integer.
+            method (str | torchtt.methods.DMRG | torchtt.methods.Direct | torchtt.methods.AMEn | torchtt.methods.Swap, optional): the method, given by name or as an instance to change its parameters. Defaults to 'dmrg'.
+            initial (torchtt.TT, optional): initial guess of the result (only for ``'dmrg'`` and ``'amen'``). Defaults to None.
+            verbose (bool, optional): print information about the iterations. Defaults to False.
+
+        Returns:
+            torchtt.TT: the result.
+        """
+        return torchtt._products.matvec(self, other, eps, rmax, method, initial, verbose)
+
+    def matmat(self, other, eps=1e-12, rmax=sys.maxsize, method='direct', initial=None, verbose=False):
+        """
+        Product of two TT matrices with rank truncation, ``(self @ other).round(eps, rmax)``.
+        Same as :func:`torchtt.matmat` with ``self`` as the first TT matrix (see there how to choose the method).
+
+        Args:
+            other (torchtt.TT): the second TT matrix.
+            eps (float, optional): relative accuracy. Defaults to 1e-12.
+            rmax (int, optional): maximum rank of the result. Defaults to the maximum possible integer.
+            method (str | torchtt.methods.Direct | torchtt.methods.AMEn | torchtt.methods.Swap, optional): the method, given by name or as an instance to change its parameters. Defaults to 'direct'.
+            initial (torchtt.TT, optional): initial guess of the result (only for ``'amen'``). Defaults to None.
+            verbose (bool, optional): print information about the iterations. Defaults to False.
+
+        Returns:
+            torchtt.TT: the result.
+        """
+        return torchtt._products.matmat(self, other, eps, rmax, method, initial, verbose)
+
+    def hadamard(self, other, eps=1e-12, rmax=sys.maxsize, method='dmrg', initial=None, verbose=False):
+        """
+        Elementwise product with rank truncation, ``(self * other).round(eps, rmax)``, without forming the exact product.
+        Same as :func:`torchtt.hadamard` with ``self`` as the first operand (see there how to choose the method).
+
+        Args:
+            other (torchtt.TT): the second operand.
+            eps (float, optional): relative accuracy. Defaults to 1e-12.
+            rmax (int, optional): maximum rank of the result. Defaults to the maximum possible integer.
+            method (str | torchtt.methods.DMRG | torchtt.methods.Direct | torchtt.methods.Swap, optional): the method, given by name or as an instance to change its parameters. Defaults to 'dmrg'.
+            initial (torchtt.TT, optional): initial guess of the result (only for ``'dmrg'``). Defaults to None.
+            verbose (bool, optional): print information about the iterations. Defaults to False.
+
+        Returns:
+            torchtt.TT: the result.
+        """
+        return torchtt._products.hadamard(self, other, eps, rmax, method, initial, verbose)
+
     def fast_matvec(self, other, eps=1e-12, initial=None, nswp=20, verb=False, use_cpp=True):
         """
         Fast matrix vector multiplication A@x using density matrix renormalization group (DMRG) iterations :cite:p:`oseledets2011dmrg`. Faster than traditional matvec + rounding.
+
+        .. deprecated:: 0.6.0
+            Use :meth:`torchtt.TT.matvec` or :func:`torchtt.matvec` with ``method='dmrg'`` (or ``method=torchtt.methods.DMRG(nswp=...)``).
 
         Args:
             other (torchtt.TT): the TT tensor.
             eps (float, optional): relative accuracy for DMRG. Defaults to 1e-12.
             initial (None|torchtt.TT, optional): an approximation of the product (None means random initial guess). Defaults to None.
-            nswp (int, optional): number of DMRG iterations. Defaults to 40.
+            nswp (int, optional): number of DMRG iterations. Defaults to 20.
             verb (bool, optional): show info for debug. Defaults to False.
             use_cpp (bool, optional): use the C++ implementation if available. Defaults to True.
 
@@ -853,14 +919,8 @@ class TT():
         Returns:
             torchtt.TT: the result.
         """
-
-        if not isinstance(other, TT):
-            raise InvalidArguments('Second operand has to be TT object.')
-        if not self.__is_ttm or other.is_ttm:
-            raise IncompatibleTypes(
-                'First operand should be a TT matrix and second a TT vector.')
-
-        return dmrg_matvec(self, other, y0=initial, eps=eps, verb=verb, nswp=nswp, use_cpp=use_cpp)
+        warnings.warn("TT.fast_matvec() is deprecated, use TT.matvec(x, eps, method=torchtt.methods.DMRG(nswp=...)) instead.", DeprecationWarning, stacklevel=2)
+        return torchtt._products.matvec(self, other, eps, method=torchtt.methods.DMRG(nswp=nswp, use_cpp=use_cpp), initial=initial, verbose=verb)
 
     def apply_mask(self, indices):
         """

@@ -10,55 +10,57 @@ import torchtt as tntt
 import datetime
 
 
-#%% Efficient matrix vector product
-# When performing the multiplication between a a TT matrix and a TT tensor the rank of the result is the product of the ranks of the inputs. 
-# Therefore rank rounding has to be performed. This increases the complexity to $\mathcal{O}(Ndr^6)$. 
-# In order to overcome this, Oseledets proposed in ["DMRG Approach to Fast Linear Algebra in the TT-Format"](https://doi.org/10.2478/cmam-2011-0021) the DMRG optimization scheme to reduce the complexity. 
-# This feature is implemented in torchtt by the member function fast_matvec() of the TT class. An example is showed in the following.
+#%% Efficient products
+# When performing the multiplication between a TT matrix and a TT tensor, the rank of the result is the product of the ranks of the inputs.
+# Therefore rank rounding has to be performed. This increases the complexity to $\mathcal{O}(dnr^6)$.
+# If the result has a much smaller rank than the product of the ranks, the rounded result can be computed without forming the exact product, for example with the DMRG scheme proposed by Oseledets in ["DMRG Approach to Fast Linear Algebra in the TT-Format"](https://doi.org/10.2478/cmam-2011-0021).
+# The functions `torchtt.matvec()`, `torchtt.matmat()` and `torchtt.hadamard()` compute the rounded products and the argument `method` chooses the algorithm:
+#  - `'direct'`: form the exact product and round it,
+#  - `'dmrg'`: DMRG ([Oseledets, 2011](https://doi.org/10.2478/cmam-2011-0021)),
+#  - `'amen'`: AMEn ([Dolgov and Savostyanov, 2014](https://doi.org/10.1137/140953289)),
+#  - `'swap'`: swapping of neighbouring cores ([Michailidis, Fenton and Kiffner, 2025](https://doi.org/10.1137/24M1714149)).
+# The documentation of `torchtt.methods` describes which method to use when. The following function compares them.
+def compare(A, x, methods):
+    """
+    Compute the matrix vector product with each method and print the runtime, the rank of the result and the relative error.
+    """
+    y_ref = (A @ x).round(1e-12)
+    for method in methods:
+        tme = datetime.datetime.now()
+        y = tntt.matvec(A, x, eps=1e-10, method=method)
+        tme = datetime.datetime.now() - tme
+        print('%-7s time %s   rank %3d   relative error %.1e' % (method, tme, max(y.R), ((y - y_ref).norm() / y_ref.norm()).item()))
 
-# Create a random TT object and a TT matrix.
+# Create a random TT matrix and a random TT tensor.
 n = 4 # mode size
-A = tntt.random([(n,n)]*8,[1]+7*[4]+[1]) # random array
-x = tntt.random([n]*8,[1]+7*[5]+[1]) # random tensor 
+A = tntt.random([(n,n)]*8,[1]+7*[4]+[1]) # random TT matrix
+x = tntt.random([n]*8,[1]+7*[5]+[1]) # random TT tensor
 
-# Increase the rank without adding redundant information. 
-# The multiplication performed in this case is actually equivalent to $32\mathbf{\mathsf{Ax}}$. 
-A = A + A + A + A - A + A - A + A
-x = x + x + x + x + x + x + x + x - x + x - x + x 
-print(A)
-print(x)
+# Increase the ranks without adding information.
+# The product of the ranks is now 24 * 40 = 960, but the result can be compressed to rank 20 (the product is equivalent to $8\mathbf{\mathsf{Ax}}$).
+# The methods that do not form the exact product (DMRG and AMEn) are faster than `'direct'` in this case.
+A_large = A + A + A + A - A - A
+x_large = x + x + x + x + x + x - x - x
+print('Ranks of A:', A_large.R)
+print('Ranks of x:', x_large.R)
+compare(A_large, x_large, ['direct', 'dmrg', 'amen', 'swap'])
 
-# Perform the TT matvec directly and round the result. The runtime is reported.
-tme = datetime.datetime.now()
-y = (A @ x).round(1e-12) 
-tme = datetime.datetime.now() - tme 
-print('Time classic ', tme)
+# If the result cannot be compressed, forming the exact product is the fastest.
+# For random tensors, the product of the ranks is also the rank of the result (here 4 * 5 = 20).
+compare(A, x, ['direct', 'dmrg', 'amen', 'swap'])
 
-# This time run the fast matvec routine.
-tme = datetime.datetime.now()
-yf = A.fast_matvec(x)
-tme = datetime.datetime.now() - tme 
-print('Time DMRG    ', tme)
+# The parameters of a method are changed by passing an instance of its class from `torchtt.methods` instead of its name.
+# The iterative methods also accept an initial guess of the result.
+y = tntt.matvec(A_large, x_large, eps=1e-10, method=tntt.methods.DMRG(nswp=10, kickrank=2))
+y = tntt.matvec(A_large, x_large, eps=1e-10, method=tntt.methods.AMEn(kickrank=8), initial=y)
 
-# Check if the error is the same (debugging purpose).
-print('Relative error ',(y-yf).norm().numpy()/y.norm().numpy())
-
-# A second routine is `torchtt.fast_mv()`. The method is described in [Michailidis, Fenton and Kiffner, 2025](https://doi.org/10.1137/24M1714149) (preprint: [arXiv:2410.19747](https://arxiv.org/abs/2410.19747)). It works well for tensors in the quantized tensor-train (QTT) format,
-# i.e. tensors reshaped so that every mode has size 2 (see `torchtt.TT.to_qtt()`; [Oseledets, 2010](https://doi.org/10.1137/090757861) and [Khoromskij, 2011](https://doi.org/10.1007/s00365-011-9131-1)).
-# In the example below, `x` has 8 modes of size 2 (a vector of length 2^8 = 256) and `A` is a matching 256 x 256 operator with modes of size (2,2).
-A = tntt.random([(2,2)]*8,[1]+7*[6]+[1]) # random array
-x = tntt.random([2]*8,[1]+7*[5]+[1]) # random tensor 
-for _ in range(8): A+=A
-for _ in range(8): x+=x
-
-tme = datetime.datetime.now()
-yf2 = tntt.fast_mv(A, x)
-tme = datetime.datetime.now() - tme 
-print('Time fast 2  ', tme)
+# The same holds for the elementwise product and the product of TT matrices.
+z = tntt.hadamard(x_large, x_large, eps=1e-10, method='dmrg')
+B = tntt.matmat(A_large, A_large, eps=1e-10, method='direct')
 
 #%% Elementwise division in the TT format
 # One other basic linear algebra function that cannot be done without optimization is the elementwise division of two tensors in the TT format.
-# In contrast to the elemntwise multiplication (where the resulting TT cores can be explicitly computed), the elementwise inversion has to be solved by means of an optimization problem (the method of choice is AMEn). 
+# In contrast to the elemntwise multiplication (where the resulting TT cores can be explicitly computed), the elementwise inversion has to be solved by means of an optimization problem (the method of choice is AMEn).
 # The operator "/" can be used  for elemntwise division between tensors. Moreover one can use "/" between a scalar and a  torchtt.TT instance.
 
 # Create 2 tensors:

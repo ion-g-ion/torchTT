@@ -13,7 +13,9 @@ from ._extras import eye, zeros, kron, ones, random, randn, reshape, meshgrid, d
 from ._dmrg import dmrg_hadamard
 from ._fast_mult import fast_hadammard, fast_mm, fast_mv
 from ._amen import amen_mm, amen_mv
+from ._products import matvec, matmat, hadamard
 from ._custom_timer import Timer
+from . import methods
 from . import solvers
 from . import grad
 from . import manifold
@@ -42,5 +44,6 @@ def cpp_enabled():
 
 
 __all__ = ['TT', 'eye', 'zeros', 'kron', 'ones', 'random', 'randn', 'reshape', 'meshgrid', 'dot', 'elementwise_divide', 'numel', 'rank1TT', 'bilinear_form',
-           'diag', 'permute', 'load', 'save', 'cat', 'amen_mm', 'amen_mv', 'cpp_available', 'pad', 'shape_mn_to_tuple', 'shape_tuple_to_mn', 'dmrg_hadamard']
-__all__ += ["fast_hadamard", "fast_mv", "fast_mm", "Timer"]
+           'diag', 'permute', 'load', 'save', 'cat', 'amen_mm', 'amen_mv', 'cpp_enabled', 'pad', 'shape_mn_to_tuple', 'shape_tuple_to_mn', 'dmrg_hadamard']
+__all__ += ["fast_hadammard", "fast_mv", "fast_mm", "Timer"]
+__all__ += ["matvec", "matmat", "hadamard", "methods"]

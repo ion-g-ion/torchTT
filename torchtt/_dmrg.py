@@ -8,6 +8,7 @@ import torchtt
 import torch as tn
 from torchtt._decomposition import rank_chop, QR, SVD
 import datetime
+import warnings
 import opt_einsum as oe
 
 
@@ -187,26 +188,26 @@ def dmrg_matvec_python(A, x, y0 = None, nswp = 20, eps = 1e-12, rmax = 32768, ki
 def dmrg_hadamard(x, y, z0 = None, nswp = 20, eps = 1e-12, rmax = 32768, kickrank = 4, verb = False, use_cpp = True):
     """
     Perform fast elementwise multiplication `z = x * y` in the TT format using the density matrix renormalization group (DMRG) algorithm :cite:p:`oseledets2011dmrg`.
-    C++ backend not yet ready if available.
-    
+
+    .. deprecated:: 0.6.0
+        Use :func:`torchtt.hadamard` with ``method='dmrg'`` (or ``method=torchtt.methods.DMRG(nswp=..., kickrank=...)``).
+
     Args:
-        z (TT): TT tensor
         x (TT): TT tensor
+        y (TT): TT tensor
         z0 (TT, optional): initial guess of the result (if None is provided a random tensor is generated as a guess). Defaults to None.
         nswp (int, optional): numebr of sweeps. Defaults to 20.
         eps (float, optional): relative accuracy. Defaults to 1e-12.
         rmax (int, optional): maximum rank. Defaults to 32768.
         kickrank (int, optional): kickrank. Defaults to 4.
         verb (bool, optional): show debug info. Defaults to False.
-        use_cpp (bool, optional): flag to choose between the python and C++ implementation (if available). Defaults to False.
+        use_cpp (bool, optional): not used (there is no C++ implementation). Defaults to True.
 
     Returns:
         TT: the result.
     """
-    if False and _flag_use_cpp and use_cpp:
-        return torchtt.TT(torchttcpp.dmrg_mv(A.cores, x.cores, [] if y0 is None else y0.cores, A.M, A.N, x.R, [] if y0 is None else y0.R, nswp, eps, rmax, kickrank, verb))
-    else:
-        return dmrg_hadamard_python(x, y, z0, nswp, eps, rmax, kickrank, verb)
+    warnings.warn("torchtt.dmrg_hadamard() is deprecated, use torchtt.hadamard(x, y, eps, method=torchtt.methods.DMRG(nswp=..., kickrank=...)) instead.", DeprecationWarning, stacklevel=2)
+    return torchtt.hadamard(x, y, eps, rmax, method=torchtt.methods.DMRG(nswp=nswp, kickrank=kickrank), initial=z0, verbose=verb)
     
 def dmrg_hadamard_python(z, x, y0 = None, nswp = 20, eps = 1e-12, rmax = 32768, kickrank = 4, verb = False):
     """

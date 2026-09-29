@@ -28,7 +28,7 @@ def test_dmrg_hadamard(dtype):
     # conventional method 
     y = 8 * (z * x).round(1e-12)
 
-    yf = tntt.dmrg_hadamard(zm, xm, eps=1e-12, verb=False)
+    yf = tntt.hadamard(zm, xm, eps=1e-12, method='dmrg')
 
     rel_error = (y-yf).norm().numpy()/y.norm().numpy()
 
@@ -52,7 +52,7 @@ def test_dmrg_matvec(dtype):
     y = 8 * (A @ x).round(1e-12)
 
     # dmrg matvec
-    yf = Am.fast_matvec(xm)
+    yf = Am.matvec(xm, method='dmrg')
 
     rel_error = (y-yf).norm().numpy()/y.norm().numpy()
 
@@ -76,7 +76,7 @@ def test_dmrg_matvec_non_square(dtype):
     y = 8 * (A @ x).round(1e-12)
 
     # dmrg matvec
-    yf = Am.fast_matvec(xm)
+    yf = Am.matvec(xm, method='dmrg')
 
     rel_error = (y-yf).norm().numpy()/y.norm().numpy()
 
@@ -133,7 +133,7 @@ def test_amen_mv(dtype):
     A = A + A + A + A + A
     x = x + x + x + x + x
 
-    C = tntt.amen_mv(A, x)
+    C = tntt.matvec(A, x, 1e-10, method='amen')
 
     assert ((C-Cr).norm()/Cr.norm()) < 1e-11
 
@@ -147,7 +147,7 @@ def test_amen_mv_zero_operator(dtype):
     A = tntt.zeros([(n, n) for n in N], dtype=dtype)
     x = tntt.randn(N, [1, 2, 2, 1], dtype=dtype)
 
-    C = tntt.amen_mv(A, x, nswp=4, eps=1e-12, kickrank=2)
+    C = tntt.matvec(A, x, 1e-12, method=tntt.methods.AMEn(nswp=4, kickrank=2))
 
     assert C.N == N
     assert C.norm() < 1e-12
@@ -162,7 +162,7 @@ def test_amen_mv_zero_vector(dtype):
     A = tntt.eye(N, dtype=dtype)
     x = tntt.zeros(N, dtype=dtype)
 
-    C = tntt.amen_mv(A, x, nswp=4, eps=1e-12, kickrank=2)
+    C = tntt.matvec(A, x, 1e-12, method=tntt.methods.AMEn(nswp=4, kickrank=2))
 
     assert C.N == N
     assert C.norm() < 1e-12
@@ -177,7 +177,7 @@ def test_amen_mv_identity(dtype):
     A = tntt.eye(N, dtype=dtype)
     x = tntt.randn(N, [1, 2, 2, 1], dtype=dtype)
 
-    C = tntt.amen_mv(A, x, nswp=8, eps=1e-12, kickrank=2)
+    C = tntt.matvec(A, x, 1e-12, method=tntt.methods.AMEn(nswp=8, kickrank=2))
 
     assert ((C - x).norm() / x.norm()) < 1e-11
 
@@ -195,7 +195,7 @@ def test_amen_mm(dtype):
     A = A + A + A + A + A
     B = B + B + B + B + B
 
-    C = tntt.amen_mm(A, B)
+    C = tntt.matmat(A, B, 1e-10, method='amen')
 
     assert ((C-Cr).norm()/Cr.norm()) < 1e-11
 
@@ -208,7 +208,7 @@ def test_amen_mm_zero_left_factor(dtype):
     A = tntt.zeros([(3, 2), (4, 3)], dtype=dtype)
     B = tntt.randn([(2, 5), (3, 6)], [1, 2, 1], dtype=dtype)
 
-    C = tntt.amen_mm(A, B, nswp=4, eps=1e-12, kickrank=2)
+    C = tntt.matmat(A, B, 1e-12, method=tntt.methods.AMEn(nswp=4, kickrank=2))
 
     assert C.M == [3, 4]
     assert C.N == [5, 6]
@@ -223,7 +223,7 @@ def test_amen_mm_zero_right_factor(dtype):
     A = tntt.eye([3, 4], dtype=dtype)
     B = tntt.zeros([(3, 2), (4, 5)], dtype=dtype)
 
-    C = tntt.amen_mm(A, B, nswp=4, eps=1e-12, kickrank=2)
+    C = tntt.matmat(A, B, 1e-12, method=tntt.methods.AMEn(nswp=4, kickrank=2))
 
     assert C.M == [3, 4]
     assert C.N == [2, 5]
@@ -238,7 +238,7 @@ def test_amen_mm_identity_left_factor(dtype):
     A = tntt.eye([3, 4], dtype=dtype)
     B = tntt.randn([(3, 2), (4, 5)], [1, 2, 1], dtype=dtype)
 
-    C = tntt.amen_mm(A, B, nswp=8, eps=1e-12, kickrank=2)
+    C = tntt.matmat(A, B, 1e-12, method=tntt.methods.AMEn(nswp=8, kickrank=2))
 
     assert ((C - B).norm() / B.norm()) < 1e-11
 

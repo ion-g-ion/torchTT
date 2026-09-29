@@ -1,13 +1,16 @@
 """
 Fast products in TT.
 Taken from [https://arxiv.org/pdf/2410.19747](https://arxiv.org/pdf/2410.19747).
+The products are implemented in :class:`torchtt.methods.Swap`.
 
 @author: ion
 """
+import warnings
 import torchtt
 import torch as tn
 from torchtt._decomposition import rank_chop, QR, SVD
 import opt_einsum as oe
+import sys
 from torchtt.errors import *
 
 def swap_cores(core_a, core_b, eps, rmax=None):
@@ -61,6 +64,9 @@ def fast_hadammard(tt_a, tt_b, eps=1e-10, rmax=None):
     Equivalent to `(tt_a * tt_b).round(eps)`.
     Method described in :cite:p:`michailidis2025elementwise`.
 
+    .. deprecated:: 0.6.0
+        Use :func:`torchtt.hadamard` with ``method='swap'``.
+
     Args:
         tt_a (torchtt.TT): first operand.
         tt_b (torchtt.TT): second operand.
@@ -70,39 +76,8 @@ def fast_hadammard(tt_a, tt_b, eps=1e-10, rmax=None):
     Returns:
         torchtt.TT: the result.
     """
-    if tt_a.is_ttm != tt_b.is_ttm:
-        raise InvalidArguments("The two tensors should be either TT or TTMs.")
-    
-    if tt_a.is_ttm:
-        if tt_a.N != tt_b.N  or tt_a.M != tt_b.M :
-           raise ShapeMismatch("The two tensors should have the same shapes.") 
-        
-        d = len(tt_a.N)
-
-        cores = [tn.permute(c, [3, 1, 2, 0]) for c in tt_b.cores[::-1]]
-        for i in range(d):
-            cores[0] = oe.contract("maAk,kbBn,AB,ab->maAn", tt_a.cores[d-i-1], cores[0], tn.eye(tt_a.N[d-i-1], device=tt_a.cores[d-i-1].device, dtype=cores[0].dtype), tn.eye(tt_a.M[d-i-1], device=tt_a.cores[d-i-1].device, dtype=cores[0].dtype))
-            
-            if i != d-1:
-                for j in range(i, -1, -1):
-                    cores[j], cores[j+1] = swap_cores(cores[j], cores[j+1], eps, rmax)
-            
-        return torchtt.TT(cores)
-    else:
-        if tt_a.N != tt_b.N:
-           raise ShapeMismatch("The two tensors should have the same shapes.") 
-
-        d = len(tt_a.N)
-
-        cores = [tn.permute(c, [2, 1, 0]) for c in tt_b.cores[::-1]]
-        for i in range(d):
-            cores[0] = oe.contract("mak,kbn,ab->man", tt_a.cores[d-i-1], cores[0], tn.eye(tt_a.N[d-i-1], device=tt_a.cores[d-i-1].device, dtype=cores[0].dtype))
-            
-            if i != d-1:
-                for j in range(i, -1, -1):
-                    cores[j], cores[j+1] = swap_cores(cores[j], cores[j+1], eps, rmax)
-            
-        return torchtt.TT(cores)
+    warnings.warn("torchtt.fast_hadammard() is deprecated, use torchtt.hadamard(x, y, eps, method='swap') instead.", DeprecationWarning, stacklevel=2)
+    return torchtt.hadamard(tt_a, tt_b, eps, sys.maxsize if rmax is None else rmax, method='swap')
 
 def fast_mv(tt_a, tt_b, eps=1e-10, rmax=None):
     """
@@ -110,72 +85,38 @@ def fast_mv(tt_a, tt_b, eps=1e-10, rmax=None):
     Equivalent to `(tt_a @ tt_b).round(eps)`.
     Method described in :cite:p:`michailidis2025elementwise`.
 
+    .. deprecated:: 0.6.0
+        Use :func:`torchtt.matvec` with ``method='swap'``.
+
     Args:
         tt_a (torchtt.TT): the first operand. Must be a TTM.
         tt_b (torchtt.TT): the second operand. Must be TT.
         eps (float, optional): Relative tolerance. Defaults to 1e-10.
         rmax (int, optional): maximum rank. Defaults to None.
 
-    Raises:
-        InvalidArguments: The first should be e TTM and the second a TT.
-        ShapeMismatch: The shapes of the two operands must be compatible: tt_a.N == tt_b.N.
-
     Returns:
         torchtt.TT: the result. This is a TT.
     """
-    
-    if not tt_a.is_ttm or tt_b.is_ttm:
-        raise InvalidArguments("The first should be e TTM and the second a TT.")
-
-    if tt_a.N != tt_b.N:
-        raise ShapeMismatch("The shapes of the two operands must be compatible: tt_a.N == tt_b.N.") 
-
-    d = len(tt_a.N)
-
-    cores = [tn.permute(c, [2, 1, 0]) for c in tt_b.cores[::-1]]
-    for i in range(d):
-        cores[0] = oe.contract("mabk,kbn->man", tt_a.cores[d-i-1], cores[0])
-        
-        if i != d-1:
-            for j in range(i, -1, -1):
-                cores[j], cores[j+1] = swap_cores(cores[j], cores[j+1], eps, rmax)
-        
-    return torchtt.TT(cores) 
+    warnings.warn("torchtt.fast_mv() is deprecated, use torchtt.matvec(A, x, eps, method='swap') instead.", DeprecationWarning, stacklevel=2)
+    return torchtt.matvec(tt_a, tt_b, eps, sys.maxsize if rmax is None else rmax, method='swap')
 
 def fast_mm(tt_a, tt_b, eps=1e-10, rmax=None):
     """
     Performs the matmat product between two TT matrices (TTMs).
     Equivalent to `(tt_a @ tt_b).round(eps)`.
     Method described in :cite:p:`michailidis2025elementwise`.
-    
+
+    .. deprecated:: 0.6.0
+        Use :func:`torchtt.matmat` with ``method='swap'``.
+
     Args:
         tt_a (torchtt.TT): the first operand. Must be a TTM.
         tt_b (torchtt.TT): the second operand. Must be TTM.
         eps (float, optional): Relative tolerance. Defaults to 1e-10.
         rmax (int, optional): maximum rank. Defaults to None.
 
-    Raises:
-        InvalidArguments: Both arguments should be TTMs.
-        ShapeMismatch: The shapes of the two operands must be compatible: tt_a.N == tt_b.M
-
     Returns:
         torchtt.TT: the result. This is a TTM.
     """
-    
-    if not tt_a.is_ttm or not tt_b.is_ttm:
-        raise InvalidArguments("Both arguments should be TTMs.")
-
-    if tt_a.N != tt_b.M:
-        raise ShapeMismatch("The shapes of the two operands must be compatible: tt_a.N == tt_b.M") 
-
-    d = len(tt_a.N)
-
-    cores = [tn.permute(c, [3, 1, 2, 0]) for c in tt_b.cores[::-1]]
-    for i in range(d):
-        cores[0] = oe.contract("mabk,kbcn->macn", tt_a.cores[d-i-1], cores[0])
-        
-        if i != d-1:
-            for j in range(i, -1, -1):
-                cores[j], cores[j+1] = swap_cores(cores[j], cores[j+1], eps, rmax)
-        
-    return torchtt.TT(cores)
+    warnings.warn("torchtt.fast_mm() is deprecated, use torchtt.matmat(A, B, eps, method='swap') instead.", DeprecationWarning, stacklevel=2)
+    return torchtt.matmat(tt_a, tt_b, eps, sys.maxsize if rmax is None else rmax, method='swap')

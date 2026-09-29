@@ -19,7 +19,7 @@ Abbreviations used in the documentation, the examples and the API reference.
       TT core at a time and enriches the approximation with a low-rank approximation of
       the residual, so the TT ranks adapt during the iteration. ``torchtt`` uses it to
       solve linear systems (:func:`torchtt.solvers.amen_solve`), for matrix products
-      (:func:`torchtt.amen_mv`, :func:`torchtt.amen_mm`), for elementwise division
+      (``method='amen'`` in :func:`torchtt.matvec` and :func:`torchtt.matmat`), for elementwise division
       (:func:`torchtt.elementwise_divide`) and for cross interpolation
       (``method='amen'`` in :func:`torchtt.interpolate.function_interpolate`).
 
@@ -33,8 +33,8 @@ Abbreviations used in the documentation, the examples and the API reference.
       :cite:p:`white1992density`; for the TT format it denotes schemes that optimize two
       neighbouring TT cores at a time, which lets the TT ranks adapt
       :cite:p:`oseledets2011dmrg,savostyanov2011fast`.
-      ``torchtt`` uses it for matrix-vector products (:meth:`torchtt.TT.fast_matvec`),
-      elementwise products (:func:`torchtt.dmrg_hadamard`) and cross interpolation
+      ``torchtt`` uses it for matrix-vector products (``method='dmrg'`` in :func:`torchtt.matvec`),
+      elementwise products (``method='dmrg'`` in :func:`torchtt.hadamard`) and cross interpolation
       (``method='dmrg'`` in :func:`torchtt.interpolate.function_interpolate`).
 
    GMRES

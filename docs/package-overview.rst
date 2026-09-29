@@ -94,8 +94,8 @@ In ``torchtt``, :meth:`torchtt.TT.to_qtt` converts a tensor to the QTT format an
   print(x_qtt.N)   # [2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
   print(x_qtt.R)   # [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 
-About the package
------------------
+Operations in the TT format
+---------------------------
 
 The class ``torchtt.TT`` is used to create tensors in the TT format. Passing a `torch.Tensor` to the constructor computes a TT decomposition. The accuracy ``eps`` can be provided as an additional argument. In order to recover the original tensor (also called full tensor), the ``torchtt.TT.full()`` method can be used. Tensors can be further compressed using the ``torchtt.TT.round()`` method.
 
@@ -106,18 +106,72 @@ Once in the TT format, linear algebra operations can be performed between compre
  - The operator ``/`` implements the elementwise division of two TT objects. It is computed with the alternating minimal energy (:term:`AMEn`) method :cite:p:`dolgov2014alternating`.
  - The operator ``**`` implements the Kronecker product.
 
-The package also includes more features such as solving multilinear systems :cite:p:`dolgov2014alternating`, cross approximation :cite:p:`oseledets2010tt,savostyanov2011fast` and automatic differentiation (with the possibility to define TT layers for neural networks ``torchtt.TT.full()``). Working examples that can be used as a tutorial are to be found in `examples/ <https://github.com/ion-g-ion/torchTT/tree/main/examples>`_.
-Following example scripts (as well as python notebooks) are also provied provided as part of the documentation:
+The package also includes more features such as solving multilinear systems :cite:p:`dolgov2014alternating`, cross approximation :cite:p:`oseledets2010tt,savostyanov2011fast`, automatic differentiation (see :mod:`torchtt.grad` for what can be differentiated) and TT layers for neural networks (:mod:`torchtt.nn`). Tutorials are listed in :ref:`examples-label`.
 
- - `basic_tutorial.py <https://github.com/ion-g-ion/torchTT/tree/main/examples/basic_tutorial.py>`_ / `basic_tutorial.ipynb <https://github.com/ion-g-ion/torchTT/tree/main/examples/basic_tutorial.ipynb>`_: This contains a basic tutorial on decomposing full tensors in the TT format as well as performing rank rounding, slicing. `Try on Google Colab <https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/basic_tutorial.ipynb>`_. 
- - `basic_linalg.py <https://github.com/ion-g-ion/torchTT/tree/main/examples/basic_linalg.py>`_ / `basic_linalg.ipynb <https://github.com/ion-g-ion/torchTT/tree/main/examples/basic_linalg.ipynb>`_: This tutorial presents all the algebra operations that can be performed in the TT format. `Try on Google Colab <https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/basic_linalg.ipynb>`_. 
- - `efficient_linalg.py  <https://github.com/ion-g-ion/torchTT/tree/main/examples/efficient_linalg.py>`_ / `efficient_linalg.ipynb <https://github.com/ion-g-ion/torchTT/tree/main/examples/efficient_linalg.ipynb>`_: contains the density matrix renormalization group (:term:`DMRG`) scheme :cite:p:`oseledets2011dmrg` for fast matrix-vector products and :term:`AMEn` :cite:p:`dolgov2014alternating` for elementwise inversion in the TT format. `Try on Google Colab <https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/efficient_linalg.ipynb>`_. 
- - `automatic_differentiation.py <https://github.com/ion-g-ion/torchTT/tree/main/examples/automatic_differentiation.py>`_ / `automatic_differentiation.ipynp <https://github.com/ion-g-ion/torchTT/tree/main/examples/automatic_differentiation.ipynb>`_: Basic tutorial on automatic differentiation in ``torchtt``. `Try on Google Colab <https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/automatic_differentiation.ipynb>`_. 
- - `cross_interpolation.py <https://github.com/ion-g-ion/torchTT/tree/main/examples/cross_interpolation.py>`_ / `cross_interpolation.ipynb <https://github.com/ion-g-ion/torchTT/tree/main/examples/cross_interpolation.ipynb>`_: In this script, the cross interpolation emthod is exemplified. `Try on Google Colab <https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/cross_interpolation.ipynb>`_. 
- - `system_solvers.py <https://github.com/ion-g-ion/torchTT/tree/main/examples/system_solvers.py>`_ / `system_solvers.ipynb <https://github.com/ion-g-ion/torchTT/tree/main/examples/system_solvers.ipynb>`_: This contains the bais ussage of the multilinear solvers. `Try on Google Colab <https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/system_solvers.ipynb>`_. 
- - `gpu_acceleration.py <https://github.com/ion-g-ion/torchTT/tree/main/examples/gpu_acceleration.py>`_ / `gpu_acceleration.ipynb <https://github.com/ion-g-ion/torchTT/tree/main/examples/gpu_acceleration.ipynb>`_: This provides an example on how to use the GPU acceleration. `Try on Google Colab <https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/gpu_acceleration.ipynb>`_.
- - `basic_nn.py <https://github.com/ion-g-ion/torchTT/tree/main/examples/basic_nn.py>`_ / `basic_nn.ipynb  <https://github.com/ion-g-ion/torchTT/tree/main/examples/basic_nn.ipynb>`_: This provides an example on how to use the TT neural network layers. `Try on Google Colab <https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/basic_nn.ipynb>`_. 
-  - `mnist_nn.py  <https://github.com/ion-g-ion/torchTT/tree/main/examples/mnist_nn.py>`_ / `mnist_nn.ipynb  <https://github.com/ion-g-ion/torchTT/tree/main/examples/mnist_nn.ipynb>`_: Example of TT layers used for image classification. `Try on Google Colab <https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/mnist_nn.ipynb>`_. 
+.. _products-label:
+
+Efficient products
+------------------
+
+The rank of the exact product of two TT objects is the product of their ranks, e.g. ``(A @ x).R[k] == A.R[k] * x.R[k]``, and the same holds for ``*``.
+The result is therefore usually rounded, ``(A @ x).round(eps)``, but the rounding costs :math:`\mathcal{O}(dn(r_Ar_x)^3)`, where :math:`r_Ar_x` is the product rank.
+When the result has a much smaller rank than the product rank, it is cheaper to compute the rounded result without forming the exact product.
+The functions :func:`torchtt.matvec`, :func:`torchtt.matmat` and :func:`torchtt.hadamard` (also available as :meth:`torchtt.TT.matvec`, :meth:`torchtt.TT.matmat` and :meth:`torchtt.TT.hadamard`) compute the rounded products, and the ``method`` argument selects the algorithm:
+
+.. code-block:: python
+
+  import torchtt as tntt
+
+  y = tntt.matvec(A, x, eps=1e-10)                                          # default method (DMRG)
+  y = tntt.matvec(A, x, eps=1e-10, method='direct')                         # (A @ x).round(1e-10)
+  y = tntt.matvec(A, x, eps=1e-10, method=tntt.methods.DMRG(nswp=40))      # DMRG with other parameters
+
+The methods are the classes of :mod:`torchtt.methods`. A method is given by name to use its default parameters, or as an instance to change them.
+
+.. list-table::
+   :header-rows: 1
+
+   * - Method
+     - ``matvec``
+     - ``matmat``
+     - ``hadamard``
+     - Iterative
+     - Initial guess
+   * - ``'direct'``
+     - yes
+     - yes (default)
+     - yes
+     - no
+     - no
+   * - ``'dmrg'``
+     - yes (default)
+     - no
+     - yes (default)
+     - yes
+     - yes
+   * - ``'amen'``
+     - yes
+     - yes
+     - no
+     - yes
+     - yes
+   * - ``'swap'``
+     - yes
+     - yes
+     - yes
+     - no
+     - no
+
+Which method to choose depends mostly on how much the result can be compressed, i.e. on the ratio between the product rank and the rank of the result:
+
+- ``'direct'`` forms the exact product and rounds it with :meth:`torchtt.TT.round`. There are no iterations and the result has the smallest rank for the accuracy ``eps``. It is the fastest method while the product rank is moderate (up to a few hundred) and whenever the result cannot be compressed much (for random operands, the product rank is also the rank of the result). Its cost and memory grow with the cube and the square of the product rank, so it becomes slow for large ranks.
+- ``'dmrg'`` (:term:`DMRG`, :cite:p:`oseledets2011dmrg`) optimizes two neighbouring cores of the result at a time. Its cost depends on the rank of the result and not on the product rank, so it is the method of choice when the product rank is large and the result has a much smaller rank. The matrix-vector product has a C++ implementation. The iteration starts from a random tensor (or from the ``initial`` guess), and the returned rank can be larger than needed by up to ``kickrank``.
+- ``'amen'`` (:term:`AMEn`, :cite:p:`dolgov2014alternating`) updates one core at a time and enriches the result with an approximation of the residual. It serves the same cases as ``'dmrg'`` and is the only method of this kind for the product of TT matrices. For the matrix-vector product ``'dmrg'`` is usually faster, since the cost of AMEn grows faster with the ranks of the operands. Starting from rank 1, the rank grows by at most ``kickrank + kick2`` per sweep, so for results of large rank increase ``kickrank`` or ``nswp``, or pass an ``initial`` guess. Only real tensors are supported.
+- ``'swap'`` :cite:p:`michailidis2025elementwise` moves the cores of one operand through the cores of the other with :math:`d(d-1)/2` swaps of neighbouring cores, each truncated with an SVD. It needs no iterations and no initial guess, and its result is deterministic. Every swap is truncated with the accuracy ``eps``, so the error of the result can exceed ``eps``. Like for ``'dmrg'``, the cost depends mostly on the ranks of the result, but it grows quadratically with the number of dimensions and quickly with the mode sizes, and it is usually slower than ``'dmrg'``. When the intermediate tensors have large ranks (e.g. for smooth functions in the :ref:`QTT format <qtt-label>`), the ranks of the result can be much larger than needed.
+
+In short: use the default method when the operands have large ranks and the result is expected to compress well, and ``'direct'`` when the ranks are small or the result does not compress.
+The example `efficient_linalg.py <https://github.com/ion-g-ion/torchTT/tree/main/examples/efficient_linalg.py>`_ compares the methods on a product that compresses well and on one that does not.
+All the methods also run on the GPU.
 
 Nonlinear Transformations for TTDensityLayer
 --------------------------------------------

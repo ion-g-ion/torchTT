@@ -7,6 +7,7 @@ import torch as tn
 import numpy as np
 import torchtt
 import datetime
+import warnings
 from torchtt._decomposition import QR, SVD, lr_orthogonal, rl_orthogonal, rank_chop
 from torchtt._iterative_solvers import BiCGSTAB_reset, gmres_restart
 import opt_einsum as oe
@@ -57,51 +58,40 @@ def amen_mv(A, b, nswp=22, x0=None, eps=1e-10, rmax=1024, kickrank=4, kick2=0, v
     Compute the matrix vector product between a TT matrix (TTM) and a TT tensor using the alternating minimal energy (AMEn) method :cite:p:`dolgov2014alternating`.
     Suited when the output is expected to be low rank. 
 
+    .. deprecated:: 0.6.0
+        Use :func:`torchtt.matvec` with ``method='amen'`` (or ``method=torchtt.methods.AMEn(nswp=..., kickrank=..., kick2=...)``).
+
     Args:
         A (torchtt.TT): the matrix in TT.
         b (torchtt.TT): the tensor TT.
         nswp (int, optional): number of sweeps. Defaults to 22.
         x0 (torchtt.TT, optional): initial guess. In None is provided the initial guess is a ones tensor. Defaults to None.
         eps (float, optional): relative residual. Defaults to 1e-10.
-        rmax (int, optional): maximum rank. Defaults to 100.
+        rmax (int, optional): maximum rank. Defaults to 1024.
         kickrank (int, optional): rank enrichment. Defaults to 4.
         kick2 (int, optional): [description]. Defaults to 0.
         verbose (bool, optional): choose whether to display or not additional information during the runtime. Defaults to True.
-        use_cpp (bool, optional): use the C++ implementation of AMEn. Defaults to True.
+        use_cpp (bool, optional): not used (there is no C++ implementation). Defaults to True.
 
     Raises:
         InvalidArguments: A and b must be TT instances.
-        InvalidArguments: Invalid preconditioner.
         IncompatibleTypes: A must be TT-matrix and b must be vector.
         ShapeMismatch: Dimension mismatch.
 
     Returns:
         torchtt.TT: the approximation of the solution in TT format.
     """
-    # perform checks of the input data
-    if not (isinstance(A, torchtt.TT) and isinstance(b, torchtt.TT)):
-        raise InvalidArguments('A and b must be TT instances.')
-    if not (A.is_ttm and not b.is_ttm):
-        raise IncompatibleTypes('A must be TT-matrix and b must be vector.')
-    if A.N != b.N:
-        raise ShapeMismatch('Dimension mismatch.')
-
-    use_cpp = False
-    if use_cpp and _flag_use_cpp:
-        if x0 == None:
-            x_cores = []
-            x_R = [1]*(1+len(A.N))
-        else:
-            x_cores = x0.cores
-            x_R = x0.R
-    else:
-        return _amen_mm_python(A.cores, [c[:, :, None, :] for c in b.cores], A.M, [1]*len(A.M), A.N, False, nswp, x0.cores if x0 is not None else None, x0.R if x0 is not None else None, eps, rmax, kickrank, kick2, verbose)
+    warnings.warn("torchtt.amen_mv() is deprecated, use torchtt.matvec(A, x, eps, method=torchtt.methods.AMEn(nswp=..., kickrank=..., kick2=...)) instead.", DeprecationWarning, stacklevel=2)
+    return torchtt.matvec(A, b, eps, rmax, method=torchtt.methods.AMEn(nswp=nswp, kickrank=kickrank, kick2=kick2), initial=x0, verbose=verbose)
 
 
 def amen_mm(A, B, nswp=22, X0=None, eps=1e-10, rmax=1024, kickrank=4, kick2=0, verbose=False):
     """
     Perform the product of two TT matrices (TTM) using the alternating minimal energy (AMEn) method :cite:p:`dolgov2014alternating`.
     Suited when the operators have high ranks, but the result is expected to be low rank.
+
+    .. deprecated:: 0.6.0
+        Use :func:`torchtt.matmat` with ``method='amen'`` (or ``method=torchtt.methods.AMEn(nswp=..., kickrank=..., kick2=...)``).
 
     Args:
         A (torchtt.TT): the first TTM.
@@ -117,7 +107,8 @@ def amen_mm(A, B, nswp=22, X0=None, eps=1e-10, rmax=1024, kickrank=4, kick2=0, v
     Returns:
         torchtt.TT: the result.
     """
-    return _amen_mm_python(A.cores, B.cores, A.M, B.N, A.N, True, nswp, X0.cores if X0 is not None else None, X0.R if X0 is not None else None,   eps, rmax, kickrank, kick2, verbose)
+    warnings.warn("torchtt.amen_mm() is deprecated, use torchtt.matmat(A, B, eps, method=torchtt.methods.AMEn(nswp=..., kickrank=..., kick2=...)) instead.", DeprecationWarning, stacklevel=2)
+    return torchtt.matmat(A, B, eps, rmax, method=torchtt.methods.AMEn(nswp=nswp, kickrank=kickrank, kick2=kick2), initial=X0, verbose=verbose)
 
 
 def _amen_mm_python(A_cores, B_cores, M, N, K, to_ttm, nswp=22, X0_cores=None, rx=None, eps=1e-10, rmax=1024, kickrank=4, kick2=0, verbose=False):

@@ -4,6 +4,7 @@ Examples
 ========
 
 This section contains Jupyter notebook tutorials demonstrating the usage of torchTT.
+The notebooks are in the folder `examples/ <https://github.com/ion-g-ion/torchTT/tree/main/examples>`_ of the repository, most of them together with a Python script with the same content, and every notebook can be run in Google Colab from the link at the top of its page.
 
 Getting Started
 ---------------
@@ -55,4 +56,3 @@ Advanced Topics
    ../examples/tensor_completion.ipynb
    ../examples/gpu_acceleration.ipynb
    ../examples/bayesian_inversion.ipynb
-

@@ -28,6 +28,12 @@ bibtex_reference_style = 'author_year'
 
 # nbsphinx configuration
 nbsphinx_execute = 'never'  # Don't execute notebooks during build
+# link every example notebook to Google Colab and to its source on GitHub
+nbsphinx_prolog = r"""
+.. note::
+
+   Run this notebook in `Google Colab <https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/{{ env.docname }}.ipynb>`_ or see the source on `GitHub <https://github.com/ion-g-ion/torchTT/blob/main/{{ env.docname }}.ipynb>`_.
+"""
 
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']

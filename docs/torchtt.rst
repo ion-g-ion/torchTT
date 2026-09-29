@@ -44,6 +44,14 @@ torchtt.manifold module
    :undoc-members:
    :show-inheritance:
 
+torchtt.methods module
+----------------------
+
+.. automodule:: torchtt.methods
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 torchtt.nn module
 -----------------
 
