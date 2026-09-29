@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- API documentation for `torchtt.functional`, explaining its use by `torchtt.nn.TTDensityLayer` and linking the existing tutorials (#49).
 - `torchtt.matvec`, `torchtt.matmat` and `torchtt.hadamard` compute products with rank truncation (e.g. `(A @ x).round(eps, rmax)`) and choose the algorithm with the `method` argument: `'direct'`, `'dmrg'`, `'amen'` or `'swap'`. The same functions are available as `TT.matvec`, `TT.matmat` and `TT.hadamard` (#48).
 - `torchtt.methods` with the frozen dataclasses `Direct`, `DMRG`, `AMEn` and `Swap`. Passing an instance instead of a name changes the parameters of a method, e.g. `method=torchtt.methods.DMRG(nswp=40)`.
 - Documentation on which method to choose for a product (#47).
@@ -15,6 +16,8 @@ All notable changes to this project will be documented in this file.
 - Docs: the overview section "About the package" is renamed "Operations in the TT format" and no longer lists the examples. Instead, every example page links to Google Colab and to the notebook on GitHub (`nbsphinx_prolog` in `conf.py`).
 
 ### Fixed
+- `GaussianBasis.interpolating_points()` now returns rows for sample points and columns for basis functions, matching `BSplineBasis` and correcting interpolation with nonuniform Gaussian centers.
+- Removed the unused, unfinished `torchtt.functional.pdf` module, which contained syntax errors (#50). The basis classes and `torchtt.nn.TTDensityLayer` remain available.
 - `from torchtt import *` failed because `__all__` listed `cpp_available` and `fast_hadamard`, which do not exist (the functions are `cpp_enabled` and `fast_hadammard`).
 - The Python DMRG products changed the cores of the initial guess passed to them.
 - AMEn products returned wrong results for complex tensors; they now raise `IncompatibleTypes`.

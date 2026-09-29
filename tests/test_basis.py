@@ -152,10 +152,8 @@ def test_polynomial_interpolation(basis_factory, deg):
     # Evaluate polynomial at interpolating points
     f_vals = poly_func(pts)
     
-    # Solve for coefficients: matrix.T @ c = f_vals
-    # Note: matrix has shape (n, n) where matrix[i, j] = B_i(x_j)
-    # We need to solve sum_i c_i * B_i(x_j) = f(x_j) for all j
-    # This is matrix.T @ c = f_vals
+    # Rows are sample points and columns are basis functions:
+    # matrix[i, j] = B_j(pts[i]), so matrix @ c = f_vals.
     coeffs = torch.linalg.solve(matrix, f_vals)
     
     # Evaluate approximation at test points

@@ -173,6 +173,19 @@ In short: use the default method when the operands have large ranks and the resu
 The example `efficient_linalg.py <https://github.com/ion-g-ion/torchTT/tree/main/examples/efficient_linalg.py>`_ compares the methods on a product that compresses well and on one that does not.
 All the methods also run on the GPU.
 
+Continuous functions and density estimation
+-------------------------------------------
+
+The :mod:`torchtt.functional` subpackage supplies B-spline and Gaussian bases
+for continuous multivariate functions whose expansion coefficients are stored
+in a TT. Contracting the cores with basis values evaluates the function;
+contracting them with basis integrals integrates it. This extends TT compression
+from discrete arrays to continuous function approximation.
+
+The bases are also used by :class:`torchtt.nn.TTDensityLayer` for probability
+density estimation. See :ref:`functional-label` for the basis API, links to the existing
+tutorials, and the connection to the density layer.
+
 Nonlinear Transformations for TTDensityLayer
 --------------------------------------------
 

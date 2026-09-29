@@ -81,7 +81,9 @@ class BaseBasis(ABC, torch.nn.Module):
         Returns:
             Tuple[torch.Tensor, torch.Tensor]: 
                 - points: the interpolating points as a vector of shape `(n,)`
-                - matrix: the basis evaluated at these points, shape `(n, n)`, invertible
+                - matrix: shape `(n, n)`, with rows corresponding to points and
+                  columns to basis functions: ``matrix = self(points).T``.
+                  Solve ``matrix @ coefficients = values`` for interpolation.
         """
         pass
     
@@ -118,7 +120,7 @@ class BSplineBasis(BaseBasis):
         - ``"decay"``: the domain becomes unbounded on that side. The knot vector
           is extended with `deg` uniformly spaced phantom knots and the basis
           functions whose support crosses the boundary knot are continued beyond
-          it by tails of the form sum_{j=1..deg} a_j * exp(-j * rate * |x - boundary|),
+          it by tails of the form ``sum_{j=1..deg} a_j * exp(-j * rate * |x - boundary|)``,
           with the `deg` coefficients matched in value and the first deg-1
           derivatives. The basis is therefore C^(deg-1) on the whole unbounded
           domain and all integrals remain finite. The crossing functions whose
@@ -131,10 +133,6 @@ class BSplineBasis(BaseBasis):
     The number of basis functions is `n = len(knots) + deg - 1`, reduced by the
     dropped boundary functions: one per ``"zero"`` side and the number of
     out-of-domain crossing functions per ``"decay"`` side (roughly deg/2).
-
-    Attributes:
-        n (int): the dimension of the basis (number of B-spline functions)
-        deg (int): the polynomial degree of the B-splines
 
     Example:
         >>> knots = torch.linspace(0, 1, 5)
@@ -168,7 +166,7 @@ class BSplineBasis(BaseBasis):
     Note:
         For ``"decay"`` sides the exponential tails are matched to the spline jet
         at the boundary. The tails are the general polynomial in the mapped
-        variable `t = 1 - exp(-rate * |x - boundary|)`, which sends the unbounded
+        variable ``t = 1 - exp(-rate * |x - boundary|)``, which sends the unbounded
         side onto `[0, 1)`, constrained to vanish at `t = 1` so that they stay
         integrable; in `x` this is a sum of `deg` geometrically spaced decaying
         exponentials with no growing factor. With the default rate `deg / h` the
@@ -196,7 +194,7 @@ class BSplineBasis(BaseBasis):
                 "clamped" require deg >= 1. Defaults to "clamped".
             decay_rate (float or tuple[float, float], optional): exponential decay
                 rate(s) for "decay" sides; the slowest term of a tail behaves like
-                exp(-decay_rate * |x - boundary|), so this sets the far-field rate.
+                ``exp(-decay_rate * |x - boundary|)``, setting the far-field rate.
                 A None entry uses the default `deg / h`, where h is the adjacent
                 knot spacing. Defaults to None.
         """
@@ -521,7 +519,7 @@ class BSplineBasis(BaseBasis):
 
             T(s) = sum_{j=1..deg} a_j * exp(-j * mu * s),
 
-        where s = |x - boundary| / h is the scaled distance to the boundary and
+        where ``s = |x - boundary| / h`` is the scaled distance to the boundary and
         mu = rate * h. This is the general polynomial in the mapped variable
         t = 1 - exp(-mu * s), which sends the unbounded side onto [0, 1),
         constrained to vanish at t = 1 (i.e. at infinity) so that the tail is
@@ -756,8 +754,8 @@ class BSplineBasis(BaseBasis):
         Returns:
             Tuple[torch.Tensor, torch.Tensor]:
                 - points: the Greville abscissae as a vector of shape `(n,)`
-                - matrix: the basis evaluated at these points, shape `(n, n)`,
-                  which is guaranteed to be invertible
+                - matrix: shape `(n, n)`, with rows corresponding to points and
+                  columns to basis functions: ``matrix = self(points).T``
         """
         # Greville abscissae of the retained basis functions: the sliding mean
         # of deg consecutive knots, as one windowed reduction (no Python loop).
@@ -870,7 +868,7 @@ class BSplineBasis(BaseBasis):
 
         It computes Gauss-Legendre quadrature points and weights for each non-zero
         length interval between the knots. For "decay" sides, points mapped through
-        the tail variable t = 1 - exp(-rate * |x - boundary|) are appended on the
+        the tail variable ``t = 1 - exp(-rate * |x - boundary|)`` are appended on the
         unbounded tail. In t the tails are polynomials vanishing at t = 1, so with
         `degree` >= deg the rule is exact both for the basis tails themselves and
         for their pairwise products (e.g. mass matrix entries).
@@ -1138,9 +1136,23 @@ class GaussianBasis(BaseBasis):
         
     @property
     def n(self) -> int:
+        """The number of Gaussian basis functions."""
         return self._n
 
     def __call__(self, x: torch.Tensor, derivative: bool = False) -> torch.Tensor:
+        """
+        Evaluate the Gaussian basis or its first derivative at each input point.
+
+        Args:
+            x (torch.Tensor): Input points of arbitrary shape ``(...)``. Move
+                the basis and input to the same device and dtype before calling.
+            derivative (bool, optional): Evaluate the first derivative with
+                respect to ``x`` if True. Defaults to False.
+
+        Returns:
+            torch.Tensor: Values of shape ``(n, ...)``. Evaluation supports
+            PyTorch autograd with respect to the input points.
+        """
         if not isinstance(x, torch.Tensor):
             x = torch.tensor(x, dtype=self._centers.dtype, device=self._centers.device)
         
@@ -1167,16 +1179,27 @@ class GaussianBasis(BaseBasis):
         return f"GaussianBasis(n={self._n}, delta_overlap={self._delta_overlap})"
         
     def interpolating_points(self) -> Tuple[torch.Tensor, torch.Tensor]:
-        # Use centers as interpolating points
+        """
+        Return the Gaussian centers and their interpolation matrix.
+
+        Returns:
+            Tuple[torch.Tensor, torch.Tensor]: Points of shape ``(n,)`` and
+            matrix of shape ``(n, n)``. Rows correspond to points and columns
+            to basis functions: ``matrix = self(points).T``. Solve
+            ``matrix @ coefficients = values`` for interpolation. Wide or
+            closely spaced Gaussians can make this matrix ill-conditioned.
+        """
         pts = self._centers
         with torch.no_grad():
-             matrix = self(pts)
+            matrix = self(pts).t()
         return pts, matrix
 
     def integration_weights(self) -> torch.Tensor:
-         """
-         Computes the integral of the Gaussian basis functions over the entire real line (-inf, inf).
-         Integral = sigma * sqrt(2 * pi)
-         """
-         sigma = self._sigmas
-         return sigma * math.sqrt(2.0 * math.pi)
+        """
+        Integrate each Gaussian over the entire real line.
+
+        Returns:
+            torch.Tensor: Integrals of shape ``(n,)``, equal to
+            ``sigma * sqrt(2 * pi)``. The Gaussians are not normalized individually.
+        """
+        return self._sigmas * math.sqrt(2.0 * math.pi)

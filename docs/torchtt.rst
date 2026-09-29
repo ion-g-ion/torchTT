@@ -1,6 +1,14 @@
 torchtt package
 ===============
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 2
+
+   functional
+
 Submodules
 ----------
 

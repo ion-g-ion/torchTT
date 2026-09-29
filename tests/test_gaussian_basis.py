@@ -48,6 +48,20 @@ def test_interpolating_points_matrix_invertibility(gaussian_basis):
     # Gaussian matrices can be ill-conditioned if overlap is large, but should be solvable
     assert cond < 1e15, f"Matrix is too ill-conditioned (cond={cond.item():.2e})"
 
+def test_interpolation_nonuniform_centers():
+    """Recover an expansion when different widths make its matrix asymmetric."""
+    knots = torch.tensor([0., 0.15, 0.5, 0.75, 1.], dtype=torch.float64)
+    basis = GaussianBasis(knots, delta_overlap=1)
+    coefficients = torch.tensor([1., -2., 3., -4., 5.], dtype=torch.float64)
+    points, matrix = basis.interpolating_points()
+    values = coefficients @ basis(points)
+
+    recovered = torch.linalg.solve(matrix, values)
+    x = torch.linspace(-0.2, 1.2, 31, dtype=torch.float64)
+    assert torch.allclose(recovered @ basis(x), coefficients @ basis(x),
+                          atol=1e-10, rtol=1e-10)
+
+
 def test_batched_evaluation(gaussian_basis):
     """Test that basis correctly handles batched inputs."""
     batch_size = 8
