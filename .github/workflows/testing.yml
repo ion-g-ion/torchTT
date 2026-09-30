@@ -12,6 +12,10 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
         backend: [platform-default]
         exclude:
+          # Temporarily disabled: macOS/Python 3.15 segfaults in _Py_Finalize
+          # after pytest. Re-enable once this combination exits cleanly.
+          - os: macos-latest
+            python-version: "3.15"
           # Older Python versions do not have hosted macOS ARM64 builds.
           - os: macos-latest
             python-version: "3.8"
@@ -70,8 +74,8 @@ jobs:
       - name: Upgrade pip
         run: python -m pip install --upgrade pip
       - name: Install CPU-only PyTorch
-        # Python 3.15 wheels are available here before PyPI, also for macOS.
-        if: runner.os != 'macOS' || matrix.python-version == '3.15'
+        # Python 3.15 wheels are available here before PyPI.
+        if: runner.os != 'macOS'
         run: python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
       - name: Install runtime, test, and build dependencies
         # --no-build-isolation requires us to satisfy pyproject.toml's build
