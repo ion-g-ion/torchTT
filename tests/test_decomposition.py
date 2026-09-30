@@ -185,12 +185,10 @@ def test_decomposition_rounding(dtype):
     T4 = tn.einsum('i,j,k->ijk', tn.rand([20], dtype=dtype),
                    tn.rand([30], dtype=dtype), tn.rand([32], dtype=dtype))
 
-    T_ref = T1 / tn.linalg.norm(T1) + 1e-3*T2 / tn.linalg.norm(T2) + \
-        1e-6*T3 / tn.linalg.norm(T3) + 1e-9*T4 / tn.linalg.norm(T4)
-    T3 = T1 / tn.linalg.norm(T1) + 1e-3*T2 / \
-        tn.linalg.norm(T2) + 1e-6*T3 / tn.linalg.norm(T3)
-    T2 = T1 / tn.linalg.norm(T1) + 1e-3*T2 / tn.linalg.norm(T2)
-    T1 = T1 / tn.linalg.norm(T1)
+    # Each dropped term is 10x below eps: round() allows eps/sqrt(d-1) per bond,
+    # so terms of size eps are kept or dropped depending on the random draw.
+    T_ref = T1 / tn.linalg.norm(T1) + 1e-4*T2 / tn.linalg.norm(T2) + \
+        1e-7*T3 / tn.linalg.norm(T3) + 1e-10*T4 / tn.linalg.norm(T4)
 
     T = tntt.TT(T_ref)
     T = T.round(1e-9)
@@ -202,13 +200,13 @@ def test_decomposition_rounding(dtype):
     T = T.round(1e-6)
     Tfull = T.full()
     assert T.R == [1, 2, 2, 1], 'Case 2: Ranks not equal'
-    assert err_rel(Tfull, T_ref) < 1e-6, 'Case 1: error too high'
+    assert err_rel(Tfull, T_ref) < 1e-6, 'Case 2: error too high'
 
     T = tntt.TT(T_ref)
     T = T.round(1e-3)
     Tfull = T.full()
     assert T.R == [1, 1, 1, 1], 'Case 3: Ranks not equal'
-    assert err_rel(Tfull, T_ref) < 1e-3, 'Case 1: error too high'
+    assert err_rel(Tfull, T_ref) < 1e-3, 'Case 3: error too high'
 
 
 @pytest.mark.parametrize("dtype", parameters)
