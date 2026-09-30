@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>torchtt.solvers &mdash; torchTT development (main @ 42740af) documentation</title>
+  <title>torchtt.solvers &mdash; torchTT development (main @ 0909209) documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=167f7836"></script>
+      <script src="../../_static/documentation_options.js?v=33102d81"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -47,6 +47,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../../docs/package-overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/modules.html">API reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/references.html">References</a></li>
 </ul>
 
         </div>
@@ -64,6 +66,7 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
           <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../torchtt.html">torchtt</a></li>
       <li class="breadcrumb-item active">torchtt.solvers</li>
       <li class="wy-breadcrumbs-aside">
       </li>
@@ -73,9 +76,9 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 42740af)</strong><br><a href="../../../stable/index.html">Stable release</a> · <a href="../../../latest/index.html">Development (main)</a></nav><h1>Source code for torchtt.solvers</h1><div class="highlight"><pre>
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 0909209)</strong><br><a href="../../../stable/index.html">Stable release</a> · <a href="../../../latest/index.html">Development (main)</a></nav><h1>Source code for torchtt.solvers</h1><div class="highlight"><pre>
 <span></span><span class="sd">"""</span>
-<span class="sd">System solvers in the TT format.</span>
+<span class="sd">System solvers in the TT format, based on the alternating minimal energy (AMEn) method :cite:p:`dolgov2014alternating`.</span>
 
 <span class="sd">"""</span>
 
@@ -254,7 +257,7 @@
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Solve a multilinear system :math:`\\mathsf{Ax} = \\mathsf{b}` in the Tensor Train format.</span>
 
-<span class="sd">    This method implements the algorithm from `Sergey V Dolgov, Dmitry V Savostyanov, Alternating minimal energy methods for linear systems in higher dimensions &lt;https://epubs.siam.org/doi/abs/10.1137/140953289&gt;`_.</span>
+<span class="sd">    This method implements the alternating minimal energy (AMEn) algorithm from `Sergey V Dolgov, Dmitry V Savostyanov, Alternating minimal energy methods for linear systems in higher dimensions &lt;https://epubs.siam.org/doi/abs/10.1137/140953289&gt;`_.</span>
 
 <span class="sd">    Example:</span>
 
@@ -280,7 +283,7 @@
 <span class="sd">        kickrank (int, optional): rank enrichment. Defaults to 4.</span>
 <span class="sd">        kick2 (int, optional): [description]. Defaults to 0.</span>
 <span class="sd">        trunc_norm (str, optional): [description]. Defaults to 'res'.</span>
-<span class="sd">        local_solver (int, optional): choose local iterative solver: 1 for GMRES and 2 for BiCGSTAB. Defaults to 1.</span>
+<span class="sd">        local_solver (int, optional): choose local iterative solver: 1 for GMRES (generalized minimal residual) and 2 for BiCGSTAB (biconjugate gradient stabilized). Defaults to 1.</span>
 <span class="sd">        local_iterations (int, optional): number of GMRES iterations for the local subproblems. Defaults to 40.</span>
 <span class="sd">        resets (int, optional): number of resets in the GMRES. Defaults to 2.</span>
 <span class="sd">        verbose (bool, optional): choose whether to display or not additional information during the runtime. Defaults to True.</span>
@@ -479,6 +482,8 @@
                             <span class="n">Phis_b</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">b</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">*</span> <span class="n">nrmsc</span><span class="p">,</span> <span class="n">Phis_b</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
             <span class="n">rhs</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
             <span class="n">norm_rhs</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">rhs</span><span class="p">)</span>
+            <span class="n">zero_rhs</span> <span class="o">=</span> <span class="n">norm_rhs</span> <span class="o">==</span> <span class="mi">0</span>
+            <span class="n">norm_rhs</span> <span class="o">=</span> <span class="n">norm_rhs</span> <span class="k">if</span> <span class="n">norm_rhs</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mf">1.0</span>
 
             <span class="c1"># residuals</span>
             <span class="n">real_tol</span> <span class="o">=</span> <span class="p">(</span><span class="n">eps</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">d</span><span class="p">))</span><span class="o">/</span><span class="n">damp</span>
@@ -513,8 +518,11 @@
                     <span class="n">eps_local</span> <span class="o">=</span> <span class="n">real_tol</span> <span class="o">*</span> <span class="n">norm_rhs</span>
                     <span class="n">drhs</span> <span class="o">=</span> <span class="n">Op</span><span class="o">.</span><span class="n">matvec</span><span class="p">(</span><span class="n">previous_solution</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span> <span class="kc">False</span><span class="p">)</span>
                     <span class="n">drhs</span> <span class="o">=</span> <span class="n">rhs</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span><span class="o">-</span><span class="n">drhs</span>
-                    <span class="n">eps_local</span> <span class="o">=</span> <span class="n">eps_local</span> <span class="o">/</span> <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">drhs</span><span class="p">)</span>
-                    <span class="k">if</span> <span class="n">local_solver</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">norm_drhs</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">drhs</span><span class="p">)</span>
+                    <span class="n">eps_local</span> <span class="o">=</span> <span class="n">eps_local</span> <span class="o">/</span> <span class="p">(</span><span class="n">norm_drhs</span> <span class="k">if</span> <span class="n">norm_drhs</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mf">1.0</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">zero_rhs</span> <span class="ow">or</span> <span class="n">norm_drhs</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">solution_now</span><span class="p">,</span> <span class="n">flag</span><span class="p">,</span> <span class="n">nit</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">drhs</span><span class="p">),</span> <span class="kc">True</span><span class="p">,</span> <span class="mi">0</span>
+                    <span class="k">elif</span> <span class="n">local_solver</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
                         <span class="n">solution_now</span><span class="p">,</span> <span class="n">flag</span><span class="p">,</span> <span class="n">nit</span> <span class="o">=</span> <span class="n">gmres_restart</span><span class="p">(</span><span class="n">Op</span><span class="p">,</span> <span class="n">drhs</span><span class="p">,</span> <span class="n">previous_solution</span><span class="o">.</span><span class="n">to</span><span class="p">(</span>
                             <span class="n">tn</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span><span class="o">*</span><span class="mi">0</span><span class="p">,</span> <span class="n">rhs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">local_iterations</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">eps_local</span><span class="p">,</span> <span class="n">resets</span><span class="p">)</span>
                     <span class="k">elif</span> <span class="n">local_solver</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
@@ -528,7 +536,7 @@
                             <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">solution_now</span><span class="p">,</span> <span class="n">shape_now</span><span class="p">))</span>
                         <span class="n">solution_now</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">solution_now</span><span class="p">,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
 
-                    <span class="n">solution_now</span> <span class="o">=</span> <span class="n">previous_solution</span> <span class="o">+</span> <span class="n">solution_now</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span>
+                    <span class="n">solution_now</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">previous_solution</span><span class="p">)</span> <span class="k">if</span> <span class="n">zero_rhs</span> <span class="k">else</span> <span class="n">previous_solution</span> <span class="o">+</span> <span class="n">solution_now</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span>
                     <span class="n">res_old</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">Op</span><span class="o">.</span><span class="n">matvec</span><span class="p">(</span><span class="n">previous_solution</span><span class="o">.</span><span class="n">to</span><span class="p">(</span>
                         <span class="n">tn</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span> <span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span><span class="o">-</span><span class="n">rhs</span><span class="p">)</span><span class="o">/</span><span class="n">norm_rhs</span>
                     <span class="n">res_new</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">Op</span><span class="o">.</span><span class="n">matvec</span><span class="p">(</span><span class="n">solution_now</span><span class="o">.</span><span class="n">to</span><span class="p">(</span>
@@ -539,8 +547,11 @@
                     <span class="n">eps_local</span> <span class="o">=</span> <span class="n">real_tol</span> <span class="o">*</span> <span class="n">norm_rhs</span>
                     <span class="n">drhs</span> <span class="o">=</span> <span class="n">Op</span><span class="o">.</span><span class="n">matvec</span><span class="p">(</span><span class="n">previous_solution</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
                     <span class="n">drhs</span> <span class="o">=</span> <span class="n">rhs</span><span class="o">-</span><span class="n">drhs</span>
-                    <span class="n">eps_local</span> <span class="o">=</span> <span class="n">eps_local</span> <span class="o">/</span> <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">drhs</span><span class="p">)</span>
-                    <span class="k">if</span> <span class="n">local_solver</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">norm_drhs</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">drhs</span><span class="p">)</span>
+                    <span class="n">eps_local</span> <span class="o">=</span> <span class="n">eps_local</span> <span class="o">/</span> <span class="p">(</span><span class="n">norm_drhs</span> <span class="k">if</span> <span class="n">norm_drhs</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mf">1.0</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">zero_rhs</span> <span class="ow">or</span> <span class="n">norm_drhs</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">solution_now</span><span class="p">,</span> <span class="n">flag</span><span class="p">,</span> <span class="n">nit</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">drhs</span><span class="p">),</span> <span class="kc">True</span><span class="p">,</span> <span class="mi">0</span>
+                    <span class="k">elif</span> <span class="n">local_solver</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
                         <span class="n">solution_now</span><span class="p">,</span> <span class="n">flag</span><span class="p">,</span> <span class="n">nit</span> <span class="o">=</span> <span class="n">gmres_restart</span><span class="p">(</span>
                             <span class="n">Op</span><span class="p">,</span> <span class="n">drhs</span><span class="p">,</span> <span class="n">previous_solution</span><span class="o">*</span><span class="mi">0</span><span class="p">,</span> <span class="n">rhs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">local_iterations</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">eps_local</span><span class="p">,</span> <span class="n">resets</span><span class="p">)</span>
                     <span class="k">elif</span> <span class="n">local_solver</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
@@ -554,7 +565,7 @@
                             <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">solution_now</span><span class="p">,</span> <span class="n">shape_now</span><span class="p">))</span>
                         <span class="n">solution_now</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">solution_now</span><span class="p">,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
 
-                    <span class="n">solution_now</span> <span class="o">=</span> <span class="n">previous_solution</span> <span class="o">+</span> <span class="n">solution_now</span>
+                    <span class="n">solution_now</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">previous_solution</span><span class="p">)</span> <span class="k">if</span> <span class="n">zero_rhs</span> <span class="k">else</span> <span class="n">previous_solution</span> <span class="o">+</span> <span class="n">solution_now</span>
                     <span class="n">res_old</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span>
                         <span class="n">Op</span><span class="o">.</span><span class="n">matvec</span><span class="p">(</span><span class="n">previous_solution</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span><span class="o">-</span><span class="n">rhs</span><span class="p">)</span><span class="o">/</span><span class="n">norm_rhs</span>
                     <span class="n">res_new</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span>
@@ -572,8 +583,8 @@
                         <span class="n">res_old</span><span class="p">,</span> <span class="n">res_new</span><span class="p">,</span> <span class="n">real_tol</span><span class="p">))</span>  <span class="c1"># warning (from tt toolbox)</span>
 
             <span class="c1"># compute residual and step size</span>
-            <span class="n">dx</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">solution_now</span><span class="o">-</span><span class="n">previous_solution</span><span class="p">)</span> <span class="o">/</span> \
-                <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">solution_now</span><span class="p">)</span>
+            <span class="n">norm_solution</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">solution_now</span><span class="p">)</span>
+            <span class="n">dx</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">solution_now</span><span class="o">-</span><span class="n">previous_solution</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">norm_solution</span> <span class="k">if</span> <span class="n">norm_solution</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mf">1.0</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
                 <span class="nb">print</span><span class="p">(</span><span class="s1">'</span><span class="se">\t\t</span><span class="s1">dx = </span><span class="si">%g</span><span class="s1">, res_now = </span><span class="si">%g</span><span class="s1">, res_old = </span><span class="si">%g</span><span class="s1">'</span> <span class="o">%</span>
                       <span class="p">(</span><span class="n">dx</span><span class="p">,</span> <span class="n">res_new</span><span class="p">,</span> <span class="n">res_old</span><span class="p">))</span>

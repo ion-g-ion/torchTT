@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>torchtt._extras &mdash; torchTT development (main @ 42740af) documentation</title>
+  <title>torchtt._extras &mdash; torchTT development (main @ 0909209) documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=167f7836"></script>
+      <script src="../../_static/documentation_options.js?v=33102d81"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -47,6 +47,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../../docs/package-overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/modules.html">API reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/references.html">References</a></li>
 </ul>
 
         </div>
@@ -64,6 +66,7 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
           <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../torchtt.html">torchtt</a></li>
       <li class="breadcrumb-item active">torchtt._extras</li>
       <li class="wy-breadcrumbs-aside">
       </li>
@@ -73,7 +76,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 42740af)</strong><br><a href="../../../stable/index.html">Stable release</a> · <a href="../../../latest/index.html">Development (main)</a></nav><h1>Source code for torchtt._extras</h1><div class="highlight"><pre>
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 0909209)</strong><br><a href="../../../stable/index.html">Stable release</a> · <a href="../../../latest/index.html">Development (main)</a></nav><h1>Source code for torchtt._extras</h1><div class="highlight"><pre>
 <span></span><span class="sd">""" </span>
 <span class="sd">This file implements additional functions that are visible in the module.</span>
 <span class="sd">"""</span>
@@ -692,8 +695,8 @@
 <a class="viewcode-back" href="../../docs/torchtt.html#torchtt.elementwise_divide">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">elementwise_divide</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span> <span class="n">starting_tensor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nswp</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">kick</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">local_iterations</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="n">resets</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">preconditioner</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Perform the elemntwise division x/y of two tensors in the TT format using the AMEN method.</span>
-<span class="sd">    Use this method if different AMEN arguments are needed.</span>
+<span class="sd">    Perform the elemntwise division x/y of two tensors in the TT format using the alternating minimal energy (AMEn) method :cite:p:`dolgov2014alternating`.</span>
+<span class="sd">    Use this method if different AMEn arguments are needed.</span>
 <span class="sd">    This method does not check the validity of the inputs.</span>
 
 <span class="sd">    Args:</span>
@@ -704,7 +707,7 @@
 <span class="sd">        nswp (int, optional): number of iterations. Defaults to 50.</span>
 <span class="sd">        kick (int, optional): size of rank enrichment. Defaults to 4.</span>
 <span class="sd">        local_iterations (int, optional): the number of iterations for the local iterative solver. Defaults to 40.</span>
-<span class="sd">        resets (int, optional): the number of restarts in the GMRES solver. Defaults to 2.</span>
+<span class="sd">        resets (int, optional): the number of restarts in the GMRES (generalized minimal residual) solver. Defaults to 2.</span>
 <span class="sd">        preconditioner (string, optional): Use preconditioner for the local solver (possible vaules None, 'c'). Defaults to None. </span>
 <span class="sd">        verbose (bool, optional): display debug info. Defaults to False.</span>
 
@@ -1033,12 +1036,12 @@
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">tensors</span><span class="p">)):</span>
         <span class="k">if</span> <span class="n">tensors</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">is_ttm</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span><span class="s2">"Not implemented for tensor matrices."</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">tensors</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">N</span><span class="p">[:</span><span class="n">dim</span><span class="p">]</span> <span class="o">!=</span> <span class="n">tensors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">N</span><span class="p">[:</span><span class="n">dim</span><span class="p">]</span> <span class="ow">and</span> <span class="n">tensors</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">N</span><span class="p">[(</span><span class="n">dim</span><span class="o">+</span><span class="mi">1</span><span class="p">):]</span> <span class="o">!=</span> <span class="n">tensors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">N</span><span class="p">[(</span><span class="n">dim</span><span class="o">+</span><span class="mi">1</span><span class="p">):]:</span>
-            <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span>
-                <span class="s2">"The mode sizes must be the same on the nonconcatenated dimensions for all the provided tensors."</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tensors</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">N</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">tensors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">N</span><span class="p">):</span>
             <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span>
                 <span class="s2">"The tensors must have the same number of dimensions."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">tensors</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">N</span><span class="p">[:</span><span class="n">dim</span><span class="p">]</span> <span class="o">!=</span> <span class="n">tensors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">N</span><span class="p">[:</span><span class="n">dim</span><span class="p">]</span> <span class="ow">or</span> <span class="n">tensors</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">N</span><span class="p">[(</span><span class="n">dim</span><span class="o">+</span><span class="mi">1</span><span class="p">):]</span> <span class="o">!=</span> <span class="n">tensors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">N</span><span class="p">[(</span><span class="n">dim</span><span class="o">+</span><span class="mi">1</span><span class="p">):]:</span>
+            <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span>
+                <span class="s2">"The mode sizes must be the same on the nonconcatenated dimensions for all the provided tensors."</span><span class="p">)</span>
         <span class="n">Rs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tensors</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">R</span><span class="p">)</span>
 
     <span class="n">cores</span> <span class="o">=</span> <span class="p">[]</span>
@@ -1136,7 +1139,7 @@
 <a class="viewcode-back" href="../../docs/torchtt.html#torchtt.shape_tuple_to_mn">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">shape_tuple_to_mn</span><span class="p">(</span><span class="n">shape</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Convert the shape of a TTM from tuple format to row and column shapes.</span>
+<span class="sd">    Convert the shape of a TT matrix (TTM) from tuple format to row and column shapes.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        shape (list[tuple[int]]): shape.</span>
@@ -1155,7 +1158,7 @@
 <a class="viewcode-back" href="../../docs/torchtt.html#torchtt.shape_mn_to_tuple">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">shape_mn_to_tuple</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Convert the shape of a TTM from row/column format to tuple format.</span>
+<span class="sd">    Convert the shape of a TT matrix (TTM) from row/column format to tuple format.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        M (list[int]): row shapes.</span>

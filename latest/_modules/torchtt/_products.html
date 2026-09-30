@@ -1,0 +1,318 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>torchtt._products &mdash; torchTT development (main @ 0909209) documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=33102d81"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            torchtt
+              <img src="https://github.com/ion-g-ion/torchTT/blob/main/logo_small.png?raw=true" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/intro_page.html">Welcome to torchTT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/install.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/package-overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/modules.html">API reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/references.html">References</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">torchtt</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../torchtt.html">torchtt</a></li>
+      <li class="breadcrumb-item active">torchtt._products</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 0909209)</strong><br><a href="../../../stable/index.html">Stable release</a> · <a href="../../../latest/index.html">Development (main)</a></nav><h1>Source code for torchtt._products</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""</span>
+<span class="sd">Products in the TT format that truncate the rank of the result.</span>
+<span class="sd">The algorithms are implemented in :mod:`torchtt.methods`.</span>
+
+<span class="sd">"""</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torchtt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torchtt.methods</span><span class="w"> </span><span class="kn">import</span> <span class="n">_as_method</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torchtt.errors</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+
+
+<div class="viewcode-block" id="matvec">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.matvec">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">matvec</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span> <span class="n">rmax</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">maxsize</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">'dmrg'</span><span class="p">,</span> <span class="n">initial</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Matrix-vector product between a TT matrix and a TT tensor with rank truncation.</span>
+<span class="sd">    Computes an approximation of ``(A @ x).round(eps, rmax)``, which can be much cheaper than forming the exact product ``A @ x`` (its rank is the product of the ranks of the operands).</span>
+
+<span class="sd">    Choosing the method (see :mod:`torchtt.methods` and :ref:`products-label`):</span>
+
+<span class="sd">     * ``'dmrg'`` (default): best when the product rank ``rank(A) * rank(x)`` is large and the result has a much smaller rank. Uses the C++ implementation if available.</span>
+<span class="sd">     * ``'direct'``: forms ``A @ x`` and rounds it. Faster when the product rank is moderate (up to a few hundred) or when the result cannot be compressed much.</span>
+<span class="sd">     * ``'amen'``: alternative to ``'dmrg'`` for real tensors, usually slower. The rank grows by at most ``kickrank`` per sweep, so give an ``initial`` guess or increase ``nswp`` if the result has a large rank.</span>
+<span class="sd">     * ``'swap'``: no iterations and deterministic, usually slower than ``'dmrg'``.</span>
+
+<span class="sd">    Examples:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            import torchtt as tntt</span>
+
+<span class="sd">            A = tntt.randn([(4, 4)] * 8, [1] + 7 * [3] + [1])</span>
+<span class="sd">            x = tntt.randn([4] * 8, [1] + 7 * [4] + [1])</span>
+
+<span class="sd">            y = tntt.matvec(A, x, eps=1e-10)                                          # DMRG</span>
+<span class="sd">            y = tntt.matvec(A, x, eps=1e-10, method='direct')                         # (A @ x).round(1e-10)</span>
+<span class="sd">            y = tntt.matvec(A, x, eps=1e-10, method=tntt.methods.DMRG(nswp=40))      # DMRG with 40 sweeps</span>
+<span class="sd">            y = tntt.matvec(A, x, eps=1e-10, method='amen', initial=y)                # AMEn with an initial guess</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        A (torchtt.TT): the TT matrix.</span>
+<span class="sd">        x (torchtt.TT): the TT tensor.</span>
+<span class="sd">        eps (float, optional): relative accuracy. Defaults to 1e-12.</span>
+<span class="sd">        rmax (int, optional): maximum rank of the result. Defaults to the maximum possible integer.</span>
+<span class="sd">        method (str | torchtt.methods.DMRG | torchtt.methods.Direct | torchtt.methods.AMEn | torchtt.methods.Swap, optional): the method, given by name (``'dmrg'``, ``'direct'``, ``'amen'`` or ``'swap'``) or as an instance to change its parameters. Defaults to 'dmrg'.</span>
+<span class="sd">        initial (torchtt.TT, optional): initial guess of the result (only for ``'dmrg'`` and ``'amen'``). None means that the method chooses it. Defaults to None.</span>
+<span class="sd">        verbose (bool, optional): print information about the iterations (only for ``'dmrg'`` and ``'amen'``). Defaults to False.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidArguments: The operands must be torchtt.TT instances.</span>
+<span class="sd">        IncompatibleTypes: The first operand must be a TT matrix and the second a TT tensor.</span>
+<span class="sd">        ShapeMismatch: The column shape of the TT matrix must be the shape of the TT tensor.</span>
+<span class="sd">        ShapeMismatch: The initial guess must be a TT tensor with the row shape of the TT matrix.</span>
+<span class="sd">        InvalidArguments: The method is unknown or does not use an initial guess.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        torchtt.TT: the result.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">TT</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">TT</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span><span class="s2">"The operands must be torchtt.TT instances."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">A</span><span class="o">.</span><span class="n">is_ttm</span> <span class="ow">or</span> <span class="n">x</span><span class="o">.</span><span class="n">is_ttm</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">IncompatibleTypes</span><span class="p">(</span><span class="s2">"The first operand must be a TT matrix and the second a TT tensor."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">A</span><span class="o">.</span><span class="n">N</span> <span class="o">!=</span> <span class="n">x</span><span class="o">.</span><span class="n">N</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ShapeMismatch</span><span class="p">(</span><span class="s2">"The column shape of the TT matrix </span><span class="si">%s</span><span class="s2"> must be the shape of the TT tensor </span><span class="si">%s</span><span class="s2">."</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">N</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">N</span><span class="p">)))</span>
+    <span class="k">if</span> <span class="n">initial</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">initial</span><span class="p">,</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">TT</span><span class="p">)</span> <span class="ow">or</span> <span class="n">initial</span><span class="o">.</span><span class="n">is_ttm</span> <span class="ow">or</span> <span class="n">initial</span><span class="o">.</span><span class="n">N</span> <span class="o">!=</span> <span class="n">A</span><span class="o">.</span><span class="n">M</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">ShapeMismatch</span><span class="p">(</span><span class="s2">"The initial guess must be a TT tensor of shape </span><span class="si">%s</span><span class="s2">."</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">M</span><span class="p">))</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">_as_method</span><span class="p">(</span><span class="n">method</span><span class="p">)</span><span class="o">.</span><span class="n">matvec</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">,</span> <span class="n">initial</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+
+    <span class="c1"># the rank enrichment of the iterative methods can exceed rmax</span>
+    <span class="k">if</span> <span class="nb">max</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">R</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">rmax</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">result</span></div>
+
+
+
+<div class="viewcode-block" id="matmat">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.matmat">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">matmat</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span> <span class="n">rmax</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">maxsize</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">'direct'</span><span class="p">,</span> <span class="n">initial</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Product of two TT matrices with rank truncation.</span>
+<span class="sd">    Computes an approximation of ``(A @ B).round(eps, rmax)``.</span>
+
+<span class="sd">    Choosing the method (see :mod:`torchtt.methods` and :ref:`products-label`):</span>
+
+<span class="sd">     * ``'direct'`` (default): forms ``A @ B`` and rounds it. Best when the product rank ``rank(A) * rank(B)`` is moderate (up to a few hundred) or when the result cannot be compressed much.</span>
+<span class="sd">     * ``'amen'``: best when the product rank is large and the result has a much smaller rank (real tensors only). The rank grows by at most ``kickrank`` per sweep, so give an ``initial`` guess or increase ``nswp`` if the result has a large rank.</span>
+<span class="sd">     * ``'swap'``: no iterations and deterministic, usually slower than ``'direct'`` and ``'amen'``.</span>
+
+<span class="sd">    Examples:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            import torchtt as tntt</span>
+
+<span class="sd">            A = tntt.randn([(4, 4)] * 8, [1] + 7 * [3] + [1])</span>
+<span class="sd">            B = tntt.randn([(4, 4)] * 8, [1] + 7 * [4] + [1])</span>
+
+<span class="sd">            C = tntt.matmat(A, B, eps=1e-10)                                           # (A @ B).round(1e-10)</span>
+<span class="sd">            C = tntt.matmat(A, B, eps=1e-10, method=tntt.methods.AMEn(kickrank=8))    # AMEn</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        A (torchtt.TT): the first TT matrix.</span>
+<span class="sd">        B (torchtt.TT): the second TT matrix.</span>
+<span class="sd">        eps (float, optional): relative accuracy. Defaults to 1e-12.</span>
+<span class="sd">        rmax (int, optional): maximum rank of the result. Defaults to the maximum possible integer.</span>
+<span class="sd">        method (str | torchtt.methods.Direct | torchtt.methods.AMEn | torchtt.methods.Swap, optional): the method, given by name (``'direct'``, ``'amen'`` or ``'swap'``) or as an instance to change its parameters. Defaults to 'direct'.</span>
+<span class="sd">        initial (torchtt.TT, optional): initial guess of the result (only for ``'amen'``). None means that the method chooses it. Defaults to None.</span>
+<span class="sd">        verbose (bool, optional): print information about the iterations (only for ``'amen'``). Defaults to False.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidArguments: The operands must be torchtt.TT instances.</span>
+<span class="sd">        IncompatibleTypes: Both operands must be TT matrices.</span>
+<span class="sd">        ShapeMismatch: The column shape of the first TT matrix must be the row shape of the second.</span>
+<span class="sd">        ShapeMismatch: The initial guess must be a TT matrix with the shape of the result.</span>
+<span class="sd">        InvalidArguments: The method is unknown, does not implement this product or does not use an initial guess.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        torchtt.TT: the result.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">TT</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">TT</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span><span class="s2">"The operands must be torchtt.TT instances."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">A</span><span class="o">.</span><span class="n">is_ttm</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">B</span><span class="o">.</span><span class="n">is_ttm</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">IncompatibleTypes</span><span class="p">(</span><span class="s2">"Both operands must be TT matrices."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">A</span><span class="o">.</span><span class="n">N</span> <span class="o">!=</span> <span class="n">B</span><span class="o">.</span><span class="n">M</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ShapeMismatch</span><span class="p">(</span><span class="s2">"The column shape of the first TT matrix </span><span class="si">%s</span><span class="s2"> must be the row shape of the second </span><span class="si">%s</span><span class="s2">."</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">N</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">B</span><span class="o">.</span><span class="n">M</span><span class="p">)))</span>
+    <span class="k">if</span> <span class="n">initial</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">initial</span><span class="p">,</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">TT</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">initial</span><span class="o">.</span><span class="n">is_ttm</span> <span class="ow">or</span> <span class="n">initial</span><span class="o">.</span><span class="n">M</span> <span class="o">!=</span> <span class="n">A</span><span class="o">.</span><span class="n">M</span> <span class="ow">or</span> <span class="n">initial</span><span class="o">.</span><span class="n">N</span> <span class="o">!=</span> <span class="n">B</span><span class="o">.</span><span class="n">N</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">ShapeMismatch</span><span class="p">(</span><span class="s2">"The initial guess must be a TT matrix of shape </span><span class="si">%s</span><span class="s2"> x </span><span class="si">%s</span><span class="s2">."</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">M</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">B</span><span class="o">.</span><span class="n">N</span><span class="p">)))</span>
+
+    <span class="n">method</span> <span class="o">=</span> <span class="n">_as_method</span><span class="p">(</span><span class="n">method</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="s1">'matmat'</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span><span class="s2">"The method </span><span class="si">%s</span><span class="s2"> does not implement the product of TT matrices. Choose between 'direct', 'amen' and 'swap'."</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">method</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">matmat</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">,</span> <span class="n">initial</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+
+    <span class="c1"># the rank enrichment of the iterative methods can exceed rmax</span>
+    <span class="k">if</span> <span class="nb">max</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">R</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">rmax</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">result</span></div>
+
+
+
+<div class="viewcode-block" id="hadamard">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.hadamard">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">hadamard</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span> <span class="n">rmax</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">maxsize</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">'dmrg'</span><span class="p">,</span> <span class="n">initial</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Elementwise (Hadamard) product of two TT tensors or two TT matrices with rank truncation.</span>
+<span class="sd">    Computes an approximation of ``(x * y).round(eps, rmax)``, which can be much cheaper than forming the exact product ``x * y`` (its rank is the product of the ranks of the operands).</span>
+
+<span class="sd">    Choosing the method (see :mod:`torchtt.methods` and :ref:`products-label`):</span>
+
+<span class="sd">     * ``'dmrg'`` (default): best when the product rank ``rank(x) * rank(y)`` is large and the result has a much smaller rank.</span>
+<span class="sd">     * ``'direct'``: forms ``x * y`` and rounds it. Faster when the product rank is moderate (up to a few hundred) or when the result cannot be compressed much.</span>
+<span class="sd">     * ``'swap'``: no iterations and deterministic, usually slower than ``'dmrg'``.</span>
+
+<span class="sd">    Examples:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            import torchtt as tntt</span>
+
+<span class="sd">            x = tntt.randn([4] * 8, [1] + 7 * [3] + [1])</span>
+<span class="sd">            y = tntt.randn([4] * 8, [1] + 7 * [4] + [1])</span>
+
+<span class="sd">            z = tntt.hadamard(x, y, eps=1e-10)                      # DMRG</span>
+<span class="sd">            z = tntt.hadamard(x, y, eps=1e-10, method='direct')     # (x * y).round(1e-10)</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        x (torchtt.TT): the first operand.</span>
+<span class="sd">        y (torchtt.TT): the second operand.</span>
+<span class="sd">        eps (float, optional): relative accuracy. Defaults to 1e-12.</span>
+<span class="sd">        rmax (int, optional): maximum rank of the result. Defaults to the maximum possible integer.</span>
+<span class="sd">        method (str | torchtt.methods.DMRG | torchtt.methods.Direct | torchtt.methods.Swap, optional): the method, given by name (``'dmrg'``, ``'direct'`` or ``'swap'``) or as an instance to change its parameters. Defaults to 'dmrg'.</span>
+<span class="sd">        initial (torchtt.TT, optional): initial guess of the result (only for ``'dmrg'``). None means that the method chooses it. Defaults to None.</span>
+<span class="sd">        verbose (bool, optional): print information about the iterations (only for ``'dmrg'``). Defaults to False.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidArguments: The operands must be torchtt.TT instances.</span>
+<span class="sd">        IncompatibleTypes: The operands must be both TT tensors or both TT matrices.</span>
+<span class="sd">        ShapeMismatch: The operands must have the same shape.</span>
+<span class="sd">        ShapeMismatch: The initial guess must have the shape of the operands.</span>
+<span class="sd">        InvalidArguments: The method is unknown, does not implement this product or does not use an initial guess.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        torchtt.TT: the result.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">TT</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">TT</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span><span class="s2">"The operands must be torchtt.TT instances."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">is_ttm</span> <span class="o">!=</span> <span class="n">y</span><span class="o">.</span><span class="n">is_ttm</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">IncompatibleTypes</span><span class="p">(</span><span class="s2">"The operands must be both TT tensors or both TT matrices."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">N</span> <span class="o">!=</span> <span class="n">y</span><span class="o">.</span><span class="n">N</span> <span class="ow">or</span> <span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">is_ttm</span> <span class="ow">and</span> <span class="n">x</span><span class="o">.</span><span class="n">M</span> <span class="o">!=</span> <span class="n">y</span><span class="o">.</span><span class="n">M</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">ShapeMismatch</span><span class="p">(</span><span class="s2">"The operands must have the same shape."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">initial</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">initial</span><span class="p">,</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">TT</span><span class="p">)</span> <span class="ow">or</span> <span class="n">initial</span><span class="o">.</span><span class="n">is_ttm</span> <span class="o">!=</span> <span class="n">x</span><span class="o">.</span><span class="n">is_ttm</span> <span class="ow">or</span> <span class="n">initial</span><span class="o">.</span><span class="n">N</span> <span class="o">!=</span> <span class="n">x</span><span class="o">.</span><span class="n">N</span> <span class="ow">or</span> <span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">is_ttm</span> <span class="ow">and</span> <span class="n">initial</span><span class="o">.</span><span class="n">M</span> <span class="o">!=</span> <span class="n">x</span><span class="o">.</span><span class="n">M</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="n">ShapeMismatch</span><span class="p">(</span><span class="s2">"The initial guess must have the shape of the operands."</span><span class="p">)</span>
+
+    <span class="n">method</span> <span class="o">=</span> <span class="n">_as_method</span><span class="p">(</span><span class="n">method</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="s1">'hadamard'</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span><span class="s2">"The method </span><span class="si">%s</span><span class="s2"> does not implement the elementwise product. Choose between 'dmrg', 'direct' and 'swap'."</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">method</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">hadamard</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">,</span> <span class="n">initial</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+
+    <span class="c1"># the rank enrichment of the iterative methods can exceed rmax</span>
+    <span class="k">if</span> <span class="nb">max</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">R</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">rmax</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">result</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Ion Gabriel Ion.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

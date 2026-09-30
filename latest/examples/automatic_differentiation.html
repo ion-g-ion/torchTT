@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Automatic differentiation &mdash; torchTT development (main @ 42740af) documentation</title>
+  <title>Automatic differentiation &mdash; torchTT development (main @ 0909209) documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
       <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
@@ -14,7 +14,7 @@
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=167f7836"></script>
+      <script src="../_static/documentation_options.js?v=33102d81"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -24,7 +24,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="TT Manifold and Riemannian Optimization" href="manifold.html" />
-    <link rel="prev" title="A physics-informed neural network for the Fokker-Planck equation" href="fokker_planck_pinn.html" /> 
+    <link rel="prev" title="A physics-informed neural network (PINN) for the Fokker-Planck equation" href="fokker_planck_pinn.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -60,12 +60,15 @@
 <li class="toctree-l2 current"><a class="reference internal" href="../docs/examples.html#advanced-topics">Advanced Topics</a><ul class="current">
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Automatic differentiation</a></li>
 <li class="toctree-l3"><a class="reference internal" href="manifold.html">TT Manifold and Riemannian Optimization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tensor_completion.html">Tensor completion with Riemannian optimization</a></li>
 <li class="toctree-l3"><a class="reference internal" href="gpu_acceleration.html">GPU acceleration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="bayesian_inversion.html">Bayesian Inversion with torchTT</a></li>
 </ul>
 </li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/references.html">References</a></li>
 </ul>
 
         </div>
@@ -93,9 +96,13 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 42740af)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="Automatic-differentiation">
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 0909209)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Run this notebook in <a class="reference external" href="https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/automatic_differentiation.ipynb">Google Colab</a> or see the source on <a class="reference external" href="https://github.com/ion-g-ion/torchTT/blob/main/examples/automatic_differentiation.ipynb">GitHub</a>.</p>
+</div>
+<section id="Automatic-differentiation">
 <h1>Automatic differentiation<a class="headerlink" href="#Automatic-differentiation" title="Link to this heading"></a></h1>
-<p>Being based on <code class="docutils literal notranslate"><span class="pre">pytorch</span></code>, <code class="docutils literal notranslate"><span class="pre">torchtt</span></code> can handle automatic differentiation with respect to the TT cores.</p>
+<p>Being based on <code class="docutils literal notranslate"><span class="pre">pytorch</span></code>, <code class="docutils literal notranslate"><span class="pre">torchtt</span></code> can handle automatic differentiation (AD) with respect to the cores of a tensor-train (TT) decomposition.</p>
 <p>Imports</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
@@ -176,7 +183,7 @@ tensor(1.2106e-09, dtype=torch.float64, grad_fn=&lt;DivBackward0&gt;)
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="fokker_planck_pinn.html" class="btn btn-neutral float-left" title="A physics-informed neural network for the Fokker-Planck equation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="fokker_planck_pinn.html" class="btn btn-neutral float-left" title="A physics-informed neural network (PINN) for the Fokker-Planck equation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="manifold.html" class="btn btn-neutral float-right" title="TT Manifold and Riemannian Optimization" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

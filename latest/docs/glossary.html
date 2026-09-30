@@ -1,0 +1,169 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Glossary &mdash; torchTT development (main @ 0909209) documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=33102d81"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="References" href="references.html" />
+    <link rel="prev" title="Bayesian Inversion with torchTT" href="../examples/bayesian_inversion.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            torchtt
+              <img src="https://github.com/ion-g-ion/torchTT/blob/main/logo_small.png?raw=true" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro_page.html">Welcome to torchTT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="package-overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">API reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="references.html">References</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">torchtt</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Glossary</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/docs/glossary.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 0909209)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="glossary">
+<span id="glossary-label"></span><h1>Glossary<a class="headerlink" href="#glossary" title="Link to this heading"></a></h1>
+<p>Abbreviations used in the documentation, the examples and the API reference.</p>
+<dl class="simple glossary">
+<dt id="term-AD">AD<a class="headerlink" href="#term-AD" title="Link to this term"></a></dt><dd><p>Automatic differentiation. Derivatives of a computation are obtained by applying the
+chain rule to its elementary operations. <code class="docutils literal notranslate"><span class="pre">torchtt</span></code> builds on the PyTorch autograd
+engine, so gradients can be taken with respect to the TT cores (see
+<a class="reference internal" href="torchtt.html#module-torchtt.grad" title="torchtt.grad"><code class="xref py py-mod docutils literal notranslate"><span class="pre">torchtt.grad</span></code></a>).</p>
+</dd>
+<dt id="term-AMEn">AMEn<a class="headerlink" href="#term-AMEn" title="Link to this term"></a></dt><dd><p>Alternating minimal energy method <span class="bibtex-citation" id="id1">[<a class="reference internal" href="references.html#id5" title="Sergey V Dolgov and Dmitry V Savostyanov. Alternating minimal energy methods for linear systems in higher dimensions. SIAM Journal on Scientific Computing, 36(5):A2248–A2271, 2014. doi:10.1137/140953289.">Dolgov and Savostyanov, 2014</a>]</span>. It updates one
+TT core at a time and enriches the approximation with a low-rank approximation of
+the residual, so the TT ranks adapt during the iteration. <code class="docutils literal notranslate"><span class="pre">torchtt</span></code> uses it to
+solve linear systems (<a class="reference internal" href="torchtt.html#torchtt.solvers.amen_solve" title="torchtt.solvers.amen_solve"><code class="xref py py-func docutils literal notranslate"><span class="pre">torchtt.solvers.amen_solve()</span></code></a>), for matrix products
+(<code class="docutils literal notranslate"><span class="pre">method='amen'</span></code> in <a class="reference internal" href="torchtt.html#torchtt.matvec" title="torchtt.matvec"><code class="xref py py-func docutils literal notranslate"><span class="pre">torchtt.matvec()</span></code></a> and <a class="reference internal" href="torchtt.html#torchtt.matmat" title="torchtt.matmat"><code class="xref py py-func docutils literal notranslate"><span class="pre">torchtt.matmat()</span></code></a>), for elementwise division
+(<a class="reference internal" href="torchtt.html#torchtt.elementwise_divide" title="torchtt.elementwise_divide"><code class="xref py py-func docutils literal notranslate"><span class="pre">torchtt.elementwise_divide()</span></code></a>) and for cross interpolation
+(<code class="docutils literal notranslate"><span class="pre">method='amen'</span></code> in <a class="reference internal" href="torchtt.html#torchtt.interpolate.function_interpolate" title="torchtt.interpolate.function_interpolate"><code class="xref py py-func docutils literal notranslate"><span class="pre">torchtt.interpolate.function_interpolate()</span></code></a>).</p>
+</dd>
+<dt id="term-BiCGSTAB">BiCGSTAB<a class="headerlink" href="#term-BiCGSTAB" title="Link to this term"></a></dt><dd><p>Biconjugate gradient stabilized method, an iterative solver for non-symmetric linear
+systems. <a class="reference internal" href="torchtt.html#torchtt.solvers.amen_solve" title="torchtt.solvers.amen_solve"><code class="xref py py-func docutils literal notranslate"><span class="pre">torchtt.solvers.amen_solve()</span></code></a> can use it for its local systems
+(<code class="docutils literal notranslate"><span class="pre">local_solver=2</span></code>).</p>
+</dd>
+<dt id="term-DMRG">DMRG<a class="headerlink" href="#term-DMRG" title="Link to this term"></a></dt><dd><p>Density matrix renormalization group. The name comes from quantum physics
+<span class="bibtex-citation" id="id2">[<a class="reference internal" href="references.html#id6" title="Steven R White. Density matrix formulation for quantum renormalization groups. Physical Review Letters, 69(19):2863–2866, 1992. doi:10.1103/PhysRevLett.69.2863.">White, 1992</a>]</span>; for the TT format it denotes schemes that optimize two
+neighbouring TT cores at a time, which lets the TT ranks adapt
+<span class="bibtex-citation" id="id3">[<a class="reference internal" href="references.html#id7" title="Ivan V Oseledets. DMRG approach to fast linear algebra in the TT-format. Computational Methods in Applied Mathematics, 11(3):382–393, 2011. doi:10.2478/cmam-2011-0021.">Oseledets, 2011</a>, <a class="reference internal" href="references.html#id4" title="Dmitry V Savostyanov and Ivan V Oseledets. Fast adaptive interpolation of multi-dimensional arrays in tensor train format. In The 2011 International Workshop on Multidimensional (nD) Systems, 1–8. IEEE, 2011. doi:10.1109/nDS.2011.6076873.">Savostyanov and Oseledets, 2011</a>]</span>.
+<code class="docutils literal notranslate"><span class="pre">torchtt</span></code> uses it for matrix-vector products (<code class="docutils literal notranslate"><span class="pre">method='dmrg'</span></code> in <a class="reference internal" href="torchtt.html#torchtt.matvec" title="torchtt.matvec"><code class="xref py py-func docutils literal notranslate"><span class="pre">torchtt.matvec()</span></code></a>),
+elementwise products (<code class="docutils literal notranslate"><span class="pre">method='dmrg'</span></code> in <a class="reference internal" href="torchtt.html#torchtt.hadamard" title="torchtt.hadamard"><code class="xref py py-func docutils literal notranslate"><span class="pre">torchtt.hadamard()</span></code></a>) and cross interpolation
+(<code class="docutils literal notranslate"><span class="pre">method='dmrg'</span></code> in <a class="reference internal" href="torchtt.html#torchtt.interpolate.function_interpolate" title="torchtt.interpolate.function_interpolate"><code class="xref py py-func docutils literal notranslate"><span class="pre">torchtt.interpolate.function_interpolate()</span></code></a>).</p>
+</dd>
+<dt id="term-GMRES">GMRES<a class="headerlink" href="#term-GMRES" title="Link to this term"></a></dt><dd><p>Generalized minimal residual method, an iterative solver for non-symmetric linear
+systems. <a class="reference internal" href="torchtt.html#torchtt.solvers.amen_solve" title="torchtt.solvers.amen_solve"><code class="xref py py-func docutils literal notranslate"><span class="pre">torchtt.solvers.amen_solve()</span></code></a> uses it for its local systems by default
+(<code class="docutils literal notranslate"><span class="pre">local_solver=1</span></code>).</p>
+</dd>
+<dt id="term-QR">QR<a class="headerlink" href="#term-QR" title="Link to this term"></a></dt><dd><p>QR decomposition. It factors a matrix into a matrix with orthonormal columns
+(<span class="math notranslate nohighlight">\(Q\)</span>) and an upper triangular matrix (<span class="math notranslate nohighlight">\(R\)</span>). It is used to orthogonalize
+TT cores.</p>
+</dd>
+<dt id="term-QTT">QTT<a class="headerlink" href="#term-QTT" title="Link to this term"></a></dt><dd><p>Quantized tensor train <span class="bibtex-citation" id="id4">[<a class="reference internal" href="references.html#id9" title="Boris N Khoromskij. O(d log N)-quantics approximation of N-d tensors in high-dimensional numerical modeling. Constructive Approximation, 34(2):257–280, 2011. doi:10.1007/s00365-011-9131-1.">Khoromskij, 2011</a>, <a class="reference internal" href="references.html#id8" title="Ivan V Oseledets. Approximation of 2ᵈ × 2ᵈ matrices using tensor decomposition. SIAM Journal on Matrix Analysis and Applications, 31(4):2130–2145, 2010. doi:10.1137/090757861.">Oseledets, 2010</a>]</span>: the
+TT format applied to a tensor that has been reshaped so that every mode has size 2.
+See <a class="reference internal" href="package-overview.html#qtt-label"><span class="std std-ref">Quantized TT (QTT)</span></a>.</p>
+</dd>
+<dt id="term-SVD">SVD<a class="headerlink" href="#term-SVD" title="Link to this term"></a></dt><dd><p>Singular value decomposition. Truncating it is how TT ranks are reduced, both when a
+full tensor is decomposed and when a TT tensor is rounded.</p>
+</dd>
+<dt id="term-TT">TT<a class="headerlink" href="#term-TT" title="Link to this term"></a></dt><dd><p>Tensor train <span class="bibtex-citation" id="id5">[<a class="reference internal" href="references.html#id2" title="Ivan V Oseledets. Tensor-train decomposition. SIAM Journal on Scientific Computing, 33(5):2295–2317, 2011. doi:10.1137/090752286.">Oseledets, 2011</a>]</span>. A format that
+represents a <span class="math notranslate nohighlight">\(d\)</span>-dimensional tensor by <span class="math notranslate nohighlight">\(d\)</span> three-dimensional tensors, the
+TT cores. See <a class="reference internal" href="package-overview.html#about-tt-label"><span class="std std-ref">Overview</span></a>.</p>
+</dd>
+<dt id="term-TTM">TTM<a class="headerlink" href="#term-TTM" title="Link to this term"></a></dt><dt id="term-TT-matrix">TT matrix<a class="headerlink" href="#term-TT-matrix" title="Link to this term"></a></dt><dd><p>A linear operator (tensor operator) in the TT format. Its cores are
+four-dimensional, with one row and one column index each. A <code class="docutils literal notranslate"><span class="pre">torchtt.TT</span></code> is a TT
+matrix when its shape is given as a list of <code class="docutils literal notranslate"><span class="pre">(rows,</span> <span class="pre">columns)</span></code> tuples.</p>
+</dd>
+</dl>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../examples/bayesian_inversion.html" class="btn btn-neutral float-left" title="Bayesian Inversion with torchTT" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="references.html" class="btn btn-neutral float-right" title="References" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Ion Gabriel Ion.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

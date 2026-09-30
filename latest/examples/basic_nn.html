@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tensor Train layers for neural networks &mdash; torchTT development (main @ 42740af) documentation</title>
+  <title>Tensor Train layers for neural networks &mdash; torchTT development (main @ 0909209) documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
       <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
@@ -14,7 +14,7 @@
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=167f7836"></script>
+      <script src="../_static/documentation_options.js?v=33102d81"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -60,12 +60,14 @@
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Tensor Train layers for neural networks</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mnist_nn.html">Digit Recognition using Tensor Train (TT) Neural Networks</a></li>
 <li class="toctree-l3"><a class="reference internal" href="deep_tt_density.html">Deep TT Density demo</a></li>
-<li class="toctree-l3"><a class="reference internal" href="fokker_planck_pinn.html">A physics-informed neural network for the Fokker-Planck equation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fokker_planck_pinn.html">A physics-informed neural network (PINN) for the Fokker-Planck equation</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#advanced-topics">Advanced Topics</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/references.html">References</a></li>
 </ul>
 
         </div>
@@ -93,7 +95,11 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 42740af)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="Tensor-Train-layers-for-neural-networks">
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 0909209)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Run this notebook in <a class="reference external" href="https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/basic_nn.ipynb">Google Colab</a> or see the source on <a class="reference external" href="https://github.com/ion-g-ion/torchTT/blob/main/examples/basic_nn.ipynb">GitHub</a>.</p>
+</div>
+<section id="Tensor-Train-layers-for-neural-networks">
 <h1>Tensor Train layers for neural networks<a class="headerlink" href="#Tensor-Train-layers-for-neural-networks" title="Link to this heading"></a></h1>
 <p>In this section, the TT layers are introduced.</p>
 <p>Imports:</p>
@@ -114,7 +120,7 @@
 </div>
 </div>
 <p>We consider a linear layer <span class="math notranslate nohighlight">\(\mathcal{LTT}(\mathsf{x}) = \mathsf{Wx}+\mathsf{b}\)</span> acting on a tensor input <span class="math notranslate nohighlight">\(\mathsf{x}\)</span> of shape <span class="math notranslate nohighlight">\(n_1 \times \cdots \times n_d\)</span> and returning a tensor of shape <span class="math notranslate nohighlight">\(m_1\times\cdots\times m_d\)</span>. The corresponding weight matrix <span class="math notranslate nohighlight">\(\mathsf{W}\)</span> would have the shape <span class="math notranslate nohighlight">\((m_1\times\cdots\times m_d) \times (n_1 \times \cdots \times n_d)\)</span>. The goal is to represent the weights tensor operator in TT format and perform the learning with respect tot
-the cores of the TT decomposition (ranks have to be fixed a priori). Due to the AD functionality of <code class="docutils literal notranslate"><span class="pre">torchtt</span></code>, the gradient with respect tot the cores can be computed for any network structure. TT layers can be added using <code class="docutils literal notranslate"><span class="pre">torchtt.nn.LinearLayerTT()</span></code> class.</p>
+the cores of the TT decomposition (ranks have to be fixed a priori). Due to the automatic differentiation functionality of <code class="docutils literal notranslate"><span class="pre">torchtt</span></code>, the gradient with respect tot the cores can be computed for any network structure. TT layers can be added using <code class="docutils literal notranslate"><span class="pre">torchtt.nn.LinearLayerTT()</span></code> class.</p>
 <p>In the following, a neural netywork with 3 hidden layers and one linear layer is created. The shapes of the individual layers are</p>
 <p><span class="math notranslate nohighlight">\(\mathbb{R}^{16} \times\mathbb{R}^{16} \times\mathbb{R}^{16} \times\mathbb{R}^{16} \underset{}{\longrightarrow} \mathbb{R}^8 \times\mathbb{R}^8 \times\mathbb{R}^8 \times\mathbb{R}^8 \underset{}{\longrightarrow} \mathbb{R}^4 \times\mathbb{R}^4 \times\mathbb{R}^4 \times\mathbb{R}^4 \underset{}{\longrightarrow} \mathbb{R}^2 \times\mathbb{R}^4 \times\mathbb{R}^2 \times\mathbb{R}^4 \underset{}{\longrightarrow} \mathbb{R}^{10}\)</span>.</p>
 <div class="nbinput nblast docutils container">

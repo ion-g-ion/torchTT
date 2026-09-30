@@ -1,0 +1,595 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>torchtt.methods &mdash; torchTT development (main @ 0909209) documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=33102d81"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            torchtt
+              <img src="https://github.com/ion-g-ion/torchTT/blob/main/logo_small.png?raw=true" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/intro_page.html">Welcome to torchTT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/install.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/package-overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/modules.html">API reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/references.html">References</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">torchtt</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../torchtt.html">torchtt</a></li>
+      <li class="breadcrumb-item active">torchtt.methods</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 0909209)</strong><br><a href="../../../stable/index.html">Stable release</a> · <a href="../../../latest/index.html">Development (main)</a></nav><h1>Source code for torchtt.methods</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""</span>
+<span class="sd">Methods for the products that truncate the rank of the result: :func:`torchtt.matvec`, :func:`torchtt.matmat` and :func:`torchtt.hadamard`.</span>
+
+<span class="sd">Each function computes an approximation of the product followed by rounding, e.g. ``(A @ x).round(eps, rmax)``.</span>
+<span class="sd">The algorithm is chosen with the ``method`` argument, which is either the name of the method or an instance of one of the classes below.</span>
+<span class="sd">Use an instance to change the parameters of the method:</span>
+
+<span class="sd">.. code-block:: python</span>
+
+<span class="sd">    import torchtt as tntt</span>
+
+<span class="sd">    y = tntt.matvec(A, x, eps=1e-10)                                          # default method ('dmrg')</span>
+<span class="sd">    y = tntt.matvec(A, x, eps=1e-10, method='direct')                         # other method, default parameters</span>
+<span class="sd">    y = tntt.matvec(A, x, eps=1e-10, method=tntt.methods.DMRG(nswp=40))      # other parameters</span>
+
+<span class="sd">The methods and the products they implement:</span>
+
+<span class="sd">.. list-table::</span>
+<span class="sd">   :header-rows: 1</span>
+
+<span class="sd">   * - Method</span>
+<span class="sd">     - ``matvec``</span>
+<span class="sd">     - ``matmat``</span>
+<span class="sd">     - ``hadamard``</span>
+<span class="sd">     - Use it when</span>
+<span class="sd">   * - ``'direct'`` (:class:`Direct`)</span>
+<span class="sd">     - yes</span>
+<span class="sd">     - yes (default)</span>
+<span class="sd">     - yes</span>
+<span class="sd">     - the product rank ``rank(a) * rank(b)`` is moderate (up to a few hundred) or the result cannot be compressed much.</span>
+<span class="sd">   * - ``'dmrg'`` (:class:`DMRG`)</span>
+<span class="sd">     - yes (default)</span>
+<span class="sd">     - no</span>
+<span class="sd">     - yes (default)</span>
+<span class="sd">     - the product rank is large and the result has a much smaller rank.</span>
+<span class="sd">   * - ``'amen'`` (:class:`AMEn`)</span>
+<span class="sd">     - yes</span>
+<span class="sd">     - yes</span>
+<span class="sd">     - no</span>
+<span class="sd">     - the product of TT matrices has a large product rank and a result of small rank (real tensors only).</span>
+<span class="sd">   * - ``'swap'`` (:class:`Swap`)</span>
+<span class="sd">     - yes</span>
+<span class="sd">     - yes</span>
+<span class="sd">     - yes</span>
+<span class="sd">     - a non-iterative and deterministic algorithm is needed.</span>
+
+<span class="sd">See :ref:`products-label` for a longer discussion.</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tn</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">opt_einsum</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">oe</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torchtt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torchtt._dmrg</span><span class="w"> </span><span class="kn">import</span> <span class="n">dmrg_matvec</span><span class="p">,</span> <span class="n">dmrg_hadamard_python</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torchtt._amen</span><span class="w"> </span><span class="kn">import</span> <span class="n">_amen_mm_python</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torchtt._fast_mult</span><span class="w"> </span><span class="kn">import</span> <span class="n">swap_cores</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torchtt.errors</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_no_initial_guess</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">initial</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Raise an error if an initial guess is passed to a method that does not use one.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        method (object): the method.</span>
+<span class="sd">        initial (None | torchtt.TT): the initial guess.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidArguments: The method does not use an initial guess.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">initial</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span><span class="s2">"The method </span><span class="si">%s</span><span class="s2"> does not use an initial guess."</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">method</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Direct">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.methods.Direct">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Direct</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Compute the exact product and round it with :meth:`torchtt.TT.round` :cite:p:`oseledets2011tensor`.</span>
+
+<span class="sd">    The rank of the exact product is the product of the ranks of the operands and the rounding costs :math:`\\mathcal{O}(dn(r_ar_b)^3)`.</span>
+<span class="sd">    It is the best choice when the product rank :math:`r_ar_b` is moderate (up to a few hundred) or when the result cannot be compressed much, since no iterations are needed.</span>
+<span class="sd">    Its cost and memory become large for large product ranks; use :class:`DMRG` or :class:`AMEn` if the result has a much smaller rank.</span>
+<span class="sd">    The result is deterministic and its rank is the smallest one for the accuracy ``eps``.</span>
+
+<span class="sd">    Implements all the products and does not use an initial guess.</span>
+<span class="sd">    """</span>
+
+<div class="viewcode-block" id="Direct.matvec">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.methods.Direct.matvec">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">matvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">,</span> <span class="n">initial</span><span class="p">,</span> <span class="n">verbose</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Matrix-vector product. Called by :func:`torchtt.matvec`, which also checks the arguments.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            A (torchtt.TT): the TT matrix.</span>
+<span class="sd">            x (torchtt.TT): the TT tensor.</span>
+<span class="sd">            eps (float): relative accuracy.</span>
+<span class="sd">            rmax (int): maximum rank.</span>
+<span class="sd">            initial (None): not used, must be None.</span>
+<span class="sd">            verbose (bool): not used.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torchtt.TT: the result.</span>
+<span class="sd">        """</span>
+        <span class="n">_no_initial_guess</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">initial</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">A</span> <span class="o">@</span> <span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Direct.matmat">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.methods.Direct.matmat">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">matmat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">,</span> <span class="n">initial</span><span class="p">,</span> <span class="n">verbose</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Product of two TT matrices. Called by :func:`torchtt.matmat`, which also checks the arguments.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            A (torchtt.TT): the first TT matrix.</span>
+<span class="sd">            B (torchtt.TT): the second TT matrix.</span>
+<span class="sd">            eps (float): relative accuracy.</span>
+<span class="sd">            rmax (int): maximum rank.</span>
+<span class="sd">            initial (None): not used, must be None.</span>
+<span class="sd">            verbose (bool): not used.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torchtt.TT: the result.</span>
+<span class="sd">        """</span>
+        <span class="n">_no_initial_guess</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">initial</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">A</span> <span class="o">@</span> <span class="n">B</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Direct.hadamard">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.methods.Direct.hadamard">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">hadamard</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">,</span> <span class="n">initial</span><span class="p">,</span> <span class="n">verbose</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Elementwise product. Called by :func:`torchtt.hadamard`, which also checks the arguments.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (torchtt.TT): the first operand.</span>
+<span class="sd">            y (torchtt.TT): the second operand.</span>
+<span class="sd">            eps (float): relative accuracy.</span>
+<span class="sd">            rmax (int): maximum rank.</span>
+<span class="sd">            initial (None): not used, must be None.</span>
+<span class="sd">            verbose (bool): not used.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torchtt.TT: the result.</span>
+<span class="sd">        """</span>
+        <span class="n">_no_initial_guess</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">initial</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="DMRG">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.methods.DMRG">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DMRG</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Density matrix renormalization group (DMRG) method :cite:p:`oseledets2011dmrg`.</span>
+
+<span class="sd">    Optimizes two neighbouring cores of the result at a time, without forming the exact product.</span>
+<span class="sd">    The cost depends on the rank of the result and not on the product of the ranks of the operands, so it pays off when the result has a much smaller rank than the product rank.</span>
+<span class="sd">    If the result cannot be compressed, :class:`Direct` is faster.</span>
+<span class="sd">    The iteration starts from a random tensor (or from the ``initial`` guess) and stops when the cores change by less than ``eps`` or after ``nswp`` sweeps.</span>
+<span class="sd">    The ranks of the result can exceed the smallest ones for the accuracy ``eps`` by up to ``kickrank``; use :meth:`torchtt.TT.round` if this matters.</span>
+
+<span class="sd">    Implements the matrix-vector product (with a C++ implementation) and the elementwise product.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        nswp (int, optional): maximum number of sweeps. Defaults to 20.</span>
+<span class="sd">        kickrank (int, optional): rank enrichment with random vectors after each local update. Defaults to 4.</span>
+<span class="sd">        use_cpp (bool, optional): use the C++ implementation if available (only for the matrix-vector product). Defaults to True.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidArguments: nswp must be a positive integer.</span>
+<span class="sd">        InvalidArguments: kickrank must be a non-negative integer.</span>
+<span class="sd">    """</span>
+    <span class="n">nswp</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span>
+    <span class="n">kickrank</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">use_cpp</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nswp</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">nswp</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span><span class="s2">"nswp must be a positive integer."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kickrank</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">kickrank</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span><span class="s2">"kickrank must be a non-negative integer."</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DMRG.matvec">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.methods.DMRG.matvec">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">matvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">,</span> <span class="n">initial</span><span class="p">,</span> <span class="n">verbose</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Matrix-vector product. Called by :func:`torchtt.matvec`, which also checks the arguments.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            A (torchtt.TT): the TT matrix.</span>
+<span class="sd">            x (torchtt.TT): the TT tensor.</span>
+<span class="sd">            eps (float): relative accuracy.</span>
+<span class="sd">            rmax (int): maximum rank.</span>
+<span class="sd">            initial (None | torchtt.TT): initial guess of the result (None means random). It is not modified.</span>
+<span class="sd">            verbose (bool): print information about the sweeps.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torchtt.TT: the result.</span>
+<span class="sd">        """</span>
+        <span class="c1"># the Python implementation changes the cores of the initial guess</span>
+        <span class="n">y0</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">initial</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">initial</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">dmrg_matvec</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="n">y0</span><span class="p">,</span> <span class="n">nswp</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nswp</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="o">=</span><span class="n">rmax</span><span class="p">,</span> <span class="n">kickrank</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">kickrank</span><span class="p">,</span> <span class="n">verb</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span> <span class="n">use_cpp</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">use_cpp</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DMRG.hadamard">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.methods.DMRG.hadamard">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">hadamard</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">,</span> <span class="n">initial</span><span class="p">,</span> <span class="n">verbose</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Elementwise product. Called by :func:`torchtt.hadamard`, which also checks the arguments.</span>
+<span class="sd">        TT matrices are multiplied as TT tensors with the mode sizes ``M[k]*N[k]``.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (torchtt.TT): the first operand.</span>
+<span class="sd">            y (torchtt.TT): the second operand.</span>
+<span class="sd">            eps (float): relative accuracy.</span>
+<span class="sd">            rmax (int): maximum rank.</span>
+<span class="sd">            initial (None | torchtt.TT): initial guess of the result (None means random). It is not modified.</span>
+<span class="sd">            verbose (bool): print information about the sweeps.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torchtt.TT: the result.</span>
+<span class="sd">        """</span>
+        <span class="n">is_ttm</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">is_ttm</span>
+        <span class="k">if</span> <span class="n">is_ttm</span><span class="p">:</span>
+            <span class="c1"># merge the row and column modes and multiply as TT tensors</span>
+            <span class="n">M</span><span class="p">,</span> <span class="n">N</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">M</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">N</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">TT</span><span class="p">([</span><span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">cores</span><span class="p">])</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">TT</span><span class="p">([</span><span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">y</span><span class="o">.</span><span class="n">cores</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">initial</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">initial</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">TT</span><span class="p">([</span><span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">initial</span><span class="o">.</span><span class="n">cores</span><span class="p">])</span>
+
+        <span class="c1"># the Python implementation changes the cores of the initial guess</span>
+        <span class="n">z0</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">initial</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">initial</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">dmrg_hadamard_python</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nswp</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">kickrank</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">is_ttm</span><span class="p">:</span>
+            <span class="n">z</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">TT</span><span class="p">([</span><span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">cores</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">)])</span>
+
+        <span class="k">return</span> <span class="n">z</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="AMEn">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.methods.AMEn">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">AMEn</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Alternating minimal energy (AMEn) method :cite:p:`dolgov2014alternating`.</span>
+
+<span class="sd">    Updates one core of the result at a time and enriches it with an approximation of the residual, without forming the exact product.</span>
+<span class="sd">    Like :class:`DMRG`, it pays off when the result has a much smaller rank than the product rank, and it is the only such method for the product of TT matrices.</span>
+<span class="sd">    For the matrix-vector product :class:`DMRG` is usually faster, since the cost of AMEn grows faster with the ranks of the operands.</span>
+<span class="sd">    Without an initial guess it starts from rank 1 and the rank grows by at most ``kickrank + kick2`` per sweep.</span>
+<span class="sd">    A result with larger rank than ``1 + nswp * (kickrank + kick2)`` is therefore not reached and the returned tensor is not accurate: increase ``nswp`` or ``kickrank``, or pass an ``initial`` guess.</span>
+
+<span class="sd">    Implements the matrix-vector product and the product of TT matrices, for real tensors only.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        nswp (int, optional): maximum number of sweeps. Defaults to 22.</span>
+<span class="sd">        kickrank (int, optional): rank enrichment with the residual after each local update. Defaults to 4.</span>
+<span class="sd">        kick2 (int, optional): additional rank enrichment with random vectors. Defaults to 0.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidArguments: nswp must be a positive integer.</span>
+<span class="sd">        InvalidArguments: kickrank and kick2 must be non-negative integers.</span>
+<span class="sd">    """</span>
+    <span class="n">nswp</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">22</span>
+    <span class="n">kickrank</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">kick2</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nswp</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">nswp</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span><span class="s2">"nswp must be a positive integer."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kickrank</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">kickrank</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kick2</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">kick2</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span><span class="s2">"kickrank and kick2 must be non-negative integers."</span><span class="p">)</span>
+
+<div class="viewcode-block" id="AMEn.matvec">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.methods.AMEn.matvec">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">matvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">,</span> <span class="n">initial</span><span class="p">,</span> <span class="n">verbose</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Matrix-vector product. Called by :func:`torchtt.matvec`, which also checks the arguments.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            A (torchtt.TT): the TT matrix.</span>
+<span class="sd">            x (torchtt.TT): the TT tensor.</span>
+<span class="sd">            eps (float): relative accuracy.</span>
+<span class="sd">            rmax (int): maximum rank.</span>
+<span class="sd">            initial (None | torchtt.TT): initial guess of the result (None means a zero tensor of rank 1).</span>
+<span class="sd">            verbose (bool): print information about the sweeps.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            IncompatibleTypes: AMEn does not support complex tensors.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torchtt.TT: the result.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">A</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">is_complex</span><span class="p">()</span> <span class="ow">or</span> <span class="n">x</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">is_complex</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="n">IncompatibleTypes</span><span class="p">(</span><span class="s2">"AMEn does not support complex tensors. Use the method 'dmrg' or 'direct'."</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">_amen_mm_python</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">cores</span><span class="p">,</span> <span class="p">[</span><span class="n">c</span><span class="p">[:,</span> <span class="p">:,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">cores</span><span class="p">],</span> <span class="n">A</span><span class="o">.</span><span class="n">M</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">M</span><span class="p">),</span> <span class="n">A</span><span class="o">.</span><span class="n">N</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nswp</span><span class="p">,</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">initial</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">initial</span><span class="o">.</span><span class="n">cores</span><span class="p">,</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">initial</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">initial</span><span class="o">.</span><span class="n">R</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">kickrank</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">kick2</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AMEn.matmat">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.methods.AMEn.matmat">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">matmat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">,</span> <span class="n">initial</span><span class="p">,</span> <span class="n">verbose</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Product of two TT matrices. Called by :func:`torchtt.matmat`, which also checks the arguments.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            A (torchtt.TT): the first TT matrix.</span>
+<span class="sd">            B (torchtt.TT): the second TT matrix.</span>
+<span class="sd">            eps (float): relative accuracy.</span>
+<span class="sd">            rmax (int): maximum rank.</span>
+<span class="sd">            initial (None | torchtt.TT): initial guess of the result (None means a zero TT matrix of rank 1).</span>
+<span class="sd">            verbose (bool): print information about the sweeps.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            IncompatibleTypes: AMEn does not support complex tensors.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torchtt.TT: the result.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">A</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">is_complex</span><span class="p">()</span> <span class="ow">or</span> <span class="n">B</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">is_complex</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="n">IncompatibleTypes</span><span class="p">(</span><span class="s2">"AMEn does not support complex tensors. Use the method 'direct'."</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">_amen_mm_python</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">cores</span><span class="p">,</span> <span class="n">B</span><span class="o">.</span><span class="n">cores</span><span class="p">,</span> <span class="n">A</span><span class="o">.</span><span class="n">M</span><span class="p">,</span> <span class="n">B</span><span class="o">.</span><span class="n">N</span><span class="p">,</span> <span class="n">A</span><span class="o">.</span><span class="n">N</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nswp</span><span class="p">,</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">initial</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">initial</span><span class="o">.</span><span class="n">cores</span><span class="p">,</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">initial</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">initial</span><span class="o">.</span><span class="n">R</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">kickrank</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">kick2</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Swap">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.methods.Swap">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Swap</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Product by swapping neighbouring cores :cite:p:`michailidis2025elementwise`.</span>
+
+<span class="sd">    The cores of the first operand are moved through the cores of the second one with :math:`d(d-1)/2` swaps of neighbouring cores, each truncated with an SVD.</span>
+<span class="sd">    There are no iterations and no initial guess, so the result is deterministic.</span>
+<span class="sd">    Every swap is truncated with the relative accuracy ``eps``, so the error of the result can be larger than ``eps``.</span>
+<span class="sd">    Like for :class:`DMRG`, the cost depends mostly on the ranks of the result, but it grows quadratically with the number of dimensions and quickly with the mode sizes, and it is usually slower than :class:`DMRG`.</span>
+<span class="sd">    When the intermediate tensors have large ranks (e.g. for smooth functions in the QTT format), the ranks of the result can be much larger than needed.</span>
+
+<span class="sd">    Implements all the products and does not use an initial guess.</span>
+<span class="sd">    """</span>
+
+<div class="viewcode-block" id="Swap.matvec">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.methods.Swap.matvec">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">matvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">,</span> <span class="n">initial</span><span class="p">,</span> <span class="n">verbose</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Matrix-vector product. Called by :func:`torchtt.matvec`, which also checks the arguments.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            A (torchtt.TT): the TT matrix.</span>
+<span class="sd">            x (torchtt.TT): the TT tensor.</span>
+<span class="sd">            eps (float): relative accuracy of each swap.</span>
+<span class="sd">            rmax (int): maximum rank.</span>
+<span class="sd">            initial (None): not used, must be None.</span>
+<span class="sd">            verbose (bool): not used.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torchtt.TT: the result.</span>
+<span class="sd">        """</span>
+        <span class="n">_no_initial_guess</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">initial</span><span class="p">)</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">N</span><span class="p">)</span>
+
+        <span class="n">cores</span> <span class="o">=</span> <span class="p">[</span><span class="n">tn</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">cores</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
+            <span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">oe</span><span class="o">.</span><span class="n">contract</span><span class="p">(</span><span class="s2">"mabk,kbn-&gt;man"</span><span class="p">,</span> <span class="n">A</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">d</span><span class="o">-</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+            <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                    <span class="n">cores</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">cores</span><span class="p">[</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">swap_cores</span><span class="p">(</span><span class="n">cores</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">cores</span><span class="p">[</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">cores</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Swap.matmat">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.methods.Swap.matmat">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">matmat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">,</span> <span class="n">initial</span><span class="p">,</span> <span class="n">verbose</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Product of two TT matrices. Called by :func:`torchtt.matmat`, which also checks the arguments.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            A (torchtt.TT): the first TT matrix.</span>
+<span class="sd">            B (torchtt.TT): the second TT matrix.</span>
+<span class="sd">            eps (float): relative accuracy of each swap.</span>
+<span class="sd">            rmax (int): maximum rank.</span>
+<span class="sd">            initial (None): not used, must be None.</span>
+<span class="sd">            verbose (bool): not used.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torchtt.TT: the result.</span>
+<span class="sd">        """</span>
+        <span class="n">_no_initial_guess</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">initial</span><span class="p">)</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">N</span><span class="p">)</span>
+
+        <span class="n">cores</span> <span class="o">=</span> <span class="p">[</span><span class="n">tn</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">B</span><span class="o">.</span><span class="n">cores</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
+            <span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">oe</span><span class="o">.</span><span class="n">contract</span><span class="p">(</span><span class="s2">"mabk,kbcn-&gt;macn"</span><span class="p">,</span> <span class="n">A</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">d</span><span class="o">-</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+            <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                    <span class="n">cores</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">cores</span><span class="p">[</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">swap_cores</span><span class="p">(</span><span class="n">cores</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">cores</span><span class="p">[</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">cores</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Swap.hadamard">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.methods.Swap.hadamard">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">hadamard</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">,</span> <span class="n">initial</span><span class="p">,</span> <span class="n">verbose</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Elementwise product. Called by :func:`torchtt.hadamard`, which also checks the arguments.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (torchtt.TT): the first operand.</span>
+<span class="sd">            y (torchtt.TT): the second operand.</span>
+<span class="sd">            eps (float): relative accuracy of each swap.</span>
+<span class="sd">            rmax (int): maximum rank.</span>
+<span class="sd">            initial (None): not used, must be None.</span>
+<span class="sd">            verbose (bool): not used.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torchtt.TT: the result.</span>
+<span class="sd">        """</span>
+        <span class="n">_no_initial_guess</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">initial</span><span class="p">)</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">N</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">is_ttm</span><span class="p">:</span>
+            <span class="n">cores</span> <span class="o">=</span> <span class="p">[</span><span class="n">tn</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">y</span><span class="o">.</span><span class="n">cores</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
+                <span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">oe</span><span class="o">.</span><span class="n">contract</span><span class="p">(</span><span class="s2">"maAk,kbBn,AB,ab-&gt;maAn"</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">d</span><span class="o">-</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">tn</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">N</span><span class="p">[</span><span class="n">d</span><span class="o">-</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">d</span><span class="o">-</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">),</span> <span class="n">tn</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">M</span><span class="p">[</span><span class="n">d</span><span class="o">-</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">d</span><span class="o">-</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
+
+                <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                        <span class="n">cores</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">cores</span><span class="p">[</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">swap_cores</span><span class="p">(</span><span class="n">cores</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">cores</span><span class="p">[</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cores</span> <span class="o">=</span> <span class="p">[</span><span class="n">tn</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">y</span><span class="o">.</span><span class="n">cores</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
+                <span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">oe</span><span class="o">.</span><span class="n">contract</span><span class="p">(</span><span class="s2">"mak,kbn,ab-&gt;man"</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">d</span><span class="o">-</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">tn</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">N</span><span class="p">[</span><span class="n">d</span><span class="o">-</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">d</span><span class="o">-</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
+
+                <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                        <span class="n">cores</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">cores</span><span class="p">[</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">swap_cores</span><span class="p">(</span><span class="n">cores</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">cores</span><span class="p">[</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">cores</span><span class="p">)</span></div>
+</div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_as_method</span><span class="p">(</span><span class="n">method</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Return the instance of the method given by name or by instance.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        method (str | Direct | DMRG | AMEn | Swap): the method.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidArguments: Unknown method name.</span>
+<span class="sd">        InvalidArguments: The method must be a string or an instance of Direct, DMRG, AMEn or Swap.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Direct | DMRG | AMEn | Swap: the method.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">'direct'</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Direct</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">'dmrg'</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">DMRG</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">'amen'</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">AMEn</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">'swap'</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Swap</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span><span class="s2">"Unknown method '</span><span class="si">%s</span><span class="s2">'. Choose between 'direct', 'dmrg', 'amen' and 'swap'."</span> <span class="o">%</span> <span class="n">method</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="p">(</span><span class="n">Direct</span><span class="p">,</span> <span class="n">DMRG</span><span class="p">,</span> <span class="n">AMEn</span><span class="p">,</span> <span class="n">Swap</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="n">method</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span><span class="s2">"The method must be a string or an instance of torchtt.methods.Direct, DMRG, AMEn or Swap."</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Ion Gabriel Ion.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

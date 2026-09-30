@@ -4,6 +4,7 @@ Examples
 ========
 
 This section contains Jupyter notebook tutorials demonstrating the usage of torchTT.
+The notebooks are in the folder `examples/ <https://github.com/ion-g-ion/torchTT/tree/main/examples>`_ of the repository, most of them together with a Python script with the same content, and every notebook can be run in Google Colab from the link at the top of its page.
 
 Getting Started
 ---------------
@@ -13,6 +14,7 @@ Getting Started
 
    ../examples/basic_tutorial.ipynb
    ../examples/basic_linalg.ipynb
+   ../examples/random_tt.ipynb
 
 Linear Algebra & Solvers
 ------------------------
@@ -51,6 +53,6 @@ Advanced Topics
 
    ../examples/automatic_differentiation.ipynb
    ../examples/manifold.ipynb
+   ../examples/tensor_completion.ipynb
    ../examples/gpu_acceleration.ipynb
    ../examples/bayesian_inversion.ipynb
-

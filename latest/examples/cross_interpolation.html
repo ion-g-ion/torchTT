@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cross approximation in the TT format &mdash; torchTT development (main @ 42740af) documentation</title>
+  <title>Cross approximation in the TT format &mdash; torchTT development (main @ 0909209) documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
       <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
@@ -14,7 +14,7 @@
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=167f7836"></script>
+      <script src="../_static/documentation_options.js?v=33102d81"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -70,6 +70,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#advanced-topics">Advanced Topics</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/references.html">References</a></li>
 </ul>
 
         </div>
@@ -97,9 +99,13 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 42740af)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="Cross-approximation-in-the-TT-format">
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 0909209)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Run this notebook in <a class="reference external" href="https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/cross_interpolation.ipynb">Google Colab</a> or see the source on <a class="reference external" href="https://github.com/ion-g-ion/torchTT/blob/main/examples/cross_interpolation.ipynb">GitHub</a>.</p>
+</div>
+<section id="Cross-approximation-in-the-TT-format">
 <h1>Cross approximation in the TT format<a class="headerlink" href="#Cross-approximation-in-the-TT-format" title="Link to this heading"></a></h1>
-<p>Using the <code class="docutils literal notranslate"><span class="pre">torchtt.TT</span></code> constructor, a TT decomposition of a given tensor can be obtained. However, in the cases where the entries of the tensor are computed using a given function, building full tensors becomes unfeasible. It is possible to construct a TT decomposition using only a part of the entries of the full tensor. This is called the cross approximation method.</p>
+<p>Using the <code class="docutils literal notranslate"><span class="pre">torchtt.TT</span></code> constructor, a tensor-train (TT) decomposition of a given tensor can be obtained. However, in the cases where the entries of the tensor are computed using a given function, building full tensors becomes unfeasible. It is possible to construct a TT decomposition using only a part of the entries of the full tensor. This is called the cross approximation method (<a class="reference external" href="https://doi.org/10.1016/j.laa.2009.07.024">Oseledets and Tyrtyshnikov, 2010</a>).</p>
 <p>Imports:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
@@ -135,7 +141,7 @@
 </pre></div>
 </div>
 </div>
-<p>Call the <code class="docutils literal notranslate"><span class="pre">torchtt.interpolate.dmrg_cross()</span></code> method.</p>
+<p>Call the <code class="docutils literal notranslate"><span class="pre">torchtt.interpolate.dmrg_cross()</span></code> method, which implements the density matrix renormalization group (DMRG) cross scheme (<a class="reference external" href="https://doi.org/10.1109/nDS.2011.6076873">Savostyanov and Oseledets, 2011</a>).</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>

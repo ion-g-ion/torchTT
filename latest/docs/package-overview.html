@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Overview &mdash; torchTT development (main @ 42740af) documentation</title>
+  <title>Overview &mdash; torchTT development (main @ 0909209) documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=167f7836"></script>
+      <script src="../_static/documentation_options.js?v=33102d81"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -51,12 +51,17 @@
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation guide</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Overview</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#what-is-the-tensor-train-format">What is the Tensor-Train format?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#about-the-package">About the package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#quantized-tt-qtt">Quantized TT (QTT)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#operations-in-the-tt-format">Operations in the TT format</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#efficient-products">Efficient products</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#continuous-functions-and-density-estimation">Continuous functions and density estimation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#nonlinear-transformations-for-ttdensitylayer">Nonlinear Transformations for TTDensityLayer</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">API reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="references.html">References</a></li>
 </ul>
 
         </div>
@@ -83,11 +88,11 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 42740af)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="overview">
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 0909209)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="overview">
 <span id="about-tt-label"></span><h1>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h1>
 <section id="what-is-the-tensor-train-format">
 <h2>What is the Tensor-Train format?<a class="headerlink" href="#what-is-the-tensor-train-format" title="Link to this heading"></a></h2>
-<p>The Tensor-Train (TT) format is a low-rank tensor decomposition format used to fight the curse of dimensionality. A d-dimensional tensor (mathsf{x} in mathbb{R} ^{n_1 times n_2 times cdots times n_d}) can be expressed using algebraic operations between d smaller tensors:</p>
+<p>The Tensor-Train (TT) format <span class="bibtex-citation" id="id1">[<a class="reference internal" href="references.html#id2" title="Ivan V Oseledets. Tensor-train decomposition. SIAM Journal on Scientific Computing, 33(5):2295–2317, 2011. doi:10.1137/090752286.">Oseledets, 2011</a>]</span> is a low-rank tensor decomposition format used to fight the curse of dimensionality. A d-dimensional tensor (mathsf{x} in mathbb{R} ^{n_1 times n_2 times cdots times n_d}) can be expressed using algebraic operations between d smaller tensors:</p>
 <div class="math notranslate nohighlight">
 \[\mathsf{x}_{i_1i_2...i_d} = \sum\limits_{s_0=1}^{r_0} \sum\limits_{s_1=1}^{r_1} \cdots \sum\limits_{s_{d-1}=1}^{r_{d-1}} \sum\limits_{s_d=1}^{r_d} \mathsf{g}^{(1)}_{s_0 i_1 s_1} \cdots \mathsf{g}^{(d)}_{s_{d-1} i_d s_d},\]</div>
 <p>where <span class="math notranslate nohighlight">\(\mathbf{r} = (r_0,r_1,...,r_d), r_0 = r_d = 1\)</span> is the TT rank and  <span class="math notranslate nohighlight">\(\mathsf{g}^{(k)} \in \mathbb{R}^{r_{k-1} \times n_k \times r_k}\)</span> are the TT cores.
@@ -128,38 +133,124 @@ As an example, we have the following code where 3 tensors in the TT format are i
 </div>
 <p>During the process, the <code class="docutils literal notranslate"><span class="pre">round()</span></code> function has been used. This has the role of further compressing tensors by reducing the rank. After successive linear algebra operations, the rank will overshoot and therefore it is required to perform rounding operations.</p>
 </section>
-<section id="about-the-package">
-<h2>About the package<a class="headerlink" href="#about-the-package" title="Link to this heading"></a></h2>
+<section id="quantized-tt-qtt">
+<span id="qtt-label"></span><h2>Quantized TT (QTT)<a class="headerlink" href="#quantized-tt-qtt" title="Link to this heading"></a></h2>
+<p>The quantized tensor-train (QTT) format
+<span class="bibtex-citation" id="id2">[<a class="reference internal" href="references.html#id9" title="Boris N Khoromskij. O(d log N)-quantics approximation of N-d tensors in high-dimensional numerical modeling. Constructive Approximation, 34(2):257–280, 2011. doi:10.1007/s00365-011-9131-1.">Khoromskij, 2011</a>, <a class="reference internal" href="references.html#id8" title="Ivan V Oseledets. Approximation of 2ᵈ × 2ᵈ matrices using tensor decomposition. SIAM Journal on Matrix Analysis and Applications, 31(4):2130–2145, 2010. doi:10.1137/090757861.">Oseledets, 2010</a>]</span> is the TT format applied to a
+tensor that has first been reshaped so that every mode has size 2. For example, a vector of length
+<span class="math notranslate nohighlight">\(8 = 2^3\)</span> is reshaped into a <span class="math notranslate nohighlight">\(2 \times 2 \times 2\)</span> tensor. Entry 5 of the
+vector (counting from 0) becomes entry <span class="math notranslate nohighlight">\((1, 0, 1)\)</span> of the tensor, which are the
+binary digits of 5. In general, a mode of size <span class="math notranslate nohighlight">\(2^L\)</span> becomes <span class="math notranslate nohighlight">\(L\)</span> modes of
+size 2, and for a TT matrix, a mode of size <span class="math notranslate nohighlight">\((2^L, 2^L)\)</span> becomes <span class="math notranslate nohighlight">\(L\)</span> modes of
+size <span class="math notranslate nohighlight">\((2, 2)\)</span>.</p>
+<p>The reshaped tensor has more modes, but they are much smaller. For data with structure,
+such as smooth functions sampled on a uniform grid, the TT ranks stay small. A vector of
+length <span class="math notranslate nohighlight">\(n\)</span> then needs only <span class="math notranslate nohighlight">\(\mathcal{O}(r^2 \log_2 n)\)</span> numbers instead of
+<span class="math notranslate nohighlight">\(n\)</span>, where <span class="math notranslate nohighlight">\(r\)</span> bounds the TT ranks. For unstructured data, such as random
+vectors, QTT does not help.</p>
+<p>In <code class="docutils literal notranslate"><span class="pre">torchtt</span></code>, <a class="reference internal" href="torchtt.html#torchtt.TT.to_qtt" title="torchtt.TT.to_qtt"><code class="xref py py-meth docutils literal notranslate"><span class="pre">torchtt.TT.to_qtt()</span></code></a> converts a tensor to the QTT format and
+<a class="reference internal" href="torchtt.html#torchtt.TT.qtt_to_tens" title="torchtt.TT.qtt_to_tens"><code class="xref py py-meth docutils literal notranslate"><span class="pre">torchtt.TT.qtt_to_tens()</span></code></a> converts it back:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torchtt</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1024</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">))</span>  <span class="c1"># 1 mode of size 1024</span>
+<span class="n">x_qtt</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">to_qtt</span><span class="p">()</span>   <span class="c1"># 10 modes of size 2</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">x_qtt</span><span class="o">.</span><span class="n">N</span><span class="p">)</span>   <span class="c1"># [2, 2, 2, 2, 2, 2, 2, 2, 2, 2]</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">x_qtt</span><span class="o">.</span><span class="n">R</span><span class="p">)</span>   <span class="c1"># [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]</span>
+</pre></div>
+</div>
+</section>
+<section id="operations-in-the-tt-format">
+<h2>Operations in the TT format<a class="headerlink" href="#operations-in-the-tt-format" title="Link to this heading"></a></h2>
 <p>The class <code class="docutils literal notranslate"><span class="pre">torchtt.TT</span></code> is used to create tensors in the TT format. Passing a <cite>torch.Tensor</cite> to the constructor computes a TT decomposition. The accuracy <code class="docutils literal notranslate"><span class="pre">eps</span></code> can be provided as an additional argument. In order to recover the original tensor (also called full tensor), the <code class="docutils literal notranslate"><span class="pre">torchtt.TT.full()</span></code> method can be used. Tensors can be further compressed using the <code class="docutils literal notranslate"><span class="pre">torchtt.TT.round()</span></code> method.</p>
 <dl class="simple">
 <dt>Once in the TT format, linear algebra operations can be performed between compressed tensors without going to the full format. The implemented operations are:</dt><dd><ul class="simple">
 <li><p>Sum and difference between TT objects. Two <code class="docutils literal notranslate"><span class="pre">torchtt.TT</span></code> instances can be summed using the <code class="docutils literal notranslate"><span class="pre">+</span></code> operator. The difference can be implemented using the <code class="docutils literal notranslate"><span class="pre">-</span></code> operator.</p></li>
 <li><p>Elementwise product (also called Hadamard product is performed using) the <code class="docutils literal notranslate"><span class="pre">*</span></code> operator. The same operator also implements the scalar multiplication.</p></li>
 <li><p>The operator <code class="docutils literal notranslate"><span class="pre">&#64;</span></code> implements the generalization of the matrix product. It can also be used between a tensor operator and a tensor.</p></li>
-<li><p>The operator <code class="docutils literal notranslate"><span class="pre">/</span></code> implements the elementwise division of two TT objects. The algorithm is AMEn.</p></li>
+<li><p>The operator <code class="docutils literal notranslate"><span class="pre">/</span></code> implements the elementwise division of two TT objects. It is computed with the alternating minimal energy (<a class="reference internal" href="glossary.html#term-AMEn"><span class="xref std std-term">AMEn</span></a>) method <span class="bibtex-citation" id="id3">[<a class="reference internal" href="references.html#id5" title="Sergey V Dolgov and Dmitry V Savostyanov. Alternating minimal energy methods for linear systems in higher dimensions. SIAM Journal on Scientific Computing, 36(5):A2248–A2271, 2014. doi:10.1137/140953289.">Dolgov and Savostyanov, 2014</a>]</span>.</p></li>
 <li><p>The operator <code class="docutils literal notranslate"><span class="pre">**</span></code> implements the Kronecker product.</p></li>
 </ul>
 </dd>
 </dl>
-<p>The package also includes more features such as solving multilinear systems, cross approximation and automatic differentiation (with the possibility to define TT layers for neural networks <code class="docutils literal notranslate"><span class="pre">torchtt.TT.full()</span></code>). Working examples that can be used as a tutorial are to be found in <a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples">examples/</a>.
-Following example scripts (as well as python notebooks) are also provied provided as part of the documentation:</p>
-<blockquote>
-<div><ul class="simple">
-<li><p><a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/basic_tutorial.py">basic_tutorial.py</a> / <a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/basic_tutorial.ipynb">basic_tutorial.ipynb</a>: This contains a basic tutorial on decomposing full tensors in the TT format as well as performing rank rounding, slicing. <a class="reference external" href="https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/basic_tutorial.ipynb">Try on Google Colab</a>.</p></li>
-<li><p><a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/basic_linalg.py">basic_linalg.py</a> / <a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/basic_linalg.ipynb">basic_linalg.ipynb</a>: This tutorial presents all the algebra operations that can be performed in the TT format. <a class="reference external" href="https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/basic_linalg.ipynb">Try on Google Colab</a>.</p></li>
-<li><p><a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/efficient_linalg.py">efficient_linalg.py</a> / <a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/efficient_linalg.ipynb">efficient_linalg.ipynb</a>: contains the DMRG for fast matves and AMEN for elementwise inversion in the TT format <a class="reference external" href="https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/efficient_linalg.ipynb">Try on Google Colab</a>.</p></li>
-<li><p><a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/automatic_differentiation.py)">automatic_differentiation.py</a> / <a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/automatic_differentiation.ipynb">automatic_differentiation.ipynp</a>: Basic tutorial on AD in <code class="docutils literal notranslate"><span class="pre">torchtt</span></code>. <a class="reference external" href="https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/automatic_differentiation.ipynb">Try on Google Colab</a>.</p></li>
-<li><p><a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/cross_interpolation.py">cross_interpolation.py</a> / <a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/cross_interpolation.ipynb">cross_interpolation.ipynb</a>: In this script, the cross interpolation emthod is exemplified. <a class="reference external" href="https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/cross_interpolation.ipynb">Try on Google Colab</a>.</p></li>
-<li><p><a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/system_solvers.py">system_solvers.py</a> / <a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/system_solvers.ipynb">system_solvers.ipynb</a>: This contains the bais ussage of the multilinear solvers. <a class="reference external" href="https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/system_solvers.ipynb">Try on Google Colab</a>.</p></li>
-<li><p><a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/gpu_acceleration.py">gpu_acceleration.py</a> / <a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/gpu_acceleration.ipynb">gpu_acceleration.ipynb</a>: This provides an example on how to use the GPU acceleration. <a class="reference external" href="https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/gpu_acceleration.ipynb">Try on Google Colab</a>.</p></li>
-<li><p><a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/basic_nn.py">basic_nn.py</a> / <a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/basic_nn.ipynb">basic_nn.ipynb</a>: This provides an example on how to use the TT neural network layers. <a class="reference external" href="https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/basic_nn.ipynb">Try on Google Colab</a>.</p></li>
+<p>The package also includes more features such as solving multilinear systems <span class="bibtex-citation" id="id4">[<a class="reference internal" href="references.html#id5" title="Sergey V Dolgov and Dmitry V Savostyanov. Alternating minimal energy methods for linear systems in higher dimensions. SIAM Journal on Scientific Computing, 36(5):A2248–A2271, 2014. doi:10.1137/140953289.">Dolgov and Savostyanov, 2014</a>]</span>, cross approximation <span class="bibtex-citation" id="id5">[<a class="reference internal" href="references.html#id3" title="Ivan V Oseledets and Eugene Tyrtyshnikov. TT-cross approximation for multidimensional arrays. Linear Algebra and its Applications, 432(1):70–88, 2010. doi:10.1016/j.laa.2009.07.024.">Oseledets and Tyrtyshnikov, 2010</a>, <a class="reference internal" href="references.html#id4" title="Dmitry V Savostyanov and Ivan V Oseledets. Fast adaptive interpolation of multi-dimensional arrays in tensor train format. In The 2011 International Workshop on Multidimensional (nD) Systems, 1–8. IEEE, 2011. doi:10.1109/nDS.2011.6076873.">Savostyanov and Oseledets, 2011</a>]</span>, automatic differentiation (see <a class="reference internal" href="torchtt.html#module-torchtt.grad" title="torchtt.grad"><code class="xref py py-mod docutils literal notranslate"><span class="pre">torchtt.grad</span></code></a> for what can be differentiated) and TT layers for neural networks (<a class="reference internal" href="torchtt.html#module-torchtt.nn" title="torchtt.nn"><code class="xref py py-mod docutils literal notranslate"><span class="pre">torchtt.nn</span></code></a>). Tutorials are listed in <a class="reference internal" href="examples.html#examples-label"><span class="std std-ref">Examples</span></a>.</p>
+</section>
+<section id="efficient-products">
+<span id="products-label"></span><h2>Efficient products<a class="headerlink" href="#efficient-products" title="Link to this heading"></a></h2>
+<p>The rank of the exact product of two TT objects is the product of their ranks, e.g. <code class="docutils literal notranslate"><span class="pre">(A</span> <span class="pre">&#64;</span> <span class="pre">x).R[k]</span> <span class="pre">==</span> <span class="pre">A.R[k]</span> <span class="pre">*</span> <span class="pre">x.R[k]</span></code>, and the same holds for <code class="docutils literal notranslate"><span class="pre">*</span></code>.
+The result is therefore usually rounded, <code class="docutils literal notranslate"><span class="pre">(A</span> <span class="pre">&#64;</span> <span class="pre">x).round(eps)</span></code>, but the rounding costs <span class="math notranslate nohighlight">\(\mathcal{O}(dn(r_Ar_x)^3)\)</span>, where <span class="math notranslate nohighlight">\(r_Ar_x\)</span> is the product rank.
+When the result has a much smaller rank than the product rank, it is cheaper to compute the rounded result without forming the exact product.
+The functions <a class="reference internal" href="torchtt.html#torchtt.matvec" title="torchtt.matvec"><code class="xref py py-func docutils literal notranslate"><span class="pre">torchtt.matvec()</span></code></a>, <a class="reference internal" href="torchtt.html#torchtt.matmat" title="torchtt.matmat"><code class="xref py py-func docutils literal notranslate"><span class="pre">torchtt.matmat()</span></code></a> and <a class="reference internal" href="torchtt.html#torchtt.hadamard" title="torchtt.hadamard"><code class="xref py py-func docutils literal notranslate"><span class="pre">torchtt.hadamard()</span></code></a> (also available as <a class="reference internal" href="torchtt.html#torchtt.TT.matvec" title="torchtt.TT.matvec"><code class="xref py py-meth docutils literal notranslate"><span class="pre">torchtt.TT.matvec()</span></code></a>, <a class="reference internal" href="torchtt.html#torchtt.TT.matmat" title="torchtt.TT.matmat"><code class="xref py py-meth docutils literal notranslate"><span class="pre">torchtt.TT.matmat()</span></code></a> and <a class="reference internal" href="torchtt.html#torchtt.TT.hadamard" title="torchtt.TT.hadamard"><code class="xref py py-meth docutils literal notranslate"><span class="pre">torchtt.TT.hadamard()</span></code></a>) compute the rounded products, and the <code class="docutils literal notranslate"><span class="pre">method</span></code> argument selects the algorithm:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torchtt</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tntt</span>
+
+<span class="n">y</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">matvec</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">)</span>                                          <span class="c1"># default method (DMRG)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">matvec</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">'direct'</span><span class="p">)</span>                         <span class="c1"># (A @ x).round(1e-10)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">matvec</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">tntt</span><span class="o">.</span><span class="n">methods</span><span class="o">.</span><span class="n">DMRG</span><span class="p">(</span><span class="n">nswp</span><span class="o">=</span><span class="mi">40</span><span class="p">))</span>      <span class="c1"># DMRG with other parameters</span>
+</pre></div>
+</div>
+<p>The methods are the classes of <a class="reference internal" href="torchtt.html#module-torchtt.methods" title="torchtt.methods"><code class="xref py py-mod docutils literal notranslate"><span class="pre">torchtt.methods</span></code></a>. A method is given by name to use its default parameters, or as an instance to change them.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p><code class="docutils literal notranslate"><span class="pre">matvec</span></code></p></th>
+<th class="head"><p><code class="docutils literal notranslate"><span class="pre">matmat</span></code></p></th>
+<th class="head"><p><code class="docutils literal notranslate"><span class="pre">hadamard</span></code></p></th>
+<th class="head"><p>Iterative</p></th>
+<th class="head"><p>Initial guess</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">'direct'</span></code></p></td>
+<td><p>yes</p></td>
+<td><p>yes (default)</p></td>
+<td><p>yes</p></td>
+<td><p>no</p></td>
+<td><p>no</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">'dmrg'</span></code></p></td>
+<td><p>yes (default)</p></td>
+<td><p>no</p></td>
+<td><p>yes (default)</p></td>
+<td><p>yes</p></td>
+<td><p>yes</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">'amen'</span></code></p></td>
+<td><p>yes</p></td>
+<td><p>yes</p></td>
+<td><p>no</p></td>
+<td><p>yes</p></td>
+<td><p>yes</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">'swap'</span></code></p></td>
+<td><p>yes</p></td>
+<td><p>yes</p></td>
+<td><p>yes</p></td>
+<td><p>no</p></td>
+<td><p>no</p></td>
+</tr>
+</tbody>
+</table>
+<p>Which method to choose depends mostly on how much the result can be compressed, i.e. on the ratio between the product rank and the rank of the result:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">'direct'</span></code> forms the exact product and rounds it with <a class="reference internal" href="torchtt.html#torchtt.TT.round" title="torchtt.TT.round"><code class="xref py py-meth docutils literal notranslate"><span class="pre">torchtt.TT.round()</span></code></a>. There are no iterations and the result has the smallest rank for the accuracy <code class="docutils literal notranslate"><span class="pre">eps</span></code>. It is the fastest method while the product rank is moderate (up to a few hundred) and whenever the result cannot be compressed much (for random operands, the product rank is also the rank of the result). Its cost and memory grow with the cube and the square of the product rank, so it becomes slow for large ranks.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'dmrg'</span></code> (<a class="reference internal" href="glossary.html#term-DMRG"><span class="xref std std-term">DMRG</span></a>, <span class="bibtex-citation" id="id6">[<a class="reference internal" href="references.html#id7" title="Ivan V Oseledets. DMRG approach to fast linear algebra in the TT-format. Computational Methods in Applied Mathematics, 11(3):382–393, 2011. doi:10.2478/cmam-2011-0021.">Oseledets, 2011</a>]</span>) optimizes two neighbouring cores of the result at a time. Its cost depends on the rank of the result and not on the product rank, so it is the method of choice when the product rank is large and the result has a much smaller rank. The matrix-vector product has a C++ implementation. The iteration starts from a random tensor (or from the <code class="docutils literal notranslate"><span class="pre">initial</span></code> guess), and the returned rank can be larger than needed by up to <code class="docutils literal notranslate"><span class="pre">kickrank</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'amen'</span></code> (<a class="reference internal" href="glossary.html#term-AMEn"><span class="xref std std-term">AMEn</span></a>, <span class="bibtex-citation" id="id7">[<a class="reference internal" href="references.html#id5" title="Sergey V Dolgov and Dmitry V Savostyanov. Alternating minimal energy methods for linear systems in higher dimensions. SIAM Journal on Scientific Computing, 36(5):A2248–A2271, 2014. doi:10.1137/140953289.">Dolgov and Savostyanov, 2014</a>]</span>) updates one core at a time and enriches the result with an approximation of the residual. It serves the same cases as <code class="docutils literal notranslate"><span class="pre">'dmrg'</span></code> and is the only method of this kind for the product of TT matrices. For the matrix-vector product <code class="docutils literal notranslate"><span class="pre">'dmrg'</span></code> is usually faster, since the cost of AMEn grows faster with the ranks of the operands. Starting from rank 1, the rank grows by at most <code class="docutils literal notranslate"><span class="pre">kickrank</span> <span class="pre">+</span> <span class="pre">kick2</span></code> per sweep, so for results of large rank increase <code class="docutils literal notranslate"><span class="pre">kickrank</span></code> or <code class="docutils literal notranslate"><span class="pre">nswp</span></code>, or pass an <code class="docutils literal notranslate"><span class="pre">initial</span></code> guess. Only real tensors are supported.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'swap'</span></code> <span class="bibtex-citation" id="id8">[<a class="reference internal" href="references.html#id10" title="Alexios A Michailidis, Christian Fenton, and Martin Kiffner. Element-wise multiplication of tensor trains. SIAM Journal on Scientific Computing, 47(5):B1158–B1174, 2025. Preprint: arXiv:2410.19747. doi:10.1137/24M1714149.">Michailidis <em>et al.</em>, 2025</a>]</span> moves the cores of one operand through the cores of the other with <span class="math notranslate nohighlight">\(d(d-1)/2\)</span> swaps of neighbouring cores, each truncated with an SVD. It needs no iterations and no initial guess, and its result is deterministic. Every swap is truncated with the accuracy <code class="docutils literal notranslate"><span class="pre">eps</span></code>, so the error of the result can exceed <code class="docutils literal notranslate"><span class="pre">eps</span></code>. Like for <code class="docutils literal notranslate"><span class="pre">'dmrg'</span></code>, the cost depends mostly on the ranks of the result, but it grows quadratically with the number of dimensions and quickly with the mode sizes, and it is usually slower than <code class="docutils literal notranslate"><span class="pre">'dmrg'</span></code>. When the intermediate tensors have large ranks (e.g. for smooth functions in the <a class="reference internal" href="#qtt-label"><span class="std std-ref">QTT format</span></a>), the ranks of the result can be much larger than needed.</p></li>
 </ul>
-<blockquote>
-<div><ul class="simple">
-<li><p><a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/mnist_nn.py">mnist_nn.py</a> / <a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/mnist_nn.ipynb">mnist_nn.ipynb</a>: Example of TT layers used for image classification. <a class="reference external" href="https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/mnist_nn.ipynb">Try on Google Colab</a>.</p></li>
-</ul>
-</div></blockquote>
-</div></blockquote>
+<p>In short: use the default method when the operands have large ranks and the result is expected to compress well, and <code class="docutils literal notranslate"><span class="pre">'direct'</span></code> when the ranks are small or the result does not compress.
+The example <a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/efficient_linalg.py">efficient_linalg.py</a> compares the methods on a product that compresses well and on one that does not.
+All the methods also run on the GPU.</p>
+</section>
+<section id="continuous-functions-and-density-estimation">
+<h2>Continuous functions and density estimation<a class="headerlink" href="#continuous-functions-and-density-estimation" title="Link to this heading"></a></h2>
+<p>The <a class="reference internal" href="functional.html#module-torchtt.functional" title="torchtt.functional"><code class="xref py py-mod docutils literal notranslate"><span class="pre">torchtt.functional</span></code></a> subpackage supplies B-spline and Gaussian bases
+for continuous multivariate functions whose expansion coefficients are stored
+in a TT. Contracting the cores with basis values evaluates the function;
+contracting them with basis integrals integrates it. This extends TT compression
+from discrete arrays to continuous function approximation.</p>
+<p>The bases are also used by <a class="reference internal" href="torchtt.html#torchtt.nn.TTDensityLayer" title="torchtt.nn.TTDensityLayer"><code class="xref py py-class docutils literal notranslate"><span class="pre">torchtt.nn.TTDensityLayer</span></code></a> for probability
+density estimation. See <a class="reference internal" href="functional.html#functional-label"><span class="std std-ref">torchtt.functional: continuous function bases</span></a> for the basis API, links to the existing
+tutorials, and the connection to the density layer.</p>
 </section>
 <section id="nonlinear-transformations-for-ttdensitylayer">
 <h2>Nonlinear Transformations for TTDensityLayer<a class="headerlink" href="#nonlinear-transformations-for-ttdensitylayer" title="Link to this heading"></a></h2>

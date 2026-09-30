@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AMEN and DMRG for fast TT operations &mdash; torchTT development (main @ 42740af) documentation</title>
+  <title>AMEn and DMRG for fast TT operations &mdash; torchTT development (main @ 0909209) documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
       <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
@@ -14,7 +14,7 @@
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=167f7836"></script>
+      <script src="../_static/documentation_options.js?v=33102d81"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -24,7 +24,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Linear solvers in the TT format" href="system_solvers.html" />
-    <link rel="prev" title="Basic linear algebra in torchTT" href="basic_linalg.html" /> 
+    <link rel="prev" title="Random tensors in the TT format" href="random_tt.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -55,8 +55,8 @@
 <li class="toctree-l1 current"><a class="reference internal" href="../docs/examples.html">Examples</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#getting-started">Getting Started</a></li>
 <li class="toctree-l2 current"><a class="reference internal" href="../docs/examples.html#linear-algebra-solvers">Linear Algebra &amp; Solvers</a><ul class="current">
-<li class="toctree-l3 current"><a class="current reference internal" href="#">AMEN and DMRG for fast TT operations</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#Efficient-matrix-vector-product">Efficient matrix vector product</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">AMEn and DMRG for fast TT operations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Efficient-products">Efficient products</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Elementwise-division-in-the-TT-format">Elementwise division in the TT format</a></li>
 </ul>
 </li>
@@ -68,6 +68,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#advanced-topics">Advanced Topics</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/references.html">References</a></li>
 </ul>
 
         </div>
@@ -85,7 +87,7 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
           <li class="breadcrumb-item"><a href="../docs/examples.html">Examples</a></li>
-      <li class="breadcrumb-item active">AMEN and DMRG for fast TT operations</li>
+      <li class="breadcrumb-item active">AMEn and DMRG for fast TT operations</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../_sources/examples/efficient_linalg.ipynb.txt" rel="nofollow"> View page source</a>
       </li>
@@ -95,9 +97,13 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 42740af)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="AMEN-and-DMRG-for-fast-TT-operations">
-<h1>AMEN and DMRG for fast TT operations<a class="headerlink" href="#AMEN-and-DMRG-for-fast-TT-operations" title="Link to this heading"></a></h1>
-<p>The torchtt package includes DMRG and AMEN schemes for fast matrix vector product and elementwise inversion in the TT format.</p>
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 0909209)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Run this notebook in <a class="reference external" href="https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/efficient_linalg.ipynb">Google Colab</a> or see the source on <a class="reference external" href="https://github.com/ion-g-ion/torchTT/blob/main/examples/efficient_linalg.ipynb">GitHub</a>.</p>
+</div>
+<section id="AMEn-and-DMRG-for-fast-TT-operations">
+<h1>AMEn and DMRG for fast TT operations<a class="headerlink" href="#AMEn-and-DMRG-for-fast-TT-operations" title="Link to this heading"></a></h1>
+<p>The torchtt package includes density matrix renormalization group (DMRG; <a class="reference external" href="https://doi.org/10.2478/cmam-2011-0021">Oseledets, 2011</a>) and alternating minimal energy (AMEn; <a class="reference external" href="https://doi.org/10.1137/140953289">Dolgov and Savostyanov, 2014</a>) schemes for fast matrix vector products and elementwise inversion in the tensor-train (TT) format.</p>
 <p>Imports:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
@@ -115,63 +121,56 @@
 </pre></div>
 </div>
 </div>
-<section id="Efficient-matrix-vector-product">
-<h2>Efficient matrix vector product<a class="headerlink" href="#Efficient-matrix-vector-product" title="Link to this heading"></a></h2>
-<p>When performing the multiplication between a a TT matrix and a TT tensor the rank of the result is the product of the ranks of the inputs. Therefore rank rounding has to be performed. This increases the complexity to <span class="math notranslate nohighlight">\(\mathcal{O}(Ndr^6)\)</span>. In order to overcome this, Oseledets proposed in “DMRG Approach to Fast Linear Algebra in the TT-Format” the DMRG optimization scheme to reduce the complexity. This feature is implemented in torchtt by the member function fast_matvec() of the TT class. An
-example is showed in the following.</p>
-<p>Create a random TT object and a TT matrix.</p>
+<section id="Efficient-products">
+<h2>Efficient products<a class="headerlink" href="#Efficient-products" title="Link to this heading"></a></h2>
+<p>When performing the multiplication between a TT matrix and a TT tensor, the rank of the result is the product of the ranks of the inputs. Therefore rank rounding has to be performed. This increases the complexity to <span class="math notranslate nohighlight">\(\mathcal{O}(dnr^6)\)</span>. If the result has a much smaller rank than the product of the ranks, the rounded result can be computed without forming the exact product, for example with the DMRG scheme proposed by Oseledets in <a class="reference external" href="https://doi.org/10.2478/cmam-2011-0021">“DMRG Approach to Fast Linear Algebra in the
+TT-Format”</a>.</p>
+<p>The functions <code class="docutils literal notranslate"><span class="pre">torchtt.matvec()</span></code>, <code class="docutils literal notranslate"><span class="pre">torchtt.matmat()</span></code> and <code class="docutils literal notranslate"><span class="pre">torchtt.hadamard()</span></code> compute the rounded products and the argument <code class="docutils literal notranslate"><span class="pre">method</span></code> chooses the algorithm:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">'direct'</span></code>: form the exact product and round it,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'dmrg'</span></code>: DMRG (<a class="reference external" href="https://doi.org/10.2478/cmam-2011-0021">Oseledets, 2011</a>),</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'amen'</span></code>: AMEn (<a class="reference external" href="https://doi.org/10.1137/140953289">Dolgov and Savostyanov, 2014</a>),</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'swap'</span></code>: swapping of neighbouring cores (<a class="reference external" href="https://doi.org/10.1137/24M1714149">Michailidis, Fenton and Kiffner, 2025</a>).</p></li>
+</ul>
+<p>The documentation of <code class="docutils literal notranslate"><span class="pre">torchtt.methods</span></code> describes which method to use when. The following function compares them.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">n</span> <span class="o">=</span> <span class="mi">32</span> <span class="c1"># mode size</span>
-<span class="n">A</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">random</span><span class="p">([(</span><span class="n">n</span><span class="p">,</span><span class="n">n</span><span class="p">)]</span><span class="o">*</span><span class="mi">8</span><span class="p">,[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">7</span><span class="o">*</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span><span class="o">+</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="c1"># random array</span>
-<span class="n">x</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">random</span><span class="p">([</span><span class="n">n</span><span class="p">]</span><span class="o">*</span><span class="mi">8</span><span class="p">,[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">7</span><span class="o">*</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">+</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="c1"># random tensor</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">compare</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">methods</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Compute the matrix vector product with each method and print the runtime, the rank of the result and the relative error.</span>
+<span class="sd">    """</span>
+    <span class="n">y_ref</span> <span class="o">=</span> <span class="p">(</span><span class="n">A</span> <span class="o">@</span> <span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mf">1e-12</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">method</span> <span class="ow">in</span> <span class="n">methods</span><span class="p">:</span>
+        <span class="n">tme</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">matvec</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">)</span>
+        <span class="n">tme</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">tme</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">'</span><span class="si">%-7s</span><span class="s1"> time </span><span class="si">%s</span><span class="s1">   rank </span><span class="si">%3d</span><span class="s1">   relative error </span><span class="si">%.1e</span><span class="s1">'</span> <span class="o">%</span> <span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">tme</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">R</span><span class="p">),</span> <span class="p">((</span><span class="n">y</span> <span class="o">-</span> <span class="n">y_ref</span><span class="p">)</span><span class="o">.</span><span class="n">norm</span><span class="p">()</span> <span class="o">/</span> <span class="n">y_ref</span><span class="o">.</span><span class="n">norm</span><span class="p">())</span><span class="o">.</span><span class="n">item</span><span class="p">()))</span>
 </pre></div>
 </div>
 </div>
-<p>Increase the rank without adding redundant information. The multiplication performed in this case is actually equivalent to <span class="math notranslate nohighlight">\(32\mathbf{\mathsf{Ax}}\)</span>.</p>
-<div class="nbinput docutils container">
+<p>Create a random TT matrix and a random TT tensor.</p>
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">A</span> <span class="o">=</span> <span class="n">A</span> <span class="o">+</span> <span class="n">A</span> <span class="o">+</span> <span class="n">A</span> <span class="o">+</span> <span class="n">A</span> <span class="o">-</span> <span class="n">A</span> <span class="o">+</span> <span class="n">A</span> <span class="o">-</span> <span class="n">A</span> <span class="o">+</span> <span class="n">A</span>
-<span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="n">x</span> <span class="o">+</span> <span class="n">x</span> <span class="o">+</span> <span class="n">x</span> <span class="o">+</span> <span class="n">x</span> <span class="o">+</span> <span class="n">x</span> <span class="o">+</span> <span class="n">x</span> <span class="o">+</span> <span class="n">x</span> <span class="o">-</span> <span class="n">x</span> <span class="o">+</span> <span class="n">x</span> <span class="o">-</span> <span class="n">x</span> <span class="o">+</span> <span class="n">x</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">n</span> <span class="o">=</span> <span class="mi">4</span> <span class="c1"># mode size</span>
+<span class="n">A</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">random</span><span class="p">([(</span><span class="n">n</span><span class="p">,</span><span class="n">n</span><span class="p">)]</span><span class="o">*</span><span class="mi">8</span><span class="p">,[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">7</span><span class="o">*</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">+</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="c1"># random TT matrix</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">random</span><span class="p">([</span><span class="n">n</span><span class="p">]</span><span class="o">*</span><span class="mi">8</span><span class="p">,[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">7</span><span class="o">*</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">+</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="c1"># random TT tensor</span>
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-TT-matrix with sizes and ranks:
-M = [32, 32, 32, 32, 32, 32, 32, 32]
-N = [32, 32, 32, 32, 32, 32, 32, 32]
-R = [1, 48, 48, 48, 48, 48, 48, 48, 1]
-Device: cpu, dtype: torch.float64
-#entries 14254080 compression 1.179069862577986e-17
-
-TT with sizes and ranks:
-N = [32, 32, 32, 32, 32, 32, 32, 32]
-R = [1, 60, 60, 60, 60, 60, 60, 60, 1]
-
-Device: cpu, dtype: torch.float64
-#entries 695040 compression 6.32135197520256e-07
-
-</pre></div></div>
-</div>
-<p>Perform the TT matvec directly and round the result. The runtime is reported.</p>
+<p>Increase the ranks without adding information. The product of the ranks is now 24 * 40 = 960, but the result can be compressed to rank 20 (the product is equivalent to <span class="math notranslate nohighlight">\(8\mathbf{\mathsf{Ax}}\)</span>). The methods that do not form the exact product (DMRG and AMEn) are faster than <code class="docutils literal notranslate"><span class="pre">'direct'</span></code> in this case.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tme</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
-<span class="n">y</span> <span class="o">=</span> <span class="p">(</span><span class="n">A</span> <span class="o">@</span> <span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mf">1e-12</span><span class="p">)</span>
-<span class="n">tme</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">tme</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">'Time classic '</span><span class="p">,</span> <span class="n">tme</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">A_large</span> <span class="o">=</span> <span class="n">A</span> <span class="o">+</span> <span class="n">A</span> <span class="o">+</span> <span class="n">A</span> <span class="o">+</span> <span class="n">A</span> <span class="o">-</span> <span class="n">A</span> <span class="o">-</span> <span class="n">A</span>
+<span class="n">x_large</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="n">x</span> <span class="o">+</span> <span class="n">x</span> <span class="o">+</span> <span class="n">x</span> <span class="o">+</span> <span class="n">x</span> <span class="o">+</span> <span class="n">x</span> <span class="o">-</span> <span class="n">x</span> <span class="o">-</span> <span class="n">x</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Ranks of A:'</span><span class="p">,</span> <span class="n">A_large</span><span class="o">.</span><span class="n">R</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Ranks of x:'</span><span class="p">,</span> <span class="n">x_large</span><span class="o">.</span><span class="n">R</span><span class="p">)</span>
+<span class="n">compare</span><span class="p">(</span><span class="n">A_large</span><span class="p">,</span> <span class="n">x_large</span><span class="p">,</span> <span class="p">[</span><span class="s1">'direct'</span><span class="p">,</span> <span class="s1">'dmrg'</span><span class="p">,</span> <span class="s1">'amen'</span><span class="p">,</span> <span class="s1">'swap'</span><span class="p">])</span>
 </pre></div>
 </div>
 </div>
@@ -180,18 +179,20 @@ Device: cpu, dtype: torch.float64
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Time classic  0:01:16.990921
+Ranks of A: [1, 24, 24, 24, 24, 24, 24, 24, 1]
+Ranks of x: [1, 40, 40, 40, 40, 40, 40, 40, 1]
+direct  time 0:00:00.245850   rank  20   relative error 1.4e-15
+dmrg    time 0:00:00.024251   rank  24   relative error 8.5e-15
+amen    time 0:00:02.257294   rank  20   relative error 5.9e-15
+swap    time 0:00:00.055199   rank  20   relative error 1.2e-14
 </pre></div></div>
 </div>
-<p>This time run the fast matvec routine.</p>
+<p>If the result cannot be compressed, forming the exact product is the fastest. For random tensors, the product of the ranks is also the rank of the result (here 4 * 5 = 20).</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tme</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
-<span class="n">yf</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">fast_matvec</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-<span class="n">tme</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">tme</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">'Time DMRG    '</span><span class="p">,</span> <span class="n">tme</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">compare</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="p">[</span><span class="s1">'direct'</span><span class="p">,</span> <span class="s1">'dmrg'</span><span class="p">,</span> <span class="s1">'amen'</span><span class="p">,</span> <span class="s1">'swap'</span><span class="p">])</span>
 </pre></div>
 </div>
 </div>
@@ -200,55 +201,36 @@ Time classic  0:01:16.990921
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Time DMRG     0:00:03.134253
+direct  time 0:00:00.001999   rank  20   relative error 1.1e-15
+dmrg    time 0:00:00.012654   rank  24   relative error 7.1e-15
+amen    time 0:00:00.146048   rank  20   relative error 5.2e-15
+swap    time 0:00:00.049164   rank  20   relative error 1.1e-14
 </pre></div></div>
 </div>
-<p>Check if the error is the same (debugging purpose).</p>
-<div class="nbinput docutils container">
+<p>The parameters of a method are changed by passing an instance of its class from <code class="docutils literal notranslate"><span class="pre">torchtt.methods</span></code> instead of its name. The iterative methods also accept an initial guess of the result.</p>
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s1">'Relative error '</span><span class="p">,(</span><span class="n">y</span><span class="o">-</span><span class="n">yf</span><span class="p">)</span><span class="o">.</span><span class="n">norm</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">/</span><span class="n">y</span><span class="o">.</span><span class="n">norm</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">())</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">y</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">matvec</span><span class="p">(</span><span class="n">A_large</span><span class="p">,</span> <span class="n">x_large</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">tntt</span><span class="o">.</span><span class="n">methods</span><span class="o">.</span><span class="n">DMRG</span><span class="p">(</span><span class="n">nswp</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">kickrank</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">matvec</span><span class="p">(</span><span class="n">A_large</span><span class="p">,</span> <span class="n">x_large</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">tntt</span><span class="o">.</span><span class="n">methods</span><span class="o">.</span><span class="n">AMEn</span><span class="p">(</span><span class="n">kickrank</span><span class="o">=</span><span class="mi">8</span><span class="p">),</span> <span class="n">initial</span><span class="o">=</span><span class="n">y</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-Relative error  1.762527613735165e-14
-</pre></div></div>
-</div>
-<p>A second routine is the <code class="docutils literal notranslate"><span class="pre">torchtt.fast_mv()</span></code>. The method is described in <a class="reference external" href="https://arxiv.org/pdf/2410.19747">https://arxiv.org/pdf/2410.19747</a>. This works well for tensors in QTT.</p>
-<div class="nbinput docutils container">
+<p>The same holds for the elementwise product and the product of TT matrices.</p>
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">A</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">random</span><span class="p">([(</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">)]</span><span class="o">*</span><span class="mi">8</span><span class="p">,[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">7</span><span class="o">*</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span><span class="o">+</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="c1"># random array</span>
-<span class="n">x</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">random</span><span class="p">([</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="mi">8</span><span class="p">,[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">7</span><span class="o">*</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">+</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="c1"># random tensor</span>
-<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">8</span><span class="p">):</span> <span class="n">A</span><span class="o">+=</span><span class="n">A</span>
-<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">8</span><span class="p">):</span> <span class="n">x</span><span class="o">+=</span><span class="n">x</span>
-
-<span class="n">tme</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
-<span class="n">yf2</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">fast_mv</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
-<span class="n">tme</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">tme</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">'Time fast 2  '</span><span class="p">,</span> <span class="n">tme</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">z</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">hadamard</span><span class="p">(</span><span class="n">x_large</span><span class="p">,</span> <span class="n">x_large</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">'dmrg'</span><span class="p">)</span>
+<span class="n">B</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">matmat</span><span class="p">(</span><span class="n">A_large</span><span class="p">,</span> <span class="n">A_large</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">'direct'</span><span class="p">)</span>
 </pre></div>
 </div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-Time fast 2   0:00:01.307426
-</pre></div></div>
 </div>
 </section>
 <section id="Elementwise-division-in-the-TT-format">
 <h2>Elementwise division in the TT format<a class="headerlink" href="#Elementwise-division-in-the-TT-format" title="Link to this heading"></a></h2>
-<p>One other basic linear algebra function that cannot be done without optimization is the elementwise division of two tensors in the TT format. In contrast to the elemntwise multiplication (where the resulting TT cores can be explicitly computed), the elementwise inversion has to be solved by means of an optimization problem (the method of choice is AMEN).</p>
+<p>One other basic linear algebra function that cannot be done without optimization is the elementwise division of two tensors in the TT format. In contrast to the elemntwise multiplication (where the resulting TT cores can be explicitly computed), the elementwise inversion has to be solved by means of an optimization problem (the method of choice is AMEn).</p>
 <p>The operator “/” can be used for elemntwise division between tensors. Moreover one can use “/” between a scalar and a torchtt.TT instance.</p>
 <p>Create 2 tensors:</p>
 <ul class="simple">
@@ -284,7 +266,7 @@ Time fast 2   0:00:01.307426
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Relative error tensor(3.3539e-11, dtype=torch.float64)
+Relative error tensor(3.3809e-11, dtype=torch.float64)
 </pre></div></div>
 </div>
 <p>Perform <span class="math notranslate nohighlight">\(\mathsf{u}_{\mathbf{i}} = \frac{1}{\mathsf{z}_{\mathbf{i}}}\)</span> and report the relative error.</p>
@@ -302,7 +284,7 @@ Relative error tensor(3.3539e-11, dtype=torch.float64)
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Relative error tensor(1.1624e-11, dtype=torch.float64)
+Relative error tensor(1.1774e-11, dtype=torch.float64)
 </pre></div></div>
 </div>
 <p>Following are also possible:</p>
@@ -326,7 +308,7 @@ Relative error tensor(1.1624e-11, dtype=torch.float64)
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="basic_linalg.html" class="btn btn-neutral float-left" title="Basic linear algebra in torchTT" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="random_tt.html" class="btn btn-neutral float-left" title="Random tensors in the TT format" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="system_solvers.html" class="btn btn-neutral float-right" title="Linear solvers in the TT format" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

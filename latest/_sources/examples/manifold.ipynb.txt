@@ -8,7 +8,7 @@
     "\n",
     "## Overview\n",
     "\n",
-    "This notebook demonstrates **Riemannian optimization** on the tensor train (TT) manifold using `torchtt`. \n",
+    "This notebook demonstrates **Riemannian optimization** on the tensor train (TT) manifold using `torchtt` (see e.g. [Steinlechner, 2016](https://doi.org/10.1137/15M1010506)). \n",
     "\n",
     "Tensor trains of fixed ranks form a smooth **Riemannian manifold** $\\mathcal{M}_{\\mathbf{r}}$, meaning we can perform optimization directly on this manifold rather than in the ambient space of all tensors. This approach is particularly powerful for problems where we want to constrain our solution to have a specific TT-rank structure.\n",
     "\n",

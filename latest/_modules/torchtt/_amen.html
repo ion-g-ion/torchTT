@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>torchtt._amen &mdash; torchTT development (main @ 42740af) documentation</title>
+  <title>torchtt._amen &mdash; torchTT development (main @ 0909209) documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=167f7836"></script>
+      <script src="../../_static/documentation_options.js?v=33102d81"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -47,6 +47,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../../docs/package-overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/modules.html">API reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/references.html">References</a></li>
 </ul>
 
         </div>
@@ -64,6 +66,7 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
           <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../torchtt.html">torchtt</a></li>
       <li class="breadcrumb-item active">torchtt._amen</li>
       <li class="wy-breadcrumbs-aside">
       </li>
@@ -73,7 +76,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 42740af)</strong><br><a href="../../../stable/index.html">Stable release</a> · <a href="../../../latest/index.html">Development (main)</a></nav><h1>Source code for torchtt._amen</h1><div class="highlight"><pre>
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 0909209)</strong><br><a href="../../../stable/index.html">Stable release</a> · <a href="../../../latest/index.html">Development (main)</a></nav><h1>Source code for torchtt._amen</h1><div class="highlight"><pre>
 <span></span><span class="sd">"""</span>
 <span class="sd">System solvers in the TT format.</span>
 
@@ -83,6 +86,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">torchtt</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">torchtt._decomposition</span><span class="w"> </span><span class="kn">import</span> <span class="n">QR</span><span class="p">,</span> <span class="n">SVD</span><span class="p">,</span> <span class="n">lr_orthogonal</span><span class="p">,</span> <span class="n">rl_orthogonal</span><span class="p">,</span> <span class="n">rank_chop</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">torchtt._iterative_solvers</span><span class="w"> </span><span class="kn">import</span> <span class="n">BiCGSTAB_reset</span><span class="p">,</span> <span class="n">gmres_restart</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">opt_einsum</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">oe</span>
@@ -132,8 +136,11 @@
 <a class="viewcode-back" href="../../docs/torchtt.html#torchtt.amen_mv">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">amen_mv</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">nswp</span><span class="o">=</span><span class="mi">22</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">,</span> <span class="n">rmax</span><span class="o">=</span><span class="mi">1024</span><span class="p">,</span> <span class="n">kickrank</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">kick2</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">use_cpp</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Compute the matrix vector product between a TTM and a TT.</span>
+<span class="sd">    Compute the matrix vector product between a TT matrix (TTM) and a TT tensor using the alternating minimal energy (AMEn) method :cite:p:`dolgov2014alternating`.</span>
 <span class="sd">    Suited when the output is expected to be low rank. </span>
+
+<span class="sd">    .. deprecated:: 0.6.0</span>
+<span class="sd">        Use :func:`torchtt.matvec` with ``method='amen'`` (or ``method=torchtt.methods.AMEn(nswp=..., kickrank=..., kick2=...)``).</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        A (torchtt.TT): the matrix in TT.</span>
@@ -141,39 +148,22 @@
 <span class="sd">        nswp (int, optional): number of sweeps. Defaults to 22.</span>
 <span class="sd">        x0 (torchtt.TT, optional): initial guess. In None is provided the initial guess is a ones tensor. Defaults to None.</span>
 <span class="sd">        eps (float, optional): relative residual. Defaults to 1e-10.</span>
-<span class="sd">        rmax (int, optional): maximum rank. Defaults to 100.</span>
+<span class="sd">        rmax (int, optional): maximum rank. Defaults to 1024.</span>
 <span class="sd">        kickrank (int, optional): rank enrichment. Defaults to 4.</span>
 <span class="sd">        kick2 (int, optional): [description]. Defaults to 0.</span>
 <span class="sd">        verbose (bool, optional): choose whether to display or not additional information during the runtime. Defaults to True.</span>
-<span class="sd">        use_cpp (bool, optional): use the C++ implementation of AMEn. Defaults to True.</span>
+<span class="sd">        use_cpp (bool, optional): not used (there is no C++ implementation). Defaults to True.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        InvalidArguments: A and b must be TT instances.</span>
-<span class="sd">        InvalidArguments: Invalid preconditioner.</span>
 <span class="sd">        IncompatibleTypes: A must be TT-matrix and b must be vector.</span>
 <span class="sd">        ShapeMismatch: Dimension mismatch.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        torchtt.TT: the approximation of the solution in TT format.</span>
 <span class="sd">    """</span>
-    <span class="c1"># perform checks of the input data</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">TT</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">TT</span><span class="p">)):</span>
-        <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span><span class="s1">'A and b must be TT instances.'</span><span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">is_ttm</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">b</span><span class="o">.</span><span class="n">is_ttm</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="n">IncompatibleTypes</span><span class="p">(</span><span class="s1">'A must be TT-matrix and b must be vector.'</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">A</span><span class="o">.</span><span class="n">N</span> <span class="o">!=</span> <span class="n">b</span><span class="o">.</span><span class="n">N</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">ShapeMismatch</span><span class="p">(</span><span class="s1">'Dimension mismatch.'</span><span class="p">)</span>
-
-    <span class="n">use_cpp</span> <span class="o">=</span> <span class="kc">False</span>
-    <span class="k">if</span> <span class="n">use_cpp</span> <span class="ow">and</span> <span class="n">_flag_use_cpp</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">x0</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">x_cores</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="n">x_R</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="nb">len</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">N</span><span class="p">))</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">x_cores</span> <span class="o">=</span> <span class="n">x0</span><span class="o">.</span><span class="n">cores</span>
-            <span class="n">x_R</span> <span class="o">=</span> <span class="n">x0</span><span class="o">.</span><span class="n">R</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">_amen_mm_python</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">cores</span><span class="p">,</span> <span class="p">[</span><span class="n">c</span><span class="p">[:,</span> <span class="p">:,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">b</span><span class="o">.</span><span class="n">cores</span><span class="p">],</span> <span class="n">A</span><span class="o">.</span><span class="n">M</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">M</span><span class="p">),</span> <span class="n">A</span><span class="o">.</span><span class="n">N</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="n">nswp</span><span class="p">,</span> <span class="n">x0</span><span class="o">.</span><span class="n">cores</span> <span class="k">if</span> <span class="n">x0</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span> <span class="n">x0</span><span class="o">.</span><span class="n">R</span> <span class="k">if</span> <span class="n">x0</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">,</span> <span class="n">kickrank</span><span class="p">,</span> <span class="n">kick2</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span></div>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">"torchtt.amen_mv() is deprecated, use torchtt.matvec(A, x, eps, method=torchtt.methods.AMEn(nswp=..., kickrank=..., kick2=...)) instead."</span><span class="p">,</span> <span class="ne">DeprecationWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">matvec</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">torchtt</span><span class="o">.</span><span class="n">methods</span><span class="o">.</span><span class="n">AMEn</span><span class="p">(</span><span class="n">nswp</span><span class="o">=</span><span class="n">nswp</span><span class="p">,</span> <span class="n">kickrank</span><span class="o">=</span><span class="n">kickrank</span><span class="p">,</span> <span class="n">kick2</span><span class="o">=</span><span class="n">kick2</span><span class="p">),</span> <span class="n">initial</span><span class="o">=</span><span class="n">x0</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span></div>
 
 
 
@@ -181,8 +171,11 @@
 <a class="viewcode-back" href="../../docs/torchtt.html#torchtt.amen_mm">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">amen_mm</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">nswp</span><span class="o">=</span><span class="mi">22</span><span class="p">,</span> <span class="n">X0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">,</span> <span class="n">rmax</span><span class="o">=</span><span class="mi">1024</span><span class="p">,</span> <span class="n">kickrank</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">kick2</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Perform the TTM-TTM product using AMEn optimization.</span>
+<span class="sd">    Perform the product of two TT matrices (TTM) using the alternating minimal energy (AMEn) method :cite:p:`dolgov2014alternating`.</span>
 <span class="sd">    Suited when the operators have high ranks, but the result is expected to be low rank.</span>
+
+<span class="sd">    .. deprecated:: 0.6.0</span>
+<span class="sd">        Use :func:`torchtt.matmat` with ``method='amen'`` (or ``method=torchtt.methods.AMEn(nswp=..., kickrank=..., kick2=...)``).</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        A (torchtt.TT): the first TTM.</span>
@@ -198,7 +191,8 @@
 <span class="sd">    Returns:</span>
 <span class="sd">        torchtt.TT: the result.</span>
 <span class="sd">    """</span>
-    <span class="k">return</span> <span class="n">_amen_mm_python</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">cores</span><span class="p">,</span> <span class="n">B</span><span class="o">.</span><span class="n">cores</span><span class="p">,</span> <span class="n">A</span><span class="o">.</span><span class="n">M</span><span class="p">,</span> <span class="n">B</span><span class="o">.</span><span class="n">N</span><span class="p">,</span> <span class="n">A</span><span class="o">.</span><span class="n">N</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">nswp</span><span class="p">,</span> <span class="n">X0</span><span class="o">.</span><span class="n">cores</span> <span class="k">if</span> <span class="n">X0</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span> <span class="n">X0</span><span class="o">.</span><span class="n">R</span> <span class="k">if</span> <span class="n">X0</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>   <span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">,</span> <span class="n">kickrank</span><span class="p">,</span> <span class="n">kick2</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span></div>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">"torchtt.amen_mm() is deprecated, use torchtt.matmat(A, B, eps, method=torchtt.methods.AMEn(nswp=..., kickrank=..., kick2=...)) instead."</span><span class="p">,</span> <span class="ne">DeprecationWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">matmat</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">torchtt</span><span class="o">.</span><span class="n">methods</span><span class="o">.</span><span class="n">AMEn</span><span class="p">(</span><span class="n">nswp</span><span class="o">=</span><span class="n">nswp</span><span class="p">,</span> <span class="n">kickrank</span><span class="o">=</span><span class="n">kickrank</span><span class="p">,</span> <span class="n">kick2</span><span class="o">=</span><span class="n">kick2</span><span class="p">),</span> <span class="n">initial</span><span class="o">=</span><span class="n">X0</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span></div>
 
 
 

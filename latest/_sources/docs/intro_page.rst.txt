@@ -5,8 +5,9 @@ Welcome to torchTT
 
 Tensor-Train decomposition in `pytorch`
 
-Tensor-Train decomposition package written only in Python on top of `pytorch`. Supports GPU acceleration and automatic differentiation.
-It also contains routines for solving linear systems in the TT format and performing adaptive cross approximation  (the AMEN solver/cross interpolation is inspired form the `MATLAB TT-Toolbox <https://github.com/oseledets/TT-Toolbox>`_).
+Tensor-Train (TT) decomposition package written only in Python on top of `pytorch`. Supports GPU acceleration and automatic differentiation.
+It also contains methods for solving multilinear systems :cite:p:`dolgov2014alternating` and for adaptive cross approximation :cite:p:`oseledets2010tt` in the TT format, inspired by the `MATLAB TT-Toolbox <https://github.com/oseledets/TT-Toolbox>`_.
+Abbreviations used throughout the documentation are explained in the :ref:`glossary-label`, and the cited publications are listed in the :ref:`references-label`.
 
 Some routines are implemented in C++ for an increased execution speed.
 

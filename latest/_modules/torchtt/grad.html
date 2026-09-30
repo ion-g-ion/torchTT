@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>torchtt.grad &mdash; torchTT development (main @ 42740af) documentation</title>
+  <title>torchtt.grad &mdash; torchTT development (main @ 0909209) documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=167f7836"></script>
+      <script src="../../_static/documentation_options.js?v=33102d81"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -47,6 +47,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../../docs/package-overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/modules.html">API reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/references.html">References</a></li>
 </ul>
 
         </div>
@@ -64,6 +66,7 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
           <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../torchtt.html">torchtt</a></li>
       <li class="breadcrumb-item active">torchtt.grad</li>
       <li class="wy-breadcrumbs-aside">
       </li>
@@ -73,10 +76,46 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 42740af)</strong><br><a href="../../../stable/index.html">Stable release</a> · <a href="../../../latest/index.html">Development (main)</a></nav><h1>Source code for torchtt.grad</h1><div class="highlight"><pre>
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 0909209)</strong><br><a href="../../../stable/index.html">Stable release</a> · <a href="../../../latest/index.html">Development (main)</a></nav><h1>Source code for torchtt.grad</h1><div class="highlight"><pre>
 <span></span><span class="sd">"""</span>
-<span class="sd">Adds AD functionality to torchtt.</span>
+<span class="sd">Adds automatic differentiation (AD) functionality to torchtt.</span>
 
+<span class="sd">The TT cores are ``torch.Tensor`` objects, so derivatives with respect to them are computed by the PyTorch autograd engine.</span>
+<span class="sd">The functions of this module are shortcuts for it and there is no other difference:</span>
+
+<span class="sd"> * :func:`watch` sets ``requires_grad`` of the cores, like ``c.requires_grad_(True)`` for every core ``c`` in ``x.cores``.</span>
+<span class="sd"> * :func:`grad` calls ``val.backward()`` and returns the gradients ``c.grad`` of the cores.</span>
+
+<span class="sd">The following two computations give the same gradients:</span>
+
+<span class="sd">.. code-block:: python</span>
+
+<span class="sd">    import torch</span>
+<span class="sd">    import torchtt</span>
+
+<span class="sd">    x = torchtt.randn([4, 5, 6], [1, 2, 2, 1])</span>
+
+<span class="sd">    # with torchtt.grad</span>
+<span class="sd">    torchtt.grad.watch(x)</span>
+<span class="sd">    g = torchtt.grad.grad(x.norm(), x)</span>
+
+<span class="sd">    # with PyTorch</span>
+<span class="sd">    cores = [c.detach().requires_grad_(True) for c in x.cores]</span>
+<span class="sd">    g = torch.autograd.grad(torchtt.TT(cores).norm(), cores)</span>
+
+<span class="sd">Use ``torch.autograd.grad()`` directly when the gradients of successive calls must not add up, when higher derivatives are needed (``create_graph=True``) or when the cores are computed from other tensors that require gradients (they are not leaf tensors, and :func:`grad` returns None for them).</span>
+<span class="sd">The layers in :mod:`torchtt.nn` store their cores as ``torch.nn.Parameter`` and are trained with the PyTorch optimizers, without this module.</span>
+
+<span class="sd">The gradient with respect to the cores is not the gradient with respect to the tensor.</span>
+<span class="sd">For optimization on the manifold of TT tensors with fixed rank use :func:`torchtt.manifold.riemannian_gradient`, which returns the gradient with respect to the tensor projected on the tangent space, as a TT tensor.</span>
+
+<span class="sd">**What can be differentiated.**</span>
+<span class="sd">The operations that keep the ranks fixed are compositions of PyTorch operations and can be differentiated:</span>
+<span class="sd">``+``, ``-``, the multiplication with a scalar, the exact products ``*`` and ``@`` (without rounding), the Kronecker product ``**``, :meth:`torchtt.TT.full`, :meth:`torchtt.TT.norm`, :meth:`torchtt.TT.sum`, indexing and slicing, :meth:`torchtt.TT.apply_mask`, :func:`torchtt.dot` and :func:`torchtt.bilinear_form`.</span>
+
+<span class="sd">The operations that choose the ranks from the data (with truncated SVDs or iterations) are not supported:</span>
+<span class="sd">the TT decomposition ``torchtt.TT(full_tensor)``, :meth:`torchtt.TT.round`, :meth:`torchtt.TT.to_qtt`, :func:`torchtt.reshape`, :func:`torchtt.permute`, the division ``/``, the products :func:`torchtt.matvec`, :func:`torchtt.matmat` and :func:`torchtt.hadamard`, and the cross interpolation of :mod:`torchtt.interpolate`.</span>
+<span class="sd">Most of them raise an error if the cores require gradients; the others (e.g. ``method='swap'`` in the products) can return NaN gradients.</span>
 <span class="sd">"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tn</span>
@@ -88,7 +127,21 @@
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Watch the TT-cores of a given tensor.</span>
 <span class="sd">    Necessary for autograd.</span>
-<span class="sd">    </span>
+
+<span class="sd">    The flag ``requires_grad`` of the cores is set in place, so PyTorch records every following operation with the tensor.</span>
+<span class="sd">    Call it before computing the value that is differentiated.</span>
+<span class="sd">    It is the same as ``tens.cores[i].requires_grad_(True)`` for the watched cores.</span>
+<span class="sd">    The cores must be leaf tensors (not computed from other tensors that require gradients), otherwise :func:`grad` returns None for them.</span>
+
+<span class="sd">    Examples:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            x = torchtt.randn([4, 5, 6], [1, 2, 2, 1])</span>
+<span class="sd">            torchtt.grad.watch(x)</span>
+<span class="sd">            val = (x * x).sum()</span>
+<span class="sd">            grad_cores = torchtt.grad.grad(val, x)</span>
+
 <span class="sd">    Args:</span>
 <span class="sd">        tens (torchtt.TT): the TT-object to be watched.</span>
 <span class="sd">        core_indices (list[int], optional): The list of cores to be watched. If None is provided, all the cores are watched. Defaults to None.</span>
@@ -107,6 +160,7 @@
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Watch the TT-cores for amultiple tensors givgen in a list.</span>
 <span class="sd">    Necessary for autograd.</span>
+<span class="sd">    Same as :func:`watch` for every tensor of the list.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        tensors (list[torchtt.TT]): the list of tensors to be wtched for autograd.</span>
@@ -115,13 +169,14 @@
         <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tensors</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">cores</span><span class="p">)):</span>
             <span class="n">tensors</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">requires_grad_</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span></div>
 
-            
-            
+
+
 <div class="viewcode-block" id="unwatch">
 <a class="viewcode-back" href="../../docs/torchtt.html#torchtt.grad.unwatch">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">unwatch</span><span class="p">(</span><span class="n">tens</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Cancel the autograd graph recording.</span>
+<span class="sd">    The flag ``requires_grad`` of the cores is set to False. The gradients stored in ``c.grad`` from previous calls of :func:`grad` are kept.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        tens (torchtt.TT): the tensor.</span>
@@ -136,6 +191,14 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">grad</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">tens</span><span class="p">,</span> <span class="n">core_indices</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Compute the gradient w.r.t. the cores of the given TT-tensor (or TT-matrix).</span>
+<span class="sd">    The cores must be watched with :func:`watch` before ``val`` is computed.</span>
+
+<span class="sd">    It calls ``val.backward()`` and returns ``c.grad`` for the cores, therefore:</span>
+
+<span class="sd">     * the gradients are added to the ones of previous calls (set ``c.grad = None`` for the cores to start again from zero),</span>
+<span class="sd">     * ``val`` can be differentiated only once (the recorded graph is freed).</span>
+
+<span class="sd">    For the first call the result is the same as ``torch.autograd.grad(val, tens.cores)``, which has none of these side effects.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        val (torch.tensor): Scalar tensor that has to be differentiated.</span>
@@ -162,12 +225,13 @@
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Compute the gradient w.r.t. the cores of several given TT-tensors (or TT-oeprators).</span>
 <span class="sd">    Watch must be called on all of them beforehand.</span>
-<span class="sd">    </span>
+<span class="sd">    Like :func:`grad`, it calls ``val.backward()``, so the gradients are added to the ones of previous calls.</span>
+
 <span class="sd">    Args:</span>
 <span class="sd">        val (torch.tensor): scalar tensor to be differentiated.</span>
 <span class="sd">        tensors (list[torch.TT]): the tensors with respect to which the differentiation is made.</span>
 <span class="sd">        all_in_one (bool, optional): Put all the cores in one list or create a list of lists with the cores. Defaults to True.</span>
-<span class="sd">    </span>
+
 <span class="sd">    Returns:</span>
 <span class="sd">        list[list[torchtt.TT]]: the resulting derivatives.</span>
 <span class="sd">    """</span>

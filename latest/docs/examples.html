@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Examples &mdash; torchTT development (main @ 42740af) documentation</title>
+  <title>Examples &mdash; torchTT development (main @ 0909209) documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=167f7836"></script>
+      <script src="../_static/documentation_options.js?v=33102d81"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -23,7 +23,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="TT decomposition in torchtt" href="../examples/basic_tutorial.html" />
-    <link rel="prev" title="torchtt package" href="torchtt.html" /> 
+    <link rel="prev" title="torchtt.functional: continuous function bases" href="functional.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -55,10 +55,11 @@
 <li class="toctree-l2"><a class="reference internal" href="#getting-started">Getting Started</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../examples/basic_tutorial.html">TT decomposition in torchtt</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../examples/basic_linalg.html">Basic linear algebra in torchTT</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../examples/random_tt.html">Random tensors in the TT format</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#linear-algebra-solvers">Linear Algebra &amp; Solvers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../examples/efficient_linalg.html">AMEN and DMRG for fast TT operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../examples/efficient_linalg.html">AMEn and DMRG for fast TT operations</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../examples/system_solvers.html">Linear solvers in the TT format</a></li>
 </ul>
 </li>
@@ -72,18 +73,21 @@
 <li class="toctree-l3"><a class="reference internal" href="../examples/basic_nn.html">Tensor Train layers for neural networks</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../examples/mnist_nn.html">Digit Recognition using Tensor Train (TT) Neural Networks</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../examples/deep_tt_density.html">Deep TT Density demo</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../examples/fokker_planck_pinn.html">A physics-informed neural network for the Fokker-Planck equation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../examples/fokker_planck_pinn.html">A physics-informed neural network (PINN) for the Fokker-Planck equation</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#advanced-topics">Advanced Topics</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../examples/automatic_differentiation.html">Automatic differentiation</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../examples/manifold.html">TT Manifold and Riemannian Optimization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../examples/tensor_completion.html">Tensor completion with Riemannian optimization</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../examples/gpu_acceleration.html">GPU acceleration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../examples/bayesian_inversion.html">Bayesian Inversion with torchTT</a></li>
 </ul>
 </li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="references.html">References</a></li>
 </ul>
 
         </div>
@@ -110,15 +114,17 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 42740af)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="examples">
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 0909209)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="examples">
 <span id="examples-label"></span><h1>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h1>
-<p>This section contains Jupyter notebook tutorials demonstrating the usage of torchTT.</p>
+<p>This section contains Jupyter notebook tutorials demonstrating the usage of torchTT.
+The notebooks are in the folder <a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples">examples/</a> of the repository, most of them together with a Python script with the same content, and every notebook can be run in Google Colab from the link at the top of its page.</p>
 <section id="getting-started">
 <h2>Getting Started<a class="headerlink" href="#getting-started" title="Link to this heading"></a></h2>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../examples/basic_tutorial.html">TT decomposition in torchtt</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../examples/basic_linalg.html">Basic linear algebra in torchTT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/random_tt.html">Random tensors in the TT format</a></li>
 </ul>
 </div>
 </section>
@@ -126,7 +132,7 @@
 <h2>Linear Algebra &amp; Solvers<a class="headerlink" href="#linear-algebra-solvers" title="Link to this heading"></a></h2>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../examples/efficient_linalg.html">AMEN and DMRG for fast TT operations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/efficient_linalg.html">AMEn and DMRG for fast TT operations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../examples/system_solvers.html">Linear solvers in the TT format</a></li>
 </ul>
 </div>
@@ -148,7 +154,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../examples/basic_nn.html">Tensor Train layers for neural networks</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../examples/mnist_nn.html">Digit Recognition using Tensor Train (TT) Neural Networks</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../examples/deep_tt_density.html">Deep TT Density demo</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../examples/fokker_planck_pinn.html">A physics-informed neural network for the Fokker-Planck equation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/fokker_planck_pinn.html">A physics-informed neural network (PINN) for the Fokker-Planck equation</a></li>
 </ul>
 </div>
 </section>
@@ -158,6 +164,7 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../examples/automatic_differentiation.html">Automatic differentiation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../examples/manifold.html">TT Manifold and Riemannian Optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/tensor_completion.html">Tensor completion with Riemannian optimization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../examples/gpu_acceleration.html">GPU acceleration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../examples/bayesian_inversion.html">Bayesian Inversion with torchTT</a></li>
 </ul>
@@ -169,7 +176,7 @@
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="torchtt.html" class="btn btn-neutral float-left" title="torchtt package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="functional.html" class="btn btn-neutral float-left" title="torchtt.functional: continuous function bases" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="../examples/basic_tutorial.html" class="btn btn-neutral float-right" title="TT decomposition in torchtt" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Linear solvers in the TT format &mdash; torchTT development (main @ 42740af) documentation</title>
+  <title>Linear solvers in the TT format &mdash; torchTT development (main @ 0909209) documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
       <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
@@ -14,7 +14,7 @@
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=167f7836"></script>
+      <script src="../_static/documentation_options.js?v=33102d81"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -24,7 +24,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Cross approximation in the TT format" href="cross_interpolation.html" />
-    <link rel="prev" title="AMEN and DMRG for fast TT operations" href="efficient_linalg.html" /> 
+    <link rel="prev" title="AMEn and DMRG for fast TT operations" href="efficient_linalg.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -55,7 +55,7 @@
 <li class="toctree-l1 current"><a class="reference internal" href="../docs/examples.html">Examples</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#getting-started">Getting Started</a></li>
 <li class="toctree-l2 current"><a class="reference internal" href="../docs/examples.html#linear-algebra-solvers">Linear Algebra &amp; Solvers</a><ul class="current">
-<li class="toctree-l3"><a class="reference internal" href="efficient_linalg.html">AMEN and DMRG for fast TT operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="efficient_linalg.html">AMEn and DMRG for fast TT operations</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Linear solvers in the TT format</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#Small-example">Small example</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Finite-differences">Finite differences</a></li>
@@ -68,6 +68,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#advanced-topics">Advanced Topics</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/references.html">References</a></li>
 </ul>
 
         </div>
@@ -95,9 +97,13 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 42740af)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="Linear-solvers-in-the-TT-format">
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 0909209)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Run this notebook in <a class="reference external" href="https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/system_solvers.ipynb">Google Colab</a> or see the source on <a class="reference external" href="https://github.com/ion-g-ion/torchTT/blob/main/examples/system_solvers.ipynb">GitHub</a>.</p>
+</div>
+<section id="Linear-solvers-in-the-TT-format">
 <h1>Linear solvers in the TT format<a class="headerlink" href="#Linear-solvers-in-the-TT-format" title="Link to this heading"></a></h1>
-<p>This tutorial addresses solving multilinear systems <span class="math notranslate nohighlight">\(\mathsf{Ax}=\mathsf{b}\)</span> in the TT format.</p>
+<p>This tutorial addresses solving multilinear systems <span class="math notranslate nohighlight">\(\mathsf{Ax}=\mathsf{b}\)</span> in the tensor-train (TT) format.</p>
 <p>Imports:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
@@ -127,7 +133,7 @@
 </pre></div>
 </div>
 </div>
-<p>Solve the multilinear system <span class="math notranslate nohighlight">\(\mathsf{Ax}=\mathsf{b}\)</span> using the method torchtt.solvers.amen_solve().</p>
+<p>Solve the multilinear system <span class="math notranslate nohighlight">\(\mathsf{Ax}=\mathsf{b}\)</span> using the method <code class="docutils literal notranslate"><span class="pre">torchtt.solvers.amen_solve()</span></code>, which implements the alternating minimal energy (AMEn) method (<a class="reference external" href="https://doi.org/10.1137/140953289">Dolgov and Savostyanov, 2014</a>).</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
@@ -1611,7 +1617,7 @@ Solver time:  0:00:14.255007
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="efficient_linalg.html" class="btn btn-neutral float-left" title="AMEN and DMRG for fast TT operations" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="efficient_linalg.html" class="btn btn-neutral float-left" title="AMEn and DMRG for fast TT operations" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="cross_interpolation.html" class="btn btn-neutral float-right" title="Cross approximation in the TT format" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

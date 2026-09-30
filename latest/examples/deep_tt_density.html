@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Deep TT Density demo &mdash; torchTT development (main @ 42740af) documentation</title>
+  <title>Deep TT Density demo &mdash; torchTT development (main @ 0909209) documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
       <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
@@ -14,7 +14,7 @@
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=167f7836"></script>
+      <script src="../_static/documentation_options.js?v=33102d81"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -23,7 +23,7 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="A physics-informed neural network for the Fokker-Planck equation" href="fokker_planck_pinn.html" />
+    <link rel="next" title="A physics-informed neural network (PINN) for the Fokker-Planck equation" href="fokker_planck_pinn.html" />
     <link rel="prev" title="Digit Recognition using Tensor Train (TT) Neural Networks" href="mnist_nn.html" /> 
 </head>
 
@@ -69,12 +69,14 @@
 <li class="toctree-l4"><a class="reference internal" href="#Composing-transforms">Composing transforms</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="fokker_planck_pinn.html">A physics-informed neural network for the Fokker-Planck equation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fokker_planck_pinn.html">A physics-informed neural network (PINN) for the Fokker-Planck equation</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#advanced-topics">Advanced Topics</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/references.html">References</a></li>
 </ul>
 
         </div>
@@ -102,13 +104,17 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 42740af)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="Deep-TT-Density-demo">
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 0909209)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Run this notebook in <a class="reference external" href="https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/deep_tt_density.ipynb">Google Colab</a> or see the source on <a class="reference external" href="https://github.com/ion-g-ion/torchTT/blob/main/examples/deep_tt_density.ipynb">GitHub</a>.</p>
+</div>
+<section id="Deep-TT-Density-demo">
 <h1>Deep TT Density demo<a class="headerlink" href="#Deep-TT-Density-demo" title="Link to this heading"></a></h1>
 <p>The <code class="docutils literal notranslate"><span class="pre">torchtt.nn.TTDensityLayer</span></code> represents a probability density as a <strong>normalized squared functional Tensor Train</strong> — a “Born-machine” density.</p>
 <p>Given univariate basis functions <span class="math notranslate nohighlight">\(\{\phi^{(k)}_i\}_{i=1}^{N_k}\)</span> for every dimension <span class="math notranslate nohighlight">\(k = 1, \dots, d\)</span> (here Gaussians), we build a scalar model function</p>
 <div class="math notranslate nohighlight">
 \[f(x_1, \dots, x_d) = \sum_{i_1=1}^{N_1} \cdots \sum_{i_d=1}^{N_d} G_{i_1 \dots i_d}\, \phi^{(1)}_{i_1}(x_1) \cdots \phi^{(d)}_{i_d}(x_d),\]</div>
-<p>whose coefficient tensor <span class="math notranslate nohighlight">\(G\)</span> is stored in the <strong>Tensor-Train</strong> format with cores <span class="math notranslate nohighlight">\(G^{(k)} \in \mathbb{R}^{R_k \times N_k \times R_{k+1}}\)</span> and <span class="math notranslate nohighlight">\(R_1 = R_{d+1} = 1\)</span>. The density is the normalized square</p>
+<p>whose coefficient tensor <span class="math notranslate nohighlight">\(G\)</span> is stored in the <strong>tensor-train (TT)</strong> format with cores <span class="math notranslate nohighlight">\(G^{(k)} \in \mathbb{R}^{R_k \times N_k \times R_{k+1}}\)</span> and <span class="math notranslate nohighlight">\(R_1 = R_{d+1} = 1\)</span>. The density is the normalized square</p>
 <div class="math notranslate nohighlight">
 \[p_\text{ref}(x) = \frac{f(x)^2}{\int f(y)^2\, dy}.\]</div>
 <p>Squaring guarantees non-negativity, and the normalizer <span class="math notranslate nohighlight">\(Z = \int f^2\)</span> is available in closed form from the cores and the basis integration weights <span class="math notranslate nohighlight">\(w^{(k)}_i = \int \phi^{(k)}_i\)</span>, so <span class="math notranslate nohighlight">\(p_\text{ref}\)</span> integrates to <span class="math notranslate nohighlight">\(1\)</span> by construction.</p>
@@ -559,7 +565,7 @@ transform parameters: 12
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="mnist_nn.html" class="btn btn-neutral float-left" title="Digit Recognition using Tensor Train (TT) Neural Networks" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="fokker_planck_pinn.html" class="btn btn-neutral float-right" title="A physics-informed neural network for the Fokker-Planck equation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="fokker_planck_pinn.html" class="btn btn-neutral float-right" title="A physics-informed neural network (PINN) for the Fokker-Planck equation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>torchtt.nn &mdash; torchTT development (main @ 42740af) documentation</title>
+  <title>torchtt.nn &mdash; torchTT development (main @ 0909209) documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=167f7836"></script>
+      <script src="../../_static/documentation_options.js?v=33102d81"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -47,6 +47,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../../docs/package-overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/modules.html">API reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/references.html">References</a></li>
 </ul>
 
         </div>
@@ -64,6 +66,7 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
           <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../torchtt.html">torchtt</a></li>
       <li class="breadcrumb-item active">torchtt.nn</li>
       <li class="wy-breadcrumbs-aside">
       </li>
@@ -73,7 +76,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 42740af)</strong><br><a href="../../../stable/index.html">Stable release</a> · <a href="../../../latest/index.html">Development (main)</a></nav><h1>Source code for torchtt.nn</h1><div class="highlight"><pre>
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 0909209)</strong><br><a href="../../../stable/index.html">Stable release</a> · <a href="../../../latest/index.html">Development (main)</a></nav><h1>Source code for torchtt.nn</h1><div class="highlight"><pre>
 <span></span><span class="sd">"""</span>
 <span class="sd">Implements a basic TT layer for constructing deep TT networks.</span>
 
@@ -99,7 +102,7 @@
 <div class="viewcode-block" id="Transform.input_requirement">
 <a class="viewcode-back" href="../../docs/torchtt.html#torchtt.nn.Transform.input_requirement">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">input_requirement</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">"""Returns the number of parameters required from the NN per sample."""</span>
+<span class="w">        </span><span class="sd">"""Returns the number of parameters required from the neural network per sample."""</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
 
 
@@ -546,7 +549,7 @@
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    A Tensor Train (TT) neural network layer that operates directly on TT objects and applies nonlinear activation between TT cores during multiplication.</span>
 <span class="sd">    </span>
-<span class="sd">    This layer is inspired by Nonlinear Tensor Train formats for deep neural networks. Instead of computing the full dense tensor, it performs a fast matrix-vector-like multiplication of the layer's TTM weights with the input TT object. The layer natively applies a nonlinear activation and an optional bias to the intermediate core representations during the contraction sweep. The intermediate representations are orthogonalized and truncated to maintain the compression, ensuring the output TT object's ranks are strictly bounded by ``R_output``.</span>
+<span class="sd">    This layer is inspired by nonlinear tensor-train formats for deep neural networks :cite:p:`wang2021nonlinear`. Instead of computing the full dense tensor, it performs a fast matrix-vector-like multiplication of the layer's TT-matrix (TTM) weights with the input TT object. The layer natively applies a nonlinear activation and an optional bias to the intermediate core representations during the contraction sweep. The intermediate representations are orthogonalized and truncated to maintain the compression, ensuring the output TT object's ranks are strictly bounded by ``R_output``.</span>
 <span class="sd">    """</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">N_in</span><span class="p">,</span> <span class="n">N_out</span><span class="p">,</span> <span class="n">R_layer</span><span class="p">,</span> <span class="n">R_output</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="n">tn</span><span class="o">.</span><span class="n">relu</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tn</span><span class="o">.</span><span class="n">float32</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
@@ -555,7 +558,7 @@
 <span class="sd">        Args:</span>
 <span class="sd">            N_in (list[int]): Mode sizes for the input dimensions.</span>
 <span class="sd">            N_out (list[int]): Mode sizes for the output dimensions.</span>
-<span class="sd">            R_layer (list[int]): TT ranks of the layer's TTM weight operator (length ``len(N_in)+1``).</span>
+<span class="sd">            R_layer (list[int]): TT ranks of the layer's TT-matrix (TTM) weight operator (length ``len(N_in)+1``).</span>
 <span class="sd">            R_output (list[int]): TT ranks of the output tensor (length ``len(N_out)+1``). Must satisfy ``R_output[0] == R_output[-1] == 1``. Each entry ``R_output[k]`` bounds the rank at the k-th bond of the output TT, giving per-bond control over the compression.</span>
 <span class="sd">            activation (callable, optional): The nonlinear activation function to apply between cores during multiplication. Defaults to ``torch.relu``.</span>
 <span class="sd">            bias (bool, optional): If True, a trainable per-mode bias is added to the intermediate core representations. Defaults to True.</span>
@@ -595,9 +598,9 @@
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Forward pass for the CompressedTTLayer.</span>
 <span class="sd">        </span>
-<span class="sd">        Computes the operation by multiplying the input TT with the layer's TTM using a right-to-left sweep. </span>
+<span class="sd">        Computes the operation by multiplying the input TT with the layer's TT-matrix (TTM) weights using a right-to-left sweep. </span>
 <span class="sd">        During this sweep, the intermediate bias is added and the activation is applied to the core before </span>
-<span class="sd">        the core is orthogonalized and truncated (using SVD) to strictly enforce the per-bond rank limits </span>
+<span class="sd">        the core is orthogonalized and truncated (using a singular value decomposition, SVD) to strictly enforce the per-bond rank limits </span>
 <span class="sd">        given by ``R_output``.</span>
 
 <span class="sd">        Args:</span>
@@ -609,13 +612,7 @@
         <span class="n">d</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size_in</span><span class="p">)</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">._fast_mult</span><span class="w"> </span><span class="kn">import</span> <span class="n">swap_cores</span>
         
-        <span class="c1"># The sweep processes cores right-to-left, so the internal "cores" list</span>
-        <span class="c1"># is reversed: cores[j] in the sweep corresponds to bond (d-1-j) in the</span>
-        <span class="c1"># original ordering. We need to map swap_cores calls to the correct</span>
-        <span class="c1"># R_output entry for each bond.</span>
-        <span class="c1"># After reversal, bond between sweep-cores[j] and sweep-cores[j+1]</span>
-        <span class="c1"># corresponds to original bond index (d-1-j).</span>
-        
+        <span class="c1"># The swaps move processed modes into the original output order.</span>
         <span class="n">cores</span> <span class="o">=</span> <span class="p">[</span><span class="n">tn</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">cores</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
             <span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">oe</span><span class="o">.</span><span class="n">contract</span><span class="p">(</span><span class="s2">"mabk,kbn-&gt;man"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">d</span><span class="o">-</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
@@ -628,12 +625,9 @@
                 
             <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
-                    <span class="c1"># Bond between sweep-cores[j] and sweep-cores[j+1] maps to</span>
-                    <span class="c1"># original bond index (d-1-j).</span>
-                    <span class="n">bond_idx</span> <span class="o">=</span> <span class="n">d</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">j</span>
+                    <span class="n">bond_idx</span> <span class="o">=</span> <span class="n">j</span> <span class="o">+</span> <span class="mi">1</span>
                     <span class="n">cores</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">cores</span><span class="p">[</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">swap_cores</span><span class="p">(</span><span class="n">cores</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">cores</span><span class="p">[</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="mf">0.0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">R_output</span><span class="p">[</span><span class="n">bond_idx</span><span class="p">])</span>
                     
-        <span class="n">cores</span> <span class="o">=</span> <span class="p">[</span><span class="n">tn</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cores</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
         
         <span class="k">return</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">cores</span><span class="p">)</span></div>
 </div>

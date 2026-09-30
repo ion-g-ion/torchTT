@@ -1,0 +1,1365 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>torchtt.functional.basis &mdash; torchTT development (main @ 0909209) documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=33102d81"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            torchtt
+              <img src="https://github.com/ion-g-ion/torchTT/blob/main/logo_small.png?raw=true" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/intro_page.html">Welcome to torchTT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/install.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/package-overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/modules.html">API reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/references.html">References</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">torchtt</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../../torchtt.html">torchtt</a></li>
+      <li class="breadcrumb-item active">torchtt.functional.basis</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 0909209)</strong><br><a href="../../../../stable/index.html">Stable release</a> · <a href="../../../../latest/index.html">Development (main)</a></nav><h1>Source code for torchtt.functional.basis</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""</span>
+<span class="sd">Basis functions for functional tensor decompositions.</span>
+
+<span class="sd">This module provides basis function classes for use in functional tensor train </span>
+<span class="sd">representations. The bases can be used for interpolation, quadrature, and other </span>
+<span class="sd">numerical methods.</span>
+
+<span class="sd">All implementations are pure PyTorch to support automatic differentiation.</span>
+<span class="sd">"""</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tuple</span>
+
+
+<div class="viewcode-block" id="BaseBasis">
+<a class="viewcode-back" href="../../../docs/functional.html#torchtt.functional.BaseBasis">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">BaseBasis</span><span class="p">(</span><span class="n">ABC</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Abstract base class for all basis functions.</span>
+<span class="sd">    </span>
+<span class="sd">    All basis classes must implement the following:</span>
+<span class="sd">        - `n` property: the dimension (number of basis functions)</span>
+<span class="sd">        - `__call__`: evaluate the basis at given points</span>
+<span class="sd">        - `__repr__`: string representation</span>
+<span class="sd">        - `interpolating_points`: return points where the basis evaluation matrix is invertible</span>
+<span class="sd">        - `integration_weights`: return the integral of each basis function</span>
+<span class="sd">    """</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">n</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        The dimension of the basis (number of basis functions).</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            int: the number of basis functions.</span>
+<span class="sd">        """</span>
+        <span class="k">pass</span>
+    
+<div class="viewcode-block" id="BaseBasis.__call__">
+<a class="viewcode-back" href="../../../docs/functional.html#torchtt.functional.BaseBasis.__call__">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">derivative</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Evaluate the basis functions at the given points.</span>
+<span class="sd">        </span>
+<span class="sd">        Each basis function is evaluated at every point in `x`, and the results</span>
+<span class="sd">        are stacked along a new first dimension.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            x (torch.Tensor): points where the basis is evaluated. Arbitrary shape `(...)`.</span>
+<span class="sd">            derivative (bool, optional): if True, evaluate the derivative. Defaults to False.</span>
+<span class="sd">            </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            torch.Tensor: the basis evaluated at x. Shape `(n, ...)` where n is the </span>
+<span class="sd">                basis dimension and `...` is the shape of the input.</span>
+<span class="sd">        """</span>
+        <span class="k">pass</span></div>
+
+    
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return a string representation of the basis.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            str: string representation.</span>
+<span class="sd">        """</span>
+        <span class="k">pass</span>
+    
+<div class="viewcode-block" id="BaseBasis.interpolating_points">
+<a class="viewcode-back" href="../../../docs/functional.html#torchtt.functional.BaseBasis.interpolating_points">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">interpolating_points</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return the interpolating points and the basis evaluated at these points.</span>
+<span class="sd">        </span>
+<span class="sd">        The returned matrix (from evaluating the basis at these points) is guaranteed </span>
+<span class="sd">        to be invertible (non-singular). This property is essential for interpolation:</span>
+<span class="sd">        given function values at these points, one can uniquely determine the </span>
+<span class="sd">        coefficients of the basis expansion by solving the linear system.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple[torch.Tensor, torch.Tensor]: </span>
+<span class="sd">                - points: the interpolating points as a vector of shape `(n,)`</span>
+<span class="sd">                - matrix: shape `(n, n)`, with rows corresponding to points and</span>
+<span class="sd">                  columns to basis functions: ``matrix = self(points).T``.</span>
+<span class="sd">                  Solve ``matrix @ coefficients = values`` for interpolation.</span>
+<span class="sd">        """</span>
+        <span class="k">pass</span></div>
+
+    
+<div class="viewcode-block" id="BaseBasis.integration_weights">
+<a class="viewcode-back" href="../../../docs/functional.html#torchtt.functional.BaseBasis.integration_weights">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">integration_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return the integrals of each individual basis function.</span>
+<span class="sd">        </span>
+<span class="sd">        Computes the integral of each basis function over its support,</span>
+<span class="sd">        which is useful for various numerical methods and tensor operations.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            torch.Tensor: a vector of shape `(n,)` containing the integral</span>
+<span class="sd">                of each basis function.</span>
+<span class="sd">        """</span>
+        <span class="k">pass</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="BSplineBasis">
+<a class="viewcode-back" href="../../../docs/functional.html#torchtt.functional.BSplineBasis">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">BSplineBasis</span><span class="p">(</span><span class="n">BaseBasis</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    B-spline basis functions (pure PyTorch implementation).</span>
+
+<span class="sd">    This class implements a univariate B-spline basis defined by a knot vector and</span>
+<span class="sd">    polynomial degree using the Cox-de Boor recursion formula. The implementation</span>
+<span class="sd">    is fully differentiable via PyTorch autograd.</span>
+
+<span class="sd">    The behavior at each boundary can be selected via the `bc` argument:</span>
+
+<span class="sd">        - ``"clamped"`` (default): the boundary knot is repeated, the basis is</span>
+<span class="sd">          clamped and the first/last basis function reaches 1 at the boundary.</span>
+<span class="sd">        - ``"zero"``: like ``"clamped"``, but the basis function that is nonzero</span>
+<span class="sd">          at the boundary is omitted. Every function in the span (and hence any</span>
+<span class="sd">          expansion) vanishes at that boundary. Reduces `n` by one per side.</span>
+<span class="sd">        - ``"decay"``: the domain becomes unbounded on that side. The knot vector</span>
+<span class="sd">          is extended with `deg` uniformly spaced phantom knots and the basis</span>
+<span class="sd">          functions whose support crosses the boundary knot are continued beyond</span>
+<span class="sd">          it by tails of the form ``sum_{j=1..deg} a_j * exp(-j * rate * |x - boundary|)``,</span>
+<span class="sd">          with the `deg` coefficients matched in value and the first deg-1</span>
+<span class="sd">          derivatives. The basis is therefore C^(deg-1) on the whole unbounded</span>
+<span class="sd">          domain and all integrals remain finite. The crossing functions whose</span>
+<span class="sd">          Greville center would fall *outside* [a, b] are dropped, so the</span>
+<span class="sd">          outermost retained function peaks at the boundary and decays</span>
+<span class="sd">          monotonically past it (no redundant bump in the tail). As a result the</span>
+<span class="sd">          partition of unity is only approximate within roughly `deg` knot spans</span>
+<span class="sd">          of a decay boundary.</span>
+
+<span class="sd">    The number of basis functions is `n = len(knots) + deg - 1`, reduced by the</span>
+<span class="sd">    dropped boundary functions: one per ``"zero"`` side and the number of</span>
+<span class="sd">    out-of-domain crossing functions per ``"decay"`` side (roughly deg/2).</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; knots = torch.linspace(0, 1, 5)</span>
+<span class="sd">        &gt;&gt;&gt; basis = BSplineBasis(knots, deg=3)</span>
+<span class="sd">        &gt;&gt;&gt; x = torch.linspace(0, 1, 100, requires_grad=True)</span>
+<span class="sd">        &gt;&gt;&gt; B = basis(x)  # shape: (n, 100), supports autograd</span>
+<span class="sd">        &gt;&gt;&gt; B.sum().backward()  # gradients flow through</span>
+<span class="sd">        &gt;&gt;&gt;</span>
+<span class="sd">        &gt;&gt;&gt; # Supports arbitrary input shapes</span>
+<span class="sd">        &gt;&gt;&gt; x_batch = torch.rand(32, 10, requires_grad=True)</span>
+<span class="sd">        &gt;&gt;&gt; B_batch = basis(x_batch)  # shape: (n, 32, 10)</span>
+<span class="sd">        &gt;&gt;&gt;</span>
+<span class="sd">        &gt;&gt;&gt; # Sparse evaluation: only the deg+1 functions that are nonzero at</span>
+<span class="sd">        &gt;&gt;&gt; # each point, plus their indices -- never forms the (n, ...) matrix</span>
+<span class="sd">        &gt;&gt;&gt; values, indices = basis.eval_sparse(x)  # both shape: (deg+1, 100)</span>
+<span class="sd">        &gt;&gt;&gt;</span>
+<span class="sd">        &gt;&gt;&gt; # Density-friendly variant: vanishes at 0, unbounded to the right</span>
+<span class="sd">        &gt;&gt;&gt; basis_pdf = BSplineBasis(knots, deg=3, bc=("zero", "decay"))</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        Evaluation is local: the knot span of each point is found by a binary</span>
+<span class="sd">        search and only the `deg + 1` B-splines that are nonzero there are</span>
+<span class="sd">        computed, by a vectorised de Boor recursion. The cost is `O(deg^2)` per</span>
+<span class="sd">        point and is independent of the number of knots, and the whole recursion</span>
+<span class="sd">        is a handful of elementwise tensor operations, which keeps it fast on</span>
+<span class="sd">        both CPU and GPU and differentiable through autograd. `eval_sparse`</span>
+<span class="sd">        returns that compressed result directly; `__call__` scatters it into the</span>
+<span class="sd">        dense `(n, ...)` matrix. The mass, stiffness and advection matrices are</span>
+<span class="sd">        assembled from the same local blocks, so they too scale linearly in `n`.</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        For ``"decay"`` sides the exponential tails are matched to the spline jet</span>
+<span class="sd">        at the boundary. The tails are the general polynomial in the mapped</span>
+<span class="sd">        variable ``t = 1 - exp(-rate * |x - boundary|)``, which sends the unbounded</span>
+<span class="sd">        side onto `[0, 1)`, constrained to vanish at `t = 1` so that they stay</span>
+<span class="sd">        integrable; in `x` this is a sum of `deg` geometrically spaced decaying</span>
+<span class="sd">        exponentials with no growing factor. With the default rate `deg / h` the</span>
+<span class="sd">        tails are non-negative and monotone to machine precision. Rates much</span>
+<span class="sd">        smaller than `deg / h` can still produce a small negative undershoot;</span>
+<span class="sd">        prefer increasing the spacing of the boundary knots over lowering the</span>
+<span class="sd">        rate if heavier tails are needed.</span>
+<span class="sd">    """</span>
+
+    <span class="n">_BC_MODES</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"clamped"</span><span class="p">,</span> <span class="s2">"zero"</span><span class="p">,</span> <span class="s2">"decay"</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">knots</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">deg</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">bc</span><span class="o">=</span><span class="s2">"clamped"</span><span class="p">,</span> <span class="n">decay_rate</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Initialize a B-spline basis.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            knots (torch.Tensor): the interior knot vector (at least 2 entries).</span>
+<span class="sd">                For "clamped"/"zero" sides the boundary knot is automatically</span>
+<span class="sd">                repeated `deg` times; for "decay" sides `deg` phantom knots with</span>
+<span class="sd">                the spacing of the adjacent knot interval are appended instead.</span>
+<span class="sd">            deg (int): the polynomial degree of the B-splines (e.g., 3 for cubic).</span>
+<span class="sd">            bc (str or tuple[str, str], optional): boundary mode for the</span>
+<span class="sd">                (left, right) side, each one of "clamped", "zero" or "decay".</span>
+<span class="sd">                A single string applies to both sides. Modes other than</span>
+<span class="sd">                "clamped" require deg &gt;= 1. Defaults to "clamped".</span>
+<span class="sd">            decay_rate (float or tuple[float, float], optional): exponential decay</span>
+<span class="sd">                rate(s) for "decay" sides; the slowest term of a tail behaves like</span>
+<span class="sd">                ``exp(-decay_rate * |x - boundary|)``, setting the far-field rate.</span>
+<span class="sd">                A None entry uses the default `deg / h`, where h is the adjacent</span>
+<span class="sd">                knot spacing. Defaults to None.</span>
+<span class="sd">        """</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">knots</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+            <span class="n">knots</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">knots</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+        <span class="n">knots</span> <span class="o">=</span> <span class="n">knots</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">knots</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"At least two knots are required."</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_deg</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">deg</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">bc</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">bc</span> <span class="o">=</span> <span class="p">(</span><span class="n">bc</span><span class="p">,</span> <span class="n">bc</span><span class="p">)</span>
+        <span class="n">bc</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">bc</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">bc</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span> <span class="ow">or</span> <span class="nb">any</span><span class="p">(</span><span class="n">side</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_BC_MODES</span> <span class="k">for</span> <span class="n">side</span> <span class="ow">in</span> <span class="n">bc</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"bc must be one of </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_BC_MODES</span><span class="si">}</span><span class="s2"> per side, got </span><span class="si">{</span><span class="n">bc</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deg</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">bc</span> <span class="o">!=</span> <span class="p">(</span><span class="s2">"clamped"</span><span class="p">,</span> <span class="s2">"clamped"</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Boundary modes 'zero' and 'decay' require deg &gt;= 1."</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_bc</span> <span class="o">=</span> <span class="n">bc</span>
+
+        <span class="c1"># Knot spacing adjacent to each boundary (sets the phantom knot spacing</span>
+        <span class="c1"># and the scaling of the tail variable for "decay" sides)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_h</span> <span class="o">=</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">knots</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">knots</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">float</span><span class="p">(</span><span class="n">knots</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">knots</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]))</span>
+
+        <span class="k">if</span> <span class="n">decay_rate</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">decay_rate</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">)):</span>
+            <span class="n">decay_rate</span> <span class="o">=</span> <span class="p">(</span><span class="n">decay_rate</span><span class="p">,</span> <span class="n">decay_rate</span><span class="p">)</span>
+        <span class="n">rates</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">side</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">bc</span><span class="p">[</span><span class="n">side</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"decay"</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_h</span><span class="p">[</span><span class="n">side</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"A 'decay' side needs a positive adjacent knot spacing."</span><span class="p">)</span>
+                <span class="n">rate</span> <span class="o">=</span> <span class="n">decay_rate</span><span class="p">[</span><span class="n">side</span><span class="p">]</span>
+                <span class="n">rate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deg</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_h</span><span class="p">[</span><span class="n">side</span><span class="p">]</span> <span class="k">if</span> <span class="n">rate</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">rate</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">rate</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"decay_rate must be positive."</span><span class="p">)</span>
+                <span class="n">rates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rate</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">rates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_decay_rates</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">rates</span><span class="p">)</span>
+        <span class="c1"># Decay rates in the scaled tail variable s = |x - boundary| / h</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mu</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="kc">None</span> <span class="k">if</span> <span class="n">r</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">r</span> <span class="o">*</span> <span class="n">h</span> <span class="k">for</span> <span class="n">r</span><span class="p">,</span> <span class="n">h</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">rates</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_h</span><span class="p">))</span>
+
+        <span class="c1"># Total number of B-splines on the extended knot vector</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n_splines</span> <span class="o">=</span> <span class="n">knots</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deg</span> <span class="o">-</span> <span class="mi">1</span>
+
+        <span class="c1"># Extend knots per side: boundary repetitions for clamped/zero, phantom</span>
+        <span class="c1"># knots for decay (registered as buffer, not parameter)</span>
+        <span class="k">if</span> <span class="n">bc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"decay"</span><span class="p">:</span>
+            <span class="n">left</span> <span class="o">=</span> <span class="n">knots</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_h</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_deg</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">left</span> <span class="o">=</span> <span class="n">knots</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_deg</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">bc</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"decay"</span><span class="p">:</span>
+            <span class="n">right</span> <span class="o">=</span> <span class="n">knots</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_h</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deg</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">right</span> <span class="o">=</span> <span class="n">knots</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_deg</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s1">'_knots'</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">left</span><span class="p">,</span> <span class="n">knots</span><span class="p">,</span> <span class="n">right</span><span class="p">]))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s1">'_interior_knots'</span><span class="p">,</span> <span class="n">knots</span><span class="o">.</span><span class="n">clone</span><span class="p">())</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_interval</span> <span class="o">=</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">knots</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()),</span> <span class="nb">float</span><span class="p">(</span><span class="n">knots</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()))</span>
+
+        <span class="c1"># Gather offsets used by the local evaluation:</span>
+        <span class="c1"># tw[a] = t[k - deg + a] for the knot window, and the basis indices</span>
+        <span class="c1"># k - deg .. k of the deg+1 B-splines that are nonzero on span k</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s1">'_win_offsets'</span><span class="p">,</span>
+                             <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">_deg</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deg</span> <span class="o">+</span> <span class="mi">2</span><span class="p">),</span> <span class="n">persistent</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s1">'_idx_offsets'</span><span class="p">,</span>
+                             <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">_deg</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">persistent</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="c1"># Span search bounds, resolved lazily per dtype (see _span_bounds)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_span_bounds_cache</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># Retained range [_lo, _hi) of the extended B-spline set:</span>
+        <span class="c1">#   - "zero" drops the single boundary function (it is the only one</span>
+        <span class="c1">#     nonzero at the boundary, so the span vanishes there);</span>
+        <span class="c1">#   - "decay" drops the crossing functions whose Greville center lies</span>
+        <span class="c1">#     strictly outside [a, b]. Those would peak in the tail and produce</span>
+        <span class="c1">#     a redundant bump; dropping them leaves the outermost decay</span>
+        <span class="c1">#     function peaking at the boundary and decaying monotonically past</span>
+        <span class="c1">#     it. self._tail_keep records how many of the deg crossing functions</span>
+        <span class="c1">#     survive on each side (for the analytic tail terms below).</span>
+        <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interval</span>
+        <span class="n">tol</span> <span class="o">=</span> <span class="mf">1e-9</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="nb">max</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">a</span><span class="p">),</span> <span class="nb">abs</span><span class="p">(</span><span class="n">b</span><span class="p">)))</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_greville</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_knots</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span><span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deg</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deg</span>
+
+        <span class="n">n_drop</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">bc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"decay"</span><span class="p">:</span>
+            <span class="n">n_drop</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_deg</span><span class="p">)</span> <span class="k">if</span> <span class="n">_greville</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">a</span> <span class="o">-</span> <span class="n">tol</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">bc</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"decay"</span><span class="p">:</span>
+            <span class="n">n_drop</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_splines</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deg</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_splines</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">_greville</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">b</span> <span class="o">+</span> <span class="n">tol</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lo</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">bc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"zero"</span> <span class="k">else</span> <span class="n">n_drop</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_hi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_splines</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span> <span class="k">if</span> <span class="n">bc</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"zero"</span> <span class="k">else</span> <span class="n">n_drop</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hi</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lo</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tail_keep</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_deg</span> <span class="o">-</span> <span class="n">n_drop</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deg</span> <span class="o">-</span> <span class="n">n_drop</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Too few knots for the requested degree and boundary modes."</span><span class="p">)</span>
+
+        <span class="c1"># Coefficients of the exponential-sum tails for each "decay" side</span>
+        <span class="k">for</span> <span class="n">side</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">((</span><span class="s1">'_tail_a_left'</span><span class="p">,</span> <span class="s1">'_tail_a_right'</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">bc</span><span class="p">[</span><span class="n">side</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"decay"</span><span class="p">:</span>
+                <span class="n">a</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_tail_coefficients</span><span class="p">(</span><span class="n">side</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">a</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>
+    
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">n</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        The dimension of the basis (number of basis functions).</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            int: the number of basis functions.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n</span>
+    
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">deg</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        The polynomial degree of the B-splines.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            int: the degree.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deg</span>
+    
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">interval</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        The interval on which the basis is defined.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple[float, float]: (start, end) of the interval.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interval</span>
+    
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">knots</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        The extended knot vector (including boundary repetitions for</span>
+<span class="sd">        "clamped"/"zero" sides and phantom knots for "decay" sides).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torch.Tensor: the knot vector.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_knots</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">bc</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        The boundary modes for the (left, right) side.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple[str, str]: each one of "clamped", "zero" or "decay".</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bc</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">decay_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        The exponential decay rates per side (None for non-"decay" sides).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple[float, float]: the (left, right) decay rates.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_decay_rates</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">_apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Invalidate the cached span bounds whenever the buffers are moved or cast.</span>
+
+<span class="sd">        `nn.Module.to`, `.float()`, `.double()`, `.cuda()` and friends all funnel</span>
+<span class="sd">        through `_apply`. A cast can collapse neighbouring knots (and is not</span>
+<span class="sd">        undone by casting back), so which spans are degenerate has to be</span>
+<span class="sd">        re-derived from the knots as they are stored afterwards.</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_span_bounds_cache</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_apply</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_span_bounds</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        First and last knot span that covers [a, b] and is non-degenerate.</span>
+
+<span class="sd">        Points outside [a, b] have no span of their own and are attached to the</span>
+<span class="sd">        nearest of these two, so both must be non-degenerate for the Cox-de Boor</span>
+<span class="sd">        denominators to stay positive. Degeneracy is a property of the knots as</span>
+<span class="sd">        they are currently stored: casting the basis to a coarser dtype can</span>
+<span class="sd">        collapse two neighbouring knots onto the same value, so the bounds are</span>
+<span class="sd">        resolved against `self._knots` and cached per dtype rather than fixed at</span>
+<span class="sd">        construction time.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple[int, int]: the (first, last) usable span index.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_span_bounds_cache</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_span_bounds_cache</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_knots</span><span class="o">.</span><span class="n">dtype</span><span class="p">:</span>
+            <span class="n">gaps</span> <span class="o">=</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">_knots</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_knots</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)[</span><span class="bp">self</span><span class="o">.</span><span class="n">_deg</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_splines</span><span class="p">]</span>
+            <span class="n">gaps</span> <span class="o">=</span> <span class="n">gaps</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">gaps</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"The knot vector has no non-degenerate span in </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_knots</span><span class="o">.</span><span class="n">dtype</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_span_bounds_cache</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_knots</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+                                       <span class="bp">self</span><span class="o">.</span><span class="n">_deg</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="n">gaps</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deg</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="n">gaps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_span_bounds_cache</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_span_bounds_cache</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_spans</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Locate the knot span of every point.</span>
+
+<span class="sd">        Returns the index `k` with `t_k &lt;= x &lt; t_{k+1}` on the extended knot</span>
+<span class="sd">        vector. Only the `deg + 1` B-splines `B_{k-deg}, ..., B_k` are nonzero on</span>
+<span class="sd">        that span; this is what makes the evaluation cost independent of the</span>
+<span class="sd">        number of knots.</span>
+
+<span class="sd">        The search is a pure ordering decision -- no arithmetic and no tolerance</span>
+<span class="sd">        -- so the interval a point is assigned to is exact, and a point sitting</span>
+<span class="sd">        exactly on a knot lands in the span starting there (the right-continuous</span>
+<span class="sd">        convention). Because the search returns the *last* knot not exceeding x,</span>
+<span class="sd">        the span it reports is always non-degenerate; only points outside [a, b],</span>
+<span class="sd">        which are clamped onto a boundary span, need the bounds of</span>
+<span class="sd">        `_span_bounds` to guarantee the same.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (torch.Tensor): flattened points of shape (m,).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torch.Tensor: integer span indices of shape (m,).</span>
+<span class="sd">        """</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_knots</span>
+        <span class="n">dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">promote_types</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">contiguous</span><span class="p">(),</span> <span class="n">x</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">contiguous</span><span class="p">(),</span> <span class="n">right</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">k</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">clamp_</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_span_bounds</span><span class="p">())</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_local_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">derivative</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Cox-de Boor recursion restricted to the deg+1 B-splines that are nonzero</span>
+<span class="sd">        on the span of each point.</span>
+
+<span class="sd">        The triangular scheme of de Boor is run in parallel over all points, with</span>
+<span class="sd">        Python loops of length `deg` only: the work per point is O(deg^2) and</span>
+<span class="sd">        does not grow with the number of knots. Every quantity is a slice of a</span>
+<span class="sd">        single gathered knot window, so the whole recursion is a handful of</span>
+<span class="sd">        elementwise kernels on tensors of shape (&lt;= deg+1, m).</span>
+
+<span class="sd">        For derivatives the recursion stops one level early and the last level</span>
+<span class="sd">        applies B'_{i,p} = p * [B_{i,p-1}/(t_{i+p}-t_i) - B_{i+1,p-1}/(t_{i+p+1}-t_{i+1})].</span>
+
+<span class="sd">        The x-dependence cancels in every denominator, leaving knot differences</span>
+<span class="sd">        that always straddle the (non-degenerate) span of the point and are</span>
+<span class="sd">        therefore strictly positive: no division guard is needed, and repeated</span>
+<span class="sd">        knots cannot produce NaNs.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (torch.Tensor): flattened points of shape (m,), inside [a, b].</span>
+<span class="sd">            k (torch.Tensor): span indices of shape (m,), as returned by `_spans`.</span>
+<span class="sd">            derivative (bool, optional): if True, evaluate the first derivative.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torch.Tensor: values of shape (deg+1, m); row q holds the value of</span>
+<span class="sd">                the B-spline with index `k - deg + q`.</span>
+<span class="sd">        """</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deg</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">promote_types</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_knots</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
+        <span class="c1"># Degree 0 is piecewise constant: its derivative vanishes</span>
+        <span class="k">if</span> <span class="n">derivative</span> <span class="ow">and</span> <span class="n">p</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+
+        <span class="c1"># Knot window of every point: tw[a] = t[k - deg + a] for a = 0..2*deg+1.</span>
+        <span class="c1"># One gather; all knots used below are contiguous slices of it.</span>
+        <span class="n">tw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_knots</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">dtype</span><span class="p">)[</span><span class="bp">self</span><span class="o">.</span><span class="n">_win_offsets</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">k</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)]</span>
+        <span class="n">xr</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># Degree 0: the single B-spline that is nonzero on the span</span>
+        <span class="n">N</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="n">p</span> <span class="o">-</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">derivative</span> <span class="k">else</span> <span class="n">p</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">lo</span> <span class="o">=</span> <span class="n">tw</span><span class="p">[</span><span class="n">p</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">j</span><span class="p">:</span><span class="n">p</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>          <span class="c1"># t_{k+r+1-j}, r = 0..j-1</span>
+            <span class="n">hi</span> <span class="o">=</span> <span class="n">tw</span><span class="p">[</span><span class="n">p</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span><span class="n">p</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">j</span><span class="p">]</span>          <span class="c1"># t_{k+r+1},   r = 0..j-1</span>
+            <span class="n">tmp</span> <span class="o">=</span> <span class="n">N</span> <span class="o">/</span> <span class="p">(</span><span class="n">hi</span> <span class="o">-</span> <span class="n">lo</span><span class="p">)</span>
+            <span class="n">N</span> <span class="o">=</span> <span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">pad</span><span class="p">((</span><span class="n">hi</span> <span class="o">-</span> <span class="n">xr</span><span class="p">)</span> <span class="o">*</span> <span class="n">tmp</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+                 <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">pad</span><span class="p">((</span><span class="n">xr</span> <span class="o">-</span> <span class="n">lo</span><span class="p">)</span> <span class="o">*</span> <span class="n">tmp</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)))</span>
+
+        <span class="k">if</span> <span class="n">derivative</span><span class="p">:</span>
+            <span class="n">g</span> <span class="o">=</span> <span class="n">N</span> <span class="o">/</span> <span class="p">(</span><span class="n">tw</span><span class="p">[</span><span class="n">p</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span><span class="mi">2</span> <span class="o">*</span> <span class="n">p</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">tw</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">p</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span>
+            <span class="n">N</span> <span class="o">=</span> <span class="n">p</span> <span class="o">*</span> <span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+                     <span class="o">-</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)))</span>
+
+        <span class="k">return</span> <span class="n">N</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_eval_spline_raw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">derivative</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Evaluate all B-splines of the extended knot vector (dense, no boundary modes).</span>
+
+<span class="sd">        No basis functions are dropped and no exponential tails are added; the</span>
+<span class="sd">        values are those of the polynomial B-splines on [a, b] and zero outside.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (torch.Tensor): flattened points of shape (m,)</span>
+<span class="sd">            derivative (bool, optional): if True, evaluate the first derivative.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torch.Tensor: values of shape (n_splines, m).</span>
+<span class="sd">        """</span>
+        <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interval</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spans</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_local_values</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">),</span> <span class="n">k</span><span class="p">,</span> <span class="n">derivative</span><span class="p">)</span>
+        <span class="n">vals</span> <span class="o">=</span> <span class="n">vals</span> <span class="o">*</span> <span class="p">((</span><span class="n">x</span> <span class="o">&gt;=</span> <span class="n">a</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">x</span> <span class="o">&lt;=</span> <span class="n">b</span><span class="p">))</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">k</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_idx_offsets</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_splines</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">out</span><span class="o">.</span><span class="n">scatter_add_</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">vals</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_compute_tail_coefficients</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">side</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Compute the coefficients of the exponential-sum tails.</span>
+
+<span class="sd">        For a "decay" side, the `deg` basis functions whose support crosses the</span>
+<span class="sd">        boundary are continued beyond it by</span>
+
+<span class="sd">            T(s) = sum_{j=1..deg} a_j * exp(-j * mu * s),</span>
+
+<span class="sd">        where ``s = |x - boundary| / h`` is the scaled distance to the boundary and</span>
+<span class="sd">        mu = rate * h. This is the general polynomial in the mapped variable</span>
+<span class="sd">        t = 1 - exp(-mu * s), which sends the unbounded side onto [0, 1),</span>
+<span class="sd">        constrained to vanish at t = 1 (i.e. at infinity) so that the tail is</span>
+<span class="sd">        integrable. Vanishing at t = 1 is what drops the constant term of the</span>
+<span class="sd">        polynomial, so no term of T(s) is a bare exponential multiplied by a</span>
+<span class="sd">        growing factor: every term decays. That is what keeps the matched tails</span>
+<span class="sd">        non-negative and monotone at the default rate.</span>
+
+<span class="sd">        The `deg` coefficients are fixed by matching the value and the first</span>
+<span class="sd">        deg-1 derivatives of the spline at the boundary, so the basis stays</span>
+<span class="sd">        C^(deg-1) across it. Writing the boundary jet as J_k = d^k/ds^k, the</span>
+<span class="sd">        conditions are the Vandermonde system sum_j a_j * (-j*mu)^k = J_k.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            side (int): 0 for the left boundary, 1 for the right.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torch.Tensor: tail coefficients of shape (deg, deg); row i holds</span>
+<span class="sd">                (a_1, ..., a_deg) for the i-th crossing basis function.</span>
+<span class="sd">        """</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deg</span>
+        <span class="n">mu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mu</span><span class="p">[</span><span class="n">side</span><span class="p">]</span>
+
+        <span class="c1"># Sample the boundary-adjacent polynomial piece at Chebyshev points of</span>
+        <span class="c1"># the scaled span variable s in (-1, 0)</span>
+        <span class="n">theta</span> <span class="o">=</span> <span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">p</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span> <span class="o">+</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">p</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)))</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">))</span> <span class="o">/</span> <span class="mf">2.0</span>
+        <span class="k">if</span> <span class="n">side</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">xs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interval</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_h</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">s</span>
+            <span class="n">vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_eval_spline_raw</span><span class="p">(</span><span class="n">xs</span><span class="p">)[</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_splines</span> <span class="o">-</span> <span class="n">p</span><span class="p">:]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">xs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interval</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_h</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">s</span>
+            <span class="n">vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_eval_spline_raw</span><span class="p">(</span><span class="n">xs</span><span class="p">)[:</span><span class="n">p</span><span class="p">]</span>
+
+        <span class="c1"># Recover the piece coefficients in s (exact: the piece is a polynomial</span>
+        <span class="c1"># of degree &lt;= deg on the boundary span)</span>
+        <span class="n">V</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">**</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">p</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">piece</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">V</span><span class="p">,</span> <span class="n">vals</span><span class="o">.</span><span class="n">t</span><span class="p">())</span><span class="o">.</span><span class="n">t</span><span class="p">()</span>
+
+        <span class="c1"># Boundary jet in s: J_k = d^k/ds^k at s = 0 = k! * piece_k</span>
+        <span class="n">factorials</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="nb">float</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">factorial</span><span class="p">(</span><span class="n">k</span><span class="p">))</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">p</span><span class="p">)],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">jet</span> <span class="o">=</span> <span class="n">piece</span><span class="p">[:,</span> <span class="p">:</span><span class="n">p</span><span class="p">]</span> <span class="o">*</span> <span class="n">factorials</span>
+
+        <span class="c1"># Match the jet: A_{kj} = (-j*mu)^k, solve A @ a = jet^T</span>
+        <span class="n">rates</span> <span class="o">=</span> <span class="o">-</span><span class="n">mu</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">p</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">A</span> <span class="o">=</span> <span class="n">rates</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">**</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">jet</span><span class="o">.</span><span class="n">t</span><span class="p">())</span><span class="o">.</span><span class="n">t</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_eval_tail</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">side</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">derivative</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Evaluate the exponential tails of the crossing functions of a "decay" side.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (torch.Tensor): flattened points of shape (m,)</span>
+<span class="sd">            side (int): 0 for the left boundary, 1 for the right.</span>
+<span class="sd">            derivative (bool, optional): if True, evaluate the first derivative.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torch.Tensor: tail values of shape (deg, m), zero inside the interval.</span>
+<span class="sd">        """</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deg</span>
+        <span class="n">mu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mu</span><span class="p">[</span><span class="n">side</span><span class="p">]</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_h</span><span class="p">[</span><span class="n">side</span><span class="p">]</span>
+        <span class="n">boundary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interval</span><span class="p">[</span><span class="n">side</span><span class="p">]</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tail_a_right</span> <span class="k">if</span> <span class="n">side</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tail_a_left</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+
+        <span class="c1"># relu keeps the exponent bounded for points inside the interval so no</span>
+        <span class="c1"># overflow (and no NaN gradient) can leak through the mask</span>
+        <span class="k">if</span> <span class="n">side</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">relu</span><span class="p">((</span><span class="n">x</span> <span class="o">-</span> <span class="n">boundary</span><span class="p">)</span> <span class="o">/</span> <span class="n">h</span><span class="p">)</span>
+            <span class="n">outside</span> <span class="o">=</span> <span class="n">x</span> <span class="o">&gt;</span> <span class="n">boundary</span>
+            <span class="n">dfac</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">h</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">relu</span><span class="p">((</span><span class="n">boundary</span> <span class="o">-</span> <span class="n">x</span><span class="p">)</span> <span class="o">/</span> <span class="n">h</span><span class="p">)</span>
+            <span class="n">outside</span> <span class="o">=</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="n">boundary</span>
+            <span class="n">dfac</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span> <span class="o">/</span> <span class="n">h</span>
+
+        <span class="n">j_idx</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">p</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">derivative</span><span class="p">:</span>
+            <span class="c1"># d/dx [a_j e^{-j mu s}] = dfac * (-j mu) a_j e^{-j mu s}</span>
+            <span class="n">coef</span> <span class="o">=</span> <span class="n">a</span> <span class="o">*</span> <span class="p">(</span><span class="o">-</span><span class="n">mu</span> <span class="o">*</span> <span class="n">j_idx</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dfac</span> <span class="o">=</span> <span class="mf">1.0</span>
+            <span class="n">coef</span> <span class="o">=</span> <span class="n">a</span>
+
+        <span class="c1"># exponents are &lt;= 0 on the tail side, so no overflow is possible</span>
+        <span class="n">E</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">mu</span> <span class="o">*</span> <span class="n">j_idx</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">s</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">dfac</span> <span class="o">*</span> <span class="p">(</span><span class="n">coef</span> <span class="o">@</span> <span class="n">E</span><span class="p">)</span> <span class="o">*</span> <span class="n">outside</span>
+
+<div class="viewcode-block" id="BSplineBasis.eval_sparse">
+<a class="viewcode-back" href="../../../docs/functional.html#torchtt.functional.BSplineBasis.eval_sparse">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">eval_sparse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">derivative</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Sparse (compressed) evaluation of the basis.</span>
+
+<span class="sd">        At most `deg + 1` basis functions are nonzero at any point, so instead of</span>
+<span class="sd">        the dense `(n, ...)` matrix returned by `__call__` this returns only those</span>
+<span class="sd">        values together with the index of the basis function each one belongs to.</span>
+<span class="sd">        Both the work and the memory are `O(deg^2)` per point and do **not** grow</span>
+<span class="sd">        with the number of knots (or basis functions), which is what makes the</span>
+<span class="sd">        evaluation cheap for fine knot vectors. It is fully differentiable in `x`</span>
+<span class="sd">        and runs as a handful of elementwise kernels, so it is fast on CPU and GPU</span>
+<span class="sd">        alike.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (torch.Tensor): points where the basis is evaluated. Arbitrary</span>
+<span class="sd">                shape `(...)`.</span>
+<span class="sd">            derivative (bool, optional): if True, evaluate the first derivative</span>
+<span class="sd">                of the basis functions. Defaults to False.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple[torch.Tensor, torch.Tensor]:</span>
+<span class="sd">                - values: shape `(deg+1, ...)`, the nonzero basis values.</span>
+<span class="sd">                - indices: shape `(deg+1, ...)`, integer indices into `[0, n)`</span>
+<span class="sd">                  of the corresponding basis functions.</span>
+
+<span class="sd">            Slots that carry no basis function (points outside the domain, or</span>
+<span class="sd">            functions dropped by a "zero"/"decay" boundary) have value exactly 0</span>
+<span class="sd">            and an in-range but otherwise meaningless index, so the pair can be</span>
+<span class="sd">            gathered or scattered without any further masking.</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; basis = BSplineBasis(torch.linspace(0, 1, 1000), deg=3)</span>
+<span class="sd">            &gt;&gt;&gt; x = torch.rand(10000, requires_grad=True)</span>
+<span class="sd">            &gt;&gt;&gt; v, i = basis.eval_sparse(x)     # (4, 10000) instead of (1001, 10000)</span>
+<span class="sd">            &gt;&gt;&gt; f = (c[i] * v).sum(0)           # == c @ basis(x), for coefficients c</span>
+<span class="sd">            &gt;&gt;&gt; f.sum().backward()              # gradients flow through</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_knots</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
+        <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deg</span>
+        <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interval</span>
+        <span class="n">shape</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">xw</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">promote_types</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_knots</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
+
+        <span class="c1"># Polynomial part: clamping keeps the (masked out) values of far away</span>
+        <span class="c1"># points finite, so no inf * 0 = NaN can leak into the gradient</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spans</span><span class="p">(</span><span class="n">xw</span><span class="p">)</span>
+        <span class="n">vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_local_values</span><span class="p">(</span><span class="n">xw</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">),</span> <span class="n">k</span><span class="p">,</span> <span class="n">derivative</span><span class="p">)</span>
+        <span class="n">vals</span> <span class="o">=</span> <span class="n">vals</span> <span class="o">*</span> <span class="p">((</span><span class="n">xw</span> <span class="o">&gt;=</span> <span class="n">a</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">xw</span> <span class="o">&lt;=</span> <span class="n">b</span><span class="p">))</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># On "decay" sides the crossing functions continue past the boundary as</span>
+        <span class="c1"># exponential tails. Points beyond the boundary have their span clamped</span>
+        <span class="c1"># to the boundary span, so the tails land on the right slots: the deg</span>
+        <span class="c1"># crossing functions are the last (right) / first (left) deg of them.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bc</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"decay"</span><span class="p">:</span>
+            <span class="n">tail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_eval_tail</span><span class="p">(</span><span class="n">xw</span><span class="p">,</span> <span class="n">side</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">derivative</span><span class="o">=</span><span class="n">derivative</span><span class="p">)</span>
+            <span class="n">vals</span> <span class="o">=</span> <span class="n">vals</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">tail</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"decay"</span><span class="p">:</span>
+            <span class="n">tail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_eval_tail</span><span class="p">(</span><span class="n">xw</span><span class="p">,</span> <span class="n">side</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">derivative</span><span class="o">=</span><span class="n">derivative</span><span class="p">)</span>
+            <span class="n">vals</span> <span class="o">=</span> <span class="n">vals</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">tail</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">k</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_idx_offsets</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lo</span>
+
+        <span class="c1"># Boundary modes drop basis functions at the ends: blank out the slots</span>
+        <span class="c1"># that would refer to them and park their index on a valid entry</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lo</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hi</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_splines</span><span class="p">:</span>
+            <span class="n">vals</span> <span class="o">=</span> <span class="n">vals</span> <span class="o">*</span> <span class="p">((</span><span class="n">idx</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">idx</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">))</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">idx</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">vals</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">p</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="o">*</span><span class="n">shape</span><span class="p">),</span> <span class="n">idx</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">p</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="o">*</span><span class="n">shape</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BSplineBasis.__call__">
+<a class="viewcode-back" href="../../../docs/functional.html#torchtt.functional.BSplineBasis.__call__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">derivative</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Evaluate the B-spline basis functions at the given points.</span>
+
+<span class="sd">        Each basis function is evaluated at every point in `x`, and the results</span>
+<span class="sd">        are stacked along a new first dimension. This method is fully differentiable </span>
+<span class="sd">        via PyTorch autograd.</span>
+
+<span class="sd">        Only `deg + 1` basis functions are nonzero at any point: they are computed</span>
+<span class="sd">        by `eval_sparse` in `O(deg^2)` per point, independently of the number of</span>
+<span class="sd">        knots, and scattered into the dense output. Use `eval_sparse` directly to</span>
+<span class="sd">        skip the dense `(n, ...)` result altogether.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (torch.Tensor): points where the basis is evaluated. </span>
+<span class="sd">                Arbitrary shape `(...)`.</span>
+<span class="sd">            derivative (bool, optional): if True, evaluate the first derivative </span>
+<span class="sd">                of the basis functions. Defaults to False.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torch.Tensor: the B-splines evaluated at x. Shape `(n, ...)` where n </span>
+<span class="sd">                is the number of basis functions and `...` is the shape of the input.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_knots</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
+        <span class="n">vals</span><span class="p">,</span> <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">eval_sparse</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">derivative</span><span class="p">)</span>
+
+        <span class="n">m</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span>
+        <span class="n">dense</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">dense</span><span class="o">.</span><span class="n">scatter_add_</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">idx</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_deg</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">m</span><span class="p">),</span> <span class="n">vals</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_deg</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">m</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">dense</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">,</span> <span class="o">*</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return a string representation of the B-spline basis.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            str: string representation.</span>
+<span class="sd">        """</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"BSplineBasis(n=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="si">}</span><span class="s2">, deg=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_deg</span><span class="si">}</span><span class="s2">, interval=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_interval</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bc</span> <span class="o">!=</span> <span class="p">(</span><span class="s2">"clamped"</span><span class="p">,</span> <span class="s2">"clamped"</span><span class="p">):</span>
+            <span class="n">s</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">", bc=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_bc</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">if</span> <span class="s2">"decay"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bc</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">", decay_rate=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_decay_rates</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">return</span> <span class="n">s</span> <span class="o">+</span> <span class="s2">")"</span>
+    
+<div class="viewcode-block" id="BSplineBasis.interpolating_points">
+<a class="viewcode-back" href="../../../docs/functional.html#torchtt.functional.BSplineBasis.interpolating_points">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">interpolating_points</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return the interpolating points (Greville abscissae) and the basis matrix.</span>
+<span class="sd">        </span>
+<span class="sd">        The interpolating points are the Greville abscissae, defined as the </span>
+<span class="sd">        averages of `deg` consecutive knots. When the basis is evaluated at </span>
+<span class="sd">        these points, the resulting matrix is guaranteed to be invertible </span>
+<span class="sd">        (non-singular).</span>
+<span class="sd">        </span>
+<span class="sd">        This property is fundamental for B-spline interpolation: given function </span>
+<span class="sd">        values f_i at the interpolating points x_i, the coefficients c_j of the </span>
+<span class="sd">        B-spline expansion can be uniquely determined by solving:</span>
+<span class="sd">        </span>
+<span class="sd">            B(x_i) @ c = f</span>
+<span class="sd">        </span>
+<span class="sd">        where B(x_i) is the invertible matrix returned by this method.</span>
+
+<span class="sd">        For "zero" sides the boundary point is dropped together with the omitted</span>
+<span class="sd">        basis function. For "decay" sides the dropped out-of-domain crossing</span>
+<span class="sd">        functions take their (past-boundary) Greville points with them, so all</span>
+<span class="sd">        retained interpolating points lie within [a, b], the outermost sitting</span>
+<span class="sd">        exactly at the boundary.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple[torch.Tensor, torch.Tensor]:</span>
+<span class="sd">                - points: the Greville abscissae as a vector of shape `(n,)`</span>
+<span class="sd">                - matrix: shape `(n, n)`, with rows corresponding to points and</span>
+<span class="sd">                  columns to basis functions: ``matrix = self(points).T``</span>
+<span class="sd">        """</span>
+        <span class="c1"># Greville abscissae of the retained basis functions: the sliding mean</span>
+        <span class="c1"># of deg consecutive knots, as one windowed reduction (no Python loop).</span>
+        <span class="c1"># For deg = 0 the basis functions are span indicators, whose natural</span>
+        <span class="c1"># interpolating points are the span midpoints.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deg</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">pts</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_knots</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_knots</span><span class="p">[</span><span class="mi">1</span><span class="p">:]))[</span><span class="bp">self</span><span class="o">.</span><span class="n">_lo</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">_hi</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pts</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_knots</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">unfold</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deg</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deg</span><span class="p">)[</span><span class="bp">self</span><span class="o">.</span><span class="n">_lo</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">_hi</span><span class="p">]</span>
+        
+        <span class="c1"># Evaluate basis at these points (detached for stability)</span>
+        <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+            <span class="n">matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="p">(</span><span class="n">pts</span><span class="p">)</span><span class="o">.</span><span class="n">t</span><span class="p">()</span>
+        
+        <span class="k">return</span> <span class="n">pts</span><span class="p">,</span> <span class="n">matrix</span></div>
+
+    
+<div class="viewcode-block" id="BSplineBasis.integration_weights">
+<a class="viewcode-back" href="../../../docs/functional.html#torchtt.functional.BSplineBasis.integration_weights">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">integration_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return the integrals of each individual B-spline basis function.</span>
+
+<span class="sd">        For B-splines supported inside the interval, the integral of basis</span>
+<span class="sd">        function B_{i,p}(x) over its entire support is given by the analytical</span>
+<span class="sd">        formula:</span>
+
+<span class="sd">            ∫ B_{i,p}(x) dx = (t_{i+p+1} - t_i) / (p+1)</span>
+
+<span class="sd">        where t_i are the knots in the extended knot vector and p is the degree.</span>
+<span class="sd">        For "decay" sides, the bounded part is integrated exactly with</span>
+<span class="sd">        Gauss-Legendre quadrature and the analytic integral of the exponential</span>
+<span class="sd">        tails is added, so the weights are the integrals over the whole</span>
+<span class="sd">        (unbounded) domain.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torch.Tensor: a vector of shape `(n,)` containing the integral of</span>
+<span class="sd">                each B-spline basis function.</span>
+<span class="sd">        """</span>
+        <span class="n">device</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_knots</span><span class="o">.</span><span class="n">device</span>
+        <span class="n">dtype</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_knots</span><span class="o">.</span><span class="n">dtype</span>
+        <span class="k">if</span> <span class="s2">"decay"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bc</span><span class="p">:</span>
+            <span class="c1"># Analytical formula for B-spline integrals of the retained functions:</span>
+            <span class="c1"># int B_{i,p}(x) dx = (t_{i+p+1} - t_i) / (p + 1)</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_knots</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_lo</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deg</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">_hi</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deg</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+                    <span class="o">-</span> <span class="n">t</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_lo</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">_hi</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_deg</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># Bounded part (exact: Gauss-Legendre with deg+1 points per knot span),</span>
+        <span class="c1"># accumulated from the sparse evaluation so the cost stays linear in n</span>
+        <span class="n">pts</span><span class="p">,</span> <span class="n">w</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_quadrature_bounded</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_deg</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">v</span><span class="p">,</span> <span class="n">i</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">eval_sparse</span><span class="p">(</span><span class="n">pts</span><span class="p">)</span>
+        <span class="n">integrals</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">integrals</span><span class="o">.</span><span class="n">scatter_add_</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="n">v</span> <span class="o">*</span> <span class="n">w</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+
+        <span class="c1"># Analytic tail mass: ∫_0^∞ e^{-j mu s} h ds = h / (j mu)</span>
+        <span class="k">for</span> <span class="n">side</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bc</span><span class="p">[</span><span class="n">side</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">"decay"</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">mu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mu</span><span class="p">[</span><span class="n">side</span><span class="p">]</span>
+            <span class="n">a</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tail_a_right</span> <span class="k">if</span> <span class="n">side</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tail_a_left</span>
+            <span class="n">moments</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">1.0</span> <span class="o">/</span> <span class="p">((</span><span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">mu</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_deg</span><span class="p">)],</span>
+                                   <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+            <span class="n">tail_mass</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_h</span><span class="p">[</span><span class="n">side</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">a</span> <span class="o">@</span> <span class="n">moments</span><span class="p">)</span>
+            <span class="c1"># Only the retained crossing functions receive tail mass. The a rows</span>
+            <span class="c1"># are ordered from the innermost crossing function outwards, so the</span>
+            <span class="c1"># retained ones are the innermost `keep` (side 1) / outermost-dropped</span>
+            <span class="c1"># `deg - keep` excluded (side 0).</span>
+            <span class="n">keep</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tail_keep</span><span class="p">[</span><span class="n">side</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">keep</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">side</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">integrals</span><span class="p">[</span><span class="o">-</span><span class="n">keep</span><span class="p">:]</span> <span class="o">=</span> <span class="n">integrals</span><span class="p">[</span><span class="o">-</span><span class="n">keep</span><span class="p">:]</span> <span class="o">+</span> <span class="n">tail_mass</span><span class="p">[:</span><span class="n">keep</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">integrals</span><span class="p">[:</span><span class="n">keep</span><span class="p">]</span> <span class="o">=</span> <span class="n">integrals</span><span class="p">[:</span><span class="n">keep</span><span class="p">]</span> <span class="o">+</span> <span class="n">tail_mass</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_deg</span> <span class="o">-</span> <span class="n">keep</span><span class="p">:]</span>
+
+        <span class="k">return</span> <span class="n">integrals</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_quadrature_bounded</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">degree</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Gauss-Legendre quadrature on the bounded knot interval [a, b].</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            degree (int): the number of quadrature points per knot span.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple[torch.Tensor, torch.Tensor]:</span>
+<span class="sd">                - points: 1D tensor of quadrature points.</span>
+<span class="sd">                - weights: 1D tensor of corresponding quadrature weights.</span>
+<span class="sd">        """</span>
+        <span class="c1"># Gauss-Legendre points and weights on [-1, 1]</span>
+        <span class="n">x_ref</span><span class="p">,</span> <span class="n">w_ref</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polynomial</span><span class="o">.</span><span class="n">legendre</span><span class="o">.</span><span class="n">leggauss</span><span class="p">(</span><span class="n">degree</span><span class="p">)</span>
+        <span class="n">x_ref</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">x_ref</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_knots</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_knots</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">w_ref</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">w_ref</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_knots</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_knots</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+
+        <span class="c1"># Unique interior knots to define non-zero spans (phantom knots of</span>
+        <span class="c1"># "decay" sides are excluded; tails are handled separately)</span>
+        <span class="n">unique_knots</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_interior_knots</span><span class="p">)</span>
+
+        <span class="c1"># Map the reference rule onto every span at once (span-major ordering)</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="n">unique_knots</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="n">unique_knots</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">half</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">b</span> <span class="o">-</span> <span class="n">a</span><span class="p">)</span>
+
+        <span class="n">points</span> <span class="o">=</span> <span class="p">(</span><span class="n">half</span> <span class="o">*</span> <span class="n">x_ref</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">a</span> <span class="o">+</span> <span class="n">b</span><span class="p">))</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="p">(</span><span class="n">half</span> <span class="o">*</span> <span class="n">w_ref</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">points</span><span class="p">,</span> <span class="n">weights</span>
+
+<div class="viewcode-block" id="BSplineBasis.quadrature">
+<a class="viewcode-back" href="../../../docs/functional.html#torchtt.functional.BSplineBasis.quadrature">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">quadrature</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">degree</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Compute quadrature points and weights for integrating functions in the B-spline basis.</span>
+
+<span class="sd">        It computes Gauss-Legendre quadrature points and weights for each non-zero</span>
+<span class="sd">        length interval between the knots. For "decay" sides, points mapped through</span>
+<span class="sd">        the tail variable ``t = 1 - exp(-rate * |x - boundary|)`` are appended on the</span>
+<span class="sd">        unbounded tail. In t the tails are polynomials vanishing at t = 1, so with</span>
+<span class="sd">        `degree` &gt;= deg the rule is exact both for the basis tails themselves and</span>
+<span class="sd">        for their pairwise products (e.g. mass matrix entries).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            degree (int): the number of quadrature points per interval (and per tail).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple[torch.Tensor, torch.Tensor]:</span>
+<span class="sd">                - points: 1D tensor of quadrature points (ascending).</span>
+<span class="sd">                - weights: 1D tensor of corresponding quadrature weights.</span>
+<span class="sd">        """</span>
+        <span class="n">points</span><span class="p">,</span> <span class="n">weights</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_quadrature_bounded</span><span class="p">(</span><span class="n">degree</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">"decay"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bc</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">points</span><span class="p">,</span> <span class="n">weights</span>
+
+        <span class="c1"># Substituting t = 1 - e^{-λ|x-b|} maps the tail onto the unit interval:</span>
+        <span class="c1">#   ∫_b^∞ f dx = (1/λ) ∫_0^1 f(b - ln(e)/λ) de/e,   e = 1 - t = e^{-λ(x-b)}</span>
+        <span class="c1"># The tails are polynomials in t vanishing at t = 1, hence polynomials in e</span>
+        <span class="c1"># with no constant term, so f/e is a polynomial and Gauss-Legendre is exact.</span>
+        <span class="n">u_np</span><span class="p">,</span> <span class="n">w_np</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polynomial</span><span class="o">.</span><span class="n">legendre</span><span class="o">.</span><span class="n">leggauss</span><span class="p">(</span><span class="n">degree</span><span class="p">)</span>
+        <span class="n">eps</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">u_np</span> <span class="o">+</span> <span class="mf">1.0</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_knots</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_knots</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">w_eps</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">w_np</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_knots</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_knots</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="o">-</span><span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">eps</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bc</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"decay"</span><span class="p">:</span>
+            <span class="n">lam</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_decay_rates</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="c1"># e ascending -&gt; x descending, so flip to keep the points ascending</span>
+            <span class="n">points</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">points</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">flip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_interval</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">offset</span> <span class="o">/</span> <span class="n">lam</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">])])</span>
+            <span class="n">weights</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">weights</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">flip</span><span class="p">(</span><span class="n">w_eps</span> <span class="o">/</span> <span class="p">(</span><span class="n">lam</span> <span class="o">*</span> <span class="n">eps</span><span class="p">),</span> <span class="p">[</span><span class="mi">0</span><span class="p">])])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"decay"</span><span class="p">:</span>
+            <span class="n">lam</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_decay_rates</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">points</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">_interval</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">offset</span> <span class="o">/</span> <span class="n">lam</span><span class="p">,</span> <span class="n">points</span><span class="p">])</span>
+            <span class="n">weights</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">w_eps</span> <span class="o">/</span> <span class="p">(</span><span class="n">lam</span> <span class="o">*</span> <span class="n">eps</span><span class="p">),</span> <span class="n">weights</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">points</span><span class="p">,</span> <span class="n">weights</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_tail_matrix_blocks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">side</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Analytic tail contributions of a "decay" side to the mass, stiffness and</span>
+<span class="sd">        advection matrices.</span>
+
+<span class="sd">        Only the `deg` crossing basis functions are nonzero beyond the boundary,</span>
+<span class="sd">        so each matrix receives a (deg, deg) block. With tails</span>
+<span class="sd">        T_i(s) = sum_j a_ij e^{-j mu s} the single moment ∫_0^∞ e^{-(j+l) mu s} ds</span>
+<span class="sd">        = 1 / ((j+l) mu) turns every block into a closed-form bilinear form in the</span>
+<span class="sd">        tail coefficients.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            side (int): 0 for the left boundary, 1 for the right.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple[torch.Tensor, torch.Tensor, torch.Tensor]: (deg, deg) blocks</span>
+<span class="sd">                of the mass, stiffness and advection matrices.</span>
+<span class="sd">        """</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deg</span>
+        <span class="n">mu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mu</span><span class="p">[</span><span class="n">side</span><span class="p">]</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_h</span><span class="p">[</span><span class="n">side</span><span class="p">]</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tail_a_right</span> <span class="k">if</span> <span class="n">side</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tail_a_left</span>
+
+        <span class="n">j_idx</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">p</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="c1"># S_{jl} = j + l, the exponent index of the product of two tail terms</span>
+        <span class="n">S</span> <span class="o">=</span> <span class="n">j_idx</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">j_idx</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># dx = h ds on both sides; d/dx = ±(1/h) d/ds</span>
+        <span class="n">dfac</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">h</span> <span class="k">if</span> <span class="n">side</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="o">-</span><span class="mf">1.0</span> <span class="o">/</span> <span class="n">h</span>
+        <span class="c1"># mass:      h * ∫ e^{-(j+l) mu s} ds           = h / ((j+l) mu)</span>
+        <span class="c1"># stiffness: dfac^2 h mu^2 j l * 1/((j+l) mu)   = dfac^2 h mu * j l / (j+l)</span>
+        <span class="c1"># advection: dfac h mu (-l) * 1/((j+l) mu)      = dfac h * (-l) / (j+l)</span>
+        <span class="n">mass</span> <span class="o">=</span> <span class="n">h</span> <span class="o">*</span> <span class="p">(</span><span class="n">a</span> <span class="o">@</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">S</span> <span class="o">*</span> <span class="n">mu</span><span class="p">))</span> <span class="o">@</span> <span class="n">a</span><span class="o">.</span><span class="n">t</span><span class="p">())</span>
+        <span class="n">stiffness</span> <span class="o">=</span> <span class="p">(</span><span class="n">dfac</span> <span class="o">*</span> <span class="n">dfac</span> <span class="o">*</span> <span class="n">h</span> <span class="o">*</span> <span class="n">mu</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">a</span> <span class="o">@</span> <span class="p">((</span><span class="n">j_idx</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">j_idx</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span> <span class="o">/</span> <span class="n">S</span><span class="p">)</span> <span class="o">@</span> <span class="n">a</span><span class="o">.</span><span class="n">t</span><span class="p">())</span>
+        <span class="n">advection</span> <span class="o">=</span> <span class="p">(</span><span class="n">dfac</span> <span class="o">*</span> <span class="n">h</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">a</span> <span class="o">@</span> <span class="p">(</span><span class="o">-</span><span class="n">j_idx</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">/</span> <span class="n">S</span><span class="p">)</span> <span class="o">@</span> <span class="n">a</span><span class="o">.</span><span class="n">t</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">mass</span><span class="p">,</span> <span class="n">stiffness</span><span class="p">,</span> <span class="n">advection</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_add_tail_blocks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">matrix</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">which</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Add the analytic tail blocks of all "decay" sides to a matrix computed</span>
+<span class="sd">        on the bounded interval.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            matrix (torch.Tensor): matrix of shape (n, n) over the bounded part.</span>
+<span class="sd">            which (int): 0 for mass, 1 for stiffness, 2 for advection.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torch.Tensor: the corrected matrix.</span>
+<span class="sd">        """</span>
+        <span class="k">for</span> <span class="n">side</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bc</span><span class="p">[</span><span class="n">side</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">"decay"</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">keep</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tail_keep</span><span class="p">[</span><span class="n">side</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">keep</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">block</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tail_matrix_blocks</span><span class="p">(</span><span class="n">side</span><span class="p">)[</span><span class="n">which</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">matrix</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+            <span class="c1"># Restrict the (deg, deg) tail block to the retained crossing</span>
+            <span class="c1"># functions (see integration_weights for the row ordering).</span>
+            <span class="k">if</span> <span class="n">side</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">matrix</span><span class="p">[</span><span class="o">-</span><span class="n">keep</span><span class="p">:,</span> <span class="o">-</span><span class="n">keep</span><span class="p">:]</span> <span class="o">=</span> <span class="n">matrix</span><span class="p">[</span><span class="o">-</span><span class="n">keep</span><span class="p">:,</span> <span class="o">-</span><span class="n">keep</span><span class="p">:]</span> <span class="o">+</span> <span class="n">block</span><span class="p">[:</span><span class="n">keep</span><span class="p">,</span> <span class="p">:</span><span class="n">keep</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">matrix</span><span class="p">[:</span><span class="n">keep</span><span class="p">,</span> <span class="p">:</span><span class="n">keep</span><span class="p">]</span> <span class="o">=</span> <span class="n">matrix</span><span class="p">[:</span><span class="n">keep</span><span class="p">,</span> <span class="p">:</span><span class="n">keep</span><span class="p">]</span> <span class="o">+</span> <span class="n">block</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_deg</span> <span class="o">-</span> <span class="n">keep</span><span class="p">:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deg</span> <span class="o">-</span> <span class="n">keep</span><span class="p">:]</span>
+        <span class="k">return</span> <span class="n">matrix</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_gram_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">degree</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">d_row</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">d_col</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Assemble int D^a B_i(x) D^b B_j(x) dx over the bounded interval [a, b].</span>
+
+<span class="sd">        The matrix is banded: at a quadrature point only deg+1 basis functions</span>
+<span class="sd">        are nonzero, so the sparse evaluation gives the (deg+1) x (deg+1) block</span>
+<span class="sd">        each point contributes and the blocks are scattered into the result. The</span>
+<span class="sd">        cost is O(deg^2) per quadrature point instead of the O(n^2) of a dense</span>
+<span class="sd">        `B @ diag(w) @ B.T` product, so assembly scales linearly in the number</span>
+<span class="sd">        of basis functions.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            degree (int): the number of quadrature points per knot span.</span>
+<span class="sd">            d_row (bool): differentiate the row (test) functions.</span>
+<span class="sd">            d_col (bool): differentiate the column (trial) functions.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torch.Tensor: matrix of shape (n, n) over the bounded part.</span>
+<span class="sd">        """</span>
+        <span class="n">pts</span><span class="p">,</span> <span class="n">w</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_quadrature_bounded</span><span class="p">(</span><span class="n">degree</span><span class="p">)</span>
+        <span class="n">vr</span><span class="p">,</span> <span class="n">ir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">eval_sparse</span><span class="p">(</span><span class="n">pts</span><span class="p">,</span> <span class="n">derivative</span><span class="o">=</span><span class="n">d_row</span><span class="p">)</span>
+        <span class="n">vc</span><span class="p">,</span> <span class="n">ic</span> <span class="o">=</span> <span class="p">(</span><span class="n">vr</span><span class="p">,</span> <span class="n">ir</span><span class="p">)</span> <span class="k">if</span> <span class="n">d_row</span> <span class="o">==</span> <span class="n">d_col</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">eval_sparse</span><span class="p">(</span><span class="n">pts</span><span class="p">,</span> <span class="n">derivative</span><span class="o">=</span><span class="n">d_col</span><span class="p">)</span>
+
+        <span class="c1"># Outer product of the two local blocks at every quadrature point,</span>
+        <span class="c1"># accumulated into the flattened (n, n) matrix</span>
+        <span class="n">blocks</span> <span class="o">=</span> <span class="p">(</span><span class="n">vr</span> <span class="o">*</span> <span class="n">w</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">vc</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">flat_idx</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n</span> <span class="o">+</span> <span class="n">ic</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">blocks</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">blocks</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">out</span><span class="o">.</span><span class="n">scatter_add_</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">flat_idx</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">blocks</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">)</span>
+
+<div class="viewcode-block" id="BSplineBasis.mass_matrix">
+<a class="viewcode-back" href="../../../docs/functional.html#torchtt.functional.BSplineBasis.mass_matrix">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">mass_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">degree</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Compute the mass matrix M_ij = int B_i(x) B_j(x) dx.</span>
+
+<span class="sd">        For "decay" sides the integral extends over the unbounded tail; the tail</span>
+<span class="sd">        contribution is added analytically.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            degree (int, optional): The number of quadrature points per interval.</span>
+<span class="sd">                If not provided, defaults to deg + 1 to ensure exact integration</span>
+<span class="sd">                of polynomials of degree up to 2*deg.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torch.Tensor: The mass matrix of shape (n, n).</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">degree</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Product of two B-splines of degree p has degree 2p.</span>
+            <span class="c1"># Gauss-Legendre with k points integrates polynomials of degree up to 2k-1 exactly.</span>
+            <span class="c1"># So 2k - 1 &gt;= 2p =&gt; k &gt;= p + 1.</span>
+            <span class="n">degree</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deg</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="c1"># M_ij = sum_k B_i(x_k) B_j(x_k) w_k, assembled band by band</span>
+        <span class="n">M</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gram_matrix</span><span class="p">(</span><span class="n">degree</span><span class="p">,</span> <span class="n">d_row</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">d_col</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_tail_blocks</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BSplineBasis.stiffness_matrix">
+<a class="viewcode-back" href="../../../docs/functional.html#torchtt.functional.BSplineBasis.stiffness_matrix">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stiffness_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">degree</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Compute the stiffness matrix S_ij = int B'_i(x) B'_j(x) dx.</span>
+
+<span class="sd">        For "decay" sides the integral extends over the unbounded tail; the tail</span>
+<span class="sd">        contribution is added analytically.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            degree (int, optional): The number of quadrature points per interval.</span>
+<span class="sd">                If not provided, defaults to deg + 1.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torch.Tensor: The stiffness matrix of shape (n, n).</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">degree</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">degree</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deg</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="c1"># S_ij = sum_k B'_i(x_k) B'_j(x_k) w_k, assembled band by band</span>
+        <span class="n">S</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gram_matrix</span><span class="p">(</span><span class="n">degree</span><span class="p">,</span> <span class="n">d_row</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">d_col</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_tail_blocks</span><span class="p">(</span><span class="n">S</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BSplineBasis.advection_matrix">
+<a class="viewcode-back" href="../../../docs/functional.html#torchtt.functional.BSplineBasis.advection_matrix">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">advection_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">degree</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Compute the advection matrix C_ij = int B_i(x) B'_j(x) dx.</span>
+
+<span class="sd">        For "decay" sides the integral extends over the unbounded tail; the tail</span>
+<span class="sd">        contribution is added analytically.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            degree (int, optional): The number of quadrature points per interval.</span>
+<span class="sd">                If not provided, defaults to deg + 1.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torch.Tensor: The advection matrix of shape (n, n).</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">degree</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">degree</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deg</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="c1"># C_ij = sum_k B_i(x_k) B'_j(x_k) w_k, assembled band by band</span>
+        <span class="n">C</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gram_matrix</span><span class="p">(</span><span class="n">degree</span><span class="p">,</span> <span class="n">d_row</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">d_col</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_tail_blocks</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="GaussianBasis">
+<a class="viewcode-back" href="../../../docs/functional.html#torchtt.functional.GaussianBasis">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">GaussianBasis</span><span class="p">(</span><span class="n">BaseBasis</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Gaussian basis functions.</span>
+<span class="sd">    </span>
+<span class="sd">    The basis functions are Gaussians centered at the knots.</span>
+<span class="sd">    phi_i(x) = exp(-(x - mu_i)^2 / (2 * sigma_i^2))</span>
+<span class="sd">    </span>
+<span class="sd">    The centers mu_i are the knots themselves.</span>
+<span class="sd">    The widths sigma_i are determined by the 'delta_overlap' parameter,</span>
+<span class="sd">    which specifies the distance to the neighboring knot that defines the scale.</span>
+<span class="sd">    Specifically, sigma_i is set to the distance between the i-th knot and the </span>
+<span class="sd">    (i + delta_overlap)-th knot. For indices where this neighbor doesn't exist </span>
+<span class="sd">    (near the end), the distance to the (i - delta_overlap)-th knot is used.</span>
+<span class="sd">    """</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">knots</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">delta_overlap</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Initialize a Gaussian basis.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            knots (torch.Tensor): the centers of the Gaussian functions.</span>
+<span class="sd">            delta_overlap (int): the knot stride used to determine the width (sigma)</span>
+<span class="sd">                of the Gaussians. Must be &gt;= 1.</span>
+<span class="sd">        """</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">knots</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+            <span class="n">knots</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">knots</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        
+        <span class="n">knots</span> <span class="o">=</span> <span class="n">knots</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">knots</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Knots must not be empty."</span><span class="p">)</span>
+             
+        <span class="bp">self</span><span class="o">.</span><span class="n">_knots</span> <span class="o">=</span> <span class="n">knots</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n</span> <span class="o">=</span> <span class="n">knots</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_delta_overlap</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">delta_overlap</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_delta_overlap</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"delta_overlap must be a positive integer."</span><span class="p">)</span>
+            
+        <span class="c1"># Compute sigmas</span>
+        <span class="n">sigmas</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">knots</span><span class="p">)</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_delta_overlap</span>
+        
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">+</span> <span class="n">k</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">:</span>
+                <span class="c1"># Use forward distance</span>
+                <span class="n">sigmas</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">knots</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="n">k</span><span class="p">]</span> <span class="o">-</span> <span class="n">knots</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="n">i</span> <span class="o">-</span> <span class="n">k</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="c1"># Use backward distance</span>
+                <span class="n">sigmas</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">knots</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">knots</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="n">k</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Fallback for very small number of knots (n &lt;= k)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                     <span class="n">sigmas</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">knots</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">knots</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                     <span class="n">sigmas</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">knots</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">knots</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        
+        <span class="c1"># Avoid zero sigma</span>
+        <span class="n">sigmas</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">sigmas</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">1e-10</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">sigmas</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">sigmas</span><span class="o">.</span><span class="n">device</span><span class="p">))</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s1">'_centers'</span><span class="p">,</span> <span class="n">knots</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s1">'_sigmas'</span><span class="p">,</span> <span class="n">sigmas</span><span class="p">)</span>
+        
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">n</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The number of Gaussian basis functions."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n</span>
+
+<div class="viewcode-block" id="GaussianBasis.__call__">
+<a class="viewcode-back" href="../../../docs/functional.html#torchtt.functional.GaussianBasis.__call__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">derivative</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Evaluate the Gaussian basis or its first derivative at each input point.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (torch.Tensor): Input points of arbitrary shape ``(...)``. Move</span>
+<span class="sd">                the basis and input to the same device and dtype before calling.</span>
+<span class="sd">            derivative (bool, optional): Evaluate the first derivative with</span>
+<span class="sd">                respect to ``x`` if True. Defaults to False.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torch.Tensor: Values of shape ``(n, ...)``. Evaluation supports</span>
+<span class="sd">            PyTorch autograd with respect to the input points.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_centers</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_centers</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        
+        <span class="n">original_shape</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">x_flat</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+        
+        <span class="c1"># Expand dims for broadcasting: (n, m)</span>
+        <span class="n">x_expanded</span> <span class="o">=</span> <span class="n">x_flat</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">centers_expanded</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_centers</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">sigmas_expanded</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sigmas</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        
+        <span class="n">diff</span> <span class="o">=</span> <span class="n">x_expanded</span> <span class="o">-</span> <span class="n">centers_expanded</span>
+        <span class="n">exponent</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">diff</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">sigmas_expanded</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">exponent</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">derivative</span><span class="p">:</span>
+            <span class="c1"># d/dx = values * (-2 * (x - mu) / (2 * sigma^2)) = values * (-(x - mu) / sigma^2)</span>
+            <span class="n">derivs</span> <span class="o">=</span> <span class="n">values</span> <span class="o">*</span> <span class="p">(</span><span class="o">-</span><span class="n">diff</span> <span class="o">/</span> <span class="p">(</span><span class="n">sigmas_expanded</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">derivs</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">,</span> <span class="o">*</span><span class="n">original_shape</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">values</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">,</span> <span class="o">*</span><span class="n">original_shape</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"GaussianBasis(n=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="si">}</span><span class="s2">, delta_overlap=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_delta_overlap</span><span class="si">}</span><span class="s2">)"</span>
+        
+<div class="viewcode-block" id="GaussianBasis.interpolating_points">
+<a class="viewcode-back" href="../../../docs/functional.html#torchtt.functional.GaussianBasis.interpolating_points">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">interpolating_points</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return the Gaussian centers and their interpolation matrix.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple[torch.Tensor, torch.Tensor]: Points of shape ``(n,)`` and</span>
+<span class="sd">            matrix of shape ``(n, n)``. Rows correspond to points and columns</span>
+<span class="sd">            to basis functions: ``matrix = self(points).T``. Solve</span>
+<span class="sd">            ``matrix @ coefficients = values`` for interpolation. Wide or</span>
+<span class="sd">            closely spaced Gaussians can make this matrix ill-conditioned.</span>
+<span class="sd">        """</span>
+        <span class="n">pts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_centers</span>
+        <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+            <span class="n">matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="p">(</span><span class="n">pts</span><span class="p">)</span><span class="o">.</span><span class="n">t</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">pts</span><span class="p">,</span> <span class="n">matrix</span></div>
+
+
+<div class="viewcode-block" id="GaussianBasis.integration_weights">
+<a class="viewcode-back" href="../../../docs/functional.html#torchtt.functional.GaussianBasis.integration_weights">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">integration_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Integrate each Gaussian over the entire real line.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torch.Tensor: Integrals of shape ``(n,)``, equal to</span>
+<span class="sd">            ``sigma * sqrt(2 * pi)``. The Gaussians are not normalized individually.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sigmas</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Ion Gabriel Ion.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

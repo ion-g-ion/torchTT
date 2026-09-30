@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>torchtt._dmrg &mdash; torchTT development (main @ 42740af) documentation</title>
+  <title>torchtt._dmrg &mdash; torchTT development (main @ 0909209) documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=167f7836"></script>
+      <script src="../../_static/documentation_options.js?v=33102d81"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -47,6 +47,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../../docs/package-overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/modules.html">API reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/references.html">References</a></li>
 </ul>
 
         </div>
@@ -64,6 +66,7 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
           <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../torchtt.html">torchtt</a></li>
       <li class="breadcrumb-item active">torchtt._dmrg</li>
       <li class="wy-breadcrumbs-aside">
       </li>
@@ -73,7 +76,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 42740af)</strong><br><a href="../../../stable/index.html">Stable release</a> · <a href="../../../latest/index.html">Development (main)</a></nav><h1>Source code for torchtt._dmrg</h1><div class="highlight"><pre>
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 0909209)</strong><br><a href="../../../stable/index.html">Stable release</a> · <a href="../../../latest/index.html">Development (main)</a></nav><h1>Source code for torchtt._dmrg</h1><div class="highlight"><pre>
 <span></span><span class="sd">"""</span>
 <span class="sd">DMRG implementation for fast matvec product.</span>
 <span class="sd">Inspired by TT-Toolbox from MATLAB.</span>
@@ -84,6 +87,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tn</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">torchtt._decomposition</span><span class="w"> </span><span class="kn">import</span> <span class="n">rank_chop</span><span class="p">,</span> <span class="n">QR</span><span class="p">,</span> <span class="n">SVD</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">opt_einsum</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">oe</span>
 
 
@@ -264,27 +268,27 @@
 <a class="viewcode-back" href="../../docs/torchtt.html#torchtt.dmrg_hadamard">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">dmrg_hadamard</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z0</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">nswp</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="n">eps</span> <span class="o">=</span> <span class="mf">1e-12</span><span class="p">,</span> <span class="n">rmax</span> <span class="o">=</span> <span class="mi">32768</span><span class="p">,</span> <span class="n">kickrank</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="n">verb</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">use_cpp</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Perform fast elementwise multiplication `z = x * y` in the TT using the DMRG algorithm.</span>
-<span class="sd">    C++ backend not yet ready if available.</span>
-<span class="sd">    </span>
+<span class="sd">    Perform fast elementwise multiplication `z = x * y` in the TT format using the density matrix renormalization group (DMRG) algorithm :cite:p:`oseledets2011dmrg`.</span>
+
+<span class="sd">    .. deprecated:: 0.6.0</span>
+<span class="sd">        Use :func:`torchtt.hadamard` with ``method='dmrg'`` (or ``method=torchtt.methods.DMRG(nswp=..., kickrank=...)``).</span>
+
 <span class="sd">    Args:</span>
-<span class="sd">        z (TT): TT tensor</span>
 <span class="sd">        x (TT): TT tensor</span>
+<span class="sd">        y (TT): TT tensor</span>
 <span class="sd">        z0 (TT, optional): initial guess of the result (if None is provided a random tensor is generated as a guess). Defaults to None.</span>
 <span class="sd">        nswp (int, optional): numebr of sweeps. Defaults to 20.</span>
 <span class="sd">        eps (float, optional): relative accuracy. Defaults to 1e-12.</span>
 <span class="sd">        rmax (int, optional): maximum rank. Defaults to 32768.</span>
 <span class="sd">        kickrank (int, optional): kickrank. Defaults to 4.</span>
 <span class="sd">        verb (bool, optional): show debug info. Defaults to False.</span>
-<span class="sd">        use_cpp (bool, optional): flag to choose between the python and C++ implementation (if available). Defaults to False.</span>
+<span class="sd">        use_cpp (bool, optional): not used (there is no C++ implementation). Defaults to True.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        TT: the result.</span>
 <span class="sd">    """</span>
-    <span class="k">if</span> <span class="kc">False</span> <span class="ow">and</span> <span class="n">_flag_use_cpp</span> <span class="ow">and</span> <span class="n">use_cpp</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">torchttcpp</span><span class="o">.</span><span class="n">dmrg_mv</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">cores</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">cores</span><span class="p">,</span> <span class="p">[]</span> <span class="k">if</span> <span class="n">y0</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">y0</span><span class="o">.</span><span class="n">cores</span><span class="p">,</span> <span class="n">A</span><span class="o">.</span><span class="n">M</span><span class="p">,</span> <span class="n">A</span><span class="o">.</span><span class="n">N</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">R</span><span class="p">,</span> <span class="p">[]</span> <span class="k">if</span> <span class="n">y0</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">y0</span><span class="o">.</span><span class="n">R</span><span class="p">,</span> <span class="n">nswp</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">,</span> <span class="n">kickrank</span><span class="p">,</span> <span class="n">verb</span><span class="p">))</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">dmrg_hadamard_python</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z0</span><span class="p">,</span> <span class="n">nswp</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">,</span> <span class="n">kickrank</span><span class="p">,</span> <span class="n">verb</span><span class="p">)</span></div>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">"torchtt.dmrg_hadamard() is deprecated, use torchtt.hadamard(x, y, eps, method=torchtt.methods.DMRG(nswp=..., kickrank=...)) instead."</span><span class="p">,</span> <span class="ne">DeprecationWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">hadamard</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">torchtt</span><span class="o">.</span><span class="n">methods</span><span class="o">.</span><span class="n">DMRG</span><span class="p">(</span><span class="n">nswp</span><span class="o">=</span><span class="n">nswp</span><span class="p">,</span> <span class="n">kickrank</span><span class="o">=</span><span class="n">kickrank</span><span class="p">),</span> <span class="n">initial</span><span class="o">=</span><span class="n">z0</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verb</span><span class="p">)</span></div>
 
     
 <span class="k">def</span><span class="w"> </span><span class="nf">dmrg_hadamard_python</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y0</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">nswp</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="n">eps</span> <span class="o">=</span> <span class="mf">1e-12</span><span class="p">,</span> <span class="n">rmax</span> <span class="o">=</span> <span class="mi">32768</span><span class="p">,</span> <span class="n">kickrank</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="n">verb</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>

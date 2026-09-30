@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>torchtt.interpolate &mdash; torchTT development (main @ 42740af) documentation</title>
+  <title>torchtt.interpolate &mdash; torchTT development (main @ 0909209) documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=167f7836"></script>
+      <script src="../../_static/documentation_options.js?v=33102d81"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -47,6 +47,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../../docs/package-overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/modules.html">API reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/references.html">References</a></li>
 </ul>
 
         </div>
@@ -64,6 +66,7 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
           <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../torchtt.html">torchtt</a></li>
       <li class="breadcrumb-item active">torchtt.interpolate</li>
       <li class="wy-breadcrumbs-aside">
       </li>
@@ -73,9 +76,9 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 42740af)</strong><br><a href="../../../stable/index.html">Stable release</a> · <a href="../../../latest/index.html">Development (main)</a></nav><h1>Source code for torchtt.interpolate</h1><div class="highlight"><pre>
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 0909209)</strong><br><a href="../../../stable/index.html">Stable release</a> · <a href="../../../latest/index.html">Development (main)</a></nav><h1>Source code for torchtt.interpolate</h1><div class="highlight"><pre>
 <span></span><span class="sd">"""</span>
-<span class="sd">Implements the cross approximation methods (DMRG).</span>
+<span class="sd">Implements cross approximation methods in the TT format :cite:p:`oseledets2010tt`, based on the density matrix renormalization group (DMRG) :cite:p:`savostyanov2011fast` and the alternating minimal energy (AMEn) :cite:p:`dolgov2014alternating` schemes.</span>
 
 <span class="sd">"""</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tn</span>
@@ -219,7 +222,7 @@
 <a class="viewcode-back" href="../../docs/torchtt.html#torchtt.interpolate.function_interpolate">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">function_interpolate</span><span class="p">(</span><span class="n">function</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-9</span><span class="p">,</span> <span class="n">start_tens</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nswp</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">kick</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">kick2</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tn</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">rmax</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">maxsize</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">'dmrg'</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Interpolate a function using tensor train cross approximation.</span>
+<span class="sd">    Interpolate a function using tensor train cross approximation :cite:p:`oseledets2010tt,savostyanov2011fast`.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        function (Callable): Function to interpolate.</span>
@@ -231,7 +234,7 @@
 <span class="sd">        kick2 (int, optional): Secondary rank enrichment (meant for amen method). Defaults to 0.</span>
 <span class="sd">        dtype (torch.dtype, optional): The datatype of the result. Defaults to tn.float64.</span>
 <span class="sd">        rmax (int, optional): Maximum allowed rank. Defaults to sys.maxsize.</span>
-<span class="sd">        method (str, optional): Method to use ('dmrg' or 'amen'). Defaults to 'dmrg'.</span>
+<span class="sd">        method (str, optional): Method to use: 'dmrg' (density matrix renormalization group) or 'amen' (alternating minimal energy). Defaults to 'dmrg'.</span>
 <span class="sd">        verbose (bool, optional): If True, display information. Defaults to False.</span>
 <span class="sd">        callback (Callable, optional): optional hook invoked at the end of every sweep as</span>
 <span class="sd">            ``callback(tt, sweep, error)``, where ``tt`` is the current approximation</span>

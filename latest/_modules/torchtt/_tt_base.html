@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>torchtt._tt_base &mdash; torchTT development (main @ 42740af) documentation</title>
+  <title>torchtt._tt_base &mdash; torchTT development (main @ 0909209) documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=167f7836"></script>
+      <script src="../../_static/documentation_options.js?v=33102d81"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -47,6 +47,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../../docs/package-overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/modules.html">API reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/references.html">References</a></li>
 </ul>
 
         </div>
@@ -64,6 +66,7 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
           <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../torchtt.html">torchtt</a></li>
       <li class="breadcrumb-item active">torchtt._tt_base</li>
       <li class="wy-breadcrumbs-aside">
       </li>
@@ -73,7 +76,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 42740af)</strong><br><a href="../../../stable/index.html">Stable release</a> · <a href="../../../latest/index.html">Development (main)</a></nav><h1>Source code for torchtt._tt_base</h1><div class="highlight"><pre>
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 0909209)</strong><br><a href="../../../stable/index.html">Stable release</a> · <a href="../../../latest/index.html">Development (main)</a></nav><h1>Source code for torchtt._tt_base</h1><div class="highlight"><pre>
 <span></span><span class="sd">"""</span>
 <span class="sd">This file implements the core TT class.</span>
 <span class="sd">"""</span>
@@ -84,11 +87,12 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">torchtt._division</span><span class="w"> </span><span class="kn">import</span> <span class="n">amen_divide</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">torchtt._dmrg</span><span class="w"> </span><span class="kn">import</span> <span class="n">dmrg_matvec</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">torchtt._aux_ops</span><span class="w"> </span><span class="kn">import</span> <span class="n">apply_mask</span><span class="p">,</span> <span class="n">dense_matvec</span><span class="p">,</span> <span class="n">bilinear_form_aux</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">torchtt.errors</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">torchtt._extras</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torchtt._products</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 
 
 <div class="viewcode-block" id="TT">
@@ -422,7 +426,7 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">full</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Return the full tensor.</span>
-<span class="sd">        In case of a TTM, the result has the shape ``M1 x M2 x ... x Md x N1 x N2 x ... x Nd``.</span>
+<span class="sd">        In case of a TT matrix (TTM), the result has the shape ``M1 x M2 x ... x Md x N1 x N2 x ... x Nd``.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            torch.tensor: the full tensor.</span>
@@ -457,8 +461,8 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">numpy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Return the full tensor as a numpy.array.</span>
-<span class="sd">        In case of a TTM, the result has the shape ``M1 x M2 x ... x Md x N1 x N2 x ... x Nd``.</span>
-<span class="sd">        If it is involved in an AD graph, an error will occur.</span>
+<span class="sd">        In case of a TT matrix (TTM), the result has the shape ``M1 x M2 x ... x Md x N1 x N2 x ... x Nd``.</span>
+<span class="sd">        If it is involved in an automatic differentiation (AD) graph, an error will occur.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            numpy.array: the full tensor in numpy.</span>
@@ -939,17 +943,91 @@
         <span class="n">result</span> <span class="o">=</span> <span class="n">TT</span><span class="p">(</span><span class="n">cores_new</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">result</span>
 
+<div class="viewcode-block" id="TT.matvec">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.TT.matvec">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">matvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span> <span class="n">rmax</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">maxsize</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">'dmrg'</span><span class="p">,</span> <span class="n">initial</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Matrix-vector product with rank truncation, ``(self @ other).round(eps, rmax)``, without forming the exact product.</span>
+<span class="sd">        Same as :func:`torchtt.matvec` with ``self`` as the TT matrix (see there how to choose the method).</span>
+
+<span class="sd">        Examples:</span>
+
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                y = A.matvec(x, eps=1e-10)</span>
+<span class="sd">                y = A.matvec(x, eps=1e-10, method='direct')</span>
+<span class="sd">                y = A.matvec(x, eps=1e-10, method=torchtt.methods.DMRG(nswp=40))</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            other (torchtt.TT): the TT tensor.</span>
+<span class="sd">            eps (float, optional): relative accuracy. Defaults to 1e-12.</span>
+<span class="sd">            rmax (int, optional): maximum rank of the result. Defaults to the maximum possible integer.</span>
+<span class="sd">            method (str | torchtt.methods.DMRG | torchtt.methods.Direct | torchtt.methods.AMEn | torchtt.methods.Swap, optional): the method, given by name or as an instance to change its parameters. Defaults to 'dmrg'.</span>
+<span class="sd">            initial (torchtt.TT, optional): initial guess of the result (only for ``'dmrg'`` and ``'amen'``). Defaults to None.</span>
+<span class="sd">            verbose (bool, optional): print information about the iterations. Defaults to False.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torchtt.TT: the result.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_products</span><span class="o">.</span><span class="n">matvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">initial</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TT.matmat">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.TT.matmat">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">matmat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span> <span class="n">rmax</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">maxsize</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">'direct'</span><span class="p">,</span> <span class="n">initial</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Product of two TT matrices with rank truncation, ``(self @ other).round(eps, rmax)``.</span>
+<span class="sd">        Same as :func:`torchtt.matmat` with ``self`` as the first TT matrix (see there how to choose the method).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            other (torchtt.TT): the second TT matrix.</span>
+<span class="sd">            eps (float, optional): relative accuracy. Defaults to 1e-12.</span>
+<span class="sd">            rmax (int, optional): maximum rank of the result. Defaults to the maximum possible integer.</span>
+<span class="sd">            method (str | torchtt.methods.Direct | torchtt.methods.AMEn | torchtt.methods.Swap, optional): the method, given by name or as an instance to change its parameters. Defaults to 'direct'.</span>
+<span class="sd">            initial (torchtt.TT, optional): initial guess of the result (only for ``'amen'``). Defaults to None.</span>
+<span class="sd">            verbose (bool, optional): print information about the iterations. Defaults to False.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torchtt.TT: the result.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_products</span><span class="o">.</span><span class="n">matmat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">initial</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TT.hadamard">
+<a class="viewcode-back" href="../../docs/torchtt.html#torchtt.TT.hadamard">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">hadamard</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span> <span class="n">rmax</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">maxsize</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">'dmrg'</span><span class="p">,</span> <span class="n">initial</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Elementwise product with rank truncation, ``(self * other).round(eps, rmax)``, without forming the exact product.</span>
+<span class="sd">        Same as :func:`torchtt.hadamard` with ``self`` as the first operand (see there how to choose the method).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            other (torchtt.TT): the second operand.</span>
+<span class="sd">            eps (float, optional): relative accuracy. Defaults to 1e-12.</span>
+<span class="sd">            rmax (int, optional): maximum rank of the result. Defaults to the maximum possible integer.</span>
+<span class="sd">            method (str | torchtt.methods.DMRG | torchtt.methods.Direct | torchtt.methods.Swap, optional): the method, given by name or as an instance to change its parameters. Defaults to 'dmrg'.</span>
+<span class="sd">            initial (torchtt.TT, optional): initial guess of the result (only for ``'dmrg'``). Defaults to None.</span>
+<span class="sd">            verbose (bool, optional): print information about the iterations. Defaults to False.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torchtt.TT: the result.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_products</span><span class="o">.</span><span class="n">hadamard</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">rmax</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">initial</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span></div>
+
+
 <div class="viewcode-block" id="TT.fast_matvec">
 <a class="viewcode-back" href="../../docs/torchtt.html#torchtt.TT.fast_matvec">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">fast_matvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span> <span class="n">initial</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nswp</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">verb</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">use_cpp</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
-<span class="sd">        Fast matrix vector multiplication A@x using DMRG iterations. Faster than traditional matvec + rounding.</span>
+<span class="sd">        Fast matrix vector multiplication A@x using density matrix renormalization group (DMRG) iterations :cite:p:`oseledets2011dmrg`. Faster than traditional matvec + rounding.</span>
+
+<span class="sd">        .. deprecated:: 0.6.0</span>
+<span class="sd">            Use :meth:`torchtt.TT.matvec` or :func:`torchtt.matvec` with ``method='dmrg'`` (or ``method=torchtt.methods.DMRG(nswp=...)``).</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            other (torchtt.TT): the TT tensor.</span>
 <span class="sd">            eps (float, optional): relative accuracy for DMRG. Defaults to 1e-12.</span>
 <span class="sd">            initial (None|torchtt.TT, optional): an approximation of the product (None means random initial guess). Defaults to None.</span>
-<span class="sd">            nswp (int, optional): number of DMRG iterations. Defaults to 40.</span>
+<span class="sd">            nswp (int, optional): number of DMRG iterations. Defaults to 20.</span>
 <span class="sd">            verb (bool, optional): show info for debug. Defaults to False.</span>
 <span class="sd">            use_cpp (bool, optional): use the C++ implementation if available. Defaults to True.</span>
 
@@ -960,14 +1038,8 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            torchtt.TT: the result.</span>
 <span class="sd">        """</span>
-
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">TT</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span><span class="s1">'Second operand has to be TT object.'</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">__is_ttm</span> <span class="ow">or</span> <span class="n">other</span><span class="o">.</span><span class="n">is_ttm</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">IncompatibleTypes</span><span class="p">(</span>
-                <span class="s1">'First operand should be a TT matrix and second a TT vector.'</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">dmrg_matvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="n">initial</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="n">eps</span><span class="p">,</span> <span class="n">verb</span><span class="o">=</span><span class="n">verb</span><span class="p">,</span> <span class="n">nswp</span><span class="o">=</span><span class="n">nswp</span><span class="p">,</span> <span class="n">use_cpp</span><span class="o">=</span><span class="n">use_cpp</span><span class="p">)</span></div>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">"TT.fast_matvec() is deprecated, use TT.matvec(x, eps, method=torchtt.methods.DMRG(nswp=...)) instead."</span><span class="p">,</span> <span class="ne">DeprecationWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">_products</span><span class="o">.</span><span class="n">matvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">torchtt</span><span class="o">.</span><span class="n">methods</span><span class="o">.</span><span class="n">DMRG</span><span class="p">(</span><span class="n">nswp</span><span class="o">=</span><span class="n">nswp</span><span class="p">,</span> <span class="n">use_cpp</span><span class="o">=</span><span class="n">use_cpp</span><span class="p">),</span> <span class="n">initial</span><span class="o">=</span><span class="n">initial</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verb</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="TT.apply_mask">
@@ -999,9 +1071,9 @@
     <span class="k">def</span><span class="w"> </span><span class="fm">__truediv__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        This function implements the "/" operator.</span>
-<span class="sd">        This operation is performed using the AMEN solver. The number of sweeps and rthe relative accuracy are fixed.</span>
+<span class="sd">        This operation is performed using the AMEn solver. The number of sweeps and rthe relative accuracy are fixed.</span>
 <span class="sd">        For most cases it is sufficient but sometimes it can fail.</span>
-<span class="sd">        Check the function torchtt.elementwise_divide() if you want to change the arguments of the AMEN solver.</span>
+<span class="sd">        Check the function torchtt.elementwise_divide() if you want to change the arguments of the AMEn solver.</span>
 
 
 <span class="sd">        Args:</span>
@@ -1037,9 +1109,9 @@
     <span class="k">def</span><span class="w"> </span><span class="fm">__rtruediv__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Right true division. this function is called when a non TT object is divided by a TT object.</span>
-<span class="sd">        This operation is performed using the AMEN solver. The number of sweeps and rthe relative accuracy are fixed.</span>
+<span class="sd">        This operation is performed using the AMEn solver. The number of sweeps and rthe relative accuracy are fixed.</span>
 <span class="sd">        For most cases it is sufficient but sometimes it can fail.</span>
-<span class="sd">        Check the function torchtt.elementwise_divide() if you want to change the arguments of the AMEN solver.</span>
+<span class="sd">        Check the function torchtt.elementwise_divide() if you want to change the arguments of the AMEn solver.</span>
 
 <span class="sd">        Example: </span>
 
@@ -1151,9 +1223,9 @@
 
                 <span class="n">core_now</span> <span class="o">=</span> <span class="n">core_next</span>
             <span class="k">if</span> <span class="n">squared</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">core_next</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
+                <span class="k">return</span> <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">core_now</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">core_next</span><span class="p">)</span></div>
+                <span class="k">return</span> <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">core_now</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="TT.sum">
@@ -1191,7 +1263,7 @@
         <span class="k">if</span> <span class="n">index</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1"># the case we need to sum over all modes</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__is_ttm</span><span class="p">:</span>
-                <span class="n">C</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+                <span class="n">C</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
                 <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__N</span><span class="p">)):</span>
                     <span class="n">C</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'i,ijkl-&gt;jkl'</span><span class="p">,</span>
                                <span class="n">C</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cores</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
@@ -1539,7 +1611,7 @@
 <a class="viewcode-back" href="../../docs/torchtt.html#torchtt.TT.round">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span> <span class="n">rmax</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">maxsize</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
-<span class="sd">        Implements the rounding operations within a given tolerance epsilon.</span>
+<span class="sd">        Implements the rounding operations within a given tolerance epsilon :cite:p:`oseledets2011tensor`.</span>
 <span class="sd">        The maximum rank is also provided.</span>
 
 <span class="sd">        Args:</span>
@@ -1567,8 +1639,8 @@
 <a class="viewcode-back" href="../../docs/torchtt.html#torchtt.TT.to_qtt">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">to_qtt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span> <span class="n">mode_size</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">rmax</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">maxsize</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
-<span class="sd">        Converts a tensor to the QTT format: N1 x N2 x ... x Nd -&gt; mode_size x mode_size x ... x mode_size.</span>
-<span class="sd">        The product of the mode sizes should be a power of mode_size.</span>
+<span class="sd">        Converts a tensor to the quantized tensor-train (QTT) format :cite:p:`oseledets2010approximation,khoromskij2011quantics`: the TT format applied to the tensor reshaped so that every mode has size ``mode_size`` (2 by default).</span>
+<span class="sd">        The shape changes as N1 x N2 x ... x Nd -&gt; mode_size x mode_size x ... x mode_size, so every mode size must be a power of ``mode_size``.</span>
 <span class="sd">        The tensor in QTT can be converted back using the qtt_to_tens() method.</span>
 
 <span class="sd">        Examples:</span>
@@ -1639,7 +1711,7 @@
 <a class="viewcode-back" href="../../docs/torchtt.html#torchtt.TT.qtt_to_tens">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">qtt_to_tens</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">original_shape</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
-<span class="sd">        Transform a tensor back from QTT.</span>
+<span class="sd">        Transform a tensor back from the quantized tensor-train (QTT) format (see ``to_qtt()``).</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            original_shape (list): the original shape.</span>

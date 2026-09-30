@@ -6,7 +6,7 @@
    "source": [
     "# Automatic differentiation\n",
     "\n",
-    "Being based on `pytorch`, `torchtt` can handle automatic differentiation with respect to the TT cores. \n",
+    "Being based on `pytorch`, `torchtt` can handle automatic differentiation (AD) with respect to the cores of a tensor-train (TT) decomposition. \n",
     "\n",
     "\n",
     "Imports"

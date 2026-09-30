@@ -1,0 +1,252 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Random tensors in the TT format &mdash; torchTT development (main @ 0909209) documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=33102d81"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="AMEn and DMRG for fast TT operations" href="efficient_linalg.html" />
+    <link rel="prev" title="Basic linear algebra in torchTT" href="basic_linalg.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            torchtt
+              <img src="https://github.com/ion-g-ion/torchTT/blob/main/logo_small.png?raw=true" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../docs/intro_page.html">Welcome to torchTT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/install.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/package-overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/modules.html">API reference</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../docs/examples.html">Examples</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../docs/examples.html#getting-started">Getting Started</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="basic_tutorial.html">TT decomposition in torchtt</a></li>
+<li class="toctree-l3"><a class="reference internal" href="basic_linalg.html">Basic linear algebra in torchTT</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Random tensors in the TT format</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Variance-1">Variance 1</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Variance-4">Variance 4</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Variance-0.01">Variance 0.01</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Longer-train">Longer train</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Remark">Remark</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#linear-algebra-solvers">Linear Algebra &amp; Solvers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#cross-interpolation">Cross Interpolation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#neural-networks">Neural Networks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#advanced-topics">Advanced Topics</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/references.html">References</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">torchtt</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../docs/examples.html">Examples</a></li>
+      <li class="breadcrumb-item active">Random tensors in the TT format</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/examples/random_tt.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 0909209)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Run this notebook in <a class="reference external" href="https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/random_tt.ipynb">Google Colab</a> or see the source on <a class="reference external" href="https://github.com/ion-g-ion/torchTT/blob/main/examples/random_tt.ipynb">GitHub</a>.</p>
+</div>
+<section id="Random-tensors-in-the-TT-format">
+<h1>Random tensors in the TT format<a class="headerlink" href="#Random-tensors-in-the-TT-format" title="Link to this heading"></a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">torchtt.randn(N,</span> <span class="pre">R,</span> <span class="pre">var)</span></code> returns a random tensor in the tensor-train (TT) format with shape <code class="docutils literal notranslate"><span class="pre">N</span></code> and TT rank <code class="docutils literal notranslate"><span class="pre">R</span></code>. The entries of the TT cores are independent and normally distributed, and they are scaled so that every entry of the full tensor has mean 0 and variance <code class="docutils literal notranslate"><span class="pre">var</span></code>. An entry of the full tensor is a sum of products of the core entries, so it is only approximately normally distributed.</p>
+<p>This notebook checks the variance for a few shapes and ranks by computing the full tensors.</p>
+<p>Imports:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tn</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">torchtt</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tntt</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'Installing torchTT...'</span><span class="p">)</span>
+    <span class="o">%</span><span class="k">pip</span> install git+https://github.com/ion-g-ion/torchTT
+    <span class="kn">import</span><span class="w"> </span><span class="nn">torchtt</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tntt</span>
+</pre></div>
+</div>
+</div>
+<section id="Variance-1">
+<h2>Variance 1<a class="headerlink" href="#Variance-1" title="Link to this heading"></a></h2>
+<p>A 5-dimensional tensor of shape <span class="math notranslate nohighlight">\(30 \times \cdots \times 30\)</span> with TT rank <span class="math notranslate nohighlight">\((1,8,16,16,8,1)\)</span>:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">randn</span><span class="p">([</span><span class="mi">30</span><span class="p">]</span><span class="o">*</span><span class="mi">5</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">x_full</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">full</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Var = '</span><span class="p">,</span> <span class="n">tn</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">x_full</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="s1">' (has to be comparable to 1.0)'</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Var =  0.9535599014767242  (has to be comparable to 1.0)
+</pre></div></div>
+</div>
+</section>
+<section id="Variance-4">
+<h2>Variance 4<a class="headerlink" href="#Variance-4" title="Link to this heading"></a></h2>
+<p>The same shape and rank with <code class="docutils literal notranslate"><span class="pre">var</span> <span class="pre">=</span> <span class="pre">4.0</span></code>:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">randn</span><span class="p">([</span><span class="mi">30</span><span class="p">]</span><span class="o">*</span><span class="mi">5</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="n">var</span> <span class="o">=</span> <span class="mf">4.0</span><span class="p">)</span>
+<span class="n">x_full</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">full</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Var = '</span><span class="p">,</span> <span class="n">tn</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">x_full</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="s1">' (has to be comparable to 4.0)'</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Var =  5.3232008276129  (has to be comparable to 4.0)
+</pre></div></div>
+</div>
+</section>
+<section id="Variance-0.01">
+<h2>Variance 0.01<a class="headerlink" href="#Variance-0.01" title="Link to this heading"></a></h2>
+<p>The same shape and rank with <code class="docutils literal notranslate"><span class="pre">var</span> <span class="pre">=</span> <span class="pre">0.01</span></code>:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">randn</span><span class="p">([</span><span class="mi">30</span><span class="p">]</span><span class="o">*</span><span class="mi">5</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="n">var</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">)</span>
+<span class="n">x_full</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">full</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Var = '</span><span class="p">,</span> <span class="n">tn</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">x_full</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="s1">' (has to be comparable to 0.01)'</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Var =  0.010857722210434208  (has to be comparable to 0.01)
+</pre></div></div>
+</div>
+</section>
+<section id="Longer-train">
+<h2>Longer train<a class="headerlink" href="#Longer-train" title="Link to this heading"></a></h2>
+<p>A 7-dimensional tensor of shape <span class="math notranslate nohighlight">\(10 \times \cdots \times 10\)</span> with all inner ranks equal to 4:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">randn</span><span class="p">([</span><span class="mi">10</span><span class="p">]</span><span class="o">*</span><span class="mi">7</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="n">var</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span>
+<span class="n">x_full</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">full</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Var = '</span><span class="p">,</span> <span class="n">tn</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">x_full</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="s1">' (has to be comparable to 1.0)'</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Var =  0.7857122980334933  (has to be comparable to 1.0)
+</pre></div></div>
+</div>
+</section>
+<section id="Remark">
+<h2>Remark<a class="headerlink" href="#Remark" title="Link to this heading"></a></h2>
+<p>The variance of the entries equals <code class="docutils literal notranslate"><span class="pre">var</span></code> in expectation, but the empirical variance of a single tensor fluctuates around it. All entries of a TT tensor are built from the same cores, so they are not independent, and the fluctuations are larger than for a dense tensor with independent entries.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="basic_linalg.html" class="btn btn-neutral float-left" title="Basic linear algebra in torchTT" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="efficient_linalg.html" class="btn btn-neutral float-right" title="AMEn and DMRG for fast TT operations" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Ion Gabriel Ion.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

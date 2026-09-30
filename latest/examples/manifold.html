@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TT Manifold and Riemannian Optimization &mdash; torchTT development (main @ 42740af) documentation</title>
+  <title>TT Manifold and Riemannian Optimization &mdash; torchTT development (main @ 0909209) documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
       <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
@@ -14,7 +14,7 @@
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=167f7836"></script>
+      <script src="../_static/documentation_options.js?v=33102d81"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -23,7 +23,7 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="GPU acceleration" href="gpu_acceleration.html" />
+    <link rel="next" title="Tensor completion with Riemannian optimization" href="tensor_completion.html" />
     <link rel="prev" title="Automatic differentiation" href="automatic_differentiation.html" /> 
 </head>
 
@@ -67,12 +67,15 @@
 <li class="toctree-l4"><a class="reference internal" href="#Example-2:-Manifold-Tensor-Completion">Example 2: Manifold Tensor Completion</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="tensor_completion.html">Tensor completion with Riemannian optimization</a></li>
 <li class="toctree-l3"><a class="reference internal" href="gpu_acceleration.html">GPU acceleration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="bayesian_inversion.html">Bayesian Inversion with torchTT</a></li>
 </ul>
 </li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/references.html">References</a></li>
 </ul>
 
         </div>
@@ -100,11 +103,15 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 42740af)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="TT-Manifold-and-Riemannian-Optimization">
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 0909209)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Run this notebook in <a class="reference external" href="https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/manifold.ipynb">Google Colab</a> or see the source on <a class="reference external" href="https://github.com/ion-g-ion/torchTT/blob/main/examples/manifold.ipynb">GitHub</a>.</p>
+</div>
+<section id="TT-Manifold-and-Riemannian-Optimization">
 <h1>TT Manifold and Riemannian Optimization<a class="headerlink" href="#TT-Manifold-and-Riemannian-Optimization" title="Link to this heading"></a></h1>
 <section id="Overview">
 <h2>Overview<a class="headerlink" href="#Overview" title="Link to this heading"></a></h2>
-<p>This notebook demonstrates <strong>Riemannian optimization</strong> on the tensor train (TT) manifold using <code class="docutils literal notranslate"><span class="pre">torchtt</span></code>.</p>
+<p>This notebook demonstrates <strong>Riemannian optimization</strong> on the tensor train (TT) manifold using <code class="docutils literal notranslate"><span class="pre">torchtt</span></code> (see e.g. <a class="reference external" href="https://doi.org/10.1137/15M1010506">Steinlechner, 2016</a>).</p>
 <p>Tensor trains of fixed ranks form a smooth <strong>Riemannian manifold</strong> <span class="math notranslate nohighlight">\(\mathcal{M}_{\mathbf{r}}\)</span>, meaning we can perform optimization directly on this manifold rather than in the ambient space of all tensors. This approach is particularly powerful for problems where we want to constrain our solution to have a specific TT-rank structure.</p>
 </section>
 <section id="Riemannian-Gradient-via-Automatic-Differentiation">
@@ -457,7 +464,7 @@ Device: cpu, dtype: torch.float64
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="automatic_differentiation.html" class="btn btn-neutral float-left" title="Automatic differentiation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="gpu_acceleration.html" class="btn btn-neutral float-right" title="GPU acceleration" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="tensor_completion.html" class="btn btn-neutral float-right" title="Tensor completion with Riemannian optimization" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

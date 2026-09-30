@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>A physics-informed neural network for the Fokker-Planck equation &mdash; torchTT development (main @ 42740af) documentation</title>
+  <title>A physics-informed neural network (PINN) for the Fokker-Planck equation &mdash; torchTT development (main @ 0909209) documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
       <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
@@ -14,7 +14,7 @@
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=167f7836"></script>
+      <script src="../_static/documentation_options.js?v=33102d81"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -60,7 +60,7 @@
 <li class="toctree-l3"><a class="reference internal" href="basic_nn.html">Tensor Train layers for neural networks</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mnist_nn.html">Digit Recognition using Tensor Train (TT) Neural Networks</a></li>
 <li class="toctree-l3"><a class="reference internal" href="deep_tt_density.html">Deep TT Density demo</a></li>
-<li class="toctree-l3 current"><a class="current reference internal" href="#">A physics-informed neural network for the Fokker-Planck equation</a><ul>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">A physics-informed neural network (PINN) for the Fokker-Planck equation</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#Problem-setup">Problem setup</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#The-model">The model</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#The-PDE-residual">The PDE residual</a></li>
@@ -75,6 +75,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#advanced-topics">Advanced Topics</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/references.html">References</a></li>
 </ul>
 
         </div>
@@ -92,7 +94,7 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
           <li class="breadcrumb-item"><a href="../docs/examples.html">Examples</a></li>
-      <li class="breadcrumb-item active">A physics-informed neural network for the Fokker-Planck equation</li>
+      <li class="breadcrumb-item active">A physics-informed neural network (PINN) for the Fokker-Planck equation</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../_sources/examples/fokker_planck_pinn.ipynb.txt" rel="nofollow"> View page source</a>
       </li>
@@ -102,9 +104,13 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 42740af)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="A-physics-informed-neural-network-for-the-Fokker-Planck-equation">
-<h1>A physics-informed neural network for the Fokker-Planck equation<a class="headerlink" href="#A-physics-informed-neural-network-for-the-Fokker-Planck-equation" title="Link to this heading"></a></h1>
-<p>We solve the Fokker-Planck equation associated with the overdamped Langevin SDE</p>
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 0909209)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Run this notebook in <a class="reference external" href="https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/fokker_planck_pinn.ipynb">Google Colab</a> or see the source on <a class="reference external" href="https://github.com/ion-g-ion/torchTT/blob/main/examples/fokker_planck_pinn.ipynb">GitHub</a>.</p>
+</div>
+<section id="A-physics-informed-neural-network-(PINN)-for-the-Fokker-Planck-equation">
+<h1>A physics-informed neural network (PINN) for the Fokker-Planck equation<a class="headerlink" href="#A-physics-informed-neural-network-(PINN)-for-the-Fokker-Planck-equation" title="Link to this heading"></a></h1>
+<p>We solve the Fokker-Planck equation associated with the overdamped Langevin stochastic differential equation (SDE)</p>
 <div class="math notranslate nohighlight">
 \[\mathrm{d}X_t = -\nabla V(X_t)\,\mathrm{d}t + \sqrt{2D}\,\mathrm{d}W_t,\]</div>
 <p>which governs the time-dependent probability density <span class="math notranslate nohighlight">\(p(t, x)\)</span> of <span class="math notranslate nohighlight">\(X_t\)</span>:</p>
@@ -117,7 +123,7 @@
 <p>The density is represented with a <code class="docutils literal notranslate"><span class="pre">torchtt.nn.TTDensityLayer</span></code>: a squared functional Tensor-Train over a Gaussian basis, composed with a <strong>nonlinear diffeomorphism</strong> (a rank-1 polynomial shear that can bend the density, followed by an affine map). A small network takes the time <span class="math notranslate nohighlight">\(t\)</span> and outputs the flat parameter vector of the layer — TT cores and transform parameters — so that</p>
 <div class="math notranslate nohighlight">
 \[p_\theta(t, x) = \texttt{TTDensityLayer}\big(\mathrm{net}_\theta(t),\, x\big).\]</div>
-<p>Two properties make this ansatz attractive for Fokker-Planck PINNs: <span class="math notranslate nohighlight">\(p_\theta \geq 0\)</span> and <span class="math notranslate nohighlight">\(\int p_\theta(t, x)\,\mathrm{d}x = 1\)</span> hold <strong>by construction for every :math:`t`</strong>, so no normalization penalty is needed — only the PDE residual and the initial condition enter the loss. The code is written for general dimension <span class="math notranslate nohighlight">\(d\)</span>; here we fix <span class="math notranslate nohighlight">\(d = 2\)</span>.</p>
+<p>Two properties make this ansatz attractive for Fokker-Planck PINNs: <span class="math notranslate nohighlight">\(p_\theta \geq 0\)</span> and <span class="math notranslate nohighlight">\(\int p_\theta(t, x)\,\mathrm{d}x = 1\)</span> hold <strong>by construction for every :math:`t`</strong>, so no normalization penalty is needed — only the residual of the partial differential equation (PDE) and the initial condition enter the loss. The code is written for general dimension <span class="math notranslate nohighlight">\(d\)</span>; here we fix <span class="math notranslate nohighlight">\(d = 2\)</span>.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
@@ -298,7 +304,7 @@ parameters per density: 156  (TT cores: 144, transform: 12)
 <p>Since normalization and positivity are built into the layer, the loss has only two terms — the PDE residual on uniformly drawn collocation points <span class="math notranslate nohighlight">\((t, x)\)</span> and the initial condition at <span class="math notranslate nohighlight">\(t = 0\)</span>:</p>
 <div class="math notranslate nohighlight">
 \[\mathcal{L} = \frac{1}{M} \sum_{m=1}^{M} r_\theta\big(t_m, x_m\big)^2 \;+\; \frac{\lambda}{M'} \sum_{m=1}^{M'} \Big( p_\theta\big(0, x'_m\big) - p_0\big(x'_m\big) \Big)^2 .\]</div>
-<p>The IC points <span class="math notranslate nohighlight">\(x'_m\)</span> are drawn half from <span class="math notranslate nohighlight">\(p_0\)</span> itself and half uniformly from the box, so the density is also pushed to zero away from the initial blob. All points are redrawn every step.</p>
+<p>The initial-condition (IC) points <span class="math notranslate nohighlight">\(x'_m\)</span> are drawn half from <span class="math notranslate nohighlight">\(p_0\)</span> itself and half uniformly from the box, so the density is also pushed to zero away from the initial blob. All points are redrawn every step.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
