@@ -143,6 +143,11 @@ def function_interpolate(function, x, eps=1e-9, start_tens=None, nswp=20, kick=2
     """
     Interpolate a function using tensor train cross approximation :cite:p:`oseledets2010tt,savostyanov2011fast`.
 
+    Prefer trying ``method='amen'`` when function evaluations are expensive or
+    mode sizes are large; consider ``method='dmrg'`` when evaluations are cheap
+    and mode sizes are small. See :ref:`interpolation-methods-label` for the
+    tradeoffs and convergence guidance.
+
     Args:
         function (Callable): Function to interpolate.
         x (torchtt.TT or list[torchtt.TT]): The points at which to evaluate the function.
