@@ -904,12 +904,12 @@ def cat(tensors, dim=0):
     for i in range(1, len(tensors)):
         if tensors[i].is_ttm:
             raise InvalidArguments("Not implemented for tensor matrices.")
-        if tensors[i].N[:dim] != tensors[0].N[:dim] and tensors[i].N[(dim+1):] != tensors[0].N[(dim+1):]:
-            raise InvalidArguments(
-                "The mode sizes must be the same on the nonconcatenated dimensions for all the provided tensors.")
         if len(tensors[i].N) != len(tensors[0].N):
             raise InvalidArguments(
                 "The tensors must have the same number of dimensions.")
+        if tensors[i].N[:dim] != tensors[0].N[:dim] or tensors[i].N[(dim+1):] != tensors[0].N[(dim+1):]:
+            raise InvalidArguments(
+                "The mode sizes must be the same on the nonconcatenated dimensions for all the provided tensors.")
         Rs.append(tensors[i].R)
 
     cores = []

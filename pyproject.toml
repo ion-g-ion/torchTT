@@ -36,6 +36,7 @@ Issues = "https://github.com/ion-g-ion/torchTT/issues"
 [project.optional-dependencies]
 dev = [
     "pytest>=6.0",
+    "pytest-cov>=4.0",
     "sphinx",
     "sphinx_rtd_theme",
     "ipykernel",

@@ -16,6 +16,11 @@ All notable changes to this project will be documented in this file.
 - Docs: the overview section "About the package" is renamed "Operations in the TT format" and no longer lists the examples. Instead, every example page links to Google Colab and to the notebook on GitHub (`nbsphinx_prolog` in `conf.py`).
 
 ### Fixed
+- `TT.sum()` now handles sums over all entries of a TT matrix.
+- `torchtt.cat()` rejects mismatched nonconcatenated mode sizes, including singleton dimensions that could silently broadcast.
+- `TT.norm()` now handles single-mode tensors and matrices.
+- `CompressedTTLayer` preserves output mode order and applies rank limits to the corresponding bonds.
+- AMEn handles zero right-hand sides in direct and iterative solves, including C++ interface normalization.
 - `GaussianBasis.interpolating_points()` now returns rows for sample points and columns for basis functions, matching `BSplineBasis` and correcting interpolation with nonuniform Gaussian centers.
 - Removed the unused, unfinished `torchtt.functional.pdf` module, which contained syntax errors (#50). The basis classes and `torchtt.nn.TTDensityLayer` remain available.
 - `from torchtt import *` failed because `__all__` listed `cpp_available` and `fast_hadamard`, which do not exist (the functions are `cpp_enabled` and `fast_hadammard`).

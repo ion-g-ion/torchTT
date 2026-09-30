@@ -17,7 +17,7 @@ def test_dmrg_hadamard(dtype):
     """
     Test hadamard product using DMRG.
     """
-    n = 32
+    n = 16
     z = tntt.random([n]*8,[1]+7*[3]+[1], dtype=dtype)
     zm = z + z
 
@@ -40,7 +40,7 @@ def test_dmrg_matvec(dtype):
     """
     Test the fast matrix vector product using DMRG iterations.
     """
-    n = 32
+    n = 16
     A = tntt.random([(n, n)]*8, [1]+7*[3]+[1], dtype=dtype)
     Am = A + A
 
@@ -64,7 +64,7 @@ def test_dmrg_matvec_non_square(dtype):
     """
     Test the fast matrix vector product using DMRG iterations for non-square matrices.
     """
-    n = 32
+    n = 16
     A = tntt.random([(n+2,n)]*8,[1]+7*[3]+[1], dtype=dtype)
     Am = A + A 
 

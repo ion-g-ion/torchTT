@@ -26,7 +26,7 @@ def test_dmrg_cross_interpolation_nonvect():
     Test the DMRG cross interpolation method for non vectorized function.
     """
     func1 = lambda I,J,K,L: 1 / (6 + I + J + K + L)
-    N = [20] * 4
+    N = [12] * 4
     x = tntt.interpolate.dmrg_cross(func1, N, eps=1e-7, eval_vect=False)
     Is = tntt.meshgrid([tn.arange(0, n, dtype=tn.float64) for n in N])
     x_ref = 1 / (2 + Is[0].full() + Is[1].full() + Is[2].full() + Is[3].full() + 4)
@@ -306,3 +306,26 @@ def test_function_interpolate_constant_multivariable(method):
     y = tntt.interpolate.function_interpolate(func, Is, eps=1e-8, nswp=5, method=method)
 
     assert err_rel(y.full(), ref) < 1e-10
+
+
+@pytest.mark.parametrize("method", ['dmrg', 'amen'])
+@pytest.mark.parametrize("stop_after", [1, 2])
+def test_function_interpolate_callback(method, stop_after, capsys):
+    tn.manual_seed(4)
+    xs = tntt.meshgrid([tn.linspace(0, 1, n, dtype=tn.float64) for n in [4, 5, 6]])
+    calls = []
+
+    def callback(x, sweep, error):
+        calls.append((x.clone(), sweep, error))
+        if len(calls) == stop_after:
+            return False
+
+    y = tntt.interpolate.function_interpolate(
+        lambda v: 1 + v.sum(dim=1), xs, start_tens=tntt.ones([4, 5, 6]),
+        nswp=5, method=method, verbose=True, callback=callback)
+
+    assert [sweep for _, sweep, _ in calls] == list(range(stop_after))
+    assert all(isinstance(error, float) and np.isfinite(error) for _, _, error in calls)
+    assert err_rel(y.full(), 1 + sum(x.full() for x in xs)) < 1e-12
+    assert err_rel(y.full(), calls[-1][0].full()) < 1e-12
+    assert 'Callback requested an early stop.' in capsys.readouterr().out

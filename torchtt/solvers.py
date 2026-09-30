@@ -397,6 +397,8 @@ def _amen_solve_python(A, b, nswp=22, x0=None, eps=1e-10, rmax=1024, max_full=25
                             Phis_b[k], b.cores[k] * nrmsc, Phis_b[k+1])
             rhs = tn.reshape(rhs, [-1, 1])
             norm_rhs = tn.linalg.norm(rhs)
+            zero_rhs = norm_rhs == 0
+            norm_rhs = norm_rhs if norm_rhs > 0 else 1.0
 
             # residuals
             real_tol = (eps/np.sqrt(d))/damp
@@ -431,8 +433,11 @@ def _amen_solve_python(A, b, nswp=22, x0=None, eps=1e-10, rmax=1024, max_full=25
                     eps_local = real_tol * norm_rhs
                     drhs = Op.matvec(previous_solution.to(tn.float32), False)
                     drhs = rhs.to(tn.float32)-drhs
-                    eps_local = eps_local / tn.linalg.norm(drhs)
-                    if local_solver == 1:
+                    norm_drhs = tn.linalg.norm(drhs)
+                    eps_local = eps_local / (norm_drhs if norm_drhs > 0 else 1.0)
+                    if zero_rhs or norm_drhs == 0:
+                        solution_now, flag, nit = tn.zeros_like(drhs), True, 0
+                    elif local_solver == 1:
                         solution_now, flag, nit = gmres_restart(Op, drhs, previous_solution.to(
                             tn.float32)*0, rhs.shape[0], local_iterations+1, eps_local, resets)
                     elif local_solver == 2:
@@ -446,7 +451,7 @@ def _amen_solve_python(A, b, nswp=22, x0=None, eps=1e-10, rmax=1024, max_full=25
                             tn.reshape(solution_now, shape_now))
                         solution_now = tn.reshape(solution_now, [-1, 1])
 
-                    solution_now = previous_solution + solution_now.to(dtype)
+                    solution_now = tn.zeros_like(previous_solution) if zero_rhs else previous_solution + solution_now.to(dtype)
                     res_old = tn.linalg.norm(Op.matvec(previous_solution.to(
                         tn.float32), False).to(dtype)-rhs)/norm_rhs
                     res_new = tn.linalg.norm(Op.matvec(solution_now.to(
@@ -457,8 +462,11 @@ def _amen_solve_python(A, b, nswp=22, x0=None, eps=1e-10, rmax=1024, max_full=25
                     eps_local = real_tol * norm_rhs
                     drhs = Op.matvec(previous_solution, False)
                     drhs = rhs-drhs
-                    eps_local = eps_local / tn.linalg.norm(drhs)
-                    if local_solver == 1:
+                    norm_drhs = tn.linalg.norm(drhs)
+                    eps_local = eps_local / (norm_drhs if norm_drhs > 0 else 1.0)
+                    if zero_rhs or norm_drhs == 0:
+                        solution_now, flag, nit = tn.zeros_like(drhs), True, 0
+                    elif local_solver == 1:
                         solution_now, flag, nit = gmres_restart(
                             Op, drhs, previous_solution*0, rhs.shape[0], local_iterations+1, eps_local, resets)
                     elif local_solver == 2:
@@ -472,7 +480,7 @@ def _amen_solve_python(A, b, nswp=22, x0=None, eps=1e-10, rmax=1024, max_full=25
                             tn.reshape(solution_now, shape_now))
                         solution_now = tn.reshape(solution_now, [-1, 1])
 
-                    solution_now = previous_solution + solution_now
+                    solution_now = tn.zeros_like(previous_solution) if zero_rhs else previous_solution + solution_now
                     res_old = tn.linalg.norm(
                         Op.matvec(previous_solution, False)-rhs)/norm_rhs
                     res_new = tn.linalg.norm(
@@ -490,8 +498,8 @@ def _amen_solve_python(A, b, nswp=22, x0=None, eps=1e-10, rmax=1024, max_full=25
                         res_old, res_new, real_tol))  # warning (from tt toolbox)
 
             # compute residual and step size
-            dx = tn.linalg.norm(solution_now-previous_solution) / \
-                tn.linalg.norm(solution_now)
+            norm_solution = tn.linalg.norm(solution_now)
+            dx = tn.linalg.norm(solution_now-previous_solution) / (norm_solution if norm_solution > 0 else 1.0)
             if verbose:
                 print('\t\tdx = %g, res_now = %g, res_old = %g' %
                       (dx, res_new, res_old))

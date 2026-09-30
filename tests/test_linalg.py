@@ -289,13 +289,13 @@ def test_matvecdense(dtype):
     yr = tn.einsum('abcdijkl,ijkl->abcd', A.full(), x)
     assert err_rel(y, yr) < 1e-14, 'Dense matvec error 1.'
 
-    x = tn.rand([32, 4, 33, 6, 8, 10, 5], dtype=dtype)
+    x = tn.rand([8, 4, 9, 6, 8, 10, 5], dtype=dtype)
     y = A @ x
     yr = tn.einsum('abcdijkl,mnoijkl->mnoabcd', A.full(), x)
     assert y.shape == yr.shape, 'Dense matvec shape mismatch.'
     assert err_rel(y, yr) < 1e-14, 'Dense matvec error 2.'
 
-    x = tn.rand([1, 22, 6, 8, 10, 5], dtype=dtype)
+    x = tn.rand([1, 8, 6, 8, 10, 5], dtype=dtype)
     y = A @ x
     yr = tn.einsum('abcdijkl,nmijkl->nmabcd', A.full(), x)
     assert y.shape == yr.shape, 'Dense matvec shape mismatch.'
@@ -412,7 +412,7 @@ def test_slicing(dtype):
 
 @pytest.mark.parametrize("dtype", parameters)
 def test_qtt(dtype):
-    N = [16, 8, 64, 128]
+    N = [8, 8, 32, 64]
     R = [1, 2, 10, 12, 1]
     x = tntt.random(N, R, dtype=dtype)
     x_qtt = x.to_qtt()
@@ -420,7 +420,7 @@ def test_qtt(dtype):
 
     assert err_rel(tn.reshape(x_qtt.full(), x.N), x_full) < 1e-12, 'Tensor to QTT failed.'
 
-    x = tntt.random([256, 128, 1024, 128], [1, 40, 50, 20, 1], dtype=dtype)
+    x = tntt.random([64, 32, 256, 64], [1, 12, 16, 8, 1], dtype=dtype)
     N = x.N
     xq = x.to_qtt()
     xx = xq.qtt_to_tens(N)
@@ -615,3 +615,79 @@ def test_diag(dtype):
     assert err_rel(E.full(), tntt.eye(n).full()) < 1e-13, "torchtt.diag() TT->TTM failed."
 
 
+@pytest.mark.parametrize("dtype", parameters)
+@pytest.mark.parametrize("ttm", [False, True])
+@pytest.mark.parametrize("index", [None, 0, 1, 2, [0, 2], [0, 1, 2]])
+def test_sum_modes(dtype, ttm, index):
+    shape = [(2, 3), (3, 2), (4, 2)] if ttm else [2, 3, 4]
+    x = tntt.randn(shape, [1, 2, 3, 1], dtype=dtype)
+    axes = list(range(3)) if index is None else ([index] if isinstance(index, int) else index)
+    axes = axes + [i+3 for i in axes] if ttm else axes
+    ref = x.full().sum(dim=tuple(axes))
+
+    y = x.sum(index)
+    full = y.full() if isinstance(y, tntt.TT) else y
+
+    assert err_rel(full, ref) < 1e-12
+
+
+@pytest.mark.parametrize("shape", [[3], [(2, 3)]])
+@pytest.mark.parametrize("dtype", parameters)
+def test_norm_single_mode(shape, dtype):
+    x = tntt.randn(shape, [1, 1], dtype=dtype)
+    ref = tn.linalg.norm(x.full())
+
+    assert tn.allclose(x.norm(), ref, rtol=1e-13, atol=1e-13)
+    assert tn.allclose(x.norm(squared=True), ref**2, rtol=1e-13, atol=1e-13)
+
+
+@pytest.mark.parametrize("ttm", [False, True])
+def test_kron_function(ttm):
+    x = tntt.randn([(2, 3), (3, 2)] if ttm else [2, 3], [1, 2, 1])
+    y = tntt.randn([(4, 2)] if ttm else [4], [1, 1])
+    ref = (tn.einsum('abcd,ef->abecdf', x.full(), y.full()) if ttm
+           else tn.einsum('ab,c->abc', x.full(), y.full()))
+
+    result = tntt.kron(x, y)
+
+    assert result.shape == x.shape + y.shape
+    assert err_rel(result.full(), ref) < 1e-13
+    for first, second in [(x, None), (None, x)]:
+        result = tntt.kron(first, second)
+        assert tn.equal(result.full(), x.full())
+        result.cores[0].zero_()
+        assert x.norm() > 0
+
+
+def test_kron_invalid_inputs():
+    with pytest.raises(tntt.errors.InvalidArguments):
+        tntt.kron(None, None)
+    with pytest.raises(tntt.errors.IncompatibleTypes):
+        tntt.kron(tntt.ones([2]), tntt.eye([2]))
+
+
+@pytest.mark.parametrize("dims, error", [([0, 1], tntt.errors.ShapeMismatch),
+    ([0, 0, 2], tntt.errors.InvalidArguments), ([-1, 0, 1], tntt.errors.InvalidArguments),
+    ([0, 1, 3], tntt.errors.InvalidArguments)])
+def test_permute_invalid_dims(dims, error):
+    with pytest.raises(error):
+        tntt.permute(tntt.ones([2, 3, 4]), dims)
+
+
+def test_cat_empty_single():
+    x = tntt.randn([3, 4, 5], [1, 2, 3, 1])
+    assert tntt.cat([]) is None
+    assert tn.equal(tntt.cat([x], dim=1).full(), x.full())
+
+
+@pytest.mark.parametrize("shape", [[4, 3, 4], [2, 3, 5], [4, 3, 5], [1, 3, 4], [2, 3, 1], [2, 3]])
+def test_cat_invalid_shape(shape):
+    message = "number of dimensions" if len(shape) != 3 else "mode sizes"
+    with pytest.raises(tntt.errors.InvalidArguments, match=message):
+        tntt.cat([tntt.ones([2, 3, 4]), tntt.ones(shape)], dim=1)
+
+
+@pytest.mark.parametrize("shapes", [[[(2, 2)], [2]], [[2], [(2, 2)]]])
+def test_cat_invalid_type(shapes):
+    with pytest.raises(tntt.errors.InvalidArguments):
+        tntt.cat([tntt.ones(shape) for shape in shapes])

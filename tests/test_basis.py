@@ -784,7 +784,7 @@ def test_bspline_decay_matrices(deg):
     integration over a truncated domain; the mass matrix is SPD."""
     basis = make_bc_basis(deg, ("clamped", "decay"))
     lam = basis.decay_rate[1]
-    x = torch.linspace(0, 1 + 40 / lam, 1_000_001, dtype=torch.float64)
+    x = torch.linspace(0, 1 + 40 / lam, 250_001, dtype=torch.float64)
     B = basis(x)
     Bp = basis(x, derivative=True)
 

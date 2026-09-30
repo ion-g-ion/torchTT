@@ -93,10 +93,10 @@ def test_decomposition_ttm(dtype):
 
     """
 
-    T_ref = tn.rand([10, 11, 12, 15, 17, 19], dtype=dtype)
+    T_ref = tn.rand([6, 7, 8, 9, 10, 11], dtype=dtype)
 
-    T = tntt.TT(T_ref, shape=[(10, 15), (11, 17),
-                (12, 19)], eps=1e-19, rmax=1000)
+    T = tntt.TT(T_ref, shape=[(6, 9), (7, 10),
+                (8, 11)], eps=1e-19, rmax=1000)
     Tfull = T.full()
 
     assert err_rel(Tfull, T_ref) < 1e-12
@@ -110,8 +110,8 @@ def test_decomposition_orthogonal(dtype):
     cores = [tn.rand([1, 20, 3], dtype=dtype), tn.rand([3, 10, 4], dtype=dtype), tn.rand(
         [4, 5, 20], dtype=dtype), tn.rand([20, 5, 2], dtype=dtype), tn.rand([2, 10, 1], dtype=dtype)]
     T = tntt.TT(cores)
-    T = tntt.random([3, 4, 5, 3, 8, 7, 10, 3, 5, 6], [
-                    1, 20, 12, 34, 3, 50, 100, 12, 2, 80, 1], dtype=dtype)
+    T = tntt.random([3, 3, 4, 3, 4, 3, 4, 3, 4, 3], [
+                    1, 10, 8, 16, 3, 20, 24, 8, 2, 16, 1], dtype=dtype)
     T_ref = T.full()
 
     cores, R = tntt._decomposition.lr_orthogonal(T.cores, T.R, T.is_ttm)
@@ -239,3 +239,26 @@ def test_dimension_permute(dtype):
                        5], 'Permute modex of a TT matrix: shape mismatch.'
     assert err_rel(
         Ap_tt.full(), Ap_ref) < 1e-10, 'Permute modex of a TT tensor: error too high.'
+
+
+@pytest.mark.parametrize("dtype", parameters)
+@pytest.mark.parametrize("source_shape, shape", [
+    ([6], None), ([2, 3], None), ([6], [2, 3]), ([2, 3, 3, 2], [(2, 3), (3, 2)])])
+def test_init_numpy(dtype, source_shape, shape):
+    ref = tn.arange(int(np.prod(source_shape)), dtype=tn.float64).to(dtype).reshape(source_shape)
+    x = tntt.TT(ref.numpy(), shape=shape)
+    if shape == [2, 3]:
+        ref = ref.reshape(shape)
+
+    assert err_rel(x.full(), ref) < 1e-13
+    assert np.allclose(x.numpy(), ref.numpy(), rtol=1e-13, atol=1e-13)
+
+
+@pytest.mark.parametrize("shapes, error", [
+    ([(1, 3)], tntt.errors.InvalidArguments),
+    ([(2, 3, 1)], tntt.errors.InvalidArguments),
+    ([(1, 3, 2), (3, 2, 1)], tntt.errors.RankMismatch),
+    ([(1, 3, 2), (2, 2, 4, 1)], tntt.errors.InvalidArguments)])
+def test_init_invalid_cores(shapes, error):
+    with pytest.raises(error):
+        tntt.TT([tn.ones(shape) for shape in shapes])

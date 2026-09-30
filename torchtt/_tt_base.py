@@ -1095,9 +1095,9 @@ class TT():
 
                 core_now = core_next
             if squared:
-                return tn.linalg.norm(core_next)**2
+                return tn.linalg.norm(core_now)**2
             else:
-                return tn.linalg.norm(core_next)
+                return tn.linalg.norm(core_now)
 
     def sum(self, index=None):
         """
@@ -1132,7 +1132,7 @@ class TT():
         if index == None:
             # the case we need to sum over all modes
             if self.__is_ttm:
-                C = tn.reduce_sum(self.cores[0], [0, 1, 2])
+                C = tn.sum(self.cores[0], [0, 1, 2])
                 for i in range(1, len(self.__N)):
                     C = tn.sum(tn.einsum('i,ijkl->jkl',
                                C, self.cores[i]), [0, 1])

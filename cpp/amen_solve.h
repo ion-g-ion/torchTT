@@ -265,12 +265,12 @@ std::vector<at::Tensor> amen_solve(
 
 
             double norm = torch::norm(Phis[k]).item<double>();
-            norm = norm>0 ? norm : 0.0;
+            norm = norm>0 ? norm : 1.0;
             normA[k-1] = norm;
             Phis[k] = Phis[k] / norm;
 
             norm = torch::norm(Phis_b[k]).item<double>();
-            norm = norm>0 ? norm : 0.0;
+            norm = norm>0 ? norm : 1.0;
             normb[k-1] = norm;
             Phis_b[k] = Phis_b[k] / norm;
             
@@ -297,6 +297,8 @@ std::vector<at::Tensor> amen_solve(
             rhs = at::tensordot(rhs, Phis_b[k+1], {2}, {0}).reshape({-1,1});
 
             double norm_rhs = torch::norm(rhs).item<double>();
+            bool zero_rhs = norm_rhs == 0;
+            norm_rhs = norm_rhs > 0 ? norm_rhs : 1.0;
 
             // residuals 
             double real_tol = (eps/std::sqrt(d))/damp;
@@ -333,20 +335,28 @@ std::vector<at::Tensor> amen_solve(
                 double eps_local = real_tol * norm_rhs;
 
                 auto drhs = rhs - Op.matvec(previous_solution, false);
-                eps_local /= torch::norm(drhs).item<double>();
+                double norm_drhs = torch::norm(drhs).item<double>();
+                eps_local /= norm_drhs > 0 ? norm_drhs : 1.0;
 
                 int flag;
                 int nit;
 
                 at::Tensor ps = 0.0 * previous_solution;
-                gmres<double>(solution_now, flag, nit, Op, drhs, ps, drhs.sizes()[0], local_iterations, eps_local, resets );
+                if(zero_rhs){
+                    solution_now = at::zeros_like(previous_solution);
+                    flag = 1;
+                    nit = 0;
+                }
+                else
+                    gmres<double>(solution_now, flag, nit, Op, drhs, ps, drhs.sizes()[0], local_iterations, eps_local, resets );
 
                 if(preconditioner!=NO_PREC){
                     solution_now = Op.apply_prec(solution_now.reshape(shape_now));
                 }
                 solution_now = solution_now.reshape({-1,1});
 
-                solution_now += previous_solution;
+                if(!zero_rhs)
+                    solution_now += previous_solution;
                 res_old = torch::norm(Op.matvec(previous_solution, false)-rhs).item<double>()/norm_rhs;
                 res_new = torch::norm(Op.matvec(solution_now, false)-rhs).item<double>()/norm_rhs;
 
@@ -359,7 +369,8 @@ std::vector<at::Tensor> amen_solve(
             if(verbose && res_old/res_new < damp && res_new > real_tol)
                 std::cout << "WARNING: residual increase. res_old " << res_old << ", res_new " << res_new << ", " << real_tol << std::endl;
 
-            auto dx = torch::norm(solution_now - previous_solution).item<double>() / torch::norm(solution_now).item<double>();
+            double norm_solution = torch::norm(solution_now).item<double>();
+            auto dx = torch::norm(solution_now - previous_solution).item<double>() / (norm_solution > 0 ? norm_solution : 1.0);
 
             if(verbose) 
                 std::cout << "\t\tdx = " << dx << ", res_now = " << res_new << ", res_old = " << res_old << std::endl;

@@ -92,3 +92,155 @@ def test_amen_solve_final_sweep_preserves_convergence():
     xx = torchtt.solvers.amen_solve(A, b, verbose=False, eps=1e-10, nswp=40, preconditioner='r', use_cpp=False)
     err = (A@xx-b).norm()/b.norm()
     assert err.numpy() < 1e-10, "final sweep degraded an already converged solution."
+
+
+@pytest.mark.parametrize("local_solver", [1, 2])
+@pytest.mark.parametrize("preconditioner", [None, 'c', 'r'])
+@pytest.mark.parametrize("use_single_precision", [False, True])
+def test_amen_solve_iterative(local_solver, preconditioner, use_single_precision):
+    A, x, b = random_system(7, shift=1.0)
+    eps = 1e-5 if use_single_precision else 1e-10
+    # Force iterative local solves, including on the boundary cores.
+    xx = torchtt.solvers.amen_solve(
+        A, b, eps=eps, max_full=0, local_solver=local_solver,
+        preconditioner=preconditioner, use_single_precision=use_single_precision,
+        local_iterations=20, resets=3, use_cpp=False)
+
+    assert (A@xx-b).norm()/b.norm() < eps
+    assert err_rel(xx.full(), x.full()) < eps
+
+
+@pytest.mark.parametrize("kickrank, kick2, rmax", [(1, 0, 4), (2, 1, [1, 4, 4, 1])])
+@pytest.mark.parametrize("scale", [0.5, 1.0])
+def test_amen_solve_initial_guess(kickrank, kick2, rmax, scale):
+    A, x, b = random_system(8, shift=1.0)
+    x0 = scale*x
+    ref = x0.full().clone()
+
+    xx = torchtt.solvers.amen_solve(
+        A, b, x0=x0, eps=1e-10, kickrank=kickrank, kick2=kick2, rmax=rmax, use_cpp=False)
+
+    assert err_rel(xx.full(), x.full()) < 1e-9
+    assert all(r <= limit for r, limit in zip(xx.R, [1, 4, 4, 1]))
+    assert tn.equal(x0.full(), ref), "AMEN solve changed the initial guess."
+
+
+@pytest.mark.parametrize("band_diagonal", [0, 1])
+@pytest.mark.parametrize("max_full", [0, 256])
+def test_amen_solve_banded(band_diagonal, max_full):
+    tn.manual_seed(9)
+    N = [3, 4, 2]
+    cores = []
+    for n in N:
+        core = tn.diag(tn.arange(1, n+1, dtype=tn.float64))
+        if band_diagonal == 1:
+            core += tn.diag(tn.full((n-1,), 0.1, dtype=tn.float64), 1)
+            core += tn.diag(tn.full((n-1,), -0.2, dtype=tn.float64), -1)
+        cores.append(core.reshape(1, n, n, 1))
+    A = torchtt.TT(cores)
+    b = torchtt.randn(N, [1, 2, 2, 1], dtype=tn.float64)
+    ref = tn.linalg.solve(A.full().reshape(24, 24), b.full().flatten()).reshape(N)
+
+    xx = torchtt.solvers.amen_solve(
+        A, b, eps=1e-10, band_diagonal=band_diagonal, max_full=max_full, use_cpp=False)
+
+    assert err_rel(xx.full(), ref) < 1e-9
+    assert (A@xx-b).norm()/b.norm() < 1e-9
+
+
+@pytest.mark.parametrize("N", [[1, 4, 1], [2, 1, 3]])
+def test_amen_solve_singleton_modes(N):
+    tn.manual_seed(10)
+    A = torchtt.eye(N, dtype=tn.float64)
+    b = torchtt.randn(N, [1, 2, 2, 1], dtype=tn.float64)
+
+    x = torchtt.solvers.amen_solve(A, b, eps=1e-10, use_cpp=False)
+
+    assert x.N == N
+    assert err_rel(x.full(), b.full()) < 1e-9
+
+
+def test_amen_solve_single_mode():
+    A = torchtt.TT(tn.diag(tn.tensor([1., 2., 3.], dtype=tn.float64)), [(3, 3)])
+    b = torchtt.TT(tn.tensor([2., 4., 6.], dtype=tn.float64))
+
+    x = torchtt.solvers.amen_solve(A, b, use_cpp=False)
+
+    assert tn.allclose(x.full(), tn.full((3,), 2., dtype=tn.float64))
+
+
+@pytest.mark.parametrize("zero_core", [None, 0, 1, 2])
+@pytest.mark.parametrize("max_full", [0, 256])
+@pytest.mark.parametrize("use_cpp", [False, pytest.param(True, marks=
+    pytest.mark.skipif(not torchtt.solvers.cpp_enabled(), reason="C++ extension must be present."))])
+def test_amen_solve_zero_rhs(use_cpp, max_full, zero_core):
+    A = torchtt.eye([2, 3, 2], dtype=tn.float64)
+    b = torchtt.zeros([2, 3, 2], dtype=tn.float64) if zero_core is None else torchtt.ones([2, 3, 2], dtype=tn.float64)
+    if zero_core is not None:
+        b.cores[zero_core].zero_()
+
+    x = torchtt.solvers.amen_solve(A, b, nswp=4, max_full=max_full, use_cpp=use_cpp)
+
+    assert x.N == b.N
+    assert x.norm() < 1e-12
+
+
+def test_amen_solve_invalid_operands():
+    A = torchtt.eye([2, 3])
+    b = torchtt.ones([2, 3])
+
+    with pytest.raises(torchtt.errors.InvalidArguments):
+        torchtt.solvers.amen_solve(A.full(), b)
+    with pytest.raises(torchtt.errors.InvalidArguments):
+        torchtt.solvers.amen_solve(A, b.full())
+    with pytest.raises(torchtt.errors.IncompatibleTypes):
+        torchtt.solvers.amen_solve(b, b)
+    with pytest.raises(torchtt.errors.IncompatibleTypes):
+        torchtt.solvers.amen_solve(A, A)
+    with pytest.raises(torchtt.errors.ShapeMismatch):
+        torchtt.solvers.amen_solve(torchtt.ones([(2, 3), (3, 2)]), b)
+    with pytest.raises(torchtt.errors.ShapeMismatch):
+        torchtt.solvers.amen_solve(A, torchtt.ones([2, 4]))
+
+
+@pytest.mark.parametrize("use_single_precision", [False, True])
+def test_amen_solve_invalid_local_solver(use_single_precision):
+    A, x, b = random_system(11)
+    with pytest.raises(torchtt.errors.InvalidArguments, match="Solver not implemented"):
+        torchtt.solvers.amen_solve(
+            A, b, max_full=0, local_solver=0, use_single_precision=use_single_precision, use_cpp=False)
+
+
+@pytest.mark.skipif(not torchtt.solvers.cpp_enabled(), reason="C++ extension must be present.")
+@pytest.mark.parametrize("preconditioner", [None, 'c', 'r'])
+def test_amen_solve_iterative_cpp(preconditioner):
+    A, x, b = random_system(7, shift=1.0)
+    x0 = 0.5*x
+    ref = x0.full().clone()
+
+    xx = torchtt.solvers.amen_solve(
+        A, b, x0=x0, eps=1e-10, max_full=0, kickrank=2, kick2=1,
+        preconditioner=preconditioner, use_cpp=True)
+
+    assert (A@xx-b).norm()/b.norm() < 1e-9
+    assert err_rel(xx.full(), x.full()) < 1e-9
+    assert tn.equal(x0.full(), ref), "AMEN solve changed the initial guess."
+
+
+@pytest.mark.skipif(not torchtt.solvers.cpp_enabled(), reason="C++ extension must be present.")
+def test_amen_solve_invalid_preconditioner_cpp():
+    with pytest.raises(torchtt.errors.InvalidArguments, match="Invalid preconditioner"):
+        torchtt.solvers.amen_solve(torchtt.eye([2, 3]), torchtt.ones([2, 3]), preconditioner='invalid', use_cpp=True)
+
+
+@pytest.mark.parametrize("local_solver", [1, 2])
+@pytest.mark.parametrize("use_single_precision", [False, True])
+def test_amen_solve_zero_rhs_iterative(local_solver, use_single_precision):
+    A = torchtt.eye([2, 3, 2], dtype=tn.float64)
+    b = torchtt.zeros([2, 3, 2], dtype=tn.float64)
+
+    x = torchtt.solvers.amen_solve(
+        A, b, max_full=0, local_solver=local_solver,
+        use_single_precision=use_single_precision, use_cpp=False)
+
+    assert x.norm() < 1e-12

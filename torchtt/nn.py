@@ -445,13 +445,7 @@ class CompressedTTLayer(nn.Module):
         d = len(self.size_in)
         from ._fast_mult import swap_cores
         
-        # The sweep processes cores right-to-left, so the internal "cores" list
-        # is reversed: cores[j] in the sweep corresponds to bond (d-1-j) in the
-        # original ordering. We need to map swap_cores calls to the correct
-        # R_output entry for each bond.
-        # After reversal, bond between sweep-cores[j] and sweep-cores[j+1]
-        # corresponds to original bond index (d-1-j).
-        
+        # The swaps move processed modes into the original output order.
         cores = [tn.permute(c, [2, 1, 0]) for c in x.cores[::-1]]
         for i in range(d):
             cores[0] = oe.contract("mabk,kbn->man", self.cores[d-i-1], cores[0])
@@ -464,11 +458,8 @@ class CompressedTTLayer(nn.Module):
                 
             if i != d-1:
                 for j in range(i, -1, -1):
-                    # Bond between sweep-cores[j] and sweep-cores[j+1] maps to
-                    # original bond index (d-1-j).
-                    bond_idx = d - 1 - j
+                    bond_idx = j + 1
                     cores[j], cores[j+1] = swap_cores(cores[j], cores[j+1], 0.0, self.R_output[bond_idx])
                     
-        cores = [tn.permute(c, [2, 1, 0]) for c in cores[::-1]]
         
         return torchtt.TT(cores)

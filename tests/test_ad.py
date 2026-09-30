@@ -87,5 +87,42 @@ def test_ad():
         c.shape for c in A.cores], "TT AD: problem for grad w.r.t. TT matrix."
 
 
+@pytest.mark.parametrize("shape", [[3, 4, 5], [(3, 2), (4, 3), (2, 5)]])
+@pytest.mark.parametrize("indices", [None, [2, 0]])
+def test_grad_selected_cores(shape, indices):
+    x = torchtt.randn(shape, [1, 2, 3, 1])
+    torchtt.grad.watch(x, indices)
+    selected = list(range(3)) if indices is None else indices
+    cores = [x.cores[i] for i in selected]
+    refs = tn.autograd.grad(x.full().square().sum(), cores)
+
+    for count in [1, 2]:
+        grads = torchtt.grad.grad((x*x).sum(), x, indices)
+        assert len(grads) == len(cores)
+        assert all(tn.allclose(g, count*r, rtol=1e-12, atol=1e-12) for g, r in zip(grads, refs))
+    assert all(c.grad is None for i, c in enumerate(x.cores) if i not in selected)
+
+    torchtt.grad.unwatch(x)
+    assert all(not c.requires_grad for c in x.cores)
+    assert all(tn.allclose(c.grad, 2*r, rtol=1e-12, atol=1e-12) for c, r in zip(cores, refs))
+
+
+@pytest.mark.parametrize("all_in_one", [False, True])
+def test_grad_list(all_in_one):
+    A = torchtt.randn([(2, 3), (5, 4)], [1, 2, 1])
+    x = torchtt.randn([3, 4], [1, 2, 1])
+    torchtt.grad.watch_list([A, x])
+    ref = A.full().reshape(10, 12) @ x.full().reshape(12)
+    refs = tn.autograd.grad(ref.square().sum(), A.cores + x.cores)
+
+    grads = torchtt.grad.grad_list((A @ x).norm(True), [A, x], all_in_one)
+
+    if not all_in_one:
+        assert [len(g) for g in grads] == [2, 2]
+        grads = [g for group in grads for g in group]
+    assert len(grads) == len(refs)
+    assert all(tn.allclose(g, r, rtol=1e-12, atol=1e-12) for g, r in zip(grads, refs))
+
+
 if __name__ == '__main__':
     pytest.main()
