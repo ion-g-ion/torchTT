@@ -24,25 +24,27 @@ bibliography: paper.bib
 
 # Statement of Need
 
-High-dimensional tensors arise in many areas of science and engineering, such as the discretization of $d$-dimensional partial differential equations (PDEs), state spaces for systems of ordinary differential equations (ODEs), and many-body wavefunctions in quantum chemistry. Naively storing or computing with a full tensor scales exponentially in $d$ (the curse of dimensionality). The TT decomposition combats this by factorizing a tensor into a sequence of smaller, low-rank 3D cores, reducing the storage from $\mathcal{O}(n^d)$ to $\mathcal{O}(dnr^2)$ where $r$ is the TT rank. `torchTT` targets researchers and engineers in scientific computing, computational physics, and deep learning who need to work with such high-dimensional objects. It addresses the growing need for a single library that combines hardware-accelerated tensor network algebra with advanced numerical algorithms within the PyTorch ecosystem, enabling seamless integration into modern machine learning workflows.
+High-dimensional tensors arise in many areas of science and engineering, such as the discretization of partial differential equations (PDEs), state spaces for systems of ordinary differential equations (ODEs), and many-body wavefunctions in quantum chemistry. Here, $d$ denotes the number of tensor dimensions, also called modes (indices). In a tensor-product discretization, these modes correspond to the discretized variables, such as asset prices in multi-asset Black--Scholes PDEs or particle coordinates in many-body wavefunctions. Such problems can involve tens or hundreds of variables. A full tensor with $n$ entries per mode contains $n^d$ values: even $n=100$ and $d=10$ require $10^{20}$ values, or approximately 800 exabytes in double precision. This exponential growth is the curse of dimensionality.
+
+TT typically approximates the full tensor using a sequence of smaller, three-dimensional cores, reducing storage to $\mathcal{O}(dnr^2)$ when the TT ranks are bounded by $r$. Accurate, compact approximations depend on suitable low-rank structure; arbitrary tensors need not admit small TT ranks. `torchTT` targets researchers and engineers in scientific computing, computational physics, and deep learning who need to work with such high-dimensional objects. It addresses the growing need for a single library that combines hardware-accelerated tensor network algebra with advanced numerical algorithms within the PyTorch ecosystem, enabling seamless integration into modern machine learning workflows.
 
 # State of the Field
 
-Several open-source packages exist for tensor network computations and the TT format specifically. The `ttpy` library [@ttpy] is one of the earliest and most comprehensive Python implementations for TT decomposition, offering a wide array of functions including linear solvers and cross-approximation. However, `ttpy` relies on NumPy and SciPy, meaning it lacks native GPU acceleration and automatic differentiation, which are critical for modern deep learning workflows.
+Several open-source packages exist for tensor network computations and the TT format specifically. The `ttpy` 1.x series [@ttpy] provided AMEn (Alternating Minimal Energy) linear solvers and cross-approximation through CPU-based NumPy/Fortran routines, without native GPU acceleration. The subsequent `ttpy 2` rewrite [@ttpy2], introduced in 2026, adds NumPy and PyTorch backends with GPU support.
 
-More recently, libraries like `tntorch` [@tntorch], `t3f` [@novikov2020t3f], and `TensorLy` [@kossaifi2019tensorly] have bridged the gap between tensor networks and machine learning frameworks by utilizing PyTorch and TensorFlow. These packages provide GPU acceleration and autograd capabilities. While `tntorch` offers cross-approximation routines, none of these libraries provide the AMEn (Alternating Minimal Energy) solver for linear systems in the TT format nor the AMEn-based adaptive cross interpolation scheme, both of which are essential for robust numerical analysis of high-dimensional problems.
+Libraries such as `tntorch` [@tntorch], `t3f` [@novikov2020t3f], and `TensorLy` [@kossaifi2019tensorly] have bridged the gap between tensor networks and machine learning frameworks by utilizing PyTorch and TensorFlow. These packages provide GPU acceleration and autograd capabilities, but offer different sets of numerical algorithms. For example, `tntorch` includes cross-approximation routines, while the documented APIs of these three packages do not include the AMEn solver for TT linear systems.
 
 Additionally, in the domain of quantum physics, libraries such as `TeNPy` [@hauschild2018efficient] provide highly optimized tools for simulating many-body systems using Matrix Product States (the physics equivalent of the TT format). However, these are deeply specialized for physics applications, such as the density matrix renormalization group (DMRG) algorithm, rather than general-purpose numerical mathematics or deep learning.
 
-`torchTT` addresses this gap by combining the best of both worlds. It provides a native PyTorch implementation with seamless GPU acceleration and automatic differentiation, making it ideal for deep learning. Concurrently, it offers advanced numerical capabilities including both DMRG and AMEn-based cross approximation, and the AMEn linear system solver, positioning it as a uniquely complete tool for scientific machine learning. Rather than contributing these features to existing packages—which would require significant architectural changes to libraries not designed for advanced iterative solvers—`torchTT` was built from the ground up with a unified `TT` class that natively supports both scientific computing workflows and deep learning integration.
+Development of `torchTT` began in 2021 to provide the combination of AMEn linear solves, cross-approximation, GPU execution, and PyTorch integration that was not available in the alternatives considered at that time. The package provides these numerical methods, including DMRG- and AMEn-based cross-approximation, alongside TT tensor and operator algebra and trainable TT layers through a common PyTorch-based representation and API.
 
 # Software Design
 
-A central design trade-off in `torchTT` is balancing the expressiveness needed for advanced numerical algorithms with seamless integration into the PyTorch ecosystem. Existing scientific TT libraries (e.g., `ttpy`) are built on NumPy and thus cannot leverage GPU acceleration or automatic differentiation. Conversely, ML-oriented tensor libraries prioritize autograd compatibility but lack the algorithmic depth needed for iterative solvers. `torchTT` resolves this tension through two key architectural decisions.
+A central design trade-off in `torchTT` is balancing the expressiveness needed for advanced numerical algorithms with seamless integration into the PyTorch ecosystem. Two architectural choices support this integration.
 
 ## Unified TT class and PyTorch-native design
 
-The central component is the `torchtt.TT` class, which provides a single, unified representation for both TT-tensors and TT-matrices (tensor operators). This design choice—rather than separate classes—allows algorithms like AMEn and cross-approximation to operate generically on any TT object. The class stores its TT cores as standard `torch.Tensor` objects, which means PyTorch's autograd graph tracks all TT operations automatically. This enables end-to-end gradient-based training of models that include TT-compressed layers or TT-based loss functions, without requiring custom backward passes.
+The central component is the `torchtt.TT` class, which provides a single, unified representation for both TT-tensors and TT-matrices (tensor operators). This shared interface supports both scientific computing routines and models with TT-compressed parameters. Specialized algorithms such as AMEn and cross-approximation are implemented as functions in separate modules, separating algorithm-specific logic from the tensor representation. The class stores its TT cores as standard `torch.Tensor` objects, allowing PyTorch's autograd graph to track supported TT operations. This enables end-to-end gradient-based training of models that include TT-compressed layers or differentiable TT-based loss functions, without requiring custom backward passes.
 
 *   **Python-like API**: Operations such as addition (`+`), subtraction (`-`), elementwise multiplication (`*`), and matrix multiplication (`@`) are overloaded to work directly on `torchtt.TT` instances, keeping user code concise.
 *   **Device management**: Standard PyTorch methods like `.to(device)`, `.cuda()`, and `.cpu()` are supported, enabling TT objects and their computations to run on CPU or GPU without code changes.
@@ -60,9 +62,9 @@ Beyond the core class, the `torchTT` library is organized into specialized modul
 *   **Neural Network Layers** (`torchtt.nn`): Defines PyTorch-compatible neural network layers. `LinearLayerTT` parametrizes dense weight matrices as TT-matrices, enabling massive parameter reduction. `CompressedTTLayer` extends this concept by operating directly on TT-formatted inputs and applying nonlinear activations between TT cores during multiplication, targeting deep TT network architectures. All layers inherit from `torch.nn.Module`, making them drop-in replacements for standard layers in deep learning pipelines.
 *   **Manifold Optimization** (`torchtt.manifold`): Offers tools for Riemannian optimization on the manifold of tensors with fixed TT-rank. This includes projections onto the tangent space and Riemannian gradient calculation, facilitating advanced optimization tasks like tensor completion.
 
-## Example: Solving a 4D PDE
+## Example: Solving a Four-Dimensional PDE
 
-The following example demonstrates how to solve a 4-dimensional Poisson equation $\Delta u = f$ on $[0,1]^4$ with zero boundary conditions using `torchTT`. The right-hand side $f$ is constructed using cross-approximation, and the system is solved directly in the TT format using the AMEn solver. Additional runnable examples are provided in the repository's `examples/` folder.
+The following example demonstrates how to solve a four-dimensional Poisson equation $\Delta u = f$ on $[0,1]^4$ with zero boundary conditions using `torchTT`. The right-hand side $f$ is constructed using cross-approximation, and the system is solved directly in the TT format using the AMEn solver. Additional runnable examples are provided in the repository's `examples/` folder.
 
 ```python
 import torchtt as tntt
@@ -71,7 +73,7 @@ import torch as tn
 # Define the problem size
 N, d = 64, 4 
 
-# Construct the 1D Laplacian operator (finite difference)
+# Construct the one-dimensional Laplacian operator (finite difference)
 L1d = (tn.diag(tn.ones(N-1),-1) + tn.diag(tn.ones(N-1),1) - \
       2*tn.eye(N)) / (1/(N-1))**2
 L1d[0,1] = L1d[-1,-2] = 0 # Boundary conditions
