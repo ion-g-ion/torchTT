@@ -204,7 +204,7 @@ def amen_solve(A, b, nswp=22, x0=None, eps=1e-10, rmax=32768, max_full=256, kick
         resets (int, optional): number of resets in the GMRES. Defaults to 2.
         verbose (bool, optional): choose whether to display or not additional information during the runtime. Defaults to True.
         preconditioner (string, optional): Choose the preconditioner for the local system. Possible values are None, 'c' (central Jacobi preconditioner). No preconditioner is used if None is provided. Defaults to None.
-        use_cpp (bool, optional): use the C++ implementation of AMEn. Defaults to True.
+        use_cpp (bool, optional): use the C++ implementation of AMEn if available. It has the same accuracy and is 3-7x faster on CPU, most for small TT cores. It supports only real tensors and ignores ``band_diagonal``, ``local_solver`` and ``trunc_norm``. Defaults to True.
         band_diagonal (int, optional): the TT cores of the matrix habe band diagonal structure. Defaults to -1.
         use_single_precision (bool, optional): solve the local systems with the iterative solver in single precision. The Python implementation also computes the local residuals in single precision, the C++ implementation computes them in the precision of the input. Defaults to False.
 

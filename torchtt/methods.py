@@ -156,7 +156,7 @@ class DMRG():
     Args:
         nswp (int, optional): maximum number of sweeps. Defaults to 20.
         kickrank (int, optional): rank enrichment with random vectors after each local update. Defaults to 4.
-        use_cpp (bool, optional): use the C++ implementation if available (only for the matrix-vector product). Defaults to True.
+        use_cpp (bool, optional): use the C++ implementation if available (only for the matrix-vector product). It is up to 2x faster for small ranks and about as fast as Python for larger ones. Defaults to True.
 
     Raises:
         InvalidArguments: nswp must be a positive integer.
