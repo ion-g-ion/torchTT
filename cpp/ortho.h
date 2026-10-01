@@ -15,30 +15,30 @@ void perform_QR(at::Tensor &Q, at::Tensor &R, at::Tensor &M){
  */
 int rank_chop(torch::Tensor s, double eps)
 {
-    int n = s.sizes()[0];
-    int r = n - 1;
-    if (torch::norm(s).item<double>() == 0.0)
+    // read the singular values as doubles whatever the dtype/device of s
+    at::Tensor sd = s.to(torch::kCPU, torch::kFloat64).contiguous();
+    int n = sd.sizes()[0];
+    const double *ss = sd.data_ptr<double>();
+
+    double total = 0.0;
+    for (int k = 0; k < n; k++)
+        total += ss[k] * ss[k];
+    if (total == 0.0)
         return 1;
 
     if (eps <= 0.0)
-        return r;
+        return n;
 
-    double *ss = (double *)s.data_ptr();
-
-    while (r > 0)
+    // drop singular values from the tail while their accumulated energy stays below eps^2
+    double tail = 0.0;
+    int r = n;
+    while (r > 1)
     {
-        double sum = 0.0;
-
-        for (int k = r; k < n; k++)
-            sum += ss[k] * ss[k];
-
-        if (sum >= eps * eps)
+        tail += ss[r - 1] * ss[r - 1];
+        if (tail >= eps * eps)
             break;
-
         r--;
     }
-    r++;
-    r = r > 0 ? r : 1;
 
     return r;
 }
