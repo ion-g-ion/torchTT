@@ -1,88 +1,111 @@
+#pragma once
 #include "define.h"
-template <typename T> class AMENsolveMV{
+
+/**
+ * @brief Local operator of the AMEn solver: y[l,m,L] = Phi_left[l,s,r] coreA[s,m,n,S] Phi_right[L,S,R] x[r,n,R].
+ *
+ * The operands are converted to the working dtype and rearranged once in the constructor, so that
+ * every product is three matrix products and no operand is copied.
+ * The product can also be applied to a batch of vectors.
+ */
+class AMENsolveMV{
 
 private:
-    at::Tensor Phi_left;
-    at::Tensor Phi_right;
-    at::Tensor coreA;
-    at::Tensor J;
+    at::Tensor PL;  // Phi_left as (l s) x r
+    at::Tensor CA;  // coreA as (m S) x (s n)
+    at::Tensor PR;  // Phi_right as L x (S R)
+    at::Tensor J;   // inverted blocks of the preconditioner
     int prec;
-    at::IntArrayRef shape;
-    at::TensorOptions options;
+    at::ScalarType dt;
+    int64_t r, n, R, s, S;
 
-    T * Phi_left_ptr;
-    T * Phi_right_ptr;
-    T * coreA_ptr;
-    T * J_ptr;
-    T * work1_ptr;
-    T * work2_ptr;
-    int64_t r,R,n,s,S,l,L;
 public:
-    AMENsolveMV(){
-       ;
-    }
-    
-    void setter(at::Tensor &Phi_left, at::Tensor &Phi_right, at::Tensor & coreA, at::IntArrayRef shape, int prec, at::TensorOptions options){
-        this->prec = prec;
-        this->options = options;
-        this->shape = shape;
+    /**
+     * @brief Construct the local operator.
+     *
+     * @param[in] Phi_left the left interface. Has shape r x s x r.
+     * @param[in] Phi_right the right interface. Has shape R x S x R.
+     * @param[in] coreA the core of the matrix. Has shape s x n x n x S.
+     * @param[in] r the left rank of the local unknown.
+     * @param[in] n the mode size of the local unknown.
+     * @param[in] R the right rank of the local unknown.
+     * @param[in] prec the preconditioner (NO_PREC, C_PREC or R_PREC).
+     * @param[in] dtype the dtype used for the products.
+     */
+    AMENsolveMV(const at::Tensor &Phi_left, const at::Tensor &Phi_right, const at::Tensor &coreA, int64_t r, int64_t n, int64_t R, int prec, at::ScalarType dtype)
+        : prec(prec), dt(dtype), r(r), n(n), R(R)
+    {
+        s = coreA.sizes()[0];
+        S = coreA.sizes()[3];
+        auto Phi_l = Phi_left.to(dtype);
+        auto Phi_r = Phi_right.to(dtype);
+        auto A = coreA.to(dtype);
 
-        this->Phi_left = Phi_left;
-        this->Phi_right = Phi_right;
-        this->coreA = coreA;
-        if(this->prec == C_PREC){
-            auto Jl = at::tensordot(at::diagonal(Phi_left,0,0,2), coreA, {0}, {0});
-            auto Jr = at::diagonal(Phi_right, 0, 0, 2);
-            this->J = at::linalg_inv(at::tensordot(Jl,Jr,{3},{0}).permute({0,3,1,2}));
+        PL = Phi_l.reshape({r*s, r});
+        CA = A.permute({1,3,0,2}).reshape({n*S, s*n});
+        PR = Phi_r.reshape({R, S*R});
+
+        if(prec == C_PREC){
+            auto Jl = at::tensordot(at::diagonal(Phi_l,0,0,2), A, {0}, {0});
+            auto Jr = at::diagonal(Phi_r, 0, 0, 2);
+            J = at::linalg_inv(at::tensordot(Jl,Jr,{3},{0}).permute({0,3,1,2}));
         }
-        else if(this->prec == R_PREC){
-            auto Jl = at::tensordot(at::diagonal(Phi_left,0,0,2), coreA, {0},{0}); // sd,smnS->dmnS
-            auto Jt = at::tensordot(Jl, Phi_right, {3}, {1}); // dmnS,LSR->dmnLR
+        else if(prec == R_PREC){
+            auto Jl = at::tensordot(at::diagonal(Phi_l,0,0,2), A, {0},{0}); // sd,smnS->dmnS
+            auto Jt = at::tensordot(Jl, Phi_r, {3}, {1}); // dmnS,LSR->dmnLR
             Jt = Jt.permute({0, 1, 3, 2, 4});
-            auto sh = Jt.sizes();
+            std::vector<int64_t> sh(Jt.sizes().begin(), Jt.sizes().end());
             auto Jt2 = Jt.reshape({-1, Jt.sizes()[1]*Jt.sizes()[2], Jt.sizes()[3]*Jt.sizes()[4]});
-            this->J = at::linalg_inv(Jt2).reshape(sh);
+            J = at::linalg_inv(Jt2).reshape(sh);
         }
     }
 
-    at::Tensor apply_prec(at::Tensor sol){
+    /**
+     * @brief The dtype used for the products.
+     */
+    at::ScalarType dtype() const {
+        return dt;
+    }
+
+    /**
+     * @brief Apply the preconditioner.
+     *
+     * @param[in] x the vector, with r*n*R entries.
+     * @return at::Tensor the result, same shape as x.
+     */
+    at::Tensor apply_prec(const at::Tensor &x) const {
+        auto sol = x.reshape({r, n, R});
         at::Tensor ret;
-        if(this->prec == C_PREC) {
-        uint64_t s0,s1,s2;
-            s0 = sol.sizes()[0];
-            s1 = sol.sizes()[1]; 
-            s2 = sol.sizes()[2];
-
-            at::Tensor tmp = sol.permute({0,2,1}).reshape({s0, s2, s1, 1});
-            ret = at::linalg_matmul(this->J, tmp).permute({0,2,1,3}).reshape({s0, s1, s2}); 
+        if(prec == C_PREC) {
+            at::Tensor tmp = sol.permute({0,2,1}).reshape({r, R, n, 1});
+            ret = at::linalg_matmul(J, tmp).permute({0,2,1,3}).reshape({r, n, R});
         }
-        else if(this->prec == R_PREC){
-            ret = at::einsum("rnR,rmLnR->rmL", {sol, this->J});
-
-        }
-
-        return ret;
-    }
-
-    at::Tensor matvec(at::Tensor &x, bool use_prec = true){
-        at::Tensor tmp;
-
-        if(!use_prec || this->prec == NO_PREC){
-            tmp = x.reshape(this->shape);            
+        else if(prec == R_PREC){
+            ret = at::einsum("rnR,rmLnR->rmL", {sol, J});
         }
         else
-        {
-            tmp = apply_prec(x.reshape(this->shape));
-        }
-        auto w = at::tensordot(tmp, this->Phi_left, {0}, {2});
-        auto w2 = at::tensordot(w, this->coreA, {0,3}, {2,0});
-        auto w3 = at::tensordot(w2, this->Phi_right, {0,3}, {2,1});
-        return w3.reshape({this->shape[0]*this->shape[1]*this->shape[2],1});
+            ret = sol;
 
+        return ret.reshape(x.sizes());
     }
 
-    void matvec_cpu(T *in, T *out){
+    /**
+     * @brief Apply the operator to one vector or to a batch of vectors.
+     *
+     * @param[in] x a multiple of r*n*R entries, the vectors are consecutive.
+     * @param[in] use_prec apply the preconditioner before the operator (single vector only).
+     * @return at::Tensor the result, same shape as x.
+     */
+    at::Tensor matvec(const at::Tensor &x, bool use_prec = true) const {
+        at::Tensor xx = (use_prec && prec != NO_PREC) ? apply_prec(x) : x;
+        int64_t b = x.numel() / (r*n*R);
 
-        
+        // lsr,brnR->blsnR
+        auto w = b == 1 ? at::mm(PL, xx.reshape({r, n*R})) : at::matmul(PL, xx.reshape({b, r, n*R}));
+        // mSsn,blsnR->blmSR (the matrix is shared by the batch, no copy)
+        auto w2 = at::matmul(CA, w.view({b*r, s*n, R}));
+        // blmSR,LSR->blmL
+        auto w3 = at::mm(w2.view({b*r*n, S*R}), PR.t());
+        return w3.view(x.sizes());
     }
 };

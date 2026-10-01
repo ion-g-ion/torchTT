@@ -11,8 +11,10 @@ All notable changes to this project will be documented in this file.
 - Documentation on which method to choose for a product (#47).
 - Documentation of `torchtt.grad`: its relation to PyTorch autograd, which operations can be differentiated and the side effects of `grad()` (#47).
 - The DMRG elementwise product also accepts TT matrices.
+- The C++ implementation of `torchtt.solvers.amen_solve` supports `use_single_precision`: the local GMRES runs in single precision, while the residuals and the rank truncation use the precision of the input.
 
 ### Changed
+- The C++ AMEn solver is 1.5–3.4x faster on CPU and GPU (Laplace problems, float64). Its local GMRES orthogonalizes with two passes of classical Gram-Schmidt and copies data to the host once per iteration instead of once per inner product. The local operator is applied as three matrix products without copying its operands. The sweep and the rank truncation need fewer device synchronizations, and SVDs on CUDA use the cuSOLVER method `gesvd` instead of the slower default `gesvdj`.
 - Docs: the overview section "About the package" is renamed "Operations in the TT format" and no longer lists the examples. Instead, every example page links to Google Colab and to the notebook on GitHub (`nbsphinx_prolog` in `conf.py`).
 
 ### Fixed
@@ -27,6 +29,8 @@ All notable changes to this project will be documented in this file.
 - The Python DMRG products changed the cores of the initial guess passed to them.
 - AMEn products returned wrong results for complex tensors; they now raise `IncompatibleTypes`.
 - The rank of AMEn products could exceed `rmax` because of the rank enrichment.
+- The C++ AMEn solver leaked memory in every iterative local solve.
+- The C++ AMEn solver raises an error that names the problem for complex tensors.
 
 ### Deprecated
 - `TT.fast_matvec`, `torchtt.fast_mv`, `torchtt.fast_mm`, `torchtt.fast_hadammard`, `torchtt.amen_mv`, `torchtt.amen_mm` and `torchtt.dmrg_hadamard`. They still work and emit a `DeprecationWarning` that names the replacement.

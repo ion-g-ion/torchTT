@@ -233,6 +233,43 @@ def test_amen_solve_invalid_preconditioner_cpp():
         torchtt.solvers.amen_solve(torchtt.eye([2, 3]), torchtt.ones([2, 3]), preconditioner='invalid', use_cpp=True)
 
 
+@pytest.mark.skipif(not torchtt.solvers.cpp_enabled(), reason="C++ extension must be present.")
+@pytest.mark.parametrize("preconditioner", [None, 'c', 'r'])
+def test_amen_solve_single_precision_cpp(preconditioner):
+    # Only GMRES runs in single precision. The residuals stay in float64, so the
+    # solution reaches a tolerance below the float32 accuracy.
+    A, x, b = random_system(7, shift=1.0)
+
+    xx = torchtt.solvers.amen_solve(
+        A, b, eps=1e-10, max_full=0, preconditioner=preconditioner,
+        use_single_precision=True, use_cpp=True)
+
+    assert all(c.dtype == tn.float64 for c in xx.cores)
+    assert (A@xx-b).norm()/b.norm() < 1e-9
+    assert err_rel(xx.full(), x.full()) < 1e-9
+
+
+@pytest.mark.skipif(not torchtt.solvers.cpp_enabled(), reason="C++ extension must be present.")
+def test_amen_solve_complex_cpp():
+    A, x, b = random_system(3, dtype=tn.complex128)
+    with pytest.raises(RuntimeError, match="complex"):
+        torchtt.solvers.amen_solve(A, b, use_cpp=True)
+
+
+@pytest.mark.skipif(not torchtt.solvers.cpp_enabled(), reason="C++ extension must be present.")
+@pytest.mark.skipif(not tn.cuda.is_available(), reason="CUDA device is not available.")
+@pytest.mark.parametrize("max_full", [0, 256])
+def test_amen_solve_cuda_cpp(max_full):
+    A, x, b = random_system(5, shift=1.0)
+    A, x, b = A.to('cuda'), x.to('cuda'), b.to('cuda')
+
+    xx = torchtt.solvers.amen_solve(A, b, eps=1e-10, max_full=max_full, use_cpp=True)
+
+    assert all(c.is_cuda for c in xx.cores)
+    assert (A@xx-b).norm()/b.norm() < 1e-9
+    assert (xx-x).norm()/x.norm() < 1e-9
+
+
 @pytest.mark.parametrize("local_solver", [1, 2])
 @pytest.mark.parametrize("use_single_precision", [False, True])
 def test_amen_solve_zero_rhs_iterative(local_solver, use_single_precision):

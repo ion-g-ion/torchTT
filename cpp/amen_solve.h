@@ -94,6 +94,17 @@ at::Tensor compute_phi_fwd_rhs(at::Tensor &Phi_now, at::Tensor &core_rhs, at::Te
 }
 
 /**
+ * @brief Copy scalar tensors to the host as doubles with a single device synchronisation.
+ *
+ * @param[in] scalars the 0-dimensional tensors.
+ * @return std::vector<double> the values.
+ */
+std::vector<double> to_host(std::initializer_list<at::Tensor> scalars){
+    at::Tensor values = at::stack(std::vector<at::Tensor>(scalars)).to(at::kCPU, at::kDouble);
+    return std::vector<double>(values.data_ptr<double>(), values.data_ptr<double>() + values.numel());
+}
+
+/**
  * @brief AMEn solve implementation in C++.
  * 
  * @param[in] A_cores 
@@ -112,7 +123,8 @@ at::Tensor compute_phi_fwd_rhs(at::Tensor &Phi_now, at::Tensor &core_rhs, at::Te
  * @param[in] local_iterations 
  * @param[in] resets 
  * @param[in] verbose 
- * @param[in] preconditioner 
+ * @param[in] preconditioner
+ * @param[in] use_single_precision run GMRES in single precision. The residuals are computed in the precision of the input.
  * @return std::vector<at::Tensor> TT cores of the solution
  */
 std::vector<at::Tensor> amen_solve(
@@ -132,11 +144,14 @@ std::vector<at::Tensor> amen_solve(
                         uint64_t local_iterations,
                         uint64_t resets,
                         bool verbose,
-                        int preconditioner)
+                        int preconditioner,
+                        bool use_single_precision)
 {
 
     torch::NoGradGuard no_grad;
-    
+
+    TORCH_CHECK(!A_cores[0].is_complex() && !b_cores[0].is_complex(), "The C++ AMEn solver does not support complex tensors.");
+
     if(verbose)
     {
         std::cout << "Starting AMEn solve with:";
@@ -149,6 +164,8 @@ std::vector<at::Tensor> amen_solve(
         std::cout << std::endl << std::endl;
     } 
     auto options = A_cores[0].options();
+    at::ScalarType dtype = A_cores[0].scalar_type();
+    at::ScalarType dtype_gmres = (use_single_precision && dtype == at::kDouble) ? at::kFloat : dtype;
     uint64_t d = N.size();
     std::vector<at::Tensor> x_cores;
     
@@ -221,7 +238,7 @@ std::vector<at::Tensor> amen_solve(
                     czy = at::tensordot(czy, Phiz_b[k+1], {2}, {0});
                     czy *= nrmsc;
                     czy -= czA;
-                    std::tuple <at::Tensor, at::Tensor, at::Tensor> USV = at::linalg_svd(czy.reshape({czy.sizes()[0],-1}), false);
+                    std::tuple <at::Tensor, at::Tensor, at::Tensor> USV = svd_thin(czy.reshape({czy.sizes()[0],-1}));
                     uint64_t temp = kickrank < std::get<2>(USV).sizes()[0] ? kickrank :  std::get<2>(USV).sizes()[0];
                     cz_new = std::get<2>(USV).index({ torch::indexing::Slice(0, temp), torch::indexing::Ellipsis}).t();
                     if(k < d-1)
@@ -249,30 +266,23 @@ std::vector<at::Tensor> amen_solve(
             auto core_prev = at::tensordot(x_cores[k-1], std::get<1>(QR).t(), {2}, {0});
             rx[k] = std::get<0>(QR).sizes()[1];
 
-            double current_norm = torch::norm(core_prev).item<double>();
-            if(current_norm > 0)
-                core_prev /= current_norm;
-            else
-                current_norm = 1.0;
-            normx[k-1] = normx[k-1] * current_norm;
-
             x_cores[k] = (std::get<0>(QR).t()).reshape({rx[k], N[k], rx[k+1]}).clone();
-            x_cores[k-1] = core_prev.clone();
 
-            
             Phis[k] = compute_phi_bck_A(Phis[k+1],x_cores[k],A_cores[k],x_cores[k]);
             Phis_b[k] = compute_phi_bck_rhs(Phis_b[k+1],b_cores[k],x_cores[k]);
 
+            // the three norms with one synchronisation
+            std::vector<double> norms = to_host({torch::norm(core_prev), torch::norm(Phis[k]), torch::norm(Phis_b[k])});
 
-            double norm = torch::norm(Phis[k]).item<double>();
-            norm = norm>0 ? norm : 1.0;
-            normA[k-1] = norm;
-            Phis[k] = Phis[k] / norm;
+            double current_norm = norms[0] > 0 ? norms[0] : 1.0;
+            x_cores[k-1] = core_prev / current_norm;
+            normx[k-1] = normx[k-1] * current_norm;
 
-            norm = torch::norm(Phis_b[k]).item<double>();
-            norm = norm>0 ? norm : 1.0;
-            normb[k-1] = norm;
-            Phis_b[k] = Phis_b[k] / norm;
+            normA[k-1] = norms[1] > 0 ? norms[1] : 1.0;
+            Phis[k] = Phis[k] / normA[k-1];
+
+            normb[k-1] = norms[2] > 0 ? norms[2] : 1.0;
+            Phis_b[k] = Phis_b[k] / normb[k-1];
             
             // norm correction
             nrmsc = nrmsc * normb[k-1] / (normA[k-1] * normx[k-1]);
@@ -284,7 +294,6 @@ std::vector<at::Tensor> amen_solve(
             }
         }
         double max_res = 0;
-        double max_dx = 0;
 
         for(int k = 0; k<d ; k++){
             if(verbose)
@@ -309,7 +318,8 @@ std::vector<at::Tensor> amen_solve(
             double res_old, res_new;
 
             at::Tensor B;
-            auto Op = AMENsolveMV<double>();
+            // the local operator in the precision of the input, used for the residuals
+            std::optional<AMENsolveMV> Op;
 
             if(use_full){
                 if(verbose) 
@@ -320,8 +330,9 @@ std::vector<at::Tensor> amen_solve(
 
                 solution_now = at::linalg_solve(B, rhs);
 
-                res_old = torch::norm(at::linalg_matmul(B, previous_solution) - rhs).item<double>() / norm_rhs;
-                res_new = torch::norm(at::linalg_matmul(B, solution_now) - rhs).item<double>() / norm_rhs;
+                std::vector<double> res = to_host({torch::norm(at::linalg_matmul(B, previous_solution) - rhs), torch::norm(at::linalg_matmul(B, solution_now) - rhs)});
+                res_old = res[0] / norm_rhs;
+                res_new = res[1] / norm_rhs;
             }
             else{
                 std::chrono::time_point<std::chrono::high_resolution_clock> tme_local;
@@ -329,39 +340,43 @@ std::vector<at::Tensor> amen_solve(
                     std::cout << "\t\tChoosing iterative solver (local size " << rx[k]*N[k]*rx[k+1] << ")..." <<std::endl;
                     tme_local = std::chrono::high_resolution_clock::now();
                 }
-                at::IntArrayRef shape_now = c10::IntArrayRef(*(new std::vector<int64_t>({rx[k], N[k], rx[k+1]})));
-                Op.setter(Phis[k], Phis[k+1], A_cores[k],shape_now, preconditioner, options);
-                
-                double eps_local = real_tol * norm_rhs;
+                bool same_dtype = dtype_gmres == dtype;
+                Op.emplace(Phis[k], Phis[k+1], A_cores[k], rx[k], N[k], rx[k+1], same_dtype ? preconditioner : NO_PREC, dtype);
 
-                auto drhs = rhs - Op.matvec(previous_solution, false);
-                double norm_drhs = torch::norm(drhs).item<double>();
-                eps_local /= norm_drhs > 0 ? norm_drhs : 1.0;
+                auto drhs = rhs - Op->matvec(previous_solution, false);
 
                 int flag;
                 int nit;
 
-                at::Tensor ps = 0.0 * previous_solution;
                 if(zero_rhs){
                     solution_now = at::zeros_like(previous_solution);
                     flag = 1;
                     nit = 0;
                 }
-                else
-                    gmres<double>(solution_now, flag, nit, Op, drhs, ps, drhs.sizes()[0], local_iterations, eps_local, resets );
-
-                if(preconditioner!=NO_PREC){
-                    solution_now = Op.apply_prec(solution_now.reshape(shape_now));
+                else{
+                    // GMRES solves for the correction, the tolerance is the absolute residual wanted for the local system
+                    double tol = real_tol * norm_rhs;
+                    if(same_dtype){
+                        gmres(solution_now, flag, nit, *Op, drhs, local_iterations, tol, resets);
+                        if(preconditioner!=NO_PREC)
+                            solution_now = Op->apply_prec(solution_now);
+                    }
+                    else{
+                        AMENsolveMV Op_gmres(Phis[k], Phis[k+1], A_cores[k], rx[k], N[k], rx[k+1], preconditioner, dtype_gmres);
+                        gmres(solution_now, flag, nit, Op_gmres, drhs, local_iterations, tol, resets);
+                        if(preconditioner!=NO_PREC)
+                            solution_now = Op_gmres.apply_prec(solution_now.to(dtype_gmres)).to(dtype);
+                    }
+                    solution_now = solution_now + previous_solution;
                 }
-                solution_now = solution_now.reshape({-1,1});
 
-                if(!zero_rhs)
-                    solution_now += previous_solution;
-                res_old = torch::norm(Op.matvec(previous_solution, false)-rhs).item<double>()/norm_rhs;
-                res_new = torch::norm(Op.matvec(solution_now, false)-rhs).item<double>()/norm_rhs;
+                // drhs is the residual of the previous solution
+                std::vector<double> res = to_host({torch::norm(drhs), torch::norm(Op->matvec(solution_now, false)-rhs)});
+                res_old = res[0]/norm_rhs;
+                res_new = res[1]/norm_rhs;
 
                 if(verbose){
-                    std::cout<<"\t\tFinished with flag " << flag << " after " << nit << " iterations with relres " << res_new << " (from " << eps_local << ")" << std::endl;
+                    std::cout<<"\t\tFinished with flag " << flag << " after " << nit << " iterations with relres " << res_new << " (from " << real_tol << ")" << std::endl;
                     auto duration = (double)(std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now()-tme_local)).count() /1000.0 ;
                     std::cout<<"\t\tTime needed " << duration << " ms" << std::endl;
                 }
@@ -369,49 +384,56 @@ std::vector<at::Tensor> amen_solve(
             if(verbose && res_old/res_new < damp && res_new > real_tol)
                 std::cout << "WARNING: residual increase. res_old " << res_old << ", res_new " << res_new << ", " << real_tol << std::endl;
 
-            double norm_solution = torch::norm(solution_now).item<double>();
-            auto dx = torch::norm(solution_now - previous_solution).item<double>() / (norm_solution > 0 ? norm_solution : 1.0);
-
-            if(verbose) 
+            if(verbose){
+                double norm_solution = torch::norm(solution_now).item<double>();
+                auto dx = torch::norm(solution_now - previous_solution).item<double>() / (norm_solution > 0 ? norm_solution : 1.0);
                 std::cout << "\t\tdx = " << dx << ", res_now = " << res_new << ", res_old = " << res_old << std::endl;
+            }
 
-            max_dx = dx < max_dx ? max_dx : dx;
             max_res = max_res < res_old ? res_old : max_res;
 
             solution_now = solution_now.reshape({rx[k]*N[k], rx[k+1]});
 
             at::Tensor u,s,v;
-            uint64_t r;
+            int64_t r;
 
             if(k<d-1){
-                std::tie(u,s,v) = at::linalg_svd(solution_now, false);
+                std::tie(u,s,v) = svd_thin(solution_now);
 
-                r = u.sizes()[1];
-                while(r>0){
-                    auto solution = at::linalg_matmul(u.index({torch::indexing::Ellipsis, torch::indexing::Slice(0,r,1)}) * s.index({torch::indexing::Slice(0,r,1)}), v.index({torch::indexing::Slice(0,r,1), torch::indexing::Ellipsis}));
+                // On the final sweep the residual enrichment is disabled, so any
+                // accuracy given away here can no longer be recovered. Budget the
+                // truncation against what the local solve just achieved instead of
+                // against the global tolerance. This does less rank reduction on
+                // that sweep, so the returned ranks may be higher than before.
+                double trunc_budget = last ? res_new*damp
+                                           : (res_new > real_tol*damp ? res_new : real_tol*damp);
 
-                    double res; 
-                    if(use_full)
-                        res = torch::norm(at::linalg_matmul(B, solution.reshape({-1,1})) - rhs).item<double>() / norm_rhs;
-                    else{
-                        auto tmp_tens = solution.reshape({-1,1});
-                        res = torch::norm(Op.matvec(tmp_tens, false)-rhs).item<double>()/norm_rhs;
-                    }
-
-                    // On the final sweep the residual enrichment is disabled, so any
-                    // accuracy given away here can no longer be recovered. Budget the
-                    // truncation against what the local solve just achieved instead of
-                    // against the global tolerance. This does less rank reduction on
-                    // that sweep, so the returned ranks may be higher than before.
-                    double trunc_budget = last ? res_new*damp
-                                               : (res_new > real_tol*damp ? res_new : real_tol*damp);
-                    if(res>trunc_budget)
-                        break;
-                    --r;
+                // Going down from the full rank, find the first rank whose truncation exceeds the budget.
+                // The residuals of a group of consecutive ranks are computed together, with one synchronisation.
+                int64_t r_full = u.sizes()[1];
+                int64_t group = std::max<int64_t>(1, std::min<int64_t>(4, (1 << 22) / solution_now.numel()));
+                bool exceeded = false;
+                r = r_full;
+                while(r > 0 && !exceeded){
+                    int64_t c = std::min(group, r);
+                    // candidate j has rank r-j: the weights are s with the trailing values set to zero
+                    auto ranks = at::arange(r, r - c, -1, s.options().dtype(at::kLong)).unsqueeze(1);
+                    auto weights = s.unsqueeze(0) * (at::arange(r_full, ranks.options()).unsqueeze(0) < ranks).to(s.scalar_type());
+                    auto candidates = at::matmul(u.unsqueeze(0) * weights.unsqueeze(1), v).reshape({c, -1});
+                    auto products = use_full ? at::mm(candidates, B.t()) : Op->matvec(candidates, false);
+                    at::Tensor res = at::linalg_vector_norm(products - rhs.reshape({1,-1}), 2, {1}).to(at::kCPU, at::kDouble);
+                    const double *res_ptr = res.data_ptr<double>();
+                    for(int64_t j = 0; j < c && !exceeded; ++j)
+                        if(res_ptr[j] / norm_rhs > trunc_budget){
+                            r -= j;
+                            exceeded = true;
+                        }
+                    if(!exceeded)
+                        r -= c;
                 }
                 ++r;
 
-                r = (r<u.sizes()[1] && r<rmax) ? r : (u.sizes()[1] < rmax ? u.sizes()[1] : rmax);
+                r = std::min<int64_t>({r, r_full, (int64_t)rmax});
 
             }
             else{
@@ -436,7 +458,7 @@ std::vector<at::Tensor> amen_solve(
                 
                 
                 at::Tensor uz;
-                std::tie(uz, std::ignore, std::ignore) = at::linalg_svd(tmp, false);
+                std::tie(uz, std::ignore, std::ignore) = svd_thin(tmp);
                 auto rtmp = kickrank < uz.sizes()[1] ? kickrank : uz.sizes()[1];
                 tmp = uz.index({torch::indexing::Ellipsis, torch::indexing::Slice(0,rtmp,1)});
                 if(k < d-1)
@@ -473,33 +495,23 @@ std::vector<at::Tensor> amen_solve(
 
                 nrmsc = nrmsc * normA[k] * normx[k] / normb[k];
 
-                auto norm_now = torch::norm(v).item<double>();
-
-                if(norm_now>0)
-                    v = v / norm_now;
-                else    
-                    norm_now = 1.0;
-                
-                normx[k] = normx[k] * norm_now;
-
                 x_cores[k] = u.reshape({rx[k], N[k], r}).clone();
-                x_cores[k+1] = v.reshape({r, N[k+1], rx[k+2]}).clone();
-                rx[k+1] = r;
-
-                
 
                 Phis[k+1] = compute_phi_fwd_A(Phis[k], x_cores[k], A_cores[k], x_cores[k]);
                 Phis_b[k+1] = compute_phi_fwd_rhs(Phis_b[k], b_cores[k],x_cores[k]);
 
-                // ... and norms 
-                auto norm = torch::norm(Phis[k+1]).item<double>();
-                norm =  norm>0 ? norm : 1.0;
-                normA[k] = norm;
-                Phis[k+1] = Phis[k+1] / norm;
-                norm = torch::norm(Phis_b[k+1]).item<double>();
-                norm = norm>0 ? norm : 1.0;
-                normb[k] = norm;
-                Phis_b[k+1] = Phis_b[k+1] / norm;
+                // ... and norms, with one synchronisation
+                std::vector<double> norms = to_host({torch::norm(v), torch::norm(Phis[k+1]), torch::norm(Phis_b[k+1])});
+
+                double norm_now = norms[0] > 0 ? norms[0] : 1.0;
+                normx[k] = normx[k] * norm_now;
+                x_cores[k+1] = (v / norm_now).reshape({r, N[k+1], rx[k+2]});
+                rx[k+1] = r;
+
+                normA[k] = norms[1] > 0 ? norms[1] : 1.0;
+                Phis[k+1] = Phis[k+1] / normA[k];
+                normb[k] = norms[2] > 0 ? norms[2] : 1.0;
+                Phis_b[k+1] = Phis_b[k+1] / normb[k];
                 
                 // norm correction
                 nrmsc = nrmsc * normb[k] / ( normA[k] * normx[k] );

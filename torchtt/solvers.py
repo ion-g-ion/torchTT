@@ -206,6 +206,7 @@ def amen_solve(A, b, nswp=22, x0=None, eps=1e-10, rmax=32768, max_full=256, kick
         preconditioner (string, optional): Choose the preconditioner for the local system. Possible values are None, 'c' (central Jacobi preconditioner). No preconditioner is used if None is provided. Defaults to None.
         use_cpp (bool, optional): use the C++ implementation of AMEn. Defaults to True.
         band_diagonal (int, optional): the TT cores of the matrix habe band diagonal structure. Defaults to -1.
+        use_single_precision (bool, optional): solve the local systems with the iterative solver in single precision. The Python implementation also computes the local residuals in single precision, the C++ implementation computes them in the precision of the input. Defaults to False.
 
     Raises:
         InvalidArguments: A and b must be TT instances.
@@ -243,7 +244,7 @@ def amen_solve(A, b, nswp=22, x0=None, eps=1e-10, rmax=32768, max_full=256, kick
         else:
             raise InvalidArguments("Invalid preconditioner.")
         cores = torchttcpp.amen_solve(A.cores, b.cores, x_cores, b.N, A.R, b.R, x_R, nswp,
-                                      eps, rmax, max_full, kickrank, kick2, local_iterations, resets, verbose, prec)
+                                      eps, rmax, max_full, kickrank, kick2, local_iterations, resets, verbose, prec, use_single_precision)
         return torchtt.TT(list(cores))
     else:
         return _amen_solve_python(A, b, nswp, x0, eps, rmax, max_full, kickrank, kick2, trunc_norm, local_solver, local_iterations, resets, verbose, preconditioner, use_single_precision, band_diagonal)

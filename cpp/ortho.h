@@ -7,6 +7,21 @@ void perform_QR(at::Tensor &Q, at::Tensor &R, at::Tensor &M){
 }
 
 /**
+ * @brief Thin SVD of a matrix.
+ *
+ * On CUDA the cuSOLVER method gesvd is used. For the small, tall and skinny matrices of the TT
+ * algorithms it is 2-3 times faster than gesvdj, which PyTorch uses by default.
+ *
+ * @param M the matrix.
+ * @return std::tuple<at::Tensor, at::Tensor, at::Tensor> U, S and Vh.
+ */
+std::tuple<at::Tensor, at::Tensor, at::Tensor> svd_thin(const at::Tensor &M){
+    if(M.is_cuda())
+        return at::linalg_svd(M, false, "gesvd");
+    return at::linalg_svd(M, false);
+}
+
+/**
  * @brief chop the rank up to a prescribed accuracy.
  *
  * @param s the singular values vactor.

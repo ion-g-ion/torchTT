@@ -8,7 +8,8 @@ The package `torchtt` has an optional C++ extension that implements two algorith
 
 Both algorithms are also implemented in Python.
 The Python implementation is used when the extension is not available or when `use_cpp=False` is passed.
-The C++ code calls the same PyTorch functions (tensor contractions, QR and singular value decompositions, linear solves) as the Python code and only removes the Python overhead between these calls.
+The C++ code calls the same kind of PyTorch functions (tensor contractions, QR and singular value decompositions, linear solves) as the Python code, without the Python overhead between these calls.
+The C++ AMEn solver also needs fewer of these calls: its local GMRES solver orthogonalizes a new vector against all previous ones with two matrix-vector products instead of one dot product per previous vector, and its rank truncation checks several ranks at once.
 This notebook compares the runtimes of the two implementations for a few problem sizes.
 """
 
@@ -78,7 +79,7 @@ for r in [2, 8, 32]:
 
 #%% Conclusion
 # The speedup is largest when the TT cores are small (small mode sizes and ranks): every PyTorch call is then cheap and the Python overhead between the calls dominates the runtime.
-# For larger cores more of the time is spent inside PyTorch and the speedup decreases.
-# The DMRG matrix-vector product gains less than the AMEn solver, since singular value decompositions dominate its runtime.
+# For the largest cores ($n = 128$) more of the time is spent inside PyTorch and the speedup is smaller.
+# The DMRG matrix-vector product gains less than the AMEn solver: singular value decompositions dominate its runtime, and the C++ AMEn solver also needs fewer PyTorch calls.
 # The timings depend on the hardware and on the number of threads used by PyTorch.
 # To check the speedup for your own problem, compare the runtimes with `use_cpp=True` and `use_cpp=False`, an argument of `torchtt.solvers.amen_solve()` and of `torchtt.methods.DMRG()`.

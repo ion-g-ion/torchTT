@@ -1,145 +1,98 @@
+#pragma once
 #include "define.h"
-#include <functional>
-
-
+#include "matvecs.h"
 
 /**
- * @brief givensrotation.
- * 
- * @tparam T typename (double or float).
- * @param[in] v1 the first value.
- * @param[in] v2 the second value.
- * @return std::tuple<T,T> 
+ * @brief Restarted GMRES for the local systems of the AMEn solver, started from zero.
+ *
+ * The Krylov basis is stored in the rows of one preallocated tensor and every new vector is
+ * orthogonalised with two passes of classical Gram-Schmidt (CGS2), i.e. with matrix-vector products.
+ * An iteration therefore launches a fixed number of kernels and copies only the new column of the
+ * Hessenberg matrix to the host, where the Givens rotations and the stopping test are done.
+ *
+ * @param[out] solution the solution, same shape and dtype as rhs.
+ * @param[out] flag 1 if the tolerance was reached, 0 otherwise.
+ * @param[out] nit the total number of iterations.
+ * @param[in] Op the operator. The iterations use its dtype.
+ * @param[in] rhs the right-hand side.
+ * @param[in] max_iters the number of iterations before a restart.
+ * @param[in] tol the absolute tolerance for the norm of the residual.
+ * @param[in] resets the maximum number of restarts.
  */
-template <typename T> std::tuple<T,T> givens_rotation(T v1, T v2){
-    T den = std::sqrt(v1*v1+v2*v2);
-    return std::make_tuple(v1/den, v2/den);
-}
+inline void gmres(at::Tensor &solution, int &flag, int &nit, const AMENsolveMV &Op, const at::Tensor &rhs, int64_t max_iters, double tol, int64_t resets){
+    auto b = rhs.reshape({-1}).to(Op.dtype());
+    int64_t m = max_iters;
+    auto x = at::zeros_like(b);
+    auto V = at::empty({m+1, b.sizes()[0]}, b.options());
 
-template <typename T> void apply_givens_rotation_cpu(T *h, T *cs, T *sn, uint64_t k, T &cs_k, T &sn_k){
-  
-    for(int i = 0; i < k-1; ++i){
-        T temp   =  cs[i]* h[i] + sn[i] * h[i+1];
-        h[i+1] = -sn[i] * h[i] + cs[i] * h[i+1];
-        h[i]   = temp;
-    }
-    std::tie(cs_k, sn_k) = givens_rotation(h[k-1], h[k]);
+    // Hessenberg matrix (column major, columns of length m+1), rotations and rhs of the least squares problem
+    std::vector<double> H((m+1)*m), cs(m), sn(m), g(m+1);
 
-    h[k-1] = cs_k * h[k-1] + sn_k * h[k];
-    h[k] = 0.0;
-}
-
-
-template <typename T>
-void gmres_single(at::Tensor &solution, int &flag, int &nit, AMENsolveMV<T> &Op, at::Tensor &rhs,  at::Tensor &x0, uint64_t size, uint64_t iters, T threshold){
-
-    bool converged = false;
-
-    at::Tensor r = rhs - Op.matvec(x0);
-
-    T b_norm = torch::norm(rhs).item<T>();
-    T error = torch::norm(r).item<T>() / b_norm;
-
-    T * sn = new T[iters];
-    T * cs = new T[iters];
-    T * e1 = new T[iters+1];
-    for (int i=0; i<iters;++i){
-        sn[i] = 0;
-        cs[i] = 0;
-        e1[i+1] = 0;
-    }
-    e1[0] = 1.0;
-
-    T r_norm = torch::norm(r).item<T>();
-
-    if(r_norm<=0){
-        flag = 1;
-        nit = 0;
-        solution = x0.clone();
-        // free memory
-        delete [] sn;
-        delete [] cs;
-        delete [] e1;
-        return;
-    }
-
-    std::vector<at::Tensor> Q;
-    Q.push_back(r.squeeze() / r_norm);
-
-    at::Tensor H, beta;
-    if(std::is_same<T,float>::value){
-        auto options = torch::TensorOptions().dtype(torch::kFloat32);
-        beta = torch::zeros(iters+1, options);
-        H = torch::zeros({iters+1, iters}, options);
-    }
-    else{
-        auto options = torch::TensorOptions().dtype(torch::kFloat64);
-        beta = torch::zeros(iters+1, options);
-        H = torch::zeros({iters+1, iters}, options); 
-    }
-
-    auto betaA = beta.accessor<T,1>();
-    auto HA = H.accessor<T,2>();
-    betaA[0] = r_norm;
-
-    int k;
-    for(k = 0; k<iters; k++){
-        at::Tensor q = Op.matvec(Q[k]);
-        for(int i=0;i<k+1;i++){
-            HA[i][k] = at::dot(q.squeeze(), Q[i]).item<T>();
-            q -= (HA[i][k] * Q[i]).reshape({-1,1});
-        }
-        T h = torch::norm(q).item<T>();
-
-        q /= h;
-
-        HA[k+1][k] = h;
-        Q.push_back(q.clone().squeeze());
-
-        T c,s;
-        at::Tensor htemp = H.index({torch::indexing::Slice(0,k+2), k}).contiguous();
-        apply_givens_rotation_cpu(htemp.data_ptr<T>(), cs, sn, k+1, c, s);
-        H.index_put_({torch::indexing::Slice(0,k+2), k}, htemp);
-        cs[k] = c;
-        sn[k] = s;
-
-        betaA[k+1] = -sn[k]*betaA[k];
-        betaA[k] = cs[k]*betaA[k];
-        error = std::abs(betaA[k+1])/b_norm;
-        if(error<=threshold)
-        {
+    flag = 0;
+    nit = 0;
+    for(int64_t rs = 0; rs < resets; ++rs){
+        auto res = rs == 0 ? b : b - Op.matvec(x);
+        double beta = torch::norm(res).item<double>();
+        if(beta == 0){
             flag = 1;
             break;
         }
-    }
-    k = k<iters ? k : iters-1;
-    at::Tensor y = at::linalg_solve(H.index({torch::indexing::Slice(0,k+1), torch::indexing::Slice(0,k+1)}), beta.index({torch::indexing::Slice(0, k+1)}).reshape({-1,1}));
-    
-    solution = x0.clone().squeeze();
-    for(int i=0;i<k+1;++i)
-        solution += Q[i] * y.index({i,0}).item<T>();  
+        V.select(0, 0).copy_(res / beta);
+        std::fill(g.begin(), g.end(), 0.0);
+        g[0] = beta;
 
-    nit = k+1;
-    // free memory
-    delete [] sn;
-    delete [] cs;
-    delete [] e1;
+        int64_t k;
+        for(k = 0; k < m; ++k){
+            auto w = Op.matvec(V.select(0, k));
+            auto Vk = V.narrow(0, 0, k+1);
+            auto h = at::mv(Vk, w);
+            w.addmv_(Vk.t(), h, 1, -1);
+            auto h2 = at::mv(Vk, w);
+            w.addmv_(Vk.t(), h2, 1, -1);
+            h += h2;
+            auto norm_w = torch::norm(w);
+            V.select(0, k+1).copy_(w / norm_w);
 
-}
+            // the only synchronisation of the iteration
+            auto col_h = at::cat({h, norm_w.view({1})}).to(at::kCPU, at::kDouble);
+            double *col = H.data() + k*(m+1);
+            std::copy(col_h.data_ptr<double>(), col_h.data_ptr<double>() + k + 2, col);
 
-template <typename T>
-void gmres(at::Tensor &solution, int &flag, int &nit, AMENsolveMV<T> &Op, at::Tensor &rhs,  at::Tensor &x0, uint64_t size, uint64_t max_iters, T threshold, uint64_t resets ){
-    nit = 0;
-    flag = 0;
-
-    auto xs = x0;
-    for(int r =0;r<resets;r++){
-        int nowit;
-        gmres_single<T>(solution, flag, nowit, Op, rhs, xs, size, max_iters, threshold);
-        nit+=nowit;
-        if(flag==1){
-            break;
+            for(int64_t i = 0; i < k; ++i){
+                double tmp = cs[i]*col[i] + sn[i]*col[i+1];
+                col[i+1] = -sn[i]*col[i] + cs[i]*col[i+1];
+                col[i] = tmp;
+            }
+            double den = std::hypot(col[k], col[k+1]);
+            bool breakdown = col[k+1] == 0;
+            cs[k] = col[k]/den;
+            sn[k] = col[k+1]/den;
+            col[k] = den;
+            col[k+1] = 0.0;
+            g[k+1] = -sn[k]*g[k];
+            g[k] = cs[k]*g[k];
+            ++nit;
+            if(std::abs(g[k+1]) <= tol || breakdown){
+                flag = 1;
+                ++k;
+                break;
+            }
         }
-        xs = solution.clone();
+
+        // solve the triangular system H[:k,:k] y = g[:k] and update x
+        std::vector<double> y(k);
+        for(int64_t i = k-1; i >= 0; --i){
+            double tmp = g[i];
+            for(int64_t j = i+1; j < k; ++j)
+                tmp -= H[j*(m+1)+i]*y[j];
+            y[i] = tmp/H[i*(m+1)+i];
+        }
+        auto y_t = at::from_blob(y.data(), {k}, at::kDouble).to(b.options());
+        x.addmv_(V.narrow(0, 0, k).t(), y_t);
+
+        if(flag == 1)
+            break;
     }
+
+    solution = x.to(rhs.scalar_type()).reshape(rhs.sizes());
 }
