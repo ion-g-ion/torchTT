@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>torchtt.methods &mdash; torchTT development (main @ 4a1234a) documentation</title>
+  <title>torchtt.methods &mdash; torchTT development (main @ 68db99b) documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=72223d00"></script>
+      <script src="../../_static/documentation_options.js?v=6660077a"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -76,7 +76,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 4a1234a)</strong><br><a href="../../../stable/index.html">Stable release</a> · <a href="../../../latest/index.html">Development (main)</a></nav><h1>Source code for torchtt.methods</h1><div class="highlight"><pre>
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 68db99b)</strong><br><a href="../../../stable/index.html">Stable release</a> · <a href="../../../latest/index.html">Development (main)</a></nav><h1>Source code for torchtt.methods</h1><div class="highlight"><pre>
 <span></span><span class="sd">"""</span>
 <span class="sd">Methods for the products that truncate the rank of the result: :func:`torchtt.matvec`, :func:`torchtt.matmat` and :func:`torchtt.hadamard`.</span>
 
@@ -249,7 +249,7 @@
 <span class="sd">    Args:</span>
 <span class="sd">        nswp (int, optional): maximum number of sweeps. Defaults to 20.</span>
 <span class="sd">        kickrank (int, optional): rank enrichment with random vectors after each local update. Defaults to 4.</span>
-<span class="sd">        use_cpp (bool, optional): use the C++ implementation if available (only for the matrix-vector product). Defaults to True.</span>
+<span class="sd">        use_cpp (bool, optional): use the C++ implementation if available (only for the matrix-vector product). It is up to 2x faster for small ranks and about as fast as Python for larger ones. Defaults to True.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        InvalidArguments: nswp must be a positive integer.</span>

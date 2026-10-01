@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>torchtt package &mdash; torchTT development (main @ 4a1234a) documentation</title>
+  <title>torchtt package &mdash; torchTT development (main @ 68db99b) documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=72223d00"></script>
+      <script src="../_static/documentation_options.js?v=6660077a"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -182,7 +182,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 4a1234a)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="torchtt-package">
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 68db99b)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="torchtt-package">
 <h1>torchtt package<a class="headerlink" href="#torchtt-package" title="Link to this heading"></a></h1>
 <section id="subpackages">
 <h2>Subpackages<a class="headerlink" href="#subpackages" title="Link to this heading"></a></h2>
@@ -736,7 +736,7 @@ The ranks of the result can exceed the smallest ones for the accuracy <code clas
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>nswp</strong> (<em>int</em><em>, </em><em>optional</em>) – maximum number of sweeps. Defaults to 20.</p></li>
 <li><p><strong>kickrank</strong> (<em>int</em><em>, </em><em>optional</em>) – rank enrichment with random vectors after each local update. Defaults to 4.</p></li>
-<li><p><strong>use_cpp</strong> (<em>bool</em><em>, </em><em>optional</em>) – use the C++ implementation if available (only for the matrix-vector product). Defaults to True.</p></li>
+<li><p><strong>use_cpp</strong> (<em>bool</em><em>, </em><em>optional</em>) – use the C++ implementation if available (only for the matrix-vector product). It is up to 2x faster for small ranks and about as fast as Python for larger ones. Defaults to True.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
@@ -1361,7 +1361,7 @@ directly, larger ones with the iterative local solver. Defaults to 256.</p></li>
 <li><p><strong>resets</strong> (<em>int</em><em>, </em><em>optional</em>) – number of resets in the GMRES. Defaults to 2.</p></li>
 <li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – choose whether to display or not additional information during the runtime. Defaults to True.</p></li>
 <li><p><strong>preconditioner</strong> (<em>string</em><em>, </em><em>optional</em>) – Choose the preconditioner for the local system. Possible values are None, ‘c’ (central Jacobi preconditioner). No preconditioner is used if None is provided. Defaults to None.</p></li>
-<li><p><strong>use_cpp</strong> (<em>bool</em><em>, </em><em>optional</em>) – use the C++ implementation of AMEn. Defaults to True.</p></li>
+<li><p><strong>use_cpp</strong> (<em>bool</em><em>, </em><em>optional</em>) – use the C++ implementation of AMEn if available. It has the same accuracy and is 3-7x faster on CPU, most for small TT cores. It supports only real tensors and ignores <code class="docutils literal notranslate"><span class="pre">band_diagonal</span></code>, <code class="docutils literal notranslate"><span class="pre">local_solver</span></code> and <code class="docutils literal notranslate"><span class="pre">trunc_norm</span></code>. Defaults to True.</p></li>
 <li><p><strong>band_diagonal</strong> (<em>int</em><em>, </em><em>optional</em>) – the TT cores of the matrix habe band diagonal structure. Defaults to -1.</p></li>
 <li><p><strong>use_single_precision</strong> (<em>bool</em><em>, </em><em>optional</em>) – solve the local systems with the iterative solver in single precision. The Python implementation also computes the local residuals in single precision, the C++ implementation computes them in the precision of the input. Defaults to False.</p></li>
 </ul>
