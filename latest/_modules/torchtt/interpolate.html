@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>torchtt.interpolate &mdash; torchTT development (main @ 0909209) documentation</title>
+  <title>torchtt.interpolate &mdash; torchTT development (main @ 4a1234a) documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=33102d81"></script>
+      <script src="../../_static/documentation_options.js?v=72223d00"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -76,7 +76,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 0909209)</strong><br><a href="../../../stable/index.html">Stable release</a> · <a href="../../../latest/index.html">Development (main)</a></nav><h1>Source code for torchtt.interpolate</h1><div class="highlight"><pre>
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 4a1234a)</strong><br><a href="../../../stable/index.html">Stable release</a> · <a href="../../../latest/index.html">Development (main)</a></nav><h1>Source code for torchtt.interpolate</h1><div class="highlight"><pre>
 <span></span><span class="sd">"""</span>
 <span class="sd">Implements cross approximation methods in the TT format :cite:p:`oseledets2010tt`, based on the density matrix renormalization group (DMRG) :cite:p:`savostyanov2011fast` and the alternating minimal energy (AMEn) :cite:p:`dolgov2014alternating` schemes.</span>
 
@@ -223,6 +223,11 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">function_interpolate</span><span class="p">(</span><span class="n">function</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-9</span><span class="p">,</span> <span class="n">start_tens</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nswp</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">kick</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">kick2</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tn</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">rmax</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">maxsize</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">'dmrg'</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Interpolate a function using tensor train cross approximation :cite:p:`oseledets2010tt,savostyanov2011fast`.</span>
+
+<span class="sd">    Prefer trying ``method='amen'`` when function evaluations are expensive or</span>
+<span class="sd">    mode sizes are large; consider ``method='dmrg'`` when evaluations are cheap</span>
+<span class="sd">    and mode sizes are small. See :ref:`interpolation-methods-label` for the</span>
+<span class="sd">    tradeoffs and convergence guidance.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        function (Callable): Function to interpolate.</span>

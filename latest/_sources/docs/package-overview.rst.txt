@@ -173,6 +173,36 @@ In short: use the default method when the operands have large ranks and the resu
 The example `efficient_linalg.py <https://github.com/ion-g-ion/torchTT/tree/main/examples/efficient_linalg.py>`_ compares the methods on a product that compresses well and on one that does not.
 All the methods also run on the GPU.
 
+.. _interpolation-methods-label:
+
+Choosing an interpolation method
+--------------------------------
+
+:func:`torchtt.interpolate.function_interpolate` approximates a function of one
+or more TT tensors using cross interpolation. Its ``method`` argument selects
+between two algorithms:
+
+- Prefer trying ``method='amen'`` when function evaluations are expensive or
+  mode sizes are large. :term:`AMEn` updates one core at a time and enriches the
+  approximation using residual samples. It avoids sampling over pairs of
+  neighbouring modes, which can substantially reduce evaluation cost.
+- Consider ``method='dmrg'`` when mode sizes are small and function evaluations
+  are cheap. :term:`DMRG` updates two neighbouring cores at a time and chooses
+  their connecting rank by a truncated SVD. This allows rank adaptation directly
+  from the two-core samples, but the number of samples per update grows with the
+  product of the two mode sizes. DMRG is the API default, but it need not be the
+  cheapest choice for your problem.
+
+AMEn also evaluates residual samples and may need more sweeps, so fewer samples
+per core update do not guarantee fewer evaluations overall. Compare the total
+evaluation count and achieved accuracy for your problem.
+
+For either method, a useful ``start_tens`` can reduce the work. If the
+approximation stops improving, consider increasing ``kick`` (rank enrichment),
+``nswp`` (sweep limit), or ``rmax`` if the rank cap has been reached. Check accuracy
+on additional sample points: ``eps`` controls the iteration and truncation
+criteria, rather than guaranteeing the error over all entries.
+
 Continuous functions and density estimation
 -------------------------------------------
 

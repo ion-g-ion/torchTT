@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>torchtt package &mdash; torchTT development (main @ 0909209) documentation</title>
+  <title>torchtt package &mdash; torchTT development (main @ 4a1234a) documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=33102d81"></script>
+      <script src="../_static/documentation_options.js?v=72223d00"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -182,7 +182,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 0909209)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="torchtt-package">
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 4a1234a)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="torchtt-package">
 <h1>torchtt package<a class="headerlink" href="#torchtt-package" title="Link to this heading"></a></h1>
 <section id="subpackages">
 <h2>Subpackages<a class="headerlink" href="#subpackages" title="Link to this heading"></a></h2>
@@ -486,6 +486,10 @@ criteria. Defaults to None.</p></li>
 <dt class="sig sig-object py" id="torchtt.interpolate.function_interpolate">
 <span class="sig-prename descclassname"><span class="pre">torchtt.interpolate.</span></span><span class="sig-name descname"><span class="pre">function_interpolate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">function</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-09</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_tens</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nswp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kick</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kick2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">torch.float64</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">9223372036854775807</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'dmrg'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">callback</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/torchtt/interpolate.html#function_interpolate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#torchtt.interpolate.function_interpolate" title="Link to this definition"></a></dt>
 <dd><p>Interpolate a function using tensor train cross approximation <span class="bibtex-citation" id="id4">[<a class="reference internal" href="references.html#id3" title="Ivan V Oseledets and Eugene Tyrtyshnikov. TT-cross approximation for multidimensional arrays. Linear Algebra and its Applications, 432(1):70–88, 2010. doi:10.1016/j.laa.2009.07.024.">Oseledets and Tyrtyshnikov, 2010</a>, <a class="reference internal" href="references.html#id4" title="Dmitry V Savostyanov and Ivan V Oseledets. Fast adaptive interpolation of multi-dimensional arrays in tensor train format. In The 2011 International Workshop on Multidimensional (nD) Systems, 1–8. IEEE, 2011. doi:10.1109/nDS.2011.6076873.">Savostyanov and Oseledets, 2011</a>]</span>.</p>
+<p>Prefer trying <code class="docutils literal notranslate"><span class="pre">method='amen'</span></code> when function evaluations are expensive or
+mode sizes are large; consider <code class="docutils literal notranslate"><span class="pre">method='dmrg'</span></code> when evaluations are cheap
+and mode sizes are small. See <a class="reference internal" href="package-overview.html#interpolation-methods-label"><span class="std std-ref">Choosing an interpolation method</span></a> for the
+tradeoffs and convergence guidance.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1359,6 +1363,7 @@ directly, larger ones with the iterative local solver. Defaults to 256.</p></li>
 <li><p><strong>preconditioner</strong> (<em>string</em><em>, </em><em>optional</em>) – Choose the preconditioner for the local system. Possible values are None, ‘c’ (central Jacobi preconditioner). No preconditioner is used if None is provided. Defaults to None.</p></li>
 <li><p><strong>use_cpp</strong> (<em>bool</em><em>, </em><em>optional</em>) – use the C++ implementation of AMEn. Defaults to True.</p></li>
 <li><p><strong>band_diagonal</strong> (<em>int</em><em>, </em><em>optional</em>) – the TT cores of the matrix habe band diagonal structure. Defaults to -1.</p></li>
+<li><p><strong>use_single_precision</strong> (<em>bool</em><em>, </em><em>optional</em>) – solve the local systems with the iterative solver in single precision. The Python implementation also computes the local residuals in single precision, the C++ implementation computes them in the precision of the input. Defaults to False.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>

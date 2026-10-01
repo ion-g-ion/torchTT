@@ -55,4 +55,5 @@ Advanced Topics
    ../examples/manifold.ipynb
    ../examples/tensor_completion.ipynb
    ../examples/gpu_acceleration.ipynb
+   ../examples/cpp_speedup.ipynb
    ../examples/bayesian_inversion.ipynb

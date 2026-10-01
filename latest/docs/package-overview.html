@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Overview &mdash; torchTT development (main @ 0909209) documentation</title>
+  <title>Overview &mdash; torchTT development (main @ 4a1234a) documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=33102d81"></script>
+      <script src="../_static/documentation_options.js?v=72223d00"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -54,6 +54,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#quantized-tt-qtt">Quantized TT (QTT)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#operations-in-the-tt-format">Operations in the TT format</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#efficient-products">Efficient products</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#choosing-an-interpolation-method">Choosing an interpolation method</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#continuous-functions-and-density-estimation">Continuous functions and density estimation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#nonlinear-transformations-for-ttdensitylayer">Nonlinear Transformations for TTDensityLayer</a></li>
 </ul>
@@ -88,7 +89,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 0909209)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="overview">
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 4a1234a)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="overview">
 <span id="about-tt-label"></span><h1>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h1>
 <section id="what-is-the-tensor-train-format">
 <h2>What is the Tensor-Train format?<a class="headerlink" href="#what-is-the-tensor-train-format" title="Link to this heading"></a></h2>
@@ -240,6 +241,32 @@ The functions <a class="reference internal" href="torchtt.html#torchtt.matvec" t
 <p>In short: use the default method when the operands have large ranks and the result is expected to compress well, and <code class="docutils literal notranslate"><span class="pre">'direct'</span></code> when the ranks are small or the result does not compress.
 The example <a class="reference external" href="https://github.com/ion-g-ion/torchTT/tree/main/examples/efficient_linalg.py">efficient_linalg.py</a> compares the methods on a product that compresses well and on one that does not.
 All the methods also run on the GPU.</p>
+</section>
+<section id="choosing-an-interpolation-method">
+<span id="interpolation-methods-label"></span><h2>Choosing an interpolation method<a class="headerlink" href="#choosing-an-interpolation-method" title="Link to this heading"></a></h2>
+<p><a class="reference internal" href="torchtt.html#torchtt.interpolate.function_interpolate" title="torchtt.interpolate.function_interpolate"><code class="xref py py-func docutils literal notranslate"><span class="pre">torchtt.interpolate.function_interpolate()</span></code></a> approximates a function of one
+or more TT tensors using cross interpolation. Its <code class="docutils literal notranslate"><span class="pre">method</span></code> argument selects
+between two algorithms:</p>
+<ul class="simple">
+<li><p>Prefer trying <code class="docutils literal notranslate"><span class="pre">method='amen'</span></code> when function evaluations are expensive or
+mode sizes are large. <a class="reference internal" href="glossary.html#term-AMEn"><span class="xref std std-term">AMEn</span></a> updates one core at a time and enriches the
+approximation using residual samples. It avoids sampling over pairs of
+neighbouring modes, which can substantially reduce evaluation cost.</p></li>
+<li><p>Consider <code class="docutils literal notranslate"><span class="pre">method='dmrg'</span></code> when mode sizes are small and function evaluations
+are cheap. <a class="reference internal" href="glossary.html#term-DMRG"><span class="xref std std-term">DMRG</span></a> updates two neighbouring cores at a time and chooses
+their connecting rank by a truncated SVD. This allows rank adaptation directly
+from the two-core samples, but the number of samples per update grows with the
+product of the two mode sizes. DMRG is the API default, but it need not be the
+cheapest choice for your problem.</p></li>
+</ul>
+<p>AMEn also evaluates residual samples and may need more sweeps, so fewer samples
+per core update do not guarantee fewer evaluations overall. Compare the total
+evaluation count and achieved accuracy for your problem.</p>
+<p>For either method, a useful <code class="docutils literal notranslate"><span class="pre">start_tens</span></code> can reduce the work. If the
+approximation stops improving, consider increasing <code class="docutils literal notranslate"><span class="pre">kick</span></code> (rank enrichment),
+<code class="docutils literal notranslate"><span class="pre">nswp</span></code> (sweep limit), or <code class="docutils literal notranslate"><span class="pre">rmax</span></code> if the rank cap has been reached. Check accuracy
+on additional sample points: <code class="docutils literal notranslate"><span class="pre">eps</span></code> controls the iteration and truncation
+criteria, rather than guaranteeing the error over all entries.</p>
 </section>
 <section id="continuous-functions-and-density-estimation">
 <h2>Continuous functions and density estimation<a class="headerlink" href="#continuous-functions-and-density-estimation" title="Link to this heading"></a></h2>

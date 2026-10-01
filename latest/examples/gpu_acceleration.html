@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GPU acceleration &mdash; torchTT development (main @ 0909209) documentation</title>
+  <title>GPU acceleration &mdash; torchTT development (main @ 4a1234a) documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
       <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
@@ -14,7 +14,7 @@
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=33102d81"></script>
+      <script src="../_static/documentation_options.js?v=72223d00"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -23,7 +23,7 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Bayesian Inversion with torchTT" href="bayesian_inversion.html" />
+    <link rel="next" title="Speedup of the C++ extension" href="cpp_speedup.html" />
     <link rel="prev" title="Tensor completion with Riemannian optimization" href="tensor_completion.html" /> 
 </head>
 
@@ -62,6 +62,7 @@
 <li class="toctree-l3"><a class="reference internal" href="manifold.html">TT Manifold and Riemannian Optimization</a></li>
 <li class="toctree-l3"><a class="reference internal" href="tensor_completion.html">Tensor completion with Riemannian optimization</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">GPU acceleration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="cpp_speedup.html">Speedup of the C++ extension</a></li>
 <li class="toctree-l3"><a class="reference internal" href="bayesian_inversion.html">Bayesian Inversion with torchTT</a></li>
 </ul>
 </li>
@@ -96,7 +97,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 0909209)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><div class="admonition note">
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 4a1234a)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Run this notebook in <a class="reference external" href="https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/gpu_acceleration.ipynb">Google Colab</a> or see the source on <a class="reference external" href="https://github.com/ion-g-ion/torchTT/blob/main/examples/gpu_acceleration.ipynb">GitHub</a>.</p>
 </div>
@@ -108,7 +109,7 @@
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tn</span>
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">torchtt</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tntt</span>
@@ -166,15 +167,18 @@ Device name: NVIDIA GeForce RTX 4090 Laptop GPU
 </pre></div>
 </div>
 </div>
-<p>Run the function <code class="docutils literal notranslate"><span class="pre">f()</span></code> and report the time.</p>
+<p>Run the function <code class="docutils literal notranslate"><span class="pre">f()</span></code> once to warm up, then report the average time over five runs using <code class="docutils literal notranslate"><span class="pre">time.perf_counter()</span></code>.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tme_cpu</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
-<span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">A</span><span class="p">,</span><span class="n">y</span><span class="p">)</span>
-<span class="n">tme_cpu</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">tme_cpu</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">'Time on CPU: '</span><span class="p">,</span><span class="n">tme_cpu</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">n_runs</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">A</span><span class="p">,</span><span class="n">y</span><span class="p">)</span> <span class="c1"># warm up</span>
+<span class="n">tme_cpu</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_runs</span><span class="p">):</span>
+    <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">A</span><span class="p">,</span><span class="n">y</span><span class="p">)</span>
+<span class="n">tme_cpu</span> <span class="o">=</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">tme_cpu</span><span class="p">)</span> <span class="o">/</span> <span class="n">n_runs</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Average time on CPU: '</span><span class="p">,</span><span class="n">tme_cpu</span><span class="p">,</span><span class="s1">' seconds'</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -183,7 +187,7 @@ Device name: NVIDIA GeForce RTX 4090 Laptop GPU
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Time on CPU:  0:00:00.630195
+Average time on CPU:  0.828291226598958  seconds
 </pre></div></div>
 </div>
 <p>Move the defined tensors on GPU. Similarily to <code class="docutils literal notranslate"><span class="pre">pytorch</span></code> tensors one can use the function <code class="docutils literal notranslate"><span class="pre">cuda()</span></code> to return a copy of a TT instance on the GPU. All the cores of the returned TT object are on the GPU.</p>
@@ -198,33 +202,28 @@ Time on CPU:  0:00:00.630195
 </pre></div>
 </div>
 </div>
-<p>The function is executed once without timing to “warm-up” the CUDA.</p>
-<div class="nbinput docutils container">
+<p>The function is executed once without timing to warm up CUDA. The synchronization before the timer below waits for the warm-up computation to finish.</p>
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="o">*</span><span class="mi">0</span><span class="p">,</span><span class="n">A</span><span class="o">*</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="o">*</span><span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">result_gpu</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">A</span><span class="p">,</span><span class="n">y</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
-</pre></div>
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-tensor(0., dtype=torch.float64)
-</pre></div></div>
-</div>
-<p>Run the function again. This time the runtime is reported. The return value is moved to CPU to assure blocking until all computations are done.</p>
+<p>Run the function again and report the average time over the same number of runs. Synchronize CUDA once before starting the timer and at the end of each loop iteration so each GPU computation finishes before the next run starts. Divide the elapsed time by the number of runs. Input transfers, warm-up, and copying the final result to CPU are outside the timer.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tme_gpu</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
-<span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">A</span><span class="p">,</span><span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span>
-<span class="n">tme_gpu</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">tme_gpu</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">'Time with CUDA: '</span><span class="p">,</span><span class="n">tme_gpu</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tn</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">synchronize</span><span class="p">(</span><span class="n">cuda_name</span><span class="p">)</span>
+<span class="n">tme_gpu</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_runs</span><span class="p">):</span>
+    <span class="n">result_gpu</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">A</span><span class="p">,</span><span class="n">y</span><span class="p">)</span>
+    <span class="n">tn</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">synchronize</span><span class="p">(</span><span class="n">cuda_name</span><span class="p">)</span>
+<span class="n">tme_gpu</span> <span class="o">=</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">tme_gpu</span><span class="p">)</span> <span class="o">/</span> <span class="n">n_runs</span>
+<span class="n">result_cpu</span> <span class="o">=</span> <span class="n">result_gpu</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Average time with CUDA: '</span><span class="p">,</span><span class="n">tme_gpu</span><span class="p">,</span><span class="s1">' seconds'</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -233,7 +232,7 @@ tensor(0., dtype=torch.float64)
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Time with CUDA:  0:00:00.196770
+Average time with CUDA:  0.16208719659916823  seconds
 </pre></div></div>
 </div>
 <p>The speedup is reported:</p>
@@ -241,7 +240,7 @@ Time with CUDA:  0:00:00.196770
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s1">'Speedup: '</span><span class="p">,</span><span class="n">tme_cpu</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span><span class="o">/</span><span class="n">tme_gpu</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">(),</span><span class="s1">' times.'</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s1">'Speedup: '</span><span class="p">,</span><span class="n">tme_cpu</span><span class="o">/</span><span class="n">tme_gpu</span><span class="p">,</span><span class="s1">' times.'</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -250,10 +249,10 @@ Time with CUDA:  0:00:00.196770
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Speedup:  3.20269858210093  times.
+Speedup:  5.1101582603545905  times.
 </pre></div></div>
 </div>
-<p>This time we perform the same test without using the rank rounding. The expected result is better since the rank rounding contains QR decompositions and singular value decompositions (SVD), which are not that parallelizable.</p>
+<p>This time we perform the same test without using the rank rounding. The expected result is better since the rank rounding contains QR decompositions and singular value decompositions (SVD), which are not that parallelizable. Both devices are warmed up before timing, and the average times are measured as above. CUDA is synchronized once before the loop and at the end of each iteration, and the final result is copied to CPU after timing.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
@@ -283,19 +282,26 @@ Speedup:  3.20269858210093  times.
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># put tensors on CPU</span>
 <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">A</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">cpu</span><span class="p">(),</span> <span class="n">y</span><span class="o">.</span><span class="n">cpu</span><span class="p">(),</span> <span class="n">A</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span>
 <span class="c1"># perform the test</span>
-<span class="n">tme_cpu</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
-<span class="n">g</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">A</span><span class="p">,</span><span class="n">y</span><span class="p">)</span>
-<span class="n">tme_cpu</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">tme_cpu</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">'Time on CPU: '</span><span class="p">,</span><span class="n">tme_cpu</span><span class="p">)</span>
+<span class="n">g</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">A</span><span class="p">,</span><span class="n">y</span><span class="p">)</span> <span class="c1"># warm up</span>
+<span class="n">tme_cpu</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_runs</span><span class="p">):</span>
+    <span class="n">g</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">A</span><span class="p">,</span><span class="n">y</span><span class="p">)</span>
+<span class="n">tme_cpu</span> <span class="o">=</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">tme_cpu</span><span class="p">)</span> <span class="o">/</span> <span class="n">n_runs</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Average time on CPU: '</span><span class="p">,</span><span class="n">tme_cpu</span><span class="p">,</span><span class="s1">' seconds'</span><span class="p">)</span>
 <span class="c1"># move the tensors back to GPU</span>
 <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">A</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">cuda_name</span><span class="p">),</span> <span class="n">y</span><span class="o">.</span><span class="n">cuda</span><span class="p">(</span><span class="n">cuda_name</span><span class="p">),</span> <span class="n">A</span><span class="o">.</span><span class="n">cuda</span><span class="p">(</span><span class="n">cuda_name</span><span class="p">)</span>
 <span class="c1"># execute the function</span>
-<span class="n">tme_gpu</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
-<span class="n">g</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">A</span><span class="p">,</span><span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span>
-<span class="n">tme_gpu</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">tme_gpu</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">'Time with CUDA: '</span><span class="p">,</span><span class="n">tme_gpu</span><span class="p">)</span>
+<span class="n">result_gpu</span> <span class="o">=</span> <span class="n">g</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">A</span><span class="p">,</span><span class="n">y</span><span class="p">)</span> <span class="c1"># warm up</span>
+<span class="n">tn</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">synchronize</span><span class="p">(</span><span class="n">cuda_name</span><span class="p">)</span>
+<span class="n">tme_gpu</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_runs</span><span class="p">):</span>
+    <span class="n">result_gpu</span> <span class="o">=</span> <span class="n">g</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">A</span><span class="p">,</span><span class="n">y</span><span class="p">)</span>
+    <span class="n">tn</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">synchronize</span><span class="p">(</span><span class="n">cuda_name</span><span class="p">)</span>
+<span class="n">tme_gpu</span> <span class="o">=</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">tme_gpu</span><span class="p">)</span> <span class="o">/</span> <span class="n">n_runs</span>
+<span class="n">result_cpu</span> <span class="o">=</span> <span class="n">result_gpu</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Average time with CUDA: '</span><span class="p">,</span><span class="n">tme_gpu</span><span class="p">,</span><span class="s1">' seconds'</span><span class="p">)</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="s1">'Speedup: '</span><span class="p">,</span><span class="n">tme_cpu</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span><span class="o">/</span><span class="n">tme_gpu</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">(),</span><span class="s1">' times.'</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Speedup: '</span><span class="p">,</span><span class="n">tme_cpu</span><span class="o">/</span><span class="n">tme_gpu</span><span class="p">,</span><span class="s1">' times.'</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -304,9 +310,9 @@ Speedup:  3.20269858210093  times.
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Time on CPU:  0:00:00.434796
-Time with CUDA:  0:00:00.030479
-Speedup:  14.265428655795795  times.
+Average time on CPU:  0.5256847355994978  seconds
+Average time with CUDA:  0.021357184399676044  seconds
+Speedup:  24.613953120499893  times.
 </pre></div></div>
 </div>
 <p>A tensor can be copied to a differenct device using the <code class="docutils literal notranslate"><span class="pre">torchtt.TT.to()</span></code> method. Usage is similar to <code class="docutils literal notranslate"><span class="pre">torch.tensor.to()</span></code>.</p>
@@ -327,7 +333,7 @@ Speedup:  14.265428655795795  times.
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="tensor_completion.html" class="btn btn-neutral float-left" title="Tensor completion with Riemannian optimization" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="bayesian_inversion.html" class="btn btn-neutral float-right" title="Bayesian Inversion with torchTT" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="cpp_speedup.html" class="btn btn-neutral float-right" title="Speedup of the C++ extension" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

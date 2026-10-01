@@ -1,0 +1,296 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Speedup of the C++ extension &mdash; torchTT development (main @ 4a1234a) documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=72223d00"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Bayesian Inversion with torchTT" href="bayesian_inversion.html" />
+    <link rel="prev" title="GPU acceleration" href="gpu_acceleration.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            torchtt
+              <img src="https://github.com/ion-g-ion/torchTT/blob/main/logo_small.png?raw=true" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../docs/intro_page.html">Welcome to torchTT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/install.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/package-overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/modules.html">API reference</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../docs/examples.html">Examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#getting-started">Getting Started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#linear-algebra-solvers">Linear Algebra &amp; Solvers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#cross-interpolation">Cross Interpolation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#neural-networks">Neural Networks</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../docs/examples.html#advanced-topics">Advanced Topics</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="automatic_differentiation.html">Automatic differentiation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="manifold.html">TT Manifold and Riemannian Optimization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tensor_completion.html">Tensor completion with Riemannian optimization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gpu_acceleration.html">GPU acceleration</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Speedup of the C++ extension</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Is-the-C++-extension-available?">Is the C++ extension available?</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Timing">Timing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AMEn-solver">AMEn solver</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#DMRG-matrix-vector-product">DMRG matrix-vector product</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Conclusion">Conclusion</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="bayesian_inversion.html">Bayesian Inversion with torchTT</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/references.html">References</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">torchtt</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../docs/examples.html">Examples</a></li>
+      <li class="breadcrumb-item active">Speedup of the C++ extension</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/examples/cpp_speedup.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 4a1234a)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Run this notebook in <a class="reference external" href="https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/cpp_speedup.ipynb">Google Colab</a> or see the source on <a class="reference external" href="https://github.com/ion-g-ion/torchTT/blob/main/examples/cpp_speedup.ipynb">GitHub</a>.</p>
+</div>
+<section id="Speedup-of-the-C++-extension">
+<h1>Speedup of the C++ extension<a class="headerlink" href="#Speedup-of-the-C++-extension" title="Link to this heading"></a></h1>
+<p>The package <code class="docutils literal notranslate"><span class="pre">torchtt</span></code> has an optional C++ extension that implements two algorithms:</p>
+<ul class="simple">
+<li><p>the AMEn solver for linear systems <code class="docutils literal notranslate"><span class="pre">torchtt.solvers.amen_solve()</span></code> (<a class="reference external" href="https://doi.org/10.1137/140953289">Dolgov and Savostyanov, 2014</a>),</p></li>
+<li><p>the DMRG matrix-vector product <code class="docutils literal notranslate"><span class="pre">torchtt.matvec()</span></code> with <code class="docutils literal notranslate"><span class="pre">method=torchtt.methods.DMRG()</span></code> (<a class="reference external" href="https://doi.org/10.2478/cmam-2011-0021">Oseledets, 2011</a>).</p></li>
+</ul>
+<p>Both algorithms are also implemented in Python. The Python implementation is used when the extension is not available or when <code class="docutils literal notranslate"><span class="pre">use_cpp=False</span></code> is passed. The C++ code calls the same kind of PyTorch functions (tensor contractions, QR and singular value decompositions, linear solves) as the Python code, without the Python overhead between these calls. The C++ AMEn solver also needs fewer of these calls: its local GMRES solver orthogonalizes a new vector against all previous ones with two
+matrix-vector products instead of one dot product per previous vector, and its rank truncation checks several ranks at once. This notebook compares the runtimes of the two implementations for a few problem sizes.</p>
+<p>Imports:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tn</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">torchtt</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tntt</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'Installing torchTT...'</span><span class="p">)</span>
+    <span class="o">%</span><span class="k">pip</span> install git+https://github.com/ion-g-ion/torchTT
+    <span class="kn">import</span><span class="w"> </span><span class="nn">torchtt</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tntt</span>
+</pre></div>
+</div>
+</div>
+<section id="Is-the-C++-extension-available?">
+<h2>Is the C++ extension available?<a class="headerlink" href="#Is-the-C++-extension-available?" title="Link to this heading"></a></h2>
+<p>The extension is compiled when the package is installed on Linux or macOS. If it is not available, <code class="docutils literal notranslate"><span class="pre">use_cpp=True</span></code> falls back to Python and both implementations below have the same runtime.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s1">'C++ extension available:'</span><span class="p">,</span> <span class="n">tntt</span><span class="o">.</span><span class="n">cpp_enabled</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+C++ extension available: True
+</pre></div></div>
+</div>
+</section>
+<section id="Timing">
+<h2>Timing<a class="headerlink" href="#Timing" title="Link to this heading"></a></h2>
+<p>The function <code class="docutils literal notranslate"><span class="pre">timing()</span></code> calls <code class="docutils literal notranslate"><span class="pre">f()</span></code> once to warm up and returns the average runtime of <code class="docutils literal notranslate"><span class="pre">n_runs</span></code> further calls together with the result of the last call.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">timing</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">n_runs</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+    <span class="n">f</span><span class="p">()</span>
+    <span class="n">tme</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_runs</span><span class="p">):</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">f</span><span class="p">()</span>
+    <span class="n">tme</span> <span class="o">=</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">tme</span><span class="p">)</span> <span class="o">/</span> <span class="n">n_runs</span>
+    <span class="k">return</span> <span class="n">tme</span><span class="p">,</span> <span class="n">result</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="AMEn-solver">
+<h2>AMEn solver<a class="headerlink" href="#AMEn-solver" title="Link to this heading"></a></h2>
+<p>We solve <span class="math notranslate nohighlight">\(-\Delta u = 1\)</span> in <span class="math notranslate nohighlight">\([0,1]^d\)</span> with <span class="math notranslate nohighlight">\(u = 0\)</span> on the boundary using finite differences with <span class="math notranslate nohighlight">\(n\)</span> interior points in every direction. The finite difference matrix is a sum of Kronecker products of the one-dimensional matrix with identity matrices and is constructed directly in the TT format:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">laplacian</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Finite difference matrix of the negative Laplacian in d dimensions with n interior points in every direction.</span>
+<span class="sd">    """</span>
+    <span class="n">h</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">L1d</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">tn</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tn</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span> <span class="o">-</span> <span class="n">tn</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tn</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="n">tn</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tn</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span> <span class="o">/</span> <span class="n">h</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">L1d</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">L1d</span><span class="p">,</span> <span class="p">[(</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">)])</span>
+    <span class="n">L</span> <span class="o">=</span> <span class="n">L1d</span> <span class="o">**</span> <span class="n">tntt</span><span class="o">.</span><span class="n">eye</span><span class="p">([</span><span class="n">n</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">d</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span> <span class="o">+</span> <span class="n">tntt</span><span class="o">.</span><span class="n">eye</span><span class="p">([</span><span class="n">n</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">d</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span> <span class="o">**</span> <span class="n">L1d</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">d</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="n">L</span> <span class="o">=</span> <span class="n">L</span> <span class="o">+</span> <span class="n">tntt</span><span class="o">.</span><span class="n">eye</span><span class="p">([</span><span class="n">n</span><span class="p">]</span> <span class="o">*</span> <span class="n">i</span><span class="p">)</span> <span class="o">**</span> <span class="n">L1d</span> <span class="o">**</span> <span class="n">tntt</span><span class="o">.</span><span class="n">eye</span><span class="p">([</span><span class="n">n</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">d</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">i</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">L</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mf">1e-14</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>The right-hand side is a tensor of ones. The system is solved with both implementations and the same arguments for a few values of <span class="math notranslate nohighlight">\(d\)</span> and <span class="math notranslate nohighlight">\(n\)</span>. The relative residuals show that both implementations reach the same accuracy.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s1">'  d    n   C++ [s]   Python [s]   speedup   residual C++   residual Python'</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">d</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="p">[(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span> <span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">32</span><span class="p">),</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">128</span><span class="p">)]:</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">laplacian</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">ones</span><span class="p">([</span><span class="n">n</span><span class="p">]</span> <span class="o">*</span> <span class="n">d</span><span class="p">)</span>
+    <span class="n">t_cpp</span><span class="p">,</span> <span class="n">x_cpp</span> <span class="o">=</span> <span class="n">timing</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">tntt</span><span class="o">.</span><span class="n">solvers</span><span class="o">.</span><span class="n">amen_solve</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">,</span> <span class="n">use_cpp</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+    <span class="n">t_py</span><span class="p">,</span> <span class="n">x_py</span> <span class="o">=</span> <span class="n">timing</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">tntt</span><span class="o">.</span><span class="n">solvers</span><span class="o">.</span><span class="n">amen_solve</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">,</span> <span class="n">use_cpp</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+    <span class="n">res_cpp</span> <span class="o">=</span> <span class="p">((</span><span class="n">A</span> <span class="o">@</span> <span class="n">x_cpp</span> <span class="o">-</span> <span class="n">b</span><span class="p">)</span><span class="o">.</span><span class="n">norm</span><span class="p">()</span> <span class="o">/</span> <span class="n">b</span><span class="o">.</span><span class="n">norm</span><span class="p">())</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+    <span class="n">res_py</span> <span class="o">=</span> <span class="p">((</span><span class="n">A</span> <span class="o">@</span> <span class="n">x_py</span> <span class="o">-</span> <span class="n">b</span><span class="p">)</span><span class="o">.</span><span class="n">norm</span><span class="p">()</span> <span class="o">/</span> <span class="n">b</span><span class="o">.</span><span class="n">norm</span><span class="p">())</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'</span><span class="si">%3d</span><span class="s1"> </span><span class="si">%4d</span><span class="s1"> </span><span class="si">%9.3f</span><span class="s1"> </span><span class="si">%12.3f</span><span class="s1"> </span><span class="si">%9.1f</span><span class="s1"> </span><span class="si">%14.1e</span><span class="s1"> </span><span class="si">%17.1e</span><span class="s1">'</span> <span class="o">%</span> <span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">t_cpp</span><span class="p">,</span> <span class="n">t_py</span><span class="p">,</span> <span class="n">t_py</span> <span class="o">/</span> <span class="n">t_cpp</span><span class="p">,</span> <span class="n">res_cpp</span><span class="p">,</span> <span class="n">res_py</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+  d    n   C++ [s]   Python [s]   speedup   residual C++   residual Python
+  4    8     0.011        0.074       6.7        1.1e-10           8.2e-11
+ 16    8     0.054        0.284       5.3        7.0e-10           6.1e-10
+  8   32     0.111        0.621       5.6        3.2e-09           3.2e-09
+  4  128     0.641        1.862       2.9        3.8e-09           3.6e-09
+</pre></div></div>
+</div>
+</section>
+<section id="DMRG-matrix-vector-product">
+<h2>DMRG matrix-vector product<a class="headerlink" href="#DMRG-matrix-vector-product" title="Link to this heading"></a></h2>
+<p>A random TT matrix of rank 3 is multiplied with random TT tensors of increasing rank using the DMRG method. Both implementations run the same algorithm, so the comparison holds whether or not DMRG is the fastest method for this product (the example on AMEn and DMRG for fast TT operations compares the methods). The errors are relative to the exact product <code class="docutils literal notranslate"><span class="pre">A</span> <span class="pre">&#64;</span> <span class="pre">x</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">d</span><span class="p">,</span> <span class="n">n</span> <span class="o">=</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">4</span>
+<span class="n">A</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">random</span><span class="p">([(</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">)]</span> <span class="o">*</span> <span class="n">d</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">d</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'rank of x   C++ [s]   Python [s]   speedup   error C++   error Python'</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">32</span><span class="p">]:</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">tntt</span><span class="o">.</span><span class="n">random</span><span class="p">([</span><span class="n">n</span><span class="p">]</span> <span class="o">*</span> <span class="n">d</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">d</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">y_ref</span> <span class="o">=</span> <span class="n">A</span> <span class="o">@</span> <span class="n">x</span>
+    <span class="n">t_cpp</span><span class="p">,</span> <span class="n">y_cpp</span> <span class="o">=</span> <span class="n">timing</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">tntt</span><span class="o">.</span><span class="n">matvec</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">tntt</span><span class="o">.</span><span class="n">methods</span><span class="o">.</span><span class="n">DMRG</span><span class="p">(</span><span class="n">use_cpp</span><span class="o">=</span><span class="kc">True</span><span class="p">)))</span>
+    <span class="n">t_py</span><span class="p">,</span> <span class="n">y_py</span> <span class="o">=</span> <span class="n">timing</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">tntt</span><span class="o">.</span><span class="n">matvec</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">tntt</span><span class="o">.</span><span class="n">methods</span><span class="o">.</span><span class="n">DMRG</span><span class="p">(</span><span class="n">use_cpp</span><span class="o">=</span><span class="kc">False</span><span class="p">)))</span>
+    <span class="n">err_cpp</span> <span class="o">=</span> <span class="p">((</span><span class="n">y_cpp</span> <span class="o">-</span> <span class="n">y_ref</span><span class="p">)</span><span class="o">.</span><span class="n">norm</span><span class="p">()</span> <span class="o">/</span> <span class="n">y_ref</span><span class="o">.</span><span class="n">norm</span><span class="p">())</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+    <span class="n">err_py</span> <span class="o">=</span> <span class="p">((</span><span class="n">y_py</span> <span class="o">-</span> <span class="n">y_ref</span><span class="p">)</span><span class="o">.</span><span class="n">norm</span><span class="p">()</span> <span class="o">/</span> <span class="n">y_ref</span><span class="o">.</span><span class="n">norm</span><span class="p">())</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'</span><span class="si">%9d</span><span class="s1"> </span><span class="si">%9.3f</span><span class="s1"> </span><span class="si">%12.3f</span><span class="s1"> </span><span class="si">%9.1f</span><span class="s1"> </span><span class="si">%11.1e</span><span class="s1"> </span><span class="si">%14.1e</span><span class="s1">'</span> <span class="o">%</span> <span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">t_cpp</span><span class="p">,</span> <span class="n">t_py</span><span class="p">,</span> <span class="n">t_py</span> <span class="o">/</span> <span class="n">t_cpp</span><span class="p">,</span> <span class="n">err_cpp</span><span class="p">,</span> <span class="n">err_py</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+rank of x   C++ [s]   Python [s]   speedup   error C++   error Python
+        2     0.009        0.018       2.0     8.2e-15        5.6e-15
+        8     0.031        0.044       1.4     1.1e-14        9.8e-15
+       32     0.276        0.294       1.1     1.3e-14        1.4e-14
+</pre></div></div>
+</div>
+</section>
+<section id="Conclusion">
+<h2>Conclusion<a class="headerlink" href="#Conclusion" title="Link to this heading"></a></h2>
+<p>The speedup is largest when the TT cores are small (small mode sizes and ranks): every PyTorch call is then cheap and the Python overhead between the calls dominates the runtime. For the largest cores (<span class="math notranslate nohighlight">\(n = 128\)</span>) more of the time is spent inside PyTorch and the speedup is smaller. The DMRG matrix-vector product gains less than the AMEn solver: singular value decompositions dominate its runtime, and the C++ AMEn solver also needs fewer PyTorch calls. The timings depend on the hardware and
+on the number of threads used by PyTorch. To check the speedup for your own problem, compare the runtimes with <code class="docutils literal notranslate"><span class="pre">use_cpp=True</span></code> and <code class="docutils literal notranslate"><span class="pre">use_cpp=False</span></code>, an argument of <code class="docutils literal notranslate"><span class="pre">torchtt.solvers.amen_solve()</span></code> and of <code class="docutils literal notranslate"><span class="pre">torchtt.methods.DMRG()</span></code>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="gpu_acceleration.html" class="btn btn-neutral float-left" title="GPU acceleration" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="bayesian_inversion.html" class="btn btn-neutral float-right" title="Bayesian Inversion with torchTT" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Ion Gabriel Ion.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
