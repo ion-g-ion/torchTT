@@ -32,7 +32,7 @@ TT typically approximates the full tensor using a sequence of smaller, three-dim
 
 Several open-source packages exist for tensor network computations and the TT format specifically. The `ttpy` 1.x series [@ttpy] provided AMEn (Alternating Minimal Energy) linear solvers and cross-approximation through CPU-based NumPy/Fortran routines, without native GPU acceleration. The subsequent `ttpy 2` rewrite [@ttpy2], introduced in 2026, adds NumPy and PyTorch backends with GPU support.
 
-Libraries such as `tntorch` [@tntorch], `t3f` [@novikov2020t3f], and `TensorLy` [@kossaifi2019tensorly] have bridged the gap between tensor networks and machine learning frameworks by utilizing PyTorch and TensorFlow. These packages provide GPU acceleration and autograd capabilities, but offer different sets of numerical algorithms. For example, `tntorch` includes cross-approximation routines, while the documented APIs of these three packages do not include the AMEn solver for TT linear systems.
+Libraries such as `tntorch` [@usvyatsov2022tntorch], `t3f` [@novikov2020t3f], and `TensorLy` [@kossaifi2019tensorly] have bridged the gap between tensor networks and machine learning frameworks by utilizing PyTorch and TensorFlow. These packages provide GPU acceleration and autograd capabilities, but offer different sets of numerical algorithms. For example, `tntorch` includes cross-approximation routines, while the documented APIs of these three packages do not include the AMEn solver for TT linear systems.
 
 Additionally, in the domain of quantum physics, libraries such as `TeNPy` [@hauschild2018efficient] provide highly optimized tools for simulating many-body systems using Matrix Product States (the physics equivalent of the TT format). However, these are deeply specialized for physics applications, such as the density matrix renormalization group (DMRG) algorithm, rather than general-purpose numerical mathematics or deep learning.
 
@@ -51,7 +51,7 @@ The central component is the `torchtt.TT` class, which provides a single, unifie
 
 ## Dual backend strategy
 
-For performance-critical inner loops—particularly the AMEn solver—`torchTT` optionally delegates to a compiled C++ extension via PyTorch's custom operator mechanism. When the extension is unavailable, all algorithms fall back to a pure-PyTorch implementation with identical semantics. This dual-backend strategy ensures broad portability (any platform with PyTorch) while offering near-native performance when the C++ extension is compiled.
+For performance-critical inner loops—particularly the AMEn solver—`torchTT` optionally delegates to a compiled C++ extension built with PyTorch's C++ extension API. When the extension is unavailable, all algorithms fall back to a pure-PyTorch implementation of the same methods; the C++ AMEn solver supports only real tensors and a subset of the solver options. This dual-backend strategy ensures broad portability (any platform with PyTorch) while offering near-native performance when the C++ extension is compiled.
 
 # Functionality and Features
 
@@ -87,7 +87,8 @@ L = L1d_tt ** tntt.eye([N]*3) + tntt.eye([N]) ** L1d_tt ** tntt.eye([N]*2) + \
 x = tntt.meshgrid([tn.linspace(0,1,N)]*d)
 
 # Approximate the RHS f(x) = x1(x1-1)*...*xd(xd-1)
-f = tntt.interpolate.function_interpolate(lambda x: tn.prod(x * (x - 1), dim=1), x, eps=1e-8)
+f = tntt.interpolate.function_interpolate(
+    lambda x: tn.prod(x * (x - 1), dim=1), x, eps=1e-8)
 
 # Solve the linear system Ax = f using AMEn on GPU
 u = tntt.solvers.amen_solve(L.to('cuda'), f.to('cuda'), eps=1e-6)
@@ -104,10 +105,10 @@ u = tntt.solvers.amen_solve(L.to('cuda'), f.to('cuda'), eps=1e-6)
 
 # Acknowledgements
 
-The authors thank the Terra Quantum AG team for their valuable discussions, feedback, and support.
+The author thanks the Terra Quantum AG team for their valuable discussions, feedback, and support.
 
 # AI Usage Disclosure
 
-Artificial Intelligence tools were used to rephrase and refine the text of this paper. The core software implementation and the original draft of the content were produced by the authors.
+Artificial Intelligence tools were used to rephrase and refine the text of this paper. The core software implementation and the original draft of the content were written mainly by the author. Claude Code (Claude Opus 5 and 5.5) and OpenAI Codex (GPT-5.6 and GPT-6) were later used in the development, in 2026, mainly for bug fixes, with human review and validation.
 
 # References
