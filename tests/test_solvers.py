@@ -5,6 +5,7 @@ import torchtt
 import torch as tn
 import numpy as np
 import pytest
+from torchtt._iterative_solvers import BiCGSTAB_reset
 
 err_rel = lambda t, ref :  tn.linalg.norm(t-ref).numpy() / tn.linalg.norm(ref).numpy() if ref.shape == t.shape else np.inf
 
@@ -28,6 +29,25 @@ def random_system(seed, shift=0.2, dtype=tn.float64):
     A = (A * (1 / A.norm()) + shift * torchtt.eye([4, 5, 6], dtype=dtype)).round(1e-14)
     x = torchtt.random([4, 5, 6], [1, 2, 3, 1], dtype=dtype)
     return A, x, A @ x
+
+
+def laplace_system(n, d):
+    """
+    Finite-difference Laplacian on [0,1]^d with n interior points per mode and a ones right-hand side.
+    The TT cores of the operator are tridiagonal.
+    """
+    L = (tn.diag(tn.ones(n-1, dtype=tn.float64), -1) + tn.diag(tn.ones(n-1, dtype=tn.float64), 1)
+         - 2*tn.eye(n, dtype=tn.float64)) * (n+1)**2
+    L = torchtt.TT(L, [(n, n)])
+    A = None
+    for k in range(d):
+        term = L
+        if k > 0:
+            term = torchtt.eye([n]*k, dtype=tn.float64) ** term
+        if k < d-1:
+            term = term ** torchtt.eye([n]*(d-k-1), dtype=tn.float64)
+        A = term if A is None else A + term
+    return A.round(1e-14), torchtt.ones([n]*d, dtype=tn.float64)
 
 
 @pytest.mark.skipif(not torchtt.solvers.cpp_enabled(), reason="C++ extension must be present.")
@@ -251,9 +271,12 @@ def test_amen_solve_single_precision_cpp(preconditioner):
 
 @pytest.mark.skipif(not torchtt.solvers.cpp_enabled(), reason="C++ extension must be present.")
 def test_amen_solve_complex_cpp():
+    # The C++ solver supports only real tensors; complex systems are solved in Python.
     A, x, b = random_system(3, dtype=tn.complex128)
-    with pytest.raises(RuntimeError, match="complex"):
-        torchtt.solvers.amen_solve(A, b, use_cpp=True)
+
+    xx = torchtt.solvers.amen_solve(A, b, eps=1e-10, use_cpp=True)
+
+    assert (A@xx-b).norm()/b.norm() < 1e-9
 
 
 @pytest.mark.skipif(not torchtt.solvers.cpp_enabled(), reason="C++ extension must be present.")
@@ -281,3 +304,112 @@ def test_amen_solve_zero_rhs_iterative(local_solver, use_single_precision):
         use_single_precision=use_single_precision, use_cpp=False)
 
     assert x.norm() < 1e-12
+
+
+@pytest.mark.parametrize("preconditioner", ['c', 'r'])
+def test_amen_solve_preconditioner_truncates(preconditioner):
+    # The preconditioner changes only the local solve. The truncation must test
+    # the residual of the original system, otherwise no rank is dropped.
+    tn.manual_seed(0)
+    A, b = laplace_system(16, 4)
+
+    x_ref = torchtt.solvers.amen_solve(A, b, eps=1e-8, use_cpp=False)
+    x = torchtt.solvers.amen_solve(A, b, eps=1e-8, preconditioner=preconditioner, use_cpp=False)
+
+    assert (A@x-b).norm()/b.norm() < 1e-7
+    assert max(x.R) <= max(x_ref.R) + 2
+
+
+@pytest.mark.parametrize("local_solver", [1, 2])
+@pytest.mark.parametrize("preconditioner", [None, 'c', 'r'])
+def test_amen_solve_complex_iterative(local_solver, preconditioner):
+    A, x, b = random_system(7, shift=1.0, dtype=tn.complex128)
+
+    xx = torchtt.solvers.amen_solve(
+        A, b, eps=1e-10, max_full=0, local_solver=local_solver, preconditioner=preconditioner,
+        local_iterations=20, resets=3, use_cpp=False)
+
+    assert (A@xx-b).norm()/b.norm() < 1e-9
+    assert err_rel(xx.full(), x.full()) < 1e-9
+
+
+@pytest.mark.skipif(not tn.cuda.is_available(), reason="CUDA device is not available.")
+@pytest.mark.parametrize("local_solver", [1, 2])
+def test_amen_solve_cuda_iterative(local_solver):
+    A, x, b = random_system(5, shift=1.0)
+    A, x, b = A.to('cuda'), x.to('cuda'), b.to('cuda')
+
+    xx = torchtt.solvers.amen_solve(A, b, eps=1e-10, max_full=0, local_solver=local_solver, use_cpp=False)
+
+    assert all(c.is_cuda for c in xx.cores)
+    assert (A@xx-b).norm()/b.norm() < 1e-9
+
+
+def test_bicgstab_flag():
+    class Dense:
+        def __init__(self, M):
+            self.M = M
+
+        def matvec(self, x):
+            return self.M @ x
+
+    tn.manual_seed(0)
+    n = 50
+    M = tn.eye(n, dtype=tn.float64) + 0.5*tn.randn(n, n, dtype=tn.float64)/np.sqrt(n)
+    b = tn.randn(n, 1, dtype=tn.float64)
+
+    _, flag, _, _ = BiCGSTAB_reset(Dense(M), b, tn.zeros_like(b), eps=1e-12, nmax=1)
+    assert not flag, "BiCGSTAB reported convergence after one iteration."
+
+    x, flag, _, _ = BiCGSTAB_reset(Dense(M), b, tn.zeros_like(b), eps=1e-12, nmax=200)
+    assert flag
+    assert tn.linalg.norm(M@x-b)/tn.linalg.norm(b) < 1e-10
+
+
+def test_amen_solve_trunc_norm_fro():
+    A, x, b = random_system(8)
+
+    xx = torchtt.solvers.amen_solve(A, b, eps=1e-10, trunc_norm='fro', use_cpp=False)
+
+    assert err_rel(xx.full(), x.full()) < 1e-8
+
+
+@pytest.mark.parametrize("use_cpp", [False, True])
+def test_amen_solve_invalid_trunc_norm(use_cpp):
+    A, x, b = random_system(8)
+    with pytest.raises(torchtt.errors.InvalidArguments, match="trunc_norm"):
+        torchtt.solvers.amen_solve(A, b, trunc_norm='nonsense', use_cpp=use_cpp)
+
+
+@pytest.mark.skipif(not torchtt.solvers.cpp_enabled(), reason="C++ extension must be present.")
+@pytest.mark.parametrize("options", [dict(local_solver=2), dict(trunc_norm='fro'), dict(band_diagonal=1),
+                                     dict(rmax=[1, 12, 12, 1])])
+def test_amen_solve_cpp_unsupported_options(options, monkeypatch):
+    # The C++ solver has none of these options. They must not be ignored: the solve runs in Python.
+    def cpp_solver(*args, **kwargs):
+        raise AssertionError("The C++ solver was called.")
+
+    monkeypatch.setattr(torchtt.solvers.torchttcpp, 'amen_solve', cpp_solver)
+    tn.manual_seed(0)
+    A, b = laplace_system(8, 3)
+
+    x = torchtt.solvers.amen_solve(A, b, eps=1e-10, max_full=0, use_cpp=True, **options)
+
+    assert (A@x-b).norm()/b.norm() < 1e-8
+
+
+def test_amen_solve_local_iterations(monkeypatch):
+    # local_iterations is the GMRES restart length, as in the C++ solver.
+    lengths = []
+    gmres_restart = torchtt.solvers.gmres_restart
+
+    def spy(LinOp, b, x0, N, max_iterations, threshold, resets=4):
+        lengths.append(max_iterations)
+        return gmres_restart(LinOp, b, x0, N, max_iterations, threshold, resets)
+
+    monkeypatch.setattr(torchtt.solvers, 'gmres_restart', spy)
+    A, x, b = random_system(10, shift=1.0)
+
+    torchtt.solvers.amen_solve(A, b, max_full=0, local_iterations=5, use_cpp=False)
+
+    assert lengths and set(lengths) == {5}

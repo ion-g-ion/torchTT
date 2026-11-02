@@ -69,8 +69,8 @@ def amen_mv(A, b, nswp=22, x0=None, eps=1e-10, rmax=1024, kickrank=4, kick2=0, v
         eps (float, optional): relative residual. Defaults to 1e-10.
         rmax (int, optional): maximum rank. Defaults to 1024.
         kickrank (int, optional): rank enrichment. Defaults to 4.
-        kick2 (int, optional): [description]. Defaults to 0.
-        verbose (bool, optional): choose whether to display or not additional information during the runtime. Defaults to True.
+        kick2 (int, optional): number of random vectors added to the rank enrichment, in addition to the ``kickrank`` vectors computed from the residual. Defaults to 0.
+        verbose (bool, optional): choose whether to display or not additional information during the runtime. Defaults to False.
         use_cpp (bool, optional): not used (there is no C++ implementation). Defaults to True.
 
     Raises:
@@ -101,7 +101,7 @@ def amen_mm(A, B, nswp=22, X0=None, eps=1e-10, rmax=1024, kickrank=4, kick2=0, v
         eps (float, optional): realtive tolerance. Defaults to 1e-10.
         rmax (int, optional): maximum rank. Defaults to 1024.
         kickrank (int, optional): kickrank. Defaults to 4.
-        kick2 (int, optional): kick2. Defaults to 0.
+        kick2 (int, optional): number of random vectors added to the rank enrichment, in addition to the ``kickrank`` vectors computed from the residual. Defaults to 0.
         verbose (bool, optional): show debug info. Defaults to False.
 
     Returns:

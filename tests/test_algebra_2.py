@@ -94,14 +94,20 @@ def test_amen_division(dtype):
     x = xs[0]+xs[1]+xs[2]+xs[3]+xs[1]*xs[2]+(1-xs[3])*xs[2]+1
     x = x.round(0)
     y = tntt.ones(x.N, dtype=dtype)
+    X, Y = x.full(), y.full()
 
     a = y/x
     b = 1/x
     c = tn.tensor(1.0)/x
 
-    assert err_rel(a.full(), y.full()/x.full()) < 1e-11
-    assert err_rel(b.full(), 1/x.full()) < 1e-11
-    assert err_rel(c.full(), 1/x.full()) < 1e-11
+    assert err_rel(a.full(), Y/X) < 1e-11
+    assert err_rel(b.full(), 1/X) < 1e-11
+    assert err_rel(c.full(), 1/X) < 1e-11
+
+    for scalar in [2.0, 2, tn.tensor(2.0)]:
+        assert err_rel((x/scalar).full(), X/2) < 1e-14, "Division by a scalar error."
+
+    assert tn.equal(x.full(), X) and tn.equal(y.full(), Y), "Division changed an operand."
 
 @pytest.mark.parametrize("dtype", [tn.float64])
 def test_amen_division_preconditioned(dtype):

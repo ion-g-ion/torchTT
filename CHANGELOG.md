@@ -16,6 +16,8 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - The C++ AMEn solver is 1.5–3.4x faster on CPU and GPU (Laplace problems, float64). Its local GMRES orthogonalizes with two passes of classical Gram-Schmidt and copies data to the host once per iteration instead of once per inner product. The local operator is applied as three matrix products without copying its operands. The sweep and the rank truncation need fewer device synchronizations, and SVDs on CUDA use the cuSOLVER method `gesvd` instead of the slower default `gesvdj`.
 - Docs: the overview section "About the package" is renamed "Operations in the TT format" and no longer lists the examples. Instead, every example page links to Google Colab and to the notebook on GitHub (`nbsphinx_prolog` in `conf.py`).
+- `torchtt.solvers.amen_solve(use_cpp=True)` runs the Python implementation for the calls the C++ solver does not support: complex tensors, `local_solver=2`, `trunc_norm='fro'`, `band_diagonal >= 0` and a list `rmax`. Before, the C++ solver ignored these options or raised an error.
+- The Python AMEn solver uses `local_iterations` as the GMRES restart length, like the C++ solver (it used `local_iterations + 1`).
 
 ### Fixed
 - `TT.sum()` now handles sums over all entries of a TT matrix.
@@ -30,7 +32,14 @@ All notable changes to this project will be documented in this file.
 - AMEn products returned wrong results for complex tensors; they now raise `IncompatibleTypes`.
 - The rank of AMEn products could exceed `rmax` because of the rank enrichment.
 - The C++ AMEn solver leaked memory in every iterative local solve.
-- The C++ AMEn solver raises an error that names the problem for complex tensors.
+- `x / scalar` divided the first core of `x` in place, so `x` changed as well; for cores that require gradients it raised an error.
+- `x + scalar`, `x - scalar` and the reversed forms failed for TT objects on the GPU.
+- The Python AMEn solver with a preconditioner did not truncate the solution, since the truncation applied the preconditioner a second time. The ranks were too large.
+- The Python AMEn solver returned wrong results for complex systems with iterative local solves. The projections use the conjugated solution cores, and GMRES and BiCGSTAB use complex inner products and Givens rotations.
+- The BiCGSTAB local solver failed on the GPU and always reported convergence.
+- `trunc_norm='fro'` in `amen_solve` raised `UnboundLocalError`; it truncates the local solution in the Frobenius norm. Invalid values of `trunc_norm` and `local_solver` raise `InvalidArguments`.
+- `torchtt.randn`, and therefore the initialization of `LinearLayerTT` and `CompressedTTLayer`, returned infinite or NaN cores, or the wrong variance, when the product of the ranks overflowed int64.
+- Docs: broken code in the package overview, placeholders and wrong defaults in the docstrings of `amen_solve`, `amen_mv` and `amen_mm`, and `TT.to` documented that `device=None` moves the tensor to the CPU.
 
 ### Deprecated
 - `TT.fast_matvec`, `torchtt.fast_mv`, `torchtt.fast_mm`, `torchtt.fast_hadammard`, `torchtt.amen_mv`, `torchtt.amen_mm` and `torchtt.dmrg_hadamard`. They still work and emit a `DeprecationWarning` that names the replacement.

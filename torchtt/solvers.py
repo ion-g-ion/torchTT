@@ -7,7 +7,7 @@ import torch as tn
 import numpy as np
 import torchtt
 import datetime
-from torchtt._decomposition import QR, SVD, lr_orthogonal, rl_orthogonal
+from torchtt._decomposition import QR, SVD, lr_orthogonal, rl_orthogonal, rank_chop
 from torchtt._iterative_solvers import BiCGSTAB_reset, gmres_restart
 import opt_einsum as oe
 from .errors import *
@@ -191,26 +191,28 @@ def amen_solve(A, b, nswp=22, x0=None, eps=1e-10, rmax=32768, max_full=256, kick
         A (torchtt.TT): the system matrix in TT.
         b (torchtt.TT): the right hand side in TT.
         nswp (int, optional): number of sweeps. Defaults to 22.
-        x0 (torchtt.TT, optional): initial guess. In None is provided the initial guess is a ones tensor. Defaults to None.
+        x0 (torchtt.TT, optional): initial guess. If None is provided the initial guess is a ones tensor. Defaults to None.
         eps (float, optional): relative residual. Defaults to 1e-10.
-        rmax (int, optional): maximum rank. Defaults to 100000.
+        rmax (int | list[int], optional): maximum rank, or one maximum per rank index. Defaults to 32768.
         max_full (int, optional): local systems strictly smaller than this are solved
             directly, larger ones with the iterative local solver. Defaults to 256.
         kickrank (int, optional): rank enrichment. Defaults to 4.
-        kick2 (int, optional): [description]. Defaults to 0.
-        trunc_norm (str, optional): [description]. Defaults to 'res'.
+        kick2 (int, optional): number of random vectors added to the rank enrichment, in addition to the ``kickrank`` vectors computed from the residual. Defaults to 0.
+        trunc_norm (str, optional): truncation of the local solution. ``'res'`` keeps the smallest rank whose local residual stays below the tolerance, ``'fro'`` truncates the singular values in the Frobenius norm. Defaults to 'res'.
         local_solver (int, optional): choose local iterative solver: 1 for GMRES (generalized minimal residual) and 2 for BiCGSTAB (biconjugate gradient stabilized). Defaults to 1.
-        local_iterations (int, optional): number of GMRES iterations for the local subproblems. Defaults to 40.
-        resets (int, optional): number of resets in the GMRES. Defaults to 2.
-        verbose (bool, optional): choose whether to display or not additional information during the runtime. Defaults to True.
-        preconditioner (string, optional): Choose the preconditioner for the local system. Possible values are None, 'c' (central Jacobi preconditioner). No preconditioner is used if None is provided. Defaults to None.
-        use_cpp (bool, optional): use the C++ implementation of AMEn if available. It has the same accuracy and is 3-7x faster on CPU, most for small TT cores. It supports only real tensors and ignores ``band_diagonal``, ``local_solver`` and ``trunc_norm``. Defaults to True.
-        band_diagonal (int, optional): the TT cores of the matrix habe band diagonal structure. Defaults to -1.
+        local_iterations (int, optional): number of iterations of the local solver: GMRES iterations between two restarts, or BiCGSTAB iterations. Defaults to 40.
+        resets (int, optional): number of GMRES restarts. Defaults to 2.
+        verbose (bool, optional): choose whether to display or not additional information during the runtime. Defaults to False.
+        preconditioner (string, optional): Choose the preconditioner for the local system. Possible values are None, 'c' (block Jacobi with one block per pair of rank indices) and 'r' (block Jacobi with one block per left rank index). No preconditioner is used if None is provided. Defaults to None.
+        use_cpp (bool, optional): use the C++ implementation of AMEn if available. It has the same accuracy and is 3-7x faster on CPU, most for small TT cores. It supports only real tensors, ``local_solver=1``, ``trunc_norm='res'``, ``band_diagonal=-1`` and an integer ``rmax``; other calls run the Python implementation. Defaults to True.
+        band_diagonal (int, optional): bandwidth of the TT cores of the matrix if they are band diagonal, -1 for dense cores. Defaults to -1.
         use_single_precision (bool, optional): solve the local systems with the iterative solver in single precision. The Python implementation also computes the local residuals in single precision, the C++ implementation computes them in the precision of the input. Defaults to False.
 
     Raises:
         InvalidArguments: A and b must be TT instances.
         InvalidArguments: Invalid preconditioner.
+        InvalidArguments: Invalid trunc_norm.
+        InvalidArguments: Solver not implemented.
         IncompatibleTypes: A must be TT-matrix and b must be vector.
         ShapeMismatch: A is not quadratic.
         ShapeMismatch: Dimension mismatch.
@@ -227,8 +229,16 @@ def amen_solve(A, b, nswp=22, x0=None, eps=1e-10, rmax=32768, max_full=256, kick
         raise ShapeMismatch('A is not quadratic.')
     if A.N != b.N:
         raise ShapeMismatch('Dimension mismatch.')
+    if trunc_norm not in ['res', 'fro']:
+        raise InvalidArguments("Invalid trunc_norm, it must be 'res' or 'fro'.")
+    if local_solver not in [1, 2]:
+        raise InvalidArguments('Solver not implemented.')
 
-    if use_cpp and _flag_use_cpp:
+    # the C++ implementation has none of the other options and supports only real tensors
+    cpp_supported = local_solver == 1 and trunc_norm == 'res' and band_diagonal < 0 and isinstance(rmax, (int, np.integer)) and \
+        not any(c.is_complex() for c in A.cores + b.cores + ([] if x0 is None else x0.cores))
+
+    if use_cpp and _flag_use_cpp and cpp_supported:
         if x0 == None:
             x_cores = []
             x_R = [1]*(1+len(A.N))
@@ -440,7 +450,7 @@ def _amen_solve_python(A, b, nswp=22, x0=None, eps=1e-10, rmax=1024, max_full=25
                         solution_now, flag, nit = tn.zeros_like(drhs), True, 0
                     elif local_solver == 1:
                         solution_now, flag, nit = gmres_restart(Op, drhs, previous_solution.to(
-                            tn.float32)*0, rhs.shape[0], local_iterations+1, eps_local, resets)
+                            tn.float32)*0, rhs.shape[0], local_iterations, eps_local, resets)
                     elif local_solver == 2:
                         solution_now, flag, nit, _ = BiCGSTAB_reset(
                             Op, drhs, previous_solution.to(tn.float32)*0, eps_local, local_iterations)
@@ -469,7 +479,7 @@ def _amen_solve_python(A, b, nswp=22, x0=None, eps=1e-10, rmax=1024, max_full=25
                         solution_now, flag, nit = tn.zeros_like(drhs), True, 0
                     elif local_solver == 1:
                         solution_now, flag, nit = gmres_restart(
-                            Op, drhs, previous_solution*0, rhs.shape[0], local_iterations+1, eps_local, resets)
+                            Op, drhs, previous_solution*0, rhs.shape[0], local_iterations, eps_local, resets)
                     elif local_solver == 2:
                         solution_now, flag, nit, _ = BiCGSTAB_reset(
                             Op, drhs, previous_solution*0, eps_local, local_iterations)
@@ -513,7 +523,8 @@ def _amen_solve_python(A, b, nswp=22, x0=None, eps=1e-10, rmax=1024, max_full=25
             if k < d-1:
                 u, s, v = SVD(solution_now)
                 if trunc_norm == 'fro':
-                    pass
+                    s_np = s.detach().cpu().numpy()
+                    r = min([rank_chop(s_np, real_tol*np.linalg.norm(s_np)), tn.numel(s), rmax[k+1]])
                 else:
                     # search for a rank such that offeres small enough residuum
                     # TODO: binary search?
@@ -530,7 +541,7 @@ def _amen_solve_python(A, b, nswp=22, x0=None, eps=1e-10, rmax=1024, max_full=25
                                 B@tn.reshape(solution, [-1, 1])-rhs)/norm_rhs
                         else:
                             res = tn.linalg.norm(Op.matvec(solution.to(
-                                tn.float32 if use_single_precision else dtype)).to(dtype)-rhs)/norm_rhs
+                                tn.float32 if use_single_precision else dtype), False).to(dtype)-rhs)/norm_rhs
                         # On the final sweep the residual enrichment is disabled, so any
                         # accuracy given away here can no longer be recovered. Budget the
                         # truncation against what the local solve just achieved instead of
@@ -664,7 +675,7 @@ def _compute_phi_bck_A(Phi_now, core_left, core_A, core_right):
 
     Args:
         Phi_now (torch.tensor): The current phi. Has shape r1_k+1 x R_k+1 x r2_k+1
-        core_left (torch.tensor): the core on the left. Has shape r1_k x N_k x r1_k+1 
+        core_left (torch.tensor): the core on the left, it is conjugated. Has shape r1_k x N_k x r1_k+1 
         core_A (torch.tensor): the core of the matrix. Has shape  R_k x N_k x N_k x R_k
         core_right (torch.tensor): the core to the right. Has shape r2_k x N_k x r2_k+1 
 
@@ -672,7 +683,7 @@ def _compute_phi_bck_A(Phi_now, core_left, core_A, core_right):
         torch.tensor: The following phi (backward). Has shape r1_k x R_k x r2_k
     """
     Phi = oe.contract('LSR,lML,sMNS,rNR->lsr', Phi_now,
-                      core_left, core_A, core_right)
+                      tn.conj(core_left), core_A, core_right)
     return Phi
 
 
@@ -682,7 +693,7 @@ def _compute_phi_fwd_A(Phi_now, core_left, core_A, core_right):
 
     Args:
         Phi_now (torch.tensor): The current phi. Has shape r1_k x R_k x r2_k
-        core_left (torch.tensor): the core on the left. Has shape r1_k x N_k x r1_k+1 
+        core_left (torch.tensor): the core on the left, it is conjugated. Has shape r1_k x N_k x r1_k+1 
         core_A (torch.tensor): the core of the matrix. Has shape  R_k x N_k x N_k x R_k
         core_right (torch.tensor): the core to the right. Has shape r2_k x N_k x r2_k+1 
 
@@ -690,7 +701,7 @@ def _compute_phi_fwd_A(Phi_now, core_left, core_A, core_right):
         torch.tensor: The following phi (backward). Has shape r1_k+1 x R_k+1 x r2_k+1
     """
     Phi_next = oe.contract('lsr,lML,sMNS,rNR->LSR',
-                           Phi_now, core_left, core_A, core_right)
+                           Phi_now, tn.conj(core_left), core_A, core_right)
     return Phi_next
 
 
@@ -701,12 +712,12 @@ def _compute_phi_bck_rhs(Phi_now, core_b, core):
     Args:
         Phi_now (torch.tensor): The current phi. Has shape rb_k+1 x r_k+1
         core_b (torch.tensor): The current core of the rhs. Has shape rb_k x N_k x rb_k+1
-        core (torch.tensor): The current core. Has shape r_k x N_k x r_k+1
+        core (torch.tensor): The current core, it is conjugated. Has shape r_k x N_k x r_k+1
 
     Returns:
         torch.tensor: The backward phi corresponding to the rhs. Has shape rb_k x r_k
     """
-    Phi = oe.contract('BR,bnB,rnR->br', Phi_now, core_b, core)
+    Phi = oe.contract('BR,bnB,rnR->br', Phi_now, core_b, tn.conj(core))
     return Phi
 
 
@@ -717,10 +728,10 @@ def _compute_phi_fwd_rhs(Phi_now, core_rhs, core):
     Args:
         Phi_now (torch.tensor): The current phi. Has shape  rb_k x r_k
         core_b (torch.tensor): The current core of the rhs. Has shape rb_k x N_k+1 x rb_k+1
-        core (torch.tensor): The current core. Has shape r_k x N_k x r_k+1
+        core (torch.tensor): The current core, it is conjugated. Has shape r_k x N_k x r_k+1
 
     Returns:
         torch.tensor: The forward computer phi for the rhs. Has shape rb_k+1 x r_k+1
     """
-    Phi_next = oe.contract('br,bnB,rnR->BR', Phi_now, core_rhs, core)
+    Phi_next = oe.contract('br,bnB,rnR->BR', Phi_now, core_rhs, tn.conj(core))
     return Phi_next
