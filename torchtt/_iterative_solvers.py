@@ -15,9 +15,19 @@ def BiCGSTAB_reset(Op,rhs,x0,eps=1e-6,nmax=40):
     """
     BiCGSTAB solver.
     The inner products conjugate their first argument, so complex systems are supported.
+    `eps` is relative to the norm of `rhs`, as for `gmres`.
     """ 
     # initial residual
     r = rhs - Op.matvec(x0)
+    
+    norm_rhs = tn.linalg.norm(rhs)
+    r_nn = tn.linalg.norm(r)
+    # Degenerate systems. Both exits below are unsatisfiable for a zero rhs, and
+    # the search direction cannot be seeded from a residual that is already zero.
+    if norm_rhs == 0:
+        return tn.zeros_like(x0), True, 0, tn.zeros_like(norm_rhs)
+    if r_nn <= eps * norm_rhs:
+        return x0, True, 0, r_nn/norm_rhs
     
     # choose rop
     r0p = tn.rand(r.shape,dtype = x0.dtype, device = x0.device)
@@ -27,8 +37,6 @@ def BiCGSTAB_reset(Op,rhs,x0,eps=1e-6,nmax=40):
     p = r
     x = x0
     
-    norm_rhs = tn.linalg.norm(rhs)
-    r_nn = tn.linalg.norm(r)
     nit = 0 
     converged = False
     for k in range(nmax):
@@ -36,7 +44,11 @@ def BiCGSTAB_reset(Op,rhs,x0,eps=1e-6,nmax=40):
         Ap = Op.matvec(p)
         alpha = tn.vdot(r0p.squeeze(),r.squeeze()) / tn.vdot(r0p.squeeze(),Ap.squeeze())
         s = r - alpha * Ap
-        if tn.linalg.norm(s)<eps:
+        # Both exits test the same relative criterion. An absolute test here
+        # stops early whenever ||rhs|| < 1, which is the common case for the
+        # local systems of AMEn, and returns flag=True for a solution that is
+        # orders of magnitude short of the requested tolerance.
+        if tn.linalg.norm(s) < eps * norm_rhs:
             x_n = x+alpha*p
             r_nn = tn.linalg.norm(s)
             converged = True
