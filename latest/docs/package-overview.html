@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Overview &mdash; torchTT development (main @ 378e796) documentation</title>
+  <title>Overview &mdash; torchTT development (main @ b64218c) documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=ea95886d"></script>
+      <script src="../_static/documentation_options.js?v=c86adbab"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -89,7 +89,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 378e796)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="overview">
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ b64218c)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="overview">
 <span id="about-tt-label"></span><h1>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h1>
 <section id="what-is-the-tensor-train-format">
 <h2>What is the Tensor-Train format?<a class="headerlink" href="#what-is-the-tensor-train-format" title="Link to this heading"></a></h2>
@@ -110,26 +110,26 @@ The storage complexity is <span class="math notranslate nohighlight">\(\mathcal{
 <span class="c1"># tens is a torch.Tensor</span>
 <span class="c1"># tens = ...</span>
 
-<span class="n">tt</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">tens</span><span class="p">,</span> <span class="mf">1e-10</span><span class="p">)</span>
+<span class="n">tt</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">TT</span><span class="p">(</span><span class="n">tens</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The rank of the object <code class="docutils literal notranslate"><span class="pre">tt</span></code> can be inspected using the <code class="docutils literal notranslate"><span class="pre">print()</span></code> function or can accessed using <code class="docutils literal notranslate"><span class="pre">tt.R</span></code>. The tensor can be converted back to the full format using <code class="docutils literal notranslate"><span class="pre">tt.full()</span></code>.
 The TT class implements tensors in the TT format as well as tensors operators in TT format. Once in the TT format, linear algebra operations (<code class="docutils literal notranslate"><span class="pre">+</span></code>, <code class="docutils literal notranslate"><span class="pre">-</span></code>, <code class="docutils literal notranslate"><span class="pre">*</span></code>, <code class="docutils literal notranslate"><span class="pre">&#64;</span></code>, <code class="docutils literal notranslate"><span class="pre">/</span></code>) can be performed without resorting to the full format. The format and the operations is similar to the one implemented in <code class="docutils literal notranslate"><span class="pre">torch</span></code>.
 As an example, we have the following code where 3 tensors in the TT format are involved in algebra operations:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torchTT</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torchtt</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 
 <span class="c1"># generate 2 random tensors and a tensor matrix</span>
 <span class="n">a</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">randn</span><span class="p">([</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">7</span><span class="p">],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
 <span class="n">b</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">randn</span><span class="p">([</span><span class="mi">8</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">4</span><span class="p">],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
-<span class="n">A</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">randn</span><span class="p">([(</span><span class="mi">4</span><span class="p">,</span><span class="mi">8</span><span class="p">),</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span> <span class="p">,(</span><span class="mi">6</span><span class="p">,</span><span class="mi">6</span><span class="p">)</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="mi">4</span><span class="p">)],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">A</span> <span class="o">=</span> <span class="n">torchtt</span><span class="o">.</span><span class="n">randn</span><span class="p">([(</span><span class="mi">4</span><span class="p">,</span><span class="mi">8</span><span class="p">),</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="mi">4</span><span class="p">),</span> <span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="mi">6</span><span class="p">),</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="mi">4</span><span class="p">)],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
 
 <span class="n">x</span> <span class="o">=</span> <span class="n">a</span> <span class="o">*</span> <span class="p">(</span> <span class="n">A</span> <span class="o">@</span> <span class="n">b</span> <span class="p">)</span>
 <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mf">1e-12</span><span class="p">)</span>
 <span class="n">y</span> <span class="o">=</span> <span class="n">x</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">a</span>
 
 <span class="c1"># this is equivalent to</span>
-<span class="n">yf</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">full</span><span class="p">()</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">full</span><span class="p">()</span><span class="o">*</span><span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'ijklabcd,abcd-&gt;ijkl'</span><span class="p">,</span> <span class="n">A</span><span class="o">.</span><span class="n">full</span><span class="p">(),</span> <span class="n">b</span><span class="o">.</span><span class="n">full</span><span class="p">()))</span>
+<span class="n">yf</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">full</span><span class="p">()</span><span class="o">*</span><span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'ijklabcd,abcd-&gt;ijkl'</span><span class="p">,</span> <span class="n">A</span><span class="o">.</span><span class="n">full</span><span class="p">(),</span> <span class="n">b</span><span class="o">.</span><span class="n">full</span><span class="p">())</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">a</span><span class="o">.</span><span class="n">full</span><span class="p">()</span>
 </pre></div>
 </div>
 <p>During the process, the <code class="docutils literal notranslate"><span class="pre">round()</span></code> function has been used. This has the role of further compressing tensors by reducing the rank. After successive linear algebra operations, the rank will overshoot and therefore it is required to perform rounding operations.</p>

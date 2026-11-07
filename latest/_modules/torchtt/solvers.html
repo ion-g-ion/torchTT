@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>torchtt.solvers &mdash; torchTT development (main @ 378e796) documentation</title>
+  <title>torchtt.solvers &mdash; torchTT development (main @ b64218c) documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=ea95886d"></script>
+      <script src="../../_static/documentation_options.js?v=c86adbab"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -76,7 +76,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 378e796)</strong><br><a href="../../../stable/index.html">Stable release</a> · <a href="../../../latest/index.html">Development (main)</a></nav><h1>Source code for torchtt.solvers</h1><div class="highlight"><pre>
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ b64218c)</strong><br><a href="../../../stable/index.html">Stable release</a> · <a href="../../../latest/index.html">Development (main)</a></nav><h1>Source code for torchtt.solvers</h1><div class="highlight"><pre>
 <span></span><span class="sd">"""</span>
 <span class="sd">System solvers in the TT format, based on the alternating minimal energy (AMEn) method :cite:p:`dolgov2014alternating`.</span>
 
@@ -86,7 +86,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">torchtt</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">torchtt._decomposition</span><span class="w"> </span><span class="kn">import</span> <span class="n">QR</span><span class="p">,</span> <span class="n">SVD</span><span class="p">,</span> <span class="n">lr_orthogonal</span><span class="p">,</span> <span class="n">rl_orthogonal</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torchtt._decomposition</span><span class="w"> </span><span class="kn">import</span> <span class="n">QR</span><span class="p">,</span> <span class="n">SVD</span><span class="p">,</span> <span class="n">lr_orthogonal</span><span class="p">,</span> <span class="n">rl_orthogonal</span><span class="p">,</span> <span class="n">rank_chop</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">torchtt._iterative_solvers</span><span class="w"> </span><span class="kn">import</span> <span class="n">BiCGSTAB_reset</span><span class="p">,</span> <span class="n">gmres_restart</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">opt_einsum</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">oe</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.errors</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
@@ -275,26 +275,28 @@
 <span class="sd">        A (torchtt.TT): the system matrix in TT.</span>
 <span class="sd">        b (torchtt.TT): the right hand side in TT.</span>
 <span class="sd">        nswp (int, optional): number of sweeps. Defaults to 22.</span>
-<span class="sd">        x0 (torchtt.TT, optional): initial guess. In None is provided the initial guess is a ones tensor. Defaults to None.</span>
+<span class="sd">        x0 (torchtt.TT, optional): initial guess. If None is provided the initial guess is a ones tensor. Defaults to None.</span>
 <span class="sd">        eps (float, optional): relative residual. Defaults to 1e-10.</span>
-<span class="sd">        rmax (int, optional): maximum rank. Defaults to 100000.</span>
+<span class="sd">        rmax (int | list[int], optional): maximum rank, or one maximum per rank index. Defaults to 32768.</span>
 <span class="sd">        max_full (int, optional): local systems strictly smaller than this are solved</span>
 <span class="sd">            directly, larger ones with the iterative local solver. Defaults to 256.</span>
 <span class="sd">        kickrank (int, optional): rank enrichment. Defaults to 4.</span>
-<span class="sd">        kick2 (int, optional): [description]. Defaults to 0.</span>
-<span class="sd">        trunc_norm (str, optional): [description]. Defaults to 'res'.</span>
+<span class="sd">        kick2 (int, optional): number of random vectors added to the rank enrichment, in addition to the ``kickrank`` vectors computed from the residual. Defaults to 0.</span>
+<span class="sd">        trunc_norm (str, optional): truncation of the local solution. ``'res'`` keeps the smallest rank whose local residual stays below the tolerance, ``'fro'`` truncates the singular values in the Frobenius norm. Defaults to 'res'.</span>
 <span class="sd">        local_solver (int, optional): choose local iterative solver: 1 for GMRES (generalized minimal residual) and 2 for BiCGSTAB (biconjugate gradient stabilized). Defaults to 1.</span>
-<span class="sd">        local_iterations (int, optional): number of GMRES iterations for the local subproblems. Defaults to 40.</span>
-<span class="sd">        resets (int, optional): number of resets in the GMRES. Defaults to 2.</span>
-<span class="sd">        verbose (bool, optional): choose whether to display or not additional information during the runtime. Defaults to True.</span>
-<span class="sd">        preconditioner (string, optional): Choose the preconditioner for the local system. Possible values are None, 'c' (central Jacobi preconditioner). No preconditioner is used if None is provided. Defaults to None.</span>
-<span class="sd">        use_cpp (bool, optional): use the C++ implementation of AMEn if available. It has the same accuracy and is 3-7x faster on CPU, most for small TT cores. It supports only real tensors and ignores ``band_diagonal``, ``local_solver`` and ``trunc_norm``. Defaults to True.</span>
-<span class="sd">        band_diagonal (int, optional): the TT cores of the matrix habe band diagonal structure. Defaults to -1.</span>
+<span class="sd">        local_iterations (int, optional): number of iterations of the local solver: GMRES iterations between two restarts, or BiCGSTAB iterations. Defaults to 40.</span>
+<span class="sd">        resets (int, optional): number of GMRES restarts. Defaults to 2.</span>
+<span class="sd">        verbose (bool, optional): choose whether to display or not additional information during the runtime. Defaults to False.</span>
+<span class="sd">        preconditioner (string, optional): Choose the preconditioner for the local system. Possible values are None, 'c' (block Jacobi with one block per pair of rank indices) and 'r' (block Jacobi with one block per left rank index). No preconditioner is used if None is provided. Defaults to None.</span>
+<span class="sd">        use_cpp (bool, optional): use the C++ implementation of AMEn if available. It has the same accuracy and is 3-7x faster on CPU, most for small TT cores. It supports only real tensors, ``local_solver=1``, ``trunc_norm='res'``, ``band_diagonal=-1`` and an integer ``rmax``; other calls run the Python implementation. Defaults to True.</span>
+<span class="sd">        band_diagonal (int, optional): bandwidth of the TT cores of the matrix if they are band diagonal, -1 for dense cores. Defaults to -1.</span>
 <span class="sd">        use_single_precision (bool, optional): solve the local systems with the iterative solver in single precision. The Python implementation also computes the local residuals in single precision, the C++ implementation computes them in the precision of the input. Defaults to False.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        InvalidArguments: A and b must be TT instances.</span>
 <span class="sd">        InvalidArguments: Invalid preconditioner.</span>
+<span class="sd">        InvalidArguments: Invalid trunc_norm.</span>
+<span class="sd">        InvalidArguments: Solver not implemented.</span>
 <span class="sd">        IncompatibleTypes: A must be TT-matrix and b must be vector.</span>
 <span class="sd">        ShapeMismatch: A is not quadratic.</span>
 <span class="sd">        ShapeMismatch: Dimension mismatch.</span>
@@ -311,8 +313,16 @@
         <span class="k">raise</span> <span class="n">ShapeMismatch</span><span class="p">(</span><span class="s1">'A is not quadratic.'</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">A</span><span class="o">.</span><span class="n">N</span> <span class="o">!=</span> <span class="n">b</span><span class="o">.</span><span class="n">N</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">ShapeMismatch</span><span class="p">(</span><span class="s1">'Dimension mismatch.'</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">trunc_norm</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">'res'</span><span class="p">,</span> <span class="s1">'fro'</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span><span class="s2">"Invalid trunc_norm, it must be 'res' or 'fro'."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">local_solver</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="n">InvalidArguments</span><span class="p">(</span><span class="s1">'Solver not implemented.'</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">use_cpp</span> <span class="ow">and</span> <span class="n">_flag_use_cpp</span><span class="p">:</span>
+    <span class="c1"># the C++ implementation has none of the other options and supports only real tensors</span>
+    <span class="n">cpp_supported</span> <span class="o">=</span> <span class="n">local_solver</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">trunc_norm</span> <span class="o">==</span> <span class="s1">'res'</span> <span class="ow">and</span> <span class="n">band_diagonal</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rmax</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">))</span> <span class="ow">and</span> \
+        <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">is_complex</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">A</span><span class="o">.</span><span class="n">cores</span> <span class="o">+</span> <span class="n">b</span><span class="o">.</span><span class="n">cores</span> <span class="o">+</span> <span class="p">([]</span> <span class="k">if</span> <span class="n">x0</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">x0</span><span class="o">.</span><span class="n">cores</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">use_cpp</span> <span class="ow">and</span> <span class="n">_flag_use_cpp</span> <span class="ow">and</span> <span class="n">cpp_supported</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">x0</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">x_cores</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="n">x_R</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="nb">len</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">N</span><span class="p">))</span>
@@ -525,7 +535,7 @@
                         <span class="n">solution_now</span><span class="p">,</span> <span class="n">flag</span><span class="p">,</span> <span class="n">nit</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">drhs</span><span class="p">),</span> <span class="kc">True</span><span class="p">,</span> <span class="mi">0</span>
                     <span class="k">elif</span> <span class="n">local_solver</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
                         <span class="n">solution_now</span><span class="p">,</span> <span class="n">flag</span><span class="p">,</span> <span class="n">nit</span> <span class="o">=</span> <span class="n">gmres_restart</span><span class="p">(</span><span class="n">Op</span><span class="p">,</span> <span class="n">drhs</span><span class="p">,</span> <span class="n">previous_solution</span><span class="o">.</span><span class="n">to</span><span class="p">(</span>
-                            <span class="n">tn</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span><span class="o">*</span><span class="mi">0</span><span class="p">,</span> <span class="n">rhs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">local_iterations</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">eps_local</span><span class="p">,</span> <span class="n">resets</span><span class="p">)</span>
+                            <span class="n">tn</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span><span class="o">*</span><span class="mi">0</span><span class="p">,</span> <span class="n">rhs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">local_iterations</span><span class="p">,</span> <span class="n">eps_local</span><span class="p">,</span> <span class="n">resets</span><span class="p">)</span>
                     <span class="k">elif</span> <span class="n">local_solver</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
                         <span class="n">solution_now</span><span class="p">,</span> <span class="n">flag</span><span class="p">,</span> <span class="n">nit</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">BiCGSTAB_reset</span><span class="p">(</span>
                             <span class="n">Op</span><span class="p">,</span> <span class="n">drhs</span><span class="p">,</span> <span class="n">previous_solution</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">tn</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span><span class="o">*</span><span class="mi">0</span><span class="p">,</span> <span class="n">eps_local</span><span class="p">,</span> <span class="n">local_iterations</span><span class="p">)</span>
@@ -554,7 +564,7 @@
                         <span class="n">solution_now</span><span class="p">,</span> <span class="n">flag</span><span class="p">,</span> <span class="n">nit</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">drhs</span><span class="p">),</span> <span class="kc">True</span><span class="p">,</span> <span class="mi">0</span>
                     <span class="k">elif</span> <span class="n">local_solver</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
                         <span class="n">solution_now</span><span class="p">,</span> <span class="n">flag</span><span class="p">,</span> <span class="n">nit</span> <span class="o">=</span> <span class="n">gmres_restart</span><span class="p">(</span>
-                            <span class="n">Op</span><span class="p">,</span> <span class="n">drhs</span><span class="p">,</span> <span class="n">previous_solution</span><span class="o">*</span><span class="mi">0</span><span class="p">,</span> <span class="n">rhs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">local_iterations</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">eps_local</span><span class="p">,</span> <span class="n">resets</span><span class="p">)</span>
+                            <span class="n">Op</span><span class="p">,</span> <span class="n">drhs</span><span class="p">,</span> <span class="n">previous_solution</span><span class="o">*</span><span class="mi">0</span><span class="p">,</span> <span class="n">rhs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">local_iterations</span><span class="p">,</span> <span class="n">eps_local</span><span class="p">,</span> <span class="n">resets</span><span class="p">)</span>
                     <span class="k">elif</span> <span class="n">local_solver</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
                         <span class="n">solution_now</span><span class="p">,</span> <span class="n">flag</span><span class="p">,</span> <span class="n">nit</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">BiCGSTAB_reset</span><span class="p">(</span>
                             <span class="n">Op</span><span class="p">,</span> <span class="n">drhs</span><span class="p">,</span> <span class="n">previous_solution</span><span class="o">*</span><span class="mi">0</span><span class="p">,</span> <span class="n">eps_local</span><span class="p">,</span> <span class="n">local_iterations</span><span class="p">)</span>
@@ -598,7 +608,8 @@
             <span class="k">if</span> <span class="n">k</span> <span class="o">&lt;</span> <span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
                 <span class="n">u</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">SVD</span><span class="p">(</span><span class="n">solution_now</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">trunc_norm</span> <span class="o">==</span> <span class="s1">'fro'</span><span class="p">:</span>
-                    <span class="k">pass</span>
+                    <span class="n">s_np</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+                    <span class="n">r</span> <span class="o">=</span> <span class="nb">min</span><span class="p">([</span><span class="n">rank_chop</span><span class="p">(</span><span class="n">s_np</span><span class="p">,</span> <span class="n">real_tol</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">s_np</span><span class="p">)),</span> <span class="n">tn</span><span class="o">.</span><span class="n">numel</span><span class="p">(</span><span class="n">s</span><span class="p">),</span> <span class="n">rmax</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]])</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="c1"># search for a rank such that offeres small enough residuum</span>
                     <span class="c1"># TODO: binary search?</span>
@@ -615,7 +626,7 @@
                                 <span class="n">B</span><span class="nd">@tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">solution</span><span class="p">,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span><span class="o">-</span><span class="n">rhs</span><span class="p">)</span><span class="o">/</span><span class="n">norm_rhs</span>
                         <span class="k">else</span><span class="p">:</span>
                             <span class="n">res</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">Op</span><span class="o">.</span><span class="n">matvec</span><span class="p">(</span><span class="n">solution</span><span class="o">.</span><span class="n">to</span><span class="p">(</span>
-                                <span class="n">tn</span><span class="o">.</span><span class="n">float32</span> <span class="k">if</span> <span class="n">use_single_precision</span> <span class="k">else</span> <span class="n">dtype</span><span class="p">))</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span><span class="o">-</span><span class="n">rhs</span><span class="p">)</span><span class="o">/</span><span class="n">norm_rhs</span>
+                                <span class="n">tn</span><span class="o">.</span><span class="n">float32</span> <span class="k">if</span> <span class="n">use_single_precision</span> <span class="k">else</span> <span class="n">dtype</span><span class="p">),</span> <span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span><span class="o">-</span><span class="n">rhs</span><span class="p">)</span><span class="o">/</span><span class="n">norm_rhs</span>
                         <span class="c1"># On the final sweep the residual enrichment is disabled, so any</span>
                         <span class="c1"># accuracy given away here can no longer be recovered. Budget the</span>
                         <span class="c1"># truncation against what the local solve just achieved instead of</span>
@@ -749,7 +760,7 @@
 
 <span class="sd">    Args:</span>
 <span class="sd">        Phi_now (torch.tensor): The current phi. Has shape r1_k+1 x R_k+1 x r2_k+1</span>
-<span class="sd">        core_left (torch.tensor): the core on the left. Has shape r1_k x N_k x r1_k+1 </span>
+<span class="sd">        core_left (torch.tensor): the core on the left, it is conjugated. Has shape r1_k x N_k x r1_k+1 </span>
 <span class="sd">        core_A (torch.tensor): the core of the matrix. Has shape  R_k x N_k x N_k x R_k</span>
 <span class="sd">        core_right (torch.tensor): the core to the right. Has shape r2_k x N_k x r2_k+1 </span>
 
@@ -757,7 +768,7 @@
 <span class="sd">        torch.tensor: The following phi (backward). Has shape r1_k x R_k x r2_k</span>
 <span class="sd">    """</span>
     <span class="n">Phi</span> <span class="o">=</span> <span class="n">oe</span><span class="o">.</span><span class="n">contract</span><span class="p">(</span><span class="s1">'LSR,lML,sMNS,rNR-&gt;lsr'</span><span class="p">,</span> <span class="n">Phi_now</span><span class="p">,</span>
-                      <span class="n">core_left</span><span class="p">,</span> <span class="n">core_A</span><span class="p">,</span> <span class="n">core_right</span><span class="p">)</span>
+                      <span class="n">tn</span><span class="o">.</span><span class="n">conj</span><span class="p">(</span><span class="n">core_left</span><span class="p">),</span> <span class="n">core_A</span><span class="p">,</span> <span class="n">core_right</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">Phi</span>
 
 
@@ -767,7 +778,7 @@
 
 <span class="sd">    Args:</span>
 <span class="sd">        Phi_now (torch.tensor): The current phi. Has shape r1_k x R_k x r2_k</span>
-<span class="sd">        core_left (torch.tensor): the core on the left. Has shape r1_k x N_k x r1_k+1 </span>
+<span class="sd">        core_left (torch.tensor): the core on the left, it is conjugated. Has shape r1_k x N_k x r1_k+1 </span>
 <span class="sd">        core_A (torch.tensor): the core of the matrix. Has shape  R_k x N_k x N_k x R_k</span>
 <span class="sd">        core_right (torch.tensor): the core to the right. Has shape r2_k x N_k x r2_k+1 </span>
 
@@ -775,7 +786,7 @@
 <span class="sd">        torch.tensor: The following phi (backward). Has shape r1_k+1 x R_k+1 x r2_k+1</span>
 <span class="sd">    """</span>
     <span class="n">Phi_next</span> <span class="o">=</span> <span class="n">oe</span><span class="o">.</span><span class="n">contract</span><span class="p">(</span><span class="s1">'lsr,lML,sMNS,rNR-&gt;LSR'</span><span class="p">,</span>
-                           <span class="n">Phi_now</span><span class="p">,</span> <span class="n">core_left</span><span class="p">,</span> <span class="n">core_A</span><span class="p">,</span> <span class="n">core_right</span><span class="p">)</span>
+                           <span class="n">Phi_now</span><span class="p">,</span> <span class="n">tn</span><span class="o">.</span><span class="n">conj</span><span class="p">(</span><span class="n">core_left</span><span class="p">),</span> <span class="n">core_A</span><span class="p">,</span> <span class="n">core_right</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">Phi_next</span>
 
 
@@ -786,12 +797,12 @@
 <span class="sd">    Args:</span>
 <span class="sd">        Phi_now (torch.tensor): The current phi. Has shape rb_k+1 x r_k+1</span>
 <span class="sd">        core_b (torch.tensor): The current core of the rhs. Has shape rb_k x N_k x rb_k+1</span>
-<span class="sd">        core (torch.tensor): The current core. Has shape r_k x N_k x r_k+1</span>
+<span class="sd">        core (torch.tensor): The current core, it is conjugated. Has shape r_k x N_k x r_k+1</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        torch.tensor: The backward phi corresponding to the rhs. Has shape rb_k x r_k</span>
 <span class="sd">    """</span>
-    <span class="n">Phi</span> <span class="o">=</span> <span class="n">oe</span><span class="o">.</span><span class="n">contract</span><span class="p">(</span><span class="s1">'BR,bnB,rnR-&gt;br'</span><span class="p">,</span> <span class="n">Phi_now</span><span class="p">,</span> <span class="n">core_b</span><span class="p">,</span> <span class="n">core</span><span class="p">)</span>
+    <span class="n">Phi</span> <span class="o">=</span> <span class="n">oe</span><span class="o">.</span><span class="n">contract</span><span class="p">(</span><span class="s1">'BR,bnB,rnR-&gt;br'</span><span class="p">,</span> <span class="n">Phi_now</span><span class="p">,</span> <span class="n">core_b</span><span class="p">,</span> <span class="n">tn</span><span class="o">.</span><span class="n">conj</span><span class="p">(</span><span class="n">core</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">Phi</span>
 
 
@@ -802,12 +813,12 @@
 <span class="sd">    Args:</span>
 <span class="sd">        Phi_now (torch.tensor): The current phi. Has shape  rb_k x r_k</span>
 <span class="sd">        core_b (torch.tensor): The current core of the rhs. Has shape rb_k x N_k+1 x rb_k+1</span>
-<span class="sd">        core (torch.tensor): The current core. Has shape r_k x N_k x r_k+1</span>
+<span class="sd">        core (torch.tensor): The current core, it is conjugated. Has shape r_k x N_k x r_k+1</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        torch.tensor: The forward computer phi for the rhs. Has shape rb_k+1 x r_k+1</span>
 <span class="sd">    """</span>
-    <span class="n">Phi_next</span> <span class="o">=</span> <span class="n">oe</span><span class="o">.</span><span class="n">contract</span><span class="p">(</span><span class="s1">'br,bnB,rnR-&gt;BR'</span><span class="p">,</span> <span class="n">Phi_now</span><span class="p">,</span> <span class="n">core_rhs</span><span class="p">,</span> <span class="n">core</span><span class="p">)</span>
+    <span class="n">Phi_next</span> <span class="o">=</span> <span class="n">oe</span><span class="o">.</span><span class="n">contract</span><span class="p">(</span><span class="s1">'br,bnB,rnR-&gt;BR'</span><span class="p">,</span> <span class="n">Phi_now</span><span class="p">,</span> <span class="n">core_rhs</span><span class="p">,</span> <span class="n">tn</span><span class="o">.</span><span class="n">conj</span><span class="p">(</span><span class="n">core</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">Phi_next</span>
 </pre></div>
 

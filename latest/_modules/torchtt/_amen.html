@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>torchtt._amen &mdash; torchTT development (main @ 378e796) documentation</title>
+  <title>torchtt._amen &mdash; torchTT development (main @ b64218c) documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=ea95886d"></script>
+      <script src="../../_static/documentation_options.js?v=c86adbab"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -76,7 +76,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 378e796)</strong><br><a href="../../../stable/index.html">Stable release</a> · <a href="../../../latest/index.html">Development (main)</a></nav><h1>Source code for torchtt._amen</h1><div class="highlight"><pre>
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ b64218c)</strong><br><a href="../../../stable/index.html">Stable release</a> · <a href="../../../latest/index.html">Development (main)</a></nav><h1>Source code for torchtt._amen</h1><div class="highlight"><pre>
 <span></span><span class="sd">"""</span>
 <span class="sd">System solvers in the TT format.</span>
 
@@ -150,8 +150,8 @@
 <span class="sd">        eps (float, optional): relative residual. Defaults to 1e-10.</span>
 <span class="sd">        rmax (int, optional): maximum rank. Defaults to 1024.</span>
 <span class="sd">        kickrank (int, optional): rank enrichment. Defaults to 4.</span>
-<span class="sd">        kick2 (int, optional): [description]. Defaults to 0.</span>
-<span class="sd">        verbose (bool, optional): choose whether to display or not additional information during the runtime. Defaults to True.</span>
+<span class="sd">        kick2 (int, optional): number of random vectors added to the rank enrichment, in addition to the ``kickrank`` vectors computed from the residual. Defaults to 0.</span>
+<span class="sd">        verbose (bool, optional): choose whether to display or not additional information during the runtime. Defaults to False.</span>
 <span class="sd">        use_cpp (bool, optional): not used (there is no C++ implementation). Defaults to True.</span>
 
 <span class="sd">    Raises:</span>
@@ -185,7 +185,7 @@
 <span class="sd">        eps (float, optional): realtive tolerance. Defaults to 1e-10.</span>
 <span class="sd">        rmax (int, optional): maximum rank. Defaults to 1024.</span>
 <span class="sd">        kickrank (int, optional): kickrank. Defaults to 4.</span>
-<span class="sd">        kick2 (int, optional): kick2. Defaults to 0.</span>
+<span class="sd">        kick2 (int, optional): number of random vectors added to the rank enrichment, in addition to the ``kickrank`` vectors computed from the residual. Defaults to 0.</span>
 <span class="sd">        verbose (bool, optional): show debug info. Defaults to False.</span>
 
 <span class="sd">    Returns:</span>

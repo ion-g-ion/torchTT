@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>torchtt package &mdash; torchTT development (main @ 378e796) documentation</title>
+  <title>torchtt package &mdash; torchTT development (main @ b64218c) documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=ea95886d"></script>
+      <script src="../_static/documentation_options.js?v=c86adbab"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -182,7 +182,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ 378e796)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="torchtt-package">
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT development (main @ b64218c)</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="torchtt-package">
 <h1>torchtt package<a class="headerlink" href="#torchtt-package" title="Link to this heading"></a></h1>
 <section id="subpackages">
 <h2>Subpackages<a class="headerlink" href="#subpackages" title="Link to this heading"></a></h2>
@@ -1348,21 +1348,21 @@ det_jac (torch.Tensor or float): Determinant of the Jacobian.</p>
 <li><p><strong>A</strong> (<a class="reference internal" href="#torchtt.TT" title="torchtt.TT"><em>torchtt.TT</em></a>) – the system matrix in TT.</p></li>
 <li><p><strong>b</strong> (<a class="reference internal" href="#torchtt.TT" title="torchtt.TT"><em>torchtt.TT</em></a>) – the right hand side in TT.</p></li>
 <li><p><strong>nswp</strong> (<em>int</em><em>, </em><em>optional</em>) – number of sweeps. Defaults to 22.</p></li>
-<li><p><strong>x0</strong> (<a class="reference internal" href="#torchtt.TT" title="torchtt.TT"><em>torchtt.TT</em></a><em>, </em><em>optional</em>) – initial guess. In None is provided the initial guess is a ones tensor. Defaults to None.</p></li>
+<li><p><strong>x0</strong> (<a class="reference internal" href="#torchtt.TT" title="torchtt.TT"><em>torchtt.TT</em></a><em>, </em><em>optional</em>) – initial guess. If None is provided the initial guess is a ones tensor. Defaults to None.</p></li>
 <li><p><strong>eps</strong> (<em>float</em><em>, </em><em>optional</em>) – relative residual. Defaults to 1e-10.</p></li>
-<li><p><strong>rmax</strong> (<em>int</em><em>, </em><em>optional</em>) – maximum rank. Defaults to 100000.</p></li>
+<li><p><strong>rmax</strong> (<em>int</em><em> | </em><em>list</em><em>[</em><em>int</em><em>]</em><em>, </em><em>optional</em>) – maximum rank, or one maximum per rank index. Defaults to 32768.</p></li>
 <li><p><strong>max_full</strong> (<em>int</em><em>, </em><em>optional</em>) – local systems strictly smaller than this are solved
 directly, larger ones with the iterative local solver. Defaults to 256.</p></li>
 <li><p><strong>kickrank</strong> (<em>int</em><em>, </em><em>optional</em>) – rank enrichment. Defaults to 4.</p></li>
-<li><p><strong>kick2</strong> (<em>int</em><em>, </em><em>optional</em>) – [description]. Defaults to 0.</p></li>
-<li><p><strong>trunc_norm</strong> (<em>str</em><em>, </em><em>optional</em>) – [description]. Defaults to ‘res’.</p></li>
+<li><p><strong>kick2</strong> (<em>int</em><em>, </em><em>optional</em>) – number of random vectors added to the rank enrichment, in addition to the <code class="docutils literal notranslate"><span class="pre">kickrank</span></code> vectors computed from the residual. Defaults to 0.</p></li>
+<li><p><strong>trunc_norm</strong> (<em>str</em><em>, </em><em>optional</em>) – truncation of the local solution. <code class="docutils literal notranslate"><span class="pre">'res'</span></code> keeps the smallest rank whose local residual stays below the tolerance, <code class="docutils literal notranslate"><span class="pre">'fro'</span></code> truncates the singular values in the Frobenius norm. Defaults to ‘res’.</p></li>
 <li><p><strong>local_solver</strong> (<em>int</em><em>, </em><em>optional</em>) – choose local iterative solver: 1 for GMRES (generalized minimal residual) and 2 for BiCGSTAB (biconjugate gradient stabilized). Defaults to 1.</p></li>
-<li><p><strong>local_iterations</strong> (<em>int</em><em>, </em><em>optional</em>) – number of GMRES iterations for the local subproblems. Defaults to 40.</p></li>
-<li><p><strong>resets</strong> (<em>int</em><em>, </em><em>optional</em>) – number of resets in the GMRES. Defaults to 2.</p></li>
-<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – choose whether to display or not additional information during the runtime. Defaults to True.</p></li>
-<li><p><strong>preconditioner</strong> (<em>string</em><em>, </em><em>optional</em>) – Choose the preconditioner for the local system. Possible values are None, ‘c’ (central Jacobi preconditioner). No preconditioner is used if None is provided. Defaults to None.</p></li>
-<li><p><strong>use_cpp</strong> (<em>bool</em><em>, </em><em>optional</em>) – use the C++ implementation of AMEn if available. It has the same accuracy and is 3-7x faster on CPU, most for small TT cores. It supports only real tensors and ignores <code class="docutils literal notranslate"><span class="pre">band_diagonal</span></code>, <code class="docutils literal notranslate"><span class="pre">local_solver</span></code> and <code class="docutils literal notranslate"><span class="pre">trunc_norm</span></code>. Defaults to True.</p></li>
-<li><p><strong>band_diagonal</strong> (<em>int</em><em>, </em><em>optional</em>) – the TT cores of the matrix habe band diagonal structure. Defaults to -1.</p></li>
+<li><p><strong>local_iterations</strong> (<em>int</em><em>, </em><em>optional</em>) – number of iterations of the local solver: GMRES iterations between two restarts, or BiCGSTAB iterations. Defaults to 40.</p></li>
+<li><p><strong>resets</strong> (<em>int</em><em>, </em><em>optional</em>) – number of GMRES restarts. Defaults to 2.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – choose whether to display or not additional information during the runtime. Defaults to False.</p></li>
+<li><p><strong>preconditioner</strong> (<em>string</em><em>, </em><em>optional</em>) – Choose the preconditioner for the local system. Possible values are None, ‘c’ (block Jacobi with one block per pair of rank indices) and ‘r’ (block Jacobi with one block per left rank index). No preconditioner is used if None is provided. Defaults to None.</p></li>
+<li><p><strong>use_cpp</strong> (<em>bool</em><em>, </em><em>optional</em>) – use the C++ implementation of AMEn if available. It has the same accuracy and is 3-7x faster on CPU, most for small TT cores. It supports only real tensors, <code class="docutils literal notranslate"><span class="pre">local_solver=1</span></code>, <code class="docutils literal notranslate"><span class="pre">trunc_norm='res'</span></code>, <code class="docutils literal notranslate"><span class="pre">band_diagonal=-1</span></code> and an integer <code class="docutils literal notranslate"><span class="pre">rmax</span></code>; other calls run the Python implementation. Defaults to True.</p></li>
+<li><p><strong>band_diagonal</strong> (<em>int</em><em>, </em><em>optional</em>) – bandwidth of the TT cores of the matrix if they are band diagonal, -1 for dense cores. Defaults to -1.</p></li>
 <li><p><strong>use_single_precision</strong> (<em>bool</em><em>, </em><em>optional</em>) – solve the local systems with the iterative solver in single precision. The Python implementation also computes the local residuals in single precision, the C++ implementation computes them in the precision of the input. Defaults to False.</p></li>
 </ul>
 </dd>
@@ -1370,6 +1370,8 @@ directly, larger ones with the iterative local solver. Defaults to 256.</p></li>
 <dd class="field-even"><ul class="simple">
 <li><p><a class="reference internal" href="#torchtt.errors.InvalidArguments" title="torchtt.errors.InvalidArguments"><strong>InvalidArguments</strong></a> – A and b must be TT instances.</p></li>
 <li><p><a class="reference internal" href="#torchtt.errors.InvalidArguments" title="torchtt.errors.InvalidArguments"><strong>InvalidArguments</strong></a> – Invalid preconditioner.</p></li>
+<li><p><a class="reference internal" href="#torchtt.errors.InvalidArguments" title="torchtt.errors.InvalidArguments"><strong>InvalidArguments</strong></a> – Invalid trunc_norm.</p></li>
+<li><p><a class="reference internal" href="#torchtt.errors.InvalidArguments" title="torchtt.errors.InvalidArguments"><strong>InvalidArguments</strong></a> – Solver not implemented.</p></li>
 <li><p><a class="reference internal" href="#torchtt.errors.IncompatibleTypes" title="torchtt.errors.IncompatibleTypes"><strong>IncompatibleTypes</strong></a> – A must be TT-matrix and b must be vector.</p></li>
 <li><p><a class="reference internal" href="#torchtt.errors.ShapeMismatch" title="torchtt.errors.ShapeMismatch"><strong>ShapeMismatch</strong></a> – A is not quadratic.</p></li>
 <li><p><a class="reference internal" href="#torchtt.errors.ShapeMismatch" title="torchtt.errors.ShapeMismatch"><strong>ShapeMismatch</strong></a> – Dimension mismatch.</p></li>
@@ -1898,7 +1900,7 @@ print(a.sum([0,1,2,3,4]))</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>device</strong> (<em>torch.device</em><em>, </em><em>optional</em>) – The desired device. If none is provided, the device is the CPU. Defaults to None.</p></li>
+<li><p><strong>device</strong> (<em>torch.device</em><em>, </em><em>optional</em>) – The desired device. If None is provided, the device is not changed. Defaults to None.</p></li>
 <li><p><strong>dtype</strong> (<em>torch.dtype</em><em>, </em><em>optional</em>) – The desired dtype (torch.float64, torch.float32,…). If None is provided the dtype is not changed. Defaults to None.</p></li>
 </ul>
 </dd>
@@ -1982,7 +1984,7 @@ Suited when the operators have high ranks, but the result is expected to be low 
 <li><p><strong>eps</strong> (<em>float</em><em>, </em><em>optional</em>) – realtive tolerance. Defaults to 1e-10.</p></li>
 <li><p><strong>rmax</strong> (<em>int</em><em>, </em><em>optional</em>) – maximum rank. Defaults to 1024.</p></li>
 <li><p><strong>kickrank</strong> (<em>int</em><em>, </em><em>optional</em>) – kickrank. Defaults to 4.</p></li>
-<li><p><strong>kick2</strong> (<em>int</em><em>, </em><em>optional</em>) – kick2. Defaults to 0.</p></li>
+<li><p><strong>kick2</strong> (<em>int</em><em>, </em><em>optional</em>) – number of random vectors added to the rank enrichment, in addition to the <code class="docutils literal notranslate"><span class="pre">kickrank</span></code> vectors computed from the residual. Defaults to 0.</p></li>
 <li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – show debug info. Defaults to False.</p></li>
 </ul>
 </dd>
@@ -2013,8 +2015,8 @@ Suited when the output is expected to be low rank.</p>
 <li><p><strong>eps</strong> (<em>float</em><em>, </em><em>optional</em>) – relative residual. Defaults to 1e-10.</p></li>
 <li><p><strong>rmax</strong> (<em>int</em><em>, </em><em>optional</em>) – maximum rank. Defaults to 1024.</p></li>
 <li><p><strong>kickrank</strong> (<em>int</em><em>, </em><em>optional</em>) – rank enrichment. Defaults to 4.</p></li>
-<li><p><strong>kick2</strong> (<em>int</em><em>, </em><em>optional</em>) – [description]. Defaults to 0.</p></li>
-<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – choose whether to display or not additional information during the runtime. Defaults to True.</p></li>
+<li><p><strong>kick2</strong> (<em>int</em><em>, </em><em>optional</em>) – number of random vectors added to the rank enrichment, in addition to the <code class="docutils literal notranslate"><span class="pre">kickrank</span></code> vectors computed from the residual. Defaults to 0.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – choose whether to display or not additional information during the runtime. Defaults to False.</p></li>
 <li><p><strong>use_cpp</strong> (<em>bool</em><em>, </em><em>optional</em>) – not used (there is no C++ implementation). Defaults to True.</p></li>
 </ul>
 </dd>
@@ -2694,7 +2696,7 @@ Works like a bubble sort for both TT tensors and TT matrices.</p>
 <dt class="sig sig-object py" id="torchtt.randn">
 <span class="sig-prename descclassname"><span class="pre">torchtt.</span></span><span class="sig-name descname"><span class="pre">randn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">R</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">torch.float64</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/torchtt/_extras.html#randn"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#torchtt.randn" title="Link to this definition"></a></dt>
 <dd><p>A torchtt.TT tensor of shape N = [N1 x … x Nd] and rank R is returned.
-The entries of the fuill tensor are alomst normal distributed with the variance var.</p>
+The entries of the full tensor are almost normally distributed with the variance var.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
