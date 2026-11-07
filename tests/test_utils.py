@@ -138,3 +138,16 @@ def test_shape_conversion(M, N, shape):
 def test_cpp_available():
     assert isinstance(tntt.cpp_enabled(), bool)
     assert tntt.cpp.cpp_avaible() == tntt.cpp_enabled() == tntt.solvers.cpp_enabled()
+
+
+@pytest.mark.parametrize("d, r, check_norm", [(16, 30, True), (16, 31, True), (16, 32, True), (40, 4, False)])
+def test_randn_large_ranks(d, r, check_norm):
+    # The product of the ranks does not fit in int64 for these sizes.
+    tn.manual_seed(0)
+
+    x = tntt.randn([2]*d, [1] + [r]*(d-1) + [1])
+
+    assert all(tn.isfinite(c).all() for c in x.cores)
+    if check_norm:
+        # E[||x||^2] = var * numel. Only the large ranks keep the fluctuations small.
+        assert 0.1 < x.norm()**2 / 2**d < 10

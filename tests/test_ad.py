@@ -107,6 +107,16 @@ def test_grad_selected_cores(shape, indices):
     assert all(tn.allclose(c.grad, 2*r, rtol=1e-12, atol=1e-12) for c, r in zip(cores, refs))
 
 
+def test_grad_scalar_division():
+    x = torchtt.randn([3, 4, 5], [1, 2, 3, 1])
+    torchtt.grad.watch(x)
+    refs = tn.autograd.grad((x.full()/2).square().sum(), x.cores)
+
+    grads = torchtt.grad.grad((x/2.0).full().square().sum(), x)
+
+    assert all(tn.allclose(g, r, rtol=1e-12, atol=1e-12) for g, r in zip(grads, refs))
+
+
 @pytest.mark.parametrize("all_in_one", [False, True])
 def test_grad_list(all_in_one):
     A = torchtt.randn([(2, 3), (5, 4)], [1, 2, 1])

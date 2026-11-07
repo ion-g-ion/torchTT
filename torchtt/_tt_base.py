@@ -265,7 +265,7 @@ class TT():
         Moves the TT instance to the given device with the given dtype.
 
         Args:
-            device (torch.device, optional): The desired device. If none is provided, the device is the CPU. Defaults to None.
+            device (torch.device, optional): The desired device. If None is provided, the device is not changed. Defaults to None.
             dtype (torch.dtype, optional): The desired dtype (torch.float64, torch.float32,...). If None is provided the dtype is not changed. Defaults to None.
         """
         return TT([c.to(device=device, dtype=dtype) for c in self.cores])
@@ -438,14 +438,14 @@ class TT():
                     pad2 = (0 if i == len(
                         self.__N)-1 else self.__R[i+1], 0, 0, 0, 0, 0, 0 if i == 0 else self.R[i], 0)
                     othr = tn.ones(
-                        [1, 1, 1, 1], dtype=self.cores[i].dtype) * (other if i == 0 else 1)
+                        [1, 1, 1, 1], dtype=self.cores[i].dtype, device=self.cores[i].device) * (other if i == 0 else 1)
                 else:
                     pad1 = (0, 0 if i == len(self.__N)-1 else 1,
                             0, 0, 0, 0 if i == 0 else 1)
                     pad2 = (0 if i == len(
                         self.__N)-1 else self.__R[i+1], 0, 0, 0, 0 if i == 0 else self.R[i], 0)
                     othr = tn.ones(
-                        [1, 1, 1], dtype=self.cores[i].dtype) * (other if i == 0 else 1)
+                        [1, 1, 1], dtype=self.cores[i].dtype, device=self.cores[i].device) * (other if i == 0 else 1)
 
                 cores.append(tnf.pad(self.cores[i], pad1)+tnf.pad(othr, pad2))
 
@@ -569,14 +569,14 @@ class TT():
                     pad2 = (0 if i == len(
                         self.__N)-1 else self.__R[i+1], 0, 0, 0, 0, 0, 0 if i == 0 else self.R[i], 0)
                     othr = tn.ones(
-                        [1, 1, 1, 1], dtype=self.cores[i].dtype) * (-other if i == 0 else 1)
+                        [1, 1, 1, 1], dtype=self.cores[i].dtype, device=self.cores[i].device) * (-other if i == 0 else 1)
                 else:
                     pad1 = (0, 0 if i == len(self.__N)-1 else 1,
                             0, 0, 0, 0 if i == 0 else 1)
                     pad2 = (0 if i == len(
                         self.__N)-1 else self.__R[i+1], 0, 0, 0, 0 if i == 0 else self.R[i], 0)
                     othr = tn.ones(
-                        [1, 1, 1], dtype=self.cores[i].dtype) * (-other if i == 0 else 1)
+                        [1, 1, 1], dtype=self.cores[i].dtype, device=self.cores[i].device) * (-other if i == 0 else 1)
                 cores.append(tnf.pad(self.cores[i], pad1)+tnf.pad(othr, pad2))
             result = TT(cores)
 
@@ -675,7 +675,7 @@ class TT():
             InvalidArguments: Second operand must be of type: torchtt.TT, float, int of torch.tensor.
 
         Returns:
-            torchtt.TT: [description]
+            torchtt.TT: the result.
         """
 
         return self.__mul__(other)
@@ -967,7 +967,7 @@ class TT():
         if isinstance(other, int) or isinstance(other, float) or tn.is_tensor(other):
             # divide by a scalar
             cores_new = self.cores.copy()
-            cores_new[0] /= other
+            cores_new[0] = cores_new[0] / other
             result = TT(cores_new)
         elif isinstance(other, TT):
             if self.__is_ttm != other.is_ttm:

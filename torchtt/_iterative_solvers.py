@@ -14,50 +14,67 @@ def BiCGSTAB(Op, rhs, x0, eps=1e-6, nmax = 40):
 def BiCGSTAB_reset(Op,rhs,x0,eps=1e-6,nmax=40):
     """
     BiCGSTAB solver.
+    The inner products conjugate their first argument, so complex systems are supported.
+    `eps` is relative to the norm of `rhs`, as for `gmres`.
     """ 
     # initial residual
     r = rhs - Op.matvec(x0)
     
+    norm_rhs = tn.linalg.norm(rhs)
+    r_nn = tn.linalg.norm(r)
+    # Degenerate systems. Both exits below are unsatisfiable for a zero rhs, and
+    # the search direction cannot be seeded from a residual that is already zero.
+    if norm_rhs == 0:
+        return tn.zeros_like(x0), True, 0, tn.zeros_like(norm_rhs)
+    if r_nn <= eps * norm_rhs:
+        return x0, True, 0, r_nn/norm_rhs
+    
     # choose rop
-    r0p = tn.rand(r.shape,dtype = x0.dtype)
-    while tn.dot(r.squeeze(),r0p.squeeze()) == 0:
-        r0p = tn.rand(r.shape,dtype = x0.dtype)
+    r0p = tn.rand(r.shape,dtype = x0.dtype, device = x0.device)
+    while tn.vdot(r0p.squeeze(),r.squeeze()) == 0:
+        r0p = tn.rand(r.shape,dtype = x0.dtype, device = x0.device)
         
     p = r
     x = x0
     
-    norm_rhs = tn.linalg.norm(rhs)
-    r_nn = tn.linalg.norm(r)
     nit = 0 
+    converged = False
     for k in range(nmax):
         nit += 1
         Ap = Op.matvec(p)
-        alpha = tn.dot(r.squeeze(),r0p.squeeze()) / tn.dot(Ap.squeeze(),r0p.squeeze())
+        alpha = tn.vdot(r0p.squeeze(),r.squeeze()) / tn.vdot(r0p.squeeze(),Ap.squeeze())
         s = r - alpha * Ap
-        if tn.linalg.norm(s)<eps:
+        # Both exits test the same relative criterion. An absolute test here
+        # stops early whenever ||rhs|| < 1, which is the common case for the
+        # local systems of AMEn, and returns flag=True for a solution that is
+        # orders of magnitude short of the requested tolerance.
+        if tn.linalg.norm(s) < eps * norm_rhs:
             x_n = x+alpha*p
+            r_nn = tn.linalg.norm(s)
+            converged = True
             break
         
         As = Op.matvec(s)
-        omega = tn.dot(As.squeeze(),s.squeeze()) / tn.dot(As.squeeze(),As.squeeze())
+        omega = tn.vdot(As.squeeze(),s.squeeze()) / tn.vdot(As.squeeze(),As.squeeze())
         
         x_n = x + alpha*p + omega*s
         r_n = s - omega*As
         r_nn = tn.linalg.norm(r_n)
         if r_nn < eps * norm_rhs:
+            converged = True
             break
         
-        beta = (alpha/omega)*tn.dot(r_n.squeeze(),r0p.squeeze())/tn.dot(r.squeeze(),r0p.squeeze())
+        beta = (alpha/omega)*tn.vdot(r0p.squeeze(),r_n.squeeze())/tn.vdot(r0p.squeeze(),r.squeeze())
         p = r_n+beta*(p-omega*Ap)
         
-        if abs(tn.dot(r_n.squeeze(),r0p.squeeze())) < 1e-6:
+        if abs(tn.vdot(r0p.squeeze(),r_n.squeeze())) < 1e-6:
             r0p = r_n
             p_n = r_n
         # updates
         r = r_n
         x = x_n
         
-    flag = False if k==nmax else True
+    flag = converged
     
     relres = r_nn/norm_rhs 
     
@@ -112,7 +129,7 @@ def gmres( LinOp, b, x0, N, max_iterations, threshold):
         
         tme = datetime.datetime.now()
         for i in range(k+1):
-            H[i,k] = tn.dot(q.squeeze(),Q[:,i])
+            H[i,k] = tn.vdot(Q[:,i],q.squeeze())
             q = q - tn.reshape(H[i,k]*Q[:,i],[-1,1])
         h = tn.linalg.norm(q)
         
@@ -130,7 +147,7 @@ def gmres( LinOp, b, x0, N, max_iterations, threshold):
         tme = datetime.datetime.now() - tme
         
         beta[k+1] = -sn[k]*beta[k]
-        beta[k] = cs[k]*beta[k]
+        beta[k] = tn.conj(cs[k])*beta[k]
         error = tn.abs(beta[k+1]) / b_norm
         err.append(error)
         
@@ -145,23 +162,24 @@ def gmres( LinOp, b, x0, N, max_iterations, threshold):
   
 
 def apply_givens_rotation(h, cs, sn, k):
+    # The rotation with c and s is [[conj(c), conj(s)], [-s, c]]. It is unitary for complex c and s.
     dev = h.device
     h = h.cpu().numpy()
     cs = cs.cpu().numpy()
     sn = sn.cpu().numpy()
     for i in range(k-1):
-        temp   =  cs[i]* h[i] + sn[i] * h[i+1]
+        temp   =  np.conj(cs[i])* h[i] + np.conj(sn[i]) * h[i+1]
         h[i+1] = -sn[i] * h[i] + cs[i] * h[i+1]
         h[i]   = temp
   
     cs_k, sn_k = givens_rotation(h[k-1], h[k])
 
  
-    h[k-1] = cs_k * h[k-1] + sn_k * h[k]
+    h[k-1] = np.conj(cs_k) * h[k-1] + np.conj(sn_k) * h[k]
     h[k] = 0.0
     return tn.tensor(h).to(dev), tn.tensor(cs_k).to(dev), tn.tensor(sn_k).to(dev)
 
 def givens_rotation(v1,v2):
    
-    den = np.sqrt(v1**2+v2**2)
+    den = np.sqrt(np.abs(v1)**2+np.abs(v2)**2)
     return v1/den, v2/den

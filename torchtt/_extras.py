@@ -305,7 +305,7 @@ def random(N, R, dtype=tn.float64, device=None):
 def randn(N, R, var=1.0, dtype=tn.float64, device=None):
     """
     A torchtt.TT tensor of shape N = [N1 x ... x Nd] and rank R is returned. 
-    The entries of the fuill tensor are alomst normal distributed with the variance var.
+    The entries of the full tensor are almost normally distributed with the variance var.
 
     Args:
         N (list[int]): the shape.
@@ -319,12 +319,12 @@ def randn(N, R, var=1.0, dtype=tn.float64, device=None):
     """
 
     d = len(N)
-    v1 = var / np.prod(R)
-    v = v1**(1/d)
+    # the core entries have the standard deviation (var / prod(R))**(1/(2d)), computed in log space because prod(R) overflows int64
+    std = math.exp(0.5 * (math.log(var) - math.fsum(math.log(r) for r in R)) / d)
     cores = [None] * d
     for i in range(d):
         cores[i] = tn.randn([R[i], N[i][0], N[i][1], R[i+1]] if isinstance(
-            N[i], tuple) else [R[i], N[i], R[i+1]], dtype=dtype, device=device)*np.sqrt(v)
+            N[i], tuple) else [R[i], N[i], R[i+1]], dtype=dtype, device=device)*std
 
     return torchtt._tt_base.TT(cores)
 

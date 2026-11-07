@@ -19,27 +19,27 @@ import torchtt
 # tens is a torch.Tensor 
 # tens = ...
 
-tt = torchtt.TT(tens, 1e-10)
+tt = torchtt.TT(tens, eps=1e-10)
 ```
 The rank of the object `tt` can be inspected using the `print()` function or can accessed using `tt.R`. The tensor can be converted back to the full format using `tt.full()`.
 The TT class implements tensors in the TT format as well as tensors operators in TT format. Once in the TT format, linear algebra operations (`+`, `-`, `*`, `@`, `/`) can be performed without resorting to the full format. The format and the operations is similar to the one implemented in `torch`.
 As an example, we have the following code where 3 tensors in the TT format are involved in algebra operations:
 
 ```
-import torchTT
+import torchtt
 import torch
 
 # generate 2 random tensors and a tensor matrix
 a = torchtt.randn([4,5,6,7],[1,2,3,4,1])
 b = torchtt.randn([8,4,6,4],[1,2,5,2,1])
-A = torchtt.randn([(4,8), (5,4) ,(6,6) (7,4)],[1,2,3,2,1])
+A = torchtt.randn([(4,8), (5,4), (6,6), (7,4)],[1,2,3,2,1])
 
 x = a * ( A @ b )
 x = x.round(1e-12)
 y = x-2*a
 
 # this is equivalent to 
-yf = x.full() - 2*(a.full()*torch.einsum('ijklabcd,abcd->ijkl', A.full(), b.full()))
+yf = a.full()*torch.einsum('ijklabcd,abcd->ijkl', A.full(), b.full()) - 2*a.full()
 ```
 During the process, the `round()` function has been used. This has the role of further compressing tensors by reducing the rank. After successive linear algebra operations, the rank will overshoot and therefore it is required to perform rounding operations.
 

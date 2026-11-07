@@ -11,6 +11,11 @@ def err_rel(t, ref): return (tn.linalg.norm(t-ref).numpy() / tn.linalg.norm(ref)
                              if tn.linalg.norm(ref).numpy() > 0 else tn.linalg.norm(t-ref).numpy()) if ref.shape == t.shape else np.inf
 
 
+def same(x, ref):
+    """Check that an operation left its TT operand equal to the full tensor ref computed before."""
+    return tn.equal(x.full(), ref)
+
+
 parameters = [tn.float64, tn.complex128]
 
 @pytest.mark.parametrize("dtype", parameters)
@@ -37,14 +42,18 @@ def test_add(dtype):
 
     assert err_rel(w.full(), W) < 1e-14, 'Addition error 1'
     assert err_rel(t.full(), T) < 1e-14, 'Addition error 2'
+    assert same(x, X) and same(y, Y) and same(z, Z), 'Addition changed an operand.'
 
     M = tntt.random([(5, 6), (7, 8), (9, 10)], [1, 5, 5, 1])
     P = tntt.random([(5, 6), (7, 8), (9, 10)], [1, 2, 20, 1])
 
+    Mr, Pr = M.full(), P.full()
+
     Q = M+P+P+M
-    Qr = M.full()+P.full()+P.full()+M.full()
+    Qr = Mr+Pr+Pr+Mr
 
     assert err_rel(Q.full(), Qr) < 1e-14, 'Addition error 2: TT-matrix'
+    assert same(M, Mr) and same(P, Pr), 'Addition changed an operand: TT-matrix.'
 
     # test broadcasting
 
@@ -57,6 +66,7 @@ def test_add(dtype):
     z = x+y
     zr = xr+yr
     assert err_rel(z.full(), zr) < 1e-13, "Addition broadcasting error 1: TT-tensors."
+    assert same(x, xr) and same(y, yr), "Addition broadcasting changed an operand."
 
     x = tntt.random([2, 3, 4, 5, 6], [1, 2, 4, 8, 4, 1],
                     dtype=dtype)
@@ -67,6 +77,7 @@ def test_add(dtype):
     z = x+y
     zr = xr+yr
     assert err_rel(z.full(), zr) < 1e-13, "Addition broadcasting error 2: TT-tensors."
+    assert same(x, xr) and same(y, yr), "Addition broadcasting changed an operand."
 
     x = tntt.random([2, 3, 4, 5, 6], [1, 2, 4, 8, 4, 1],
                     dtype=dtype)
@@ -77,6 +88,7 @@ def test_add(dtype):
     z = x+y
     zr = xr+yr
     assert err_rel(z.full(), zr) < 1e-13, "Addition broadcasting error 3: TT-tensors."
+    assert same(x, xr) and same(y, yr), "Addition broadcasting changed an operand."
 
     x = tntt.random([2, 3, 4, 5, 6], [1, 2, 4, 8, 4, 1],
                     dtype=dtype)
@@ -88,6 +100,7 @@ def test_add(dtype):
     z = x+y
     zr = xr+yr
     assert err_rel(z.full(), zr) < 1e-13, "Addition broadcasting error 4: TT-tensors."
+    assert same(x, xr) and same(y, yr), "Addition broadcasting changed an operand."
 
 @pytest.mark.parametrize("dtype", parameters)
 def test_sub(dtype):
@@ -113,14 +126,18 @@ def test_sub(dtype):
 
     assert err_rel(w.full(), W) < 1e-14, 'Subtraction error 1'
     assert err_rel(t.full(), T) < 1e-14, 'Subtraction error 2'
+    assert same(x, X) and same(y, Y) and same(z, Z), 'Subtraction changed an operand.'
 
     M = tntt.random([(5, 6), (7, 8), (9, 10)], [1, 5, 5, 1])
     P = tntt.random([(5, 6), (7, 8), (9, 10)], [1, 2, 20, 1])
 
+    Mr, Pr = M.full(), P.full()
+
     Q = -M+P-P-M
-    Qr = -M.full()+P.full()-P.full()-M.full()
+    Qr = -Mr+Pr-Pr-Mr
 
     assert err_rel(Q.full(), Qr) < 1e-14, 'Subtraction error 2: TT-matrix'
+    assert same(M, Mr) and same(P, Pr), 'Subtraction changed an operand: TT-matrix.'
 
     # test broadcasting
 
@@ -133,6 +150,7 @@ def test_sub(dtype):
     z = x-y
     zr = xr-yr
     assert err_rel(z.full(), zr) < 1e-13, "Subtraction broadcasting error 1: TT-tensors."
+    assert same(x, xr) and same(y, yr), "Subtraction broadcasting changed an operand."
 
     x = tntt.random([2, 3, 4, 5, 6], [1, 2, 4, 8, 4, 1],
                     dtype=dtype)
@@ -143,6 +161,7 @@ def test_sub(dtype):
     z = x-y
     zr = xr-yr
     assert err_rel(z.full(), zr) < 1e-13, "Subtraction broadcasting error 2: TT-tensors."
+    assert same(x, xr) and same(y, yr), "Subtraction broadcasting changed an operand."
 
     x = tntt.random([2, 3, 4, 5, 6], [1, 2, 4, 8, 4, 1],
                     dtype=dtype)
@@ -153,6 +172,7 @@ def test_sub(dtype):
     z = x-y
     zr = xr-yr
     assert err_rel(z.full(), zr) < 1e-13, "Subtraction broadcasting error 3: TT-tensors."
+    assert same(x, xr) and same(y, yr), "Subtraction broadcasting changed an operand."
 
     x = tntt.random([2, 3, 4, 5, 6], [1, 2, 4, 8, 4, 1],
                     dtype=dtype)
@@ -164,6 +184,7 @@ def test_sub(dtype):
     z = x-y
     zr = xr-yr
     assert err_rel(z.full(), zr) < 1e-13, "Subtraction broadcasting error 4: TT-tensors."
+    assert same(x, xr) and same(y, yr), "Subtraction broadcasting changed an operand."
 
 @pytest.mark.parametrize("dtype", parameters)
 def test_mult(dtype):
@@ -188,11 +209,13 @@ def test_mult(dtype):
     zr = c*xr*(-yr*c)
 
     assert err_rel(z.full(), zr) < 1e-13, "Multiplication error: TT-tensors."
+    assert same(x, xr) and same(y, yr), "Multiplication changed an operand: TT-tensors."
 
     C = c*A*(B*c)
     Cr = c*Ar*(Br*c)
 
     assert err_rel(C.full(), Cr) < 1e-13, "Multiplication error: TT-matrices."
+    assert same(A, Ar) and same(B, Br), "Multiplication changed an operand: TT-matrices."
 
     z = 0*x
     zr = 0*xr
@@ -203,6 +226,7 @@ def test_mult(dtype):
     Cr = 0*Ar
     assert err_rel(C.full(), Cr) < 1e-13, "Multiplication error: TT-matrix 0 with scalar."
     assert C.R == [1, 1, 1, 1, 1], "Multiplication error: TT-matrix 0 with scalar."
+    assert same(x, xr) and same(A, Ar), "Multiplication with 0 changed an operand."
 
     # test broadcasting
 
@@ -215,6 +239,7 @@ def test_mult(dtype):
     z = x*y
     zr = xr*yr
     assert err_rel(z.full(), zr) < 1e-13, "Multiplication broadcasting error 1: TT-tensors."
+    assert same(x, xr) and same(y, yr), "Multiplication broadcasting changed an operand."
 
     x = tntt.random([2, 3, 4, 5, 6], [1, 2, 4, 8, 4, 1],
                     dtype=dtype)
@@ -225,6 +250,7 @@ def test_mult(dtype):
     z = x*y
     zr = xr*yr
     assert err_rel(z.full(), zr) < 1e-13, "Multiplication broadcasting error 2: TT-tensors."
+    assert same(x, xr) and same(y, yr), "Multiplication broadcasting changed an operand."
 
     x = tntt.random([2, 3, 4, 5, 6], [1, 2, 4, 8, 4, 1],
                     dtype=dtype)
@@ -235,6 +261,7 @@ def test_mult(dtype):
     z = x*y
     zr = xr*yr
     assert err_rel(z.full(), zr) < 1e-13, "Multiplication broadcasting error 3: TT-tensors."
+    assert same(x, xr) and same(y, yr), "Multiplication broadcasting changed an operand."
 
     x = tntt.random([2, 3, 4, 5, 6], [1, 2, 4, 8, 4, 1],
                     dtype=dtype)
@@ -246,6 +273,7 @@ def test_mult(dtype):
     z = x*y
     zr = xr*yr
     assert err_rel(z.full(), zr) < 1e-13, "Multiplication broadcasting error 4: TT-tensors."
+    assert same(x, xr) and same(y, yr), "Multiplication broadcasting changed an operand."
 
 @pytest.mark.parametrize("dtype", parameters)
 def test_matmult(dtype):
@@ -273,6 +301,7 @@ def test_matmult(dtype):
     z = B @ x
     z_ref = tn.einsum('abcijk,ijk->abc', B_ref, x_ref)
     assert err_rel(z.full(), z_ref) < 1e-13, "torchtt.TT.__matmul__() error: TT matrix with TT vector."
+    assert same(A, A_ref) and same(B, B_ref) and same(x, x_ref), "torchtt.TT.__matmul__() changed an operand."
 
 @pytest.mark.parametrize("dtype", parameters)
 def test_matvecdense(dtype):
@@ -359,14 +388,20 @@ def test_kron(dtype):
     a = tntt.random([5, 7, 9], [1, 2, 7, 1], dtype=dtype)
     b = tntt.random([4, 5, 9], [1, 2, 2, 1], dtype=dtype)
 
+    ar, br = a.full(), b.full()
+
     c = a ** b
-    assert err_rel(c.full(), tn.einsum('abc,def->abcdef', a.full(), b.full())) < 1e-12, 'Kronecker product error: 2 tensors.'
+    assert err_rel(c.full(), tn.einsum('abc,def->abcdef', ar, br)) < 1e-12, 'Kronecker product error: 2 tensors.'
+    assert same(a, ar) and same(b, br), 'Kronecker product changed an operand: 2 tensors.'
 
     A = tntt.random([(2, 3), (4, 5)], [1, 2, 1], dtype=dtype)
     B = tntt.random([(3, 3), (4, 2)], [1, 3, 1], dtype=dtype)
 
+    Ar, Br = A.full(), B.full()
+
     C = A ** B
-    assert err_rel(C.full(), tn.einsum('abcd,mnop->abmncdop', A.full(), B.full())) < 1e-12, 'Kronecker product error: 2 tensor operators.'
+    assert err_rel(C.full(), tn.einsum('abcd,mnop->abmncdop', Ar, Br)) < 1e-12, 'Kronecker product error: 2 tensor operators.'
+    assert same(A, Ar) and same(B, Br), 'Kronecker product changed an operand: 2 tensor operators.'
 
     c = a ** None
     assert err_rel(a.full(), c.full()) < 1e-14, 'Kronecker product error: tensor and None.'
@@ -691,3 +726,15 @@ def test_cat_invalid_shape(shape):
 def test_cat_invalid_type(shapes):
     with pytest.raises(tntt.errors.InvalidArguments):
         tntt.cat([tntt.ones(shape) for shape in shapes])
+
+
+@pytest.mark.skipif(not tn.cuda.is_available(), reason="CUDA device is not available.")
+@pytest.mark.parametrize("shape", [[2, 4, 3], [(2, 3), (4, 5), (3, 2)]])
+def test_add_sub_scalar_cuda(shape):
+    x = tntt.random(shape, [1, 2, 3, 1], dtype=tn.float64)
+    X = x.full()
+    x = x.to('cuda')
+
+    for z, Z in [(x + 1.0, X + 1.0), (1.0 + x, 1.0 + X), (x - 1.0, X - 1.0), (1.0 - x, 1.0 - X)]:
+        assert all(c.is_cuda for c in z.cores)
+        assert err_rel(z.full().cpu(), Z) < 1e-14

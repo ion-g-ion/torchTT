@@ -29,6 +29,13 @@ def test_linear_layer(dtype, initializer, batch):
     assert all(tn.allclose(g, r, rtol=tol, atol=tol) for g, r in zip(grads, refs))
 
 
+def test_linear_layer_large_rank():
+    # The initialization uses torchtt.randn with a rank product that does not fit in int64.
+    layer = tntt.nn.LinearLayerTT([2]*14, [2]*14, [1] + [32]*13 + [1])
+
+    assert all(tn.isfinite(c).all() for c in layer.cores)
+
+
 def test_linear_layer_invalid_initializer():
     with pytest.raises(tntt.errors.InvalidArguments):
         tntt.nn.LinearLayerTT([2, 3], [3, 2], [1, 2, 1], initializer='invalid')
