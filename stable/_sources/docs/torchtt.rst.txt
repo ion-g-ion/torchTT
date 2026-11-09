@@ -1,6 +1,14 @@
 torchtt package
 ===============
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 2
+
+   functional
+
 Submodules
 ----------
 
@@ -40,6 +48,14 @@ torchtt.manifold module
 -----------------------
 
 .. automodule:: torchtt.manifold
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+torchtt.methods module
+----------------------
+
+.. automodule:: torchtt.methods
    :members:
    :undoc-members:
    :show-inheritance:

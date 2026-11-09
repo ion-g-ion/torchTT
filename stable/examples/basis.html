@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Univariate Basis Functions: B-Splines &mdash; torchTT v0.5.0 documentation</title>
+  <title>Univariate Basis Functions: B-Splines &mdash; torchTT v0.6.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
       <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
@@ -14,7 +14,7 @@
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=e663822d"></script>
+      <script src="../_static/documentation_options.js?v=741c5cc6"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -22,7 +22,9 @@
       <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" /> 
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Tensor Train layers for neural networks" href="basic_nn.html" />
+    <link rel="prev" title="Cross approximation in the TT format" href="cross_interpolation.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -45,12 +47,35 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <ul>
+              <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../docs/intro_page.html">Welcome to torchTT</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../docs/install.html">Installation guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../docs/package-overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../docs/modules.html">API reference</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../docs/examples.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../docs/examples.html">Examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#getting-started">Getting Started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#linear-algebra-solvers">Linear Algebra &amp; Solvers</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../docs/examples.html#cross-interpolation">Cross Interpolation</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="cross_interpolation.html">Cross approximation in the TT format</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Univariate Basis Functions: B-Splines</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Creating-B-Spline-Bases-of-Different-Degrees">Creating B-Spline Bases of Different Degrees</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Visualizing-the-Basis-Functions">Visualizing the Basis Functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Interpolation-with-B-Splines">Interpolation with B-Splines</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Integration-Weights-of-Individual-Basis-Functions">Integration Weights of Individual Basis Functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Automatic-Differentiation-with-B-Splines">Automatic Differentiation with B-Splines</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Basis-Derivatives">Basis Derivatives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Boundary-Modes:-Zero-Boundaries-and-Unbounded-Domains">Boundary Modes: Zero Boundaries and Unbounded Domains</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#Gaussian-Basis-Functions">Gaussian Basis Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#neural-networks">Neural Networks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../docs/examples.html#advanced-topics">Advanced Topics</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/references.html">References</a></li>
 </ul>
 
         </div>
@@ -67,6 +92,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../docs/examples.html">Examples</a></li>
       <li class="breadcrumb-item active">Univariate Basis Functions: B-Splines</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../_sources/examples/basis.ipynb.txt" rel="nofollow"> View page source</a>
@@ -77,7 +103,11 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT v0.5.0</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><section id="Univariate-Basis-Functions:-B-Splines">
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT v0.6.0</strong><br><a href="../../stable/index.html">Stable release</a> · <a href="../../latest/index.html">Development (main)</a></nav><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Run this notebook in <a class="reference external" href="https://colab.research.google.com/github/ion-g-ion/torchTT/blob/main/examples/basis.ipynb">Google Colab</a> or see the source on <a class="reference external" href="https://github.com/ion-g-ion/torchTT/blob/main/examples/basis.ipynb">GitHub</a>.</p>
+</div>
+<section id="Univariate-Basis-Functions:-B-Splines">
 <h1>Univariate Basis Functions: B-Splines<a class="headerlink" href="#Univariate-Basis-Functions:-B-Splines" title="Link to this heading"></a></h1>
 <p>This notebook demonstrates the B-spline basis implementation in <code class="docutils literal notranslate"><span class="pre">torchtt.functional</span></code>.</p>
 <p>B-splines are piecewise polynomial functions widely used for interpolation and approximation. Key features of our implementation:</p>
@@ -690,7 +720,10 @@ Gaussian Basis: GaussianBasis(n=10, delta_overlap=1)
 
            </div>
           </div>
-          <footer>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="cross_interpolation.html" class="btn btn-neutral float-left" title="Cross approximation in the TT format" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="basic_nn.html" class="btn btn-neutral float-right" title="Tensor Train layers for neural networks" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
 
   <hr/>
 

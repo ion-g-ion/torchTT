@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>torchtt.interpolate &mdash; torchTT v0.5.0 documentation</title>
+  <title>torchtt.interpolate &mdash; torchTT v0.6.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=e663822d"></script>
+      <script src="../../_static/documentation_options.js?v=741c5cc6"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -47,6 +47,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../../docs/package-overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/modules.html">API reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/references.html">References</a></li>
 </ul>
 
         </div>
@@ -64,6 +66,7 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
           <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../torchtt.html">torchtt</a></li>
       <li class="breadcrumb-item active">torchtt.interpolate</li>
       <li class="wy-breadcrumbs-aside">
       </li>
@@ -73,9 +76,9 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT v0.5.0</strong><br><a href="../../../stable/index.html">Stable release</a> · <a href="../../../latest/index.html">Development (main)</a></nav><h1>Source code for torchtt.interpolate</h1><div class="highlight"><pre>
+  <nav aria-label="Documentation versions" style="margin-bottom:1.5rem;padding:.75rem;background:#edf2f7"><strong>torchTT v0.6.0</strong><br><a href="../../../stable/index.html">Stable release</a> · <a href="../../../latest/index.html">Development (main)</a></nav><h1>Source code for torchtt.interpolate</h1><div class="highlight"><pre>
 <span></span><span class="sd">"""</span>
-<span class="sd">Implements the cross approximation methods (DMRG).</span>
+<span class="sd">Implements cross approximation methods in the TT format :cite:p:`oseledets2010tt`, based on the density matrix renormalization group (DMRG) :cite:p:`savostyanov2011fast` and the alternating minimal energy (AMEn) :cite:p:`dolgov2014alternating` schemes.</span>
 
 <span class="sd">"""</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tn</span>
@@ -219,7 +222,12 @@
 <a class="viewcode-back" href="../../docs/torchtt.html#torchtt.interpolate.function_interpolate">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">function_interpolate</span><span class="p">(</span><span class="n">function</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-9</span><span class="p">,</span> <span class="n">start_tens</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nswp</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">kick</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">kick2</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tn</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">rmax</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">maxsize</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">'dmrg'</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Interpolate a function using tensor train cross approximation.</span>
+<span class="sd">    Interpolate a function using tensor train cross approximation :cite:p:`oseledets2010tt,savostyanov2011fast`.</span>
+
+<span class="sd">    Prefer trying ``method='amen'`` when function evaluations are expensive or</span>
+<span class="sd">    mode sizes are large; consider ``method='dmrg'`` when evaluations are cheap</span>
+<span class="sd">    and mode sizes are small. See :ref:`interpolation-methods-label` for the</span>
+<span class="sd">    tradeoffs and convergence guidance.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        function (Callable): Function to interpolate.</span>
@@ -231,7 +239,7 @@
 <span class="sd">        kick2 (int, optional): Secondary rank enrichment (meant for amen method). Defaults to 0.</span>
 <span class="sd">        dtype (torch.dtype, optional): The datatype of the result. Defaults to tn.float64.</span>
 <span class="sd">        rmax (int, optional): Maximum allowed rank. Defaults to sys.maxsize.</span>
-<span class="sd">        method (str, optional): Method to use ('dmrg' or 'amen'). Defaults to 'dmrg'.</span>
+<span class="sd">        method (str, optional): Method to use: 'dmrg' (density matrix renormalization group) or 'amen' (alternating minimal energy). Defaults to 'dmrg'.</span>
 <span class="sd">        verbose (bool, optional): If True, display information. Defaults to False.</span>
 <span class="sd">        callback (Callable, optional): optional hook invoked at the end of every sweep as</span>
 <span class="sd">            ``callback(tt, sweep, error)``, where ``tt`` is the current approximation</span>
@@ -415,7 +423,6 @@
         <span class="n">state_dict</span><span class="p">[</span><span class="s1">'Jy_right'</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">idx_new</span>
         <span class="n">Ps_new</span> <span class="o">=</span> <span class="n">core</span><span class="p">[</span><span class="n">idx</span><span class="p">[:</span><span class="n">x_cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="p">:]</span><span class="o">.</span><span class="n">t</span><span class="p">()</span>
         <span class="n">norm_factor</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="c1"># Removed scaling</span>
-        <span class="c1"># Ps_new = Ps_new * norm_factor</span>
         <span class="n">state_dict</span><span class="p">[</span><span class="s1">'Ps_right'</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">Ps_new</span>
         <span class="n">state_dict</span><span class="p">[</span><span class="s1">'Ps_right_lu'</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">_factorize_projection</span><span class="p">(</span><span class="n">Ps_new</span><span class="p">)</span>
         
@@ -605,7 +612,6 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="n">rank</span> <span class="o">=</span> <span class="n">x_start</span><span class="o">.</span><span class="n">R</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="n">cores</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="o">+</span><span class="mi">0</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">x_start</span><span class="o">.</span><span class="n">cores</span><span class="p">]</span>
-    <span class="c1"># cores = (ones(N,dtype=dtype)).cores</span>
 
     <span class="n">cores</span><span class="p">,</span> <span class="n">rank</span> <span class="o">=</span> <span class="n">lr_orthogonal</span><span class="p">(</span><span class="n">cores</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
 
@@ -625,11 +631,7 @@
 
         <span class="n">rnew</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">N</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="n">rank</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="n">rank</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
         <span class="n">Jk</span> <span class="o">=</span> <span class="n">_maxvol</span><span class="p">(</span><span class="n">core</span><span class="p">)</span>
-        <span class="c1"># print(Jk)</span>
         <span class="n">tmp</span> <span class="o">=</span> <span class="n">_unravel_index</span><span class="p">(</span><span class="n">Jk</span><span class="p">[:</span><span class="n">rnew</span><span class="p">],</span> <span class="p">(</span><span class="n">rank</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="n">N</span><span class="p">[</span><span class="n">k</span><span class="p">]),</span> <span class="n">device</span><span class="p">)</span>
-        <span class="c1"># if k==d-1:</span>
-        <span class="c1">#    idx_new = tn.tensor(tmp[1].reshape([1,-1]))</span>
-        <span class="c1"># else:</span>
         <span class="n">idx_new</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">tmp</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]),</span> <span class="n">Idx</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">][:,</span> <span class="n">tmp</span><span class="p">[</span><span class="mi">0</span><span class="p">]]))</span>
 
         <span class="n">Idx</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">idx_new</span><span class="o">+</span><span class="mi">0</span>
@@ -637,20 +639,12 @@
         <span class="n">Rm</span> <span class="o">=</span> <span class="n">core</span><span class="p">[</span><span class="n">Jk</span><span class="p">,</span> <span class="p">:]</span>
 
         <span class="n">core</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">Rm</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">core</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
-        <span class="c1"># core = tn.linalg.solve(Rm,core.T)</span>
         <span class="n">Rm</span> <span class="o">=</span> <span class="p">(</span><span class="n">Rm</span><span class="nd">@Rmat</span><span class="p">)</span><span class="o">.</span><span class="n">t</span><span class="p">()</span>
-        <span class="c1"># core = core.t()</span>
         <span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">core</span><span class="p">,</span> <span class="p">[</span><span class="n">rnew</span><span class="p">,</span> <span class="n">N</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">rank</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]])</span>
         <span class="n">core</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">core</span><span class="p">,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">rank</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]])</span> <span class="o">@</span> <span class="n">Ps</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
         <span class="n">core</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">core</span><span class="p">,</span> <span class="p">[</span><span class="n">rank</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">t</span><span class="p">()</span>
         <span class="n">_</span><span class="p">,</span> <span class="n">Ps</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">QR</span><span class="p">(</span><span class="n">core</span><span class="p">)</span>
     <span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'ijk,kl-&gt;ijl'</span><span class="p">,</span> <span class="n">cores</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">Rm</span><span class="p">)</span>
-
-    <span class="c1"># for p in Ps:</span>
-    <span class="c1">#     print(p)</span>
-    <span class="c1"># for i in Idx:</span>
-    <span class="c1">#     print(i)</span>
-    <span class="c1"># return</span>
     <span class="n">n_eval</span> <span class="o">=</span> <span class="mi">0</span>
 
     <span class="k">for</span> <span class="n">swp</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nswp</span><span class="p">):</span>
@@ -694,7 +688,6 @@
             <span class="n">U</span> <span class="o">=</span> <span class="n">U</span><span class="p">[:,</span> <span class="p">:</span><span class="n">rnew</span><span class="p">]</span>
             <span class="n">S</span> <span class="o">=</span> <span class="n">S</span><span class="p">[:</span><span class="n">rnew</span><span class="p">]</span>
             <span class="n">V</span> <span class="o">=</span> <span class="n">V</span><span class="p">[:</span><span class="n">rnew</span><span class="p">,</span> <span class="p">:]</span>
-            <span class="c1"># print('kkt new',tn.linalg.norm(supercore-U@tn.diag(S)@V))</span>
             <span class="c1"># kick the rank</span>
             <span class="n">V</span> <span class="o">=</span> <span class="n">S</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">V</span>
             <span class="n">UK</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">randn</span><span class="p">((</span><span class="n">U</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">kick</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
@@ -707,7 +700,6 @@
                 <span class="n">V</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
                     <span class="p">(</span><span class="n">V</span><span class="p">,</span> <span class="n">tn</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">radd</span><span class="p">,</span> <span class="n">V</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)),</span> <span class="mi">0</span><span class="p">)</span>
             <span class="n">V</span> <span class="o">=</span> <span class="n">Rtemp</span> <span class="o">@</span> <span class="n">V</span>
-            <span class="c1"># print('kkt new',tn.linalg.norm(supercore-U@V))</span>
             <span class="c1"># compute err (dx)</span>
             <span class="n">super_prev</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'ijk,kmn-&gt;ijmn'</span><span class="p">,</span> <span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">cores</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
             <span class="n">super_prev</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span>
@@ -724,9 +716,6 @@
             <span class="n">U</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">Ps</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">U</span><span class="p">,</span> <span class="p">[</span><span class="n">rank</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
             <span class="n">V</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span>
                 <span class="n">Ps</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">t</span><span class="p">(),</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">V</span><span class="p">,</span> <span class="p">[</span><span class="n">rank</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">N</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="n">rank</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">2</span><span class="p">]])</span><span class="o">.</span><span class="n">t</span><span class="p">())</span><span class="o">.</span><span class="n">t</span><span class="p">()</span>
-
-            <span class="c1"># U = tn.einsum('ij,jkl-&gt;ikl',tn.linalg.inv(Ps[k]),tn.reshape(U,[rank[k],N[k],-1]))</span>
-            <span class="c1"># V = tn.einsum('ijk,kl-&gt;ijl',tn.reshape(V,[-1,N[k+1],rank[k+2]]),tn.linalg.inv(Ps[k+2]))</span>
 
             <span class="n">V</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">V</span><span class="p">,</span> <span class="p">[</span><span class="n">rank</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">])</span>
             <span class="n">U</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">U</span><span class="p">,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">rank</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]])</span>
@@ -814,9 +803,6 @@
             <span class="n">V</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span>
                 <span class="n">Ps</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">t</span><span class="p">(),</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">V</span><span class="p">,</span> <span class="p">[</span><span class="n">rank</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">N</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="n">rank</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">2</span><span class="p">]])</span><span class="o">.</span><span class="n">t</span><span class="p">())</span><span class="o">.</span><span class="n">t</span><span class="p">()</span>
 
-            <span class="c1"># U = tn.einsum('ij,jkl-&gt;ikl',tn.linalg.inv(Ps[k]),tn.reshape(U,[rank[k],N[k],-1]))</span>
-            <span class="c1"># V = tn.einsum('ijk,kl-&gt;ijl',tn.reshape(V,[-1,N[k+1],rank[k+2]]),tn.linalg.inv(Ps[k+2]))</span>
-
             <span class="n">V</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">V</span><span class="p">,</span> <span class="p">[</span><span class="n">rank</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">])</span>
             <span class="n">U</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">U</span><span class="p">,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">rank</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]])</span>
 
@@ -837,8 +823,6 @@
             <span class="n">tmp</span> <span class="o">=</span> <span class="n">_unravel_index</span><span class="p">(</span><span class="n">idx</span><span class="p">[:</span><span class="n">rank</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]],</span> <span class="p">(</span><span class="n">N</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="n">rank</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">2</span><span class="p">]),</span> <span class="n">device</span><span class="p">)</span>
             <span class="n">idx_new</span> <span class="o">=</span> <span class="n">tn</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">tmp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]),</span> <span class="n">Idx</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">2</span><span class="p">][:,</span> <span class="n">tmp</span><span class="p">[</span><span class="mi">1</span><span class="p">]]))</span>
             <span class="n">Idx</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">idx_new</span><span class="o">+</span><span class="mi">0</span>
-        <span class="c1"># xxx = TT(cores)</span>
-        <span class="c1"># print('#            ',xxx[1,2,3,4])</span>
 
         <span class="c1"># callback / exit condition</span>
         <span class="k">if</span> <span class="n">callback</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>

@@ -28,6 +28,12 @@
 :ref:`examples-label`
 ---------------------
 
+:ref:`glossary-label`
+---------------------
+
+:ref:`references-label`
+-----------------------
+
 :ref:`index-label`
 ------------------
 
@@ -41,5 +47,7 @@
    ./docs/package-overview.rst
    ./docs/modules
    ./docs/examples
+   ./docs/glossary
+   ./docs/references
 
 
