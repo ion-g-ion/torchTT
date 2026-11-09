@@ -14,7 +14,7 @@ try:  # keep the documented version in sync with the installed package
 
     release = _pkg_version('torchTT')
 except Exception:  # package not installed (e.g. plain `make html` in a checkout)
-    release = '0.5.0'
+    release = '0.6.0'
 version = release
 
 # -- General configuration ---------------------------------------------------

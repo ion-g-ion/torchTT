@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.6.0] - 2026-11-09
 
 ### Added
 - API documentation for `torchtt.functional`, explaining its use by `torchtt.nn.TTDensityLayer` and linking the existing tutorials (#49).
@@ -37,6 +37,7 @@ All notable changes to this project will be documented in this file.
 - The Python AMEn solver with a preconditioner did not truncate the solution, since the truncation applied the preconditioner a second time. The ranks were too large.
 - The Python AMEn solver returned wrong results for complex systems with iterative local solves. The projections use the conjugated solution cores, and GMRES and BiCGSTAB use complex inner products and Givens rotations.
 - The BiCGSTAB local solver failed on the GPU and always reported convergence.
+- The BiCGSTAB local solver (`local_solver=2`) tested its first stopping criterion in absolute instead of relative terms. When the local right-hand side had a norm below 1, which is the usual case in AMEn, it stopped early and the solution of `amen_solve` could miss `eps` by orders of magnitude. A zero right-hand side now returns zero instead of NaN, and an initial guess that already solves the system no longer hangs.
 - `trunc_norm='fro'` in `amen_solve` raised `UnboundLocalError`; it truncates the local solution in the Frobenius norm. Invalid values of `trunc_norm` and `local_solver` raise `InvalidArguments`.
 - `torchtt.randn`, and therefore the initialization of `LinearLayerTT` and `CompressedTTLayer`, returned infinite or NaN cores, or the wrong variance, when the product of the ranks overflowed int64.
 - Docs: broken code in the package overview, placeholders and wrong defaults in the docstrings of `amen_solve`, `amen_mv` and `amen_mm`, and `TT.to` documented that `device=None` moves the tensor to the CPU.
