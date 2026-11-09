@@ -3,8 +3,8 @@
   "stable": "v0.5.0",
   "versions": {
     "latest": {
-      "label": "main (b64218c)",
-      "sha": "b64218c857afeed87df842568ec0d0b9db97d1f4"
+      "label": "main (2e7deb4)",
+      "sha": "2e7deb41227d9da90b5657c73e6e309db7f38ab8"
     },
     "v0.5.0": {
       "label": "v0.5.0",
